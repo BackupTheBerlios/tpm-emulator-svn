@@ -1,0 +1,1213 @@
+/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
+ * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
+ *                    Swiss Federal Institute of Technology (ETH) Zurich
+ *
+ * This module is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation; either version 2 of the License,
+ * or (at your option) any later version.
+ *
+ * This module is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * $Id$
+ */
+
+#include "tpm_marshalling.h"
+#include "tpm_handles.h"
+#include "crypto/rsa.h"
+#include "linux_module.h"
+
+inline int tpm_marshal_BYTE(BYTE **ptr, UINT32 *length, BYTE v)
+{
+  if (*length < 1) return -1;
+  **ptr = v;
+  *ptr += 1; *length -= 1;
+  return 0;
+}
+
+inline int tpm_unmarshal_BYTE(BYTE **ptr, UINT32 *length, BYTE *v)
+{
+  if (*length < 1) return -1;
+  *v = **ptr;
+  *ptr += 1; *length -= 1;
+  return 0;
+}
+
+inline int tpm_marshal_UINT16(BYTE **ptr, UINT32 *length, UINT16 v)
+{
+  if (*length < 2) return -1;
+  **(UINT16**)ptr = CPU_TO_BE16(v);
+  *ptr += 2; *length -= 2;
+  return 0;
+}
+
+inline int tpm_unmarshal_UINT16(BYTE **ptr, UINT32 *length, UINT16 *v)
+{
+  if (*length < 2) return -1;
+  *v = BE16_TO_CPU(**(UINT16**)ptr);
+  *ptr += 2; *length -= 2;
+  return 0;
+}
+
+inline int tpm_marshal_UINT32(BYTE **ptr, UINT32 *length, UINT32 v)
+{
+  if (*length < 4) return -1;
+  **(UINT32**)ptr = CPU_TO_BE32(v);
+  *ptr += 4; *length -= 4;
+  return 0;
+}
+
+inline int tpm_unmarshal_UINT32(BYTE **ptr, UINT32 *length, UINT32 *v)
+{
+  if (*length < 4) return -1;
+  *v = BE32_TO_CPU(**(UINT32**)ptr);
+  *ptr += 4; *length -= 4;
+  return 0;
+}
+
+inline int tpm_marshal_UINT64(BYTE **ptr, UINT32 *length, UINT64 v)
+{
+  if (*length < 8) return -1;
+  **(UINT64**)ptr = CPU_TO_BE64(v);
+  *ptr += 8; *length -= 8;
+  return 0;
+}
+
+inline int tpm_unmarshal_UINT64(BYTE **ptr, UINT32 *length, UINT64 *v)
+{
+  if (*length < 8) return -1;
+  *v = BE64_TO_CPU(**(UINT64**)ptr);
+  *ptr += 8; *length -= 8;
+  return 0;
+}
+
+inline int tpm_marshal_BLOB(BYTE **ptr, UINT32 *ptr_length,
+                            BYTE *b, UINT32 b_length)
+{
+  if (*ptr_length < b_length) return -1;
+  if (b_length) memcpy(*ptr, b, b_length);
+  *ptr += b_length; *ptr_length -= b_length;
+  return 0;
+}
+
+inline int tpm_unmarshal_BLOB(BYTE **ptr, UINT32 *ptr_length,
+                              BYTE **b, UINT32 b_length)
+{
+  if (*ptr_length < b_length) return -1;
+  *b = (b_length) ? *ptr : NULL;
+  *ptr += b_length; *ptr_length -= b_length;
+  return 0;
+}
+
+inline int tpm_marshal_BYTE_ARRAY(BYTE **ptr, UINT32 *ptr_length,
+                                  BYTE *b, UINT32 b_length)
+{
+  if (*ptr_length < b_length) return -1;
+  memcpy(*ptr, b, b_length);
+  *ptr += b_length; *ptr_length -= b_length;
+  return 0;
+}
+
+inline int tpm_unmarshal_BYTE_ARRAY(BYTE **ptr, UINT32 *ptr_length,
+                                    BYTE *b, UINT32 b_length)
+{
+  if (*ptr_length < b_length) return -1;
+  if (b_length) memcpy(b, *ptr, b_length);
+  *ptr += b_length; *ptr_length -= b_length;
+  return 0;
+}
+
+int tpm_marshal_UINT32_ARRAY(BYTE **ptr, UINT32 *length,
+                             UINT32 *v, UINT32 n)
+{
+  UINT32 i;
+  for (i = 0; i < n; i++) {
+    if (tpm_marshal_UINT32(ptr, length, v[i])) return -1;
+  }
+  return 0;
+}
+
+int tpm_unmarshal_UINT32_ARRAY(BYTE **ptr, UINT32 *length,
+                               UINT32 *v, UINT32 n)
+{
+  UINT32 i;
+  for (i = 0; i < n; i++) {
+    if (tpm_unmarshal_UINT32(ptr, length, &v[i])) return -1;
+  }
+  return 0;
+}
+
+int tpm_marshal_TPM_STRUCT_VER(BYTE **ptr, UINT32 *length, TPM_STRUCT_VER *v)
+{
+  if (tpm_marshal_BYTE(ptr, length, v->major)
+      || tpm_marshal_BYTE(ptr, length, v->minor)
+      || tpm_marshal_BYTE(ptr, length, v->revMajor)
+      || tpm_marshal_BYTE(ptr, length, v->revMinor)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_STRUCT_VER(BYTE **ptr, UINT32 *length, TPM_STRUCT_VER *v)
+{
+  if (tpm_unmarshal_BYTE(ptr, length, &v->major)
+      || tpm_unmarshal_BYTE(ptr, length, &v->minor)
+      || tpm_unmarshal_BYTE(ptr, length, &v->revMajor)
+      || tpm_unmarshal_BYTE(ptr, length, &v->revMinor)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_VERSION(BYTE **ptr, UINT32 *length, TPM_VERSION *v)
+{
+  if (tpm_marshal_BYTE(ptr, length, v->major)
+      || tpm_marshal_BYTE(ptr, length, v->minor)
+      || tpm_marshal_BYTE(ptr, length, v->revMajor)
+      || tpm_marshal_BYTE(ptr, length, v->revMinor)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_VERSION(BYTE **ptr, UINT32 *length, TPM_VERSION *v)
+{
+  if (tpm_unmarshal_BYTE(ptr, length, &v->major)
+      || tpm_unmarshal_BYTE(ptr, length, &v->minor)
+      || tpm_unmarshal_BYTE(ptr, length, &v->revMajor)
+      || tpm_unmarshal_BYTE(ptr, length, &v->revMinor)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_DIGEST(BYTE **ptr, UINT32 *length, TPM_DIGEST *v)
+{
+  if (tpm_marshal_BYTE_ARRAY(ptr, length, v->digest, sizeof(v->digest))) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DIGEST(BYTE **ptr, UINT32 *length, TPM_DIGEST *v)
+{
+  if (tpm_unmarshal_BYTE_ARRAY(ptr, length, v->digest, sizeof(v->digest))) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_PCRVALUE_ARRAY(BYTE **ptr, UINT32 *length,
+                                   TPM_PCRVALUE *v, UINT32 n)
+{
+  UINT32 i;
+  for (i = 0; i < n; i++) {
+    if (tpm_marshal_TPM_PCRVALUE(ptr, length, &v[i])) return -1;
+  }
+  return 0;
+}
+
+int tpm_unmarshal_TPM_PCRVALUE_ARRAY(BYTE **ptr, UINT32 *length,
+                                     TPM_PCRVALUE *v, UINT32 n)
+{
+  UINT32 i;
+  for (i = 0; i < n; i++) {
+    if (tpm_unmarshal_TPM_PCRVALUE(ptr, length, &v[i])) return -1;
+  }
+  return 0;
+}
+
+int tpm_marshal_TPM_NONCE(BYTE **ptr, UINT32 *length, TPM_NONCE *v)
+{
+  if (tpm_marshal_BYTE_ARRAY(ptr, length, v->nonce, sizeof(v->nonce))) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_NONCE(BYTE **ptr, UINT32 *length, TPM_NONCE *v)
+{
+  if (tpm_unmarshal_BYTE_ARRAY(ptr, length, v->nonce, sizeof(v->nonce))) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_AUTHDATA(BYTE **ptr, UINT32 *length, TPM_AUTHDATA *v)
+{
+  if (*length < sizeof(TPM_AUTHDATA)) return -1;
+  memcpy(*ptr, v, sizeof(TPM_AUTHDATA));
+  *ptr += sizeof(TPM_AUTHDATA); *length -= sizeof(TPM_AUTHDATA);
+  return 0;
+}
+
+int tpm_unmarshal_TPM_AUTHDATA(BYTE **ptr, UINT32 *length, TPM_AUTHDATA *v)
+{
+  if (*length < sizeof(TPM_AUTHDATA)) return -1;
+  memcpy(v, *ptr, sizeof(TPM_AUTHDATA));
+  *ptr += sizeof(TPM_AUTHDATA); *length -= sizeof(TPM_AUTHDATA);
+  return 0;
+}
+
+int tpm_marshal_TPM_AUTH(BYTE **ptr, UINT32 *length, TPM_AUTH *v)
+{
+  if (tpm_marshal_TPM_NONCE(ptr, length, &v->nonceEven)
+      || tpm_marshal_BOOL(ptr, length, v->continueAuthSession)
+      || tpm_marshal_TPM_AUTHDATA(ptr, length, &v->auth)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_AUTH(BYTE **ptr, UINT32 *length, TPM_AUTH *v)
+{
+  if (tpm_unmarshal_TPM_AUTHHANDLE(ptr, length, &v->authHandle)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->nonceOdd)
+      || tpm_unmarshal_BOOL(ptr, length, &v->continueAuthSession)
+      || tpm_unmarshal_TPM_AUTHDATA(ptr, length, &v->auth)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_KEY_HANDLE_LIST(BYTE **ptr, UINT32 *length, TPM_KEY_HANDLE_LIST *v)
+{
+  if (tpm_marshal_UINT16(ptr, length, v->loaded)
+      || tpm_marshal_UINT32_ARRAY(ptr, length, v->handle, v->loaded)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_COUNTER_VALUE(BYTE **ptr, UINT32 *length, TPM_COUNTER_VALUE *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_BYTE_ARRAY(ptr, length, v->label, sizeof(v->label))
+      || tpm_marshal_TPM_ACTUAL_COUNT(ptr, length, v->counter)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_COUNTER_VALUE(BYTE **ptr, UINT32 *length, TPM_COUNTER_VALUE *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->label, sizeof(v->label))
+      || tpm_unmarshal_TPM_ACTUAL_COUNT(ptr, length, &v->counter)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_PCR_SELECTION(BYTE **ptr, UINT32 *length, TPM_PCR_SELECTION *v)
+{
+  if (tpm_marshal_UINT16(ptr, length, v->sizeOfSelect)
+      || v->sizeOfSelect > sizeof(v->pcrSelect) 
+      || tpm_marshal_BYTE_ARRAY(ptr, length, v->pcrSelect, v->sizeOfSelect)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_PCR_SELECTION(BYTE **ptr, UINT32 *length, TPM_PCR_SELECTION *v)
+{
+  if (tpm_unmarshal_UINT16(ptr, length, &v->sizeOfSelect)
+      || v->sizeOfSelect > sizeof(v->pcrSelect)
+      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->pcrSelect, v->sizeOfSelect)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_PCR_COMPOSITE(BYTE **ptr, UINT32 *length, TPM_PCR_COMPOSITE *v)
+{
+  if (tpm_marshal_TPM_PCR_SELECTION(ptr, length, &v->select)
+      || tpm_marshal_UINT32(ptr, length, v->valueSize)
+      || v->valueSize > sizeof(v->pcrValue) 
+      || tpm_marshal_TPM_PCRVALUE_ARRAY(ptr, length, v->pcrValue, 
+                                        v->valueSize / sizeof(TPM_PCRVALUE))) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_PCR_COMPOSITE(BYTE **ptr, UINT32 *length, TPM_PCR_COMPOSITE *v)
+{
+  if (tpm_unmarshal_TPM_PCR_SELECTION(ptr, length, &v->select)
+      || tpm_unmarshal_UINT32(ptr, length, &v->valueSize)
+      || v->valueSize > sizeof(v->pcrValue)
+      || tpm_unmarshal_TPM_PCRVALUE_ARRAY(ptr, length, v->pcrValue, 
+                                          v->valueSize / sizeof(TPM_PCRVALUE))) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_PCR_INFO(BYTE **ptr, UINT32 *length, TPM_PCR_INFO *v)
+{
+  if (v->tag == TPM_TAG_PCR_INFO_LONG) {
+    if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+        || tpm_marshal_TPM_LOCALITY_SELECTION(ptr, length, v->localityAtCreation)
+        || tpm_marshal_TPM_LOCALITY_SELECTION(ptr, length, v->localityAtRelease)
+        || tpm_marshal_TPM_PCR_SELECTION(ptr, length, &v->creationPCRSelection)
+        || tpm_marshal_TPM_PCR_SELECTION(ptr, length, &v->releasePCRSelection)
+        || tpm_marshal_TPM_COMPOSITE_HASH(ptr, length, &v->digestAtCreation)
+        || tpm_marshal_TPM_COMPOSITE_HASH(ptr, length, &v->digestAtRelease)) return -1;
+  } else {
+    if (tpm_marshal_TPM_PCR_SELECTION(ptr, length, &v->creationPCRSelection)
+      || tpm_marshal_TPM_COMPOSITE_HASH(ptr, length, &v->digestAtRelease)
+      || tpm_marshal_TPM_COMPOSITE_HASH(ptr, length, &v->digestAtCreation)) return -1;
+  }
+  return 0;
+}
+
+int tpm_unmarshal_TPM_PCR_INFO(BYTE **ptr, UINT32 *length, TPM_PCR_INFO *v)
+{
+  if (BE16_TO_CPU(*(UINT16*)(*ptr)) == TPM_TAG_PCR_INFO_LONG) {
+    if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+        || tpm_unmarshal_TPM_LOCALITY_SELECTION(ptr, length, &v->localityAtCreation)
+        || tpm_unmarshal_TPM_LOCALITY_SELECTION(ptr, length, &v->localityAtRelease)
+        || tpm_unmarshal_TPM_PCR_SELECTION(ptr, length, &v->creationPCRSelection)
+        || tpm_unmarshal_TPM_PCR_SELECTION(ptr, length, &v->releasePCRSelection)
+        || tpm_unmarshal_TPM_COMPOSITE_HASH(ptr, length, &v->digestAtCreation)
+        || tpm_unmarshal_TPM_COMPOSITE_HASH(ptr, length, &v->digestAtRelease)) return -1;
+  } else {
+    if (tpm_unmarshal_TPM_PCR_SELECTION(ptr, length, &v->creationPCRSelection)
+      || tpm_unmarshal_TPM_COMPOSITE_HASH(ptr, length, &v->digestAtRelease)
+      || tpm_unmarshal_TPM_COMPOSITE_HASH(ptr, length, &v->digestAtCreation)) return -1;
+    memcpy(&v->releasePCRSelection, &v->creationPCRSelection, sizeof(TPM_PCR_SELECTION));
+    v->tag = 0x0000;
+    v->localityAtCreation = 0;
+    v->localityAtRelease = 0;
+  }
+  return 0;
+}
+
+int tpm_marshal_TPM_PCR_INFO_SHORT(BYTE **ptr, UINT32 *length, TPM_PCR_INFO_SHORT *v)
+{
+  if (tpm_marshal_TPM_PCR_SELECTION(ptr, length, &v->pcrSelection)
+      || tpm_marshal_TPM_LOCALITY_SELECTION(ptr, length, v->localityAtRelease)
+      || tpm_marshal_TPM_COMPOSITE_HASH(ptr, length, &v->digestAtRelease)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_PCR_INFO_SHORT(BYTE **ptr, UINT32 *length, TPM_PCR_INFO_SHORT *v)
+{
+  if (tpm_unmarshal_TPM_PCR_SELECTION(ptr, length, &v->pcrSelection)
+      || tpm_unmarshal_TPM_LOCALITY_SELECTION(ptr, length, &v->localityAtRelease)
+      || tpm_unmarshal_TPM_COMPOSITE_HASH(ptr, length, &v->digestAtRelease)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_PCR_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_PCR_ATTRIBUTES *v)
+{
+  if (tpm_marshal_BOOL(ptr, length, v->pcrReset)
+      || tpm_marshal_BOOL_ARRAY(ptr, length, v->pcrResetLocal, TPM_NUM_LOCALITY)
+      || tpm_marshal_BOOL_ARRAY(ptr, length, v->pcrExtendLocal, TPM_NUM_LOCALITY)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_PCR_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_PCR_ATTRIBUTES *v)
+{
+  if (tpm_unmarshal_BOOL(ptr, length, &v->pcrReset)
+      || tpm_unmarshal_BOOL_ARRAY(ptr, length, v->pcrResetLocal, TPM_NUM_LOCALITY)
+      || tpm_unmarshal_BOOL_ARRAY(ptr, length, v->pcrExtendLocal, TPM_NUM_LOCALITY)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_STORED_DATA(BYTE **ptr, UINT32 *length, TPM_STORED_DATA *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_UINT16(ptr, length, v->fill)
+      || tpm_marshal_UINT32(ptr, length, v->sealInfoSize)
+      || (v->sealInfoSize > 0
+          && tpm_marshal_TPM_PCR_INFO(ptr, length, &v->sealInfo))
+      || tpm_marshal_UINT32(ptr, length, v->encDataSize)
+      || tpm_marshal_BLOB(ptr, length, v->encData, v->encDataSize)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_STORED_DATA(BYTE **ptr, UINT32 *length, TPM_STORED_DATA *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_UINT16(ptr, length, &v->fill)
+      || tpm_unmarshal_UINT32(ptr, length, &v->sealInfoSize)
+      || (v->sealInfoSize > 0
+          && tpm_unmarshal_TPM_PCR_INFO(ptr, length, &v->sealInfo)) 
+      || tpm_unmarshal_UINT32(ptr, length, &v->encDataSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->encData, v->encDataSize)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_SEALED_DATA(BYTE **ptr, UINT32 *length, TPM_SEALED_DATA *v)
+{
+  if (tpm_marshal_TPM_PAYLOAD_TYPE(ptr, length, v->payload)
+      || tpm_marshal_TPM_SECRET(ptr, length, &v->authData)
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->tpmProof)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->storedDigest)
+      || tpm_marshal_UINT32(ptr, length, v->dataSize)
+      || tpm_marshal_BLOB(ptr, length, v->data, v->dataSize)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_SEALED_DATA(BYTE **ptr, UINT32 *length, TPM_SEALED_DATA *v)
+{
+  if (tpm_unmarshal_TPM_PAYLOAD_TYPE(ptr, length, &v->payload)
+      || tpm_unmarshal_TPM_SECRET(ptr, length, &v->authData)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->tpmProof)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->storedDigest)
+      || tpm_unmarshal_UINT32(ptr, length, &v->dataSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->data, v->dataSize)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_SYMMETRIC_KEY(BYTE **ptr, UINT32 *length, TPM_SYMMETRIC_KEY *v)
+{
+  if (tpm_marshal_TPM_ALGORITHM_ID(ptr, length, v->algId)
+      || tpm_marshal_TPM_ENC_SCHEME(ptr, length, v->encScheme)
+      || tpm_marshal_UINT16(ptr, length, v->size)
+      || tpm_marshal_BLOB(ptr, length, v->data, v->size)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_SYMMETRIC_KEY(BYTE **ptr, UINT32 *length, TPM_SYMMETRIC_KEY *v)
+{
+  if (tpm_unmarshal_TPM_ALGORITHM_ID(ptr, length, &v->algId)
+      || tpm_unmarshal_TPM_ENC_SCHEME(ptr, length, &v->encScheme)
+      || tpm_unmarshal_UINT16(ptr, length, &v->size)
+      || tpm_unmarshal_BLOB(ptr, length, &v->data, v->size)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_SYMMETRIC_KEY_PARMS(BYTE **ptr, UINT32 *length, TPM_SYMMETRIC_KEY_PARMS *v)
+{
+  if (tpm_marshal_UINT32(ptr, length, v->keyLength)
+      || tpm_marshal_UINT32(ptr, length, v->blockSize)
+      || tpm_marshal_UINT32(ptr, length, v->ivSize)
+      || tpm_marshal_BLOB(ptr, length, v->IV, v->ivSize)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_SYMMETRIC_KEY_PARMS(BYTE **ptr, UINT32 *length, TPM_SYMMETRIC_KEY_PARMS *v)
+{
+  if (tpm_unmarshal_UINT32(ptr, length, &v->keyLength)
+      || tpm_unmarshal_UINT32(ptr, length, &v->blockSize)
+      || tpm_unmarshal_UINT32(ptr, length, &v->ivSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->IV, v->ivSize)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_RSA_KEY_PARMS(BYTE **ptr, UINT32 *length, TPM_RSA_KEY_PARMS *v)
+{
+  if (tpm_marshal_UINT32(ptr, length, v->keyLength)
+      || tpm_marshal_UINT32(ptr, length, v->numPrimes)
+      || tpm_marshal_UINT32(ptr, length, v->exponentSize)
+      || tpm_marshal_BLOB(ptr, length, v->exponent, v->exponentSize)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_RSA_KEY_PARMS(BYTE **ptr, UINT32 *length, TPM_RSA_KEY_PARMS *v)
+{
+  if (tpm_unmarshal_UINT32(ptr, length, &v->keyLength)
+      || tpm_unmarshal_UINT32(ptr, length, &v->numPrimes)
+      || tpm_unmarshal_UINT32(ptr, length, &v->exponentSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->exponent, v->exponentSize)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_KEY_PARMS(BYTE **ptr, UINT32 *length, TPM_KEY_PARMS *v)
+{
+  if (tpm_marshal_TPM_ALGORITHM_ID(ptr, length, v->algorithmID)
+      || tpm_marshal_TPM_ENC_SCHEME(ptr, length, v->encScheme)
+      || tpm_marshal_TPM_SIG_SCHEME(ptr, length, v->sigScheme)
+      || tpm_marshal_UINT32(ptr, length, v->parmSize)) return -1;
+  switch (v->algorithmID) {
+    case TPM_ALG_RSA:
+      if (tpm_marshal_TPM_RSA_KEY_PARMS(ptr, length, &v->parms.rsa)) return -1;
+      break;
+    case TPM_ALG_DES: case TPM_ALG_3DES: case TPM_ALG_AES192: case TPM_ALG_AES256:
+      if (tpm_marshal_TPM_SYMMETRIC_KEY_PARMS(ptr, length, &v->parms.skp)) return -1;
+      break;
+    default:
+      if (tpm_marshal_BLOB(ptr, length, v->parms.raw, v->parmSize)) return -1;
+  }
+  return 0;
+}
+
+int tpm_unmarshal_TPM_KEY_PARMS(BYTE **ptr, UINT32 *length, TPM_KEY_PARMS *v)
+{
+  if (tpm_unmarshal_TPM_ALGORITHM_ID(ptr, length, &v->algorithmID)
+      || tpm_unmarshal_TPM_ENC_SCHEME(ptr, length, &v->encScheme)
+      || tpm_unmarshal_TPM_SIG_SCHEME(ptr, length, &v->sigScheme)
+      || tpm_unmarshal_UINT32(ptr, length, &v->parmSize)) return -1;
+  switch (v->algorithmID) {
+    case TPM_ALG_RSA:
+      if (tpm_unmarshal_TPM_RSA_KEY_PARMS(ptr, length, &v->parms.rsa)) return -1;
+      break;
+    case TPM_ALG_DES: case TPM_ALG_3DES: case TPM_ALG_AES192: case TPM_ALG_AES256:
+      if (tpm_unmarshal_TPM_SYMMETRIC_KEY_PARMS(ptr, length, &v->parms.skp)) return -1;
+      break;
+    default:
+      if (tpm_unmarshal_BLOB(ptr, length, &v->parms.raw, v->parmSize)) return -1;
+  }
+  return 0;
+}
+
+int tpm_marshal_TPM_STORE_PUBKEY(BYTE **ptr, UINT32 *length, TPM_STORE_PUBKEY *v)
+{
+  if (tpm_marshal_UINT32(ptr, length, v->keyLength)
+      || tpm_marshal_BLOB(ptr, length, v->key, v->keyLength)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_STORE_PUBKEY(BYTE **ptr, UINT32 *length, TPM_STORE_PUBKEY *v)
+{
+  if (tpm_unmarshal_UINT32(ptr, length, &v->keyLength)
+      || tpm_unmarshal_BLOB(ptr, length, &v->key, v->keyLength)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_KEY(BYTE **ptr, UINT32 *length, TPM_KEY *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_UINT16(ptr, length, v->fill)
+      || tpm_marshal_TPM_KEY_USAGE(ptr, length, v->keyUsage)
+      || tpm_marshal_TPM_KEY_FLAGS(ptr, length, v->keyFlags)
+      || tpm_marshal_TPM_AUTH_DATA_USAGE(ptr, length, v->authDataUsage)
+      || tpm_marshal_TPM_KEY_PARMS(ptr, length, &v->algorithmParms)
+      || tpm_marshal_UINT32(ptr, length, v->PCRInfoSize)
+      || (v->PCRInfoSize > 0
+          && tpm_marshal_TPM_PCR_INFO(ptr, length, &v->PCRInfo))
+      || tpm_marshal_TPM_STORE_PUBKEY(ptr, length, &v->pubKey)
+      || tpm_marshal_UINT32(ptr, length, v->encDataSize)
+      || tpm_marshal_BLOB(ptr, length, v->encData, v->encDataSize)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_KEY(BYTE **ptr, UINT32 *length, TPM_KEY *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_UINT16(ptr, length, &v->fill)
+      || tpm_unmarshal_TPM_KEY_USAGE(ptr, length, &v->keyUsage)
+      || tpm_unmarshal_TPM_KEY_FLAGS(ptr, length, &v->keyFlags)
+      || tpm_unmarshal_TPM_AUTH_DATA_USAGE(ptr, length, &v->authDataUsage)
+      || tpm_unmarshal_TPM_KEY_PARMS(ptr, length, &v->algorithmParms)
+      || tpm_unmarshal_UINT32(ptr, length, &v->PCRInfoSize)
+      || (v->PCRInfoSize > 0
+          && tpm_unmarshal_TPM_PCR_INFO(ptr, length, &v->PCRInfo))
+      || tpm_unmarshal_TPM_STORE_PUBKEY(ptr, length, &v->pubKey)
+      || tpm_unmarshal_UINT32(ptr, length, &v->encDataSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->encData, v->encDataSize)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_PUBKEY(BYTE **ptr, UINT32 *length, TPM_PUBKEY *v)
+{
+  if (tpm_marshal_TPM_KEY_PARMS(ptr, length, &v->algorithmParms)
+      || tpm_marshal_TPM_STORE_PUBKEY(ptr, length, &v->pubKey)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_PUBKEY(BYTE **ptr, UINT32 *length, TPM_PUBKEY *v)
+{
+  if (tpm_unmarshal_TPM_KEY_PARMS(ptr, length, &v->algorithmParms)
+      || tpm_unmarshal_TPM_STORE_PUBKEY(ptr, length, &v->pubKey)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_STORE_PRIVKEY(BYTE **ptr, UINT32 *length, TPM_STORE_PRIVKEY *v)
+{
+  if (tpm_marshal_UINT32(ptr, length, v->keyLength)
+      || tpm_marshal_BLOB(ptr, length, v->key, v->keyLength)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_STORE_PRIVKEY(BYTE **ptr, UINT32 *length, TPM_STORE_PRIVKEY *v)
+{
+  if (tpm_unmarshal_UINT32(ptr, length, &v->keyLength)
+      || tpm_unmarshal_BLOB(ptr, length, &v->key, v->keyLength)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_STORE_ASYMKEY(BYTE **ptr, UINT32 *length, TPM_STORE_ASYMKEY *v)
+{
+  if (tpm_marshal_TPM_PAYLOAD_TYPE(ptr, length, v->payload)
+      || tpm_marshal_TPM_SECRET(ptr, length, &v->usageAuth)
+      || tpm_marshal_TPM_SECRET(ptr, length, &v->migrationAuth)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->pubDataDigest)
+      || tpm_marshal_TPM_STORE_PRIVKEY(ptr, length, &v->privKey)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_STORE_ASYMKEY(BYTE **ptr, UINT32 *length, TPM_STORE_ASYMKEY *v)
+{
+  if (tpm_unmarshal_TPM_PAYLOAD_TYPE(ptr, length, &v->payload)
+      || tpm_unmarshal_TPM_SECRET(ptr, length, &v->usageAuth)
+      || tpm_unmarshal_TPM_SECRET(ptr, length, &v->migrationAuth)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->pubDataDigest)
+      || tpm_unmarshal_TPM_STORE_PRIVKEY(ptr, length, &v->privKey)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_MIGRATIONKEYAUTH(BYTE **ptr, UINT32 *length, TPM_MIGRATIONKEYAUTH *v)
+{
+  if (tpm_marshal_TPM_PUBKEY(ptr, length, &v->migrationKey)
+      || tpm_marshal_TPM_MIGRATE_SCHEME(ptr, length, v->migrationScheme)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->digest)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_MIGRATIONKEYAUTH(BYTE **ptr, UINT32 *length, TPM_MIGRATIONKEYAUTH *v)
+{
+  if (tpm_unmarshal_TPM_PUBKEY(ptr, length, &v->migrationKey)
+      || tpm_unmarshal_TPM_MIGRATE_SCHEME(ptr, length, &v->migrationScheme)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->digest)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_CERTIFY_INFO(BYTE **ptr, UINT32 *length, TPM_CERTIFY_INFO *v)
+{
+  if (tpm_marshal_TPM_STRUCT_VER(ptr, length, &v->version)
+      || tpm_marshal_TPM_KEY_USAGE(ptr, length, v->keyUsage)
+      || tpm_marshal_TPM_KEY_FLAGS(ptr, length, v->keyFlags)
+      || tpm_marshal_TPM_AUTH_DATA_USAGE(ptr, length, v->authDataUsage)
+      || tpm_marshal_TPM_KEY_PARMS(ptr, length, &v->algorithmParms)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->pubkeyDigest)
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->data)
+      || tpm_marshal_BOOL(ptr, length, v->parentPCRStatus)
+      || tpm_marshal_UINT32(ptr, length, v->PCRInfoSize)
+      || tpm_marshal_BLOB(ptr, length, v->PCRInfo, v->PCRInfoSize)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_CERTIFY_INFO(BYTE **ptr, UINT32 *length, TPM_CERTIFY_INFO *v)
+{
+  if (tpm_unmarshal_TPM_STRUCT_VER(ptr, length, &v->version)
+      || tpm_unmarshal_TPM_KEY_USAGE(ptr, length, &v->keyUsage)
+      || tpm_unmarshal_TPM_KEY_FLAGS(ptr, length, &v->keyFlags)
+      || tpm_unmarshal_TPM_AUTH_DATA_USAGE(ptr, length, &v->authDataUsage)
+      || tpm_unmarshal_TPM_KEY_PARMS(ptr, length, &v->algorithmParms)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->pubkeyDigest)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->data)
+      || tpm_unmarshal_BOOL(ptr, length, &v->parentPCRStatus)
+      || tpm_unmarshal_UINT32(ptr, length, &v->PCRInfoSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->PCRInfo, v->PCRInfoSize)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_CURRENT_TICKS(BYTE **ptr, UINT32 *length, TPM_CURRENT_TICKS *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_UINT64(ptr, length, v->currentTicks)
+      || tpm_marshal_UINT16(ptr, length, v->tickType)
+      || tpm_marshal_UINT16(ptr, length, v->tickRate)
+      || tpm_marshal_UINT16(ptr, length, v->tickSecurity)
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->tickNonce)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_CURRENT_TICKS(BYTE **ptr, UINT32 *length, TPM_CURRENT_TICKS *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_UINT64(ptr, length, &v->currentTicks)
+      || tpm_unmarshal_UINT16(ptr, length, &v->tickType)
+      || tpm_unmarshal_UINT16(ptr, length, &v->tickRate)
+      || tpm_unmarshal_UINT16(ptr, length, &v->tickSecurity)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->tickNonce)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_TRANSPORT_PUBLIC(BYTE **ptr, UINT32 *length, TPM_TRANSPORT_PUBLIC *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_TRANSPORT_ATTRIBUTES(ptr, length, v->transAttributes)
+      || tpm_marshal_TPM_ALGORITHM_ID(ptr, length, v->algID)
+      || tpm_marshal_TPM_ENC_SCHEME(ptr, length, v->encScheme)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_TRANSPORT_PUBLIC(BYTE **ptr, UINT32 *length, TPM_TRANSPORT_PUBLIC *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_TRANSPORT_ATTRIBUTES(ptr, length, &v->transAttributes)
+      || tpm_unmarshal_TPM_ALGORITHM_ID(ptr, length, &v->algID)
+      || tpm_unmarshal_TPM_ENC_SCHEME(ptr, length, &v->encScheme)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_CONTEXT_BLOB(BYTE **ptr, UINT32 *length, TPM_CONTEXT_BLOB *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_RESOURCE_TYPE(ptr, length, v->resourceType)
+      || tpm_marshal_TPM_HANDLE(ptr, length, v->handle)
+      || tpm_marshal_BYTE_ARRAY(ptr, length, v->label, sizeof(v->label))
+      || tpm_marshal_UINT32(ptr, length, v->contextCount)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->blobIntegrity)
+      || tpm_marshal_UINT32(ptr, length, v->additionalSize)
+      || tpm_marshal_BLOB(ptr, length, v->additionalData, v->additionalSize)
+      || tpm_marshal_UINT32(ptr, length, v->sensitiveSize)
+      || tpm_marshal_BLOB(ptr, length, v->sensitiveData, v->sensitiveSize)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_CONTEXT_BLOB(BYTE **ptr, UINT32 *length, TPM_CONTEXT_BLOB *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_RESOURCE_TYPE(ptr, length, &v->resourceType)
+      || tpm_unmarshal_TPM_HANDLE(ptr, length, &v->handle)
+      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->label, sizeof(v->label))
+      || tpm_unmarshal_UINT32(ptr, length, &v->contextCount)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->blobIntegrity)
+      || tpm_unmarshal_UINT32(ptr, length, &v->additionalSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->additionalData, v->additionalSize)
+      || tpm_unmarshal_UINT32(ptr, length, &v->sensitiveSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->sensitiveData, v->sensitiveSize)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_NV_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_NV_ATTRIBUTES *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_UINT32(ptr, length, v->attributes)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_NV_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_NV_ATTRIBUTES *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_UINT32(ptr, length, &v->attributes)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_NV_DATA_PUBLIC(BYTE **ptr, UINT32 *length, TPM_NV_DATA_PUBLIC *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_NV_INDEX(ptr, length, v->nvIndex)
+      || tpm_marshal_TPM_PCR_INFO_SHORT(ptr, length, &v->pcrInfoRead)
+      || tpm_marshal_TPM_PCR_INFO_SHORT(ptr, length, &v->pcrInfoWrite)
+      || tpm_marshal_TPM_NV_ATTRIBUTES(ptr, length, &v->permission)
+      || tpm_marshal_BOOL(ptr, length, v->bReadSTClear)
+      || tpm_marshal_BOOL(ptr, length, v->bWriteSTClear)
+      || tpm_marshal_BOOL(ptr, length, v->bWriteDefine)
+      || tpm_marshal_UINT32(ptr, length, v->dataSize)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_NV_DATA_PUBLIC(BYTE **ptr, UINT32 *length, TPM_NV_DATA_PUBLIC *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_NV_INDEX(ptr, length, &v->nvIndex)
+      || tpm_unmarshal_TPM_PCR_INFO_SHORT(ptr, length, &v->pcrInfoRead)
+      || tpm_unmarshal_TPM_PCR_INFO_SHORT(ptr, length, &v->pcrInfoWrite)
+      || tpm_unmarshal_TPM_NV_ATTRIBUTES(ptr, length, &v->permission)
+      || tpm_unmarshal_BOOL(ptr, length, &v->bReadSTClear)
+      || tpm_unmarshal_BOOL(ptr, length, &v->bWriteSTClear)
+      || tpm_unmarshal_BOOL(ptr, length, &v->bWriteDefine)
+      || tpm_unmarshal_UINT32(ptr, length, &v->dataSize)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_DELEGATIONS(BYTE **ptr, UINT32 *length, TPM_DELEGATIONS *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_UINT32(ptr, length, v->delegateType)
+      || tpm_marshal_UINT32(ptr, length, v->per1)
+      || tpm_marshal_UINT32(ptr, length, v->per2)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DELEGATIONS(BYTE **ptr, UINT32 *length, TPM_DELEGATIONS *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_UINT32(ptr, length, &v->delegateType)
+      || tpm_unmarshal_UINT32(ptr, length, &v->per1)
+      || tpm_unmarshal_UINT32(ptr, length, &v->per2)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_DELEGATE_LABEL(BYTE **ptr, UINT32 *length, TPM_DELEGATE_LABEL *v)
+{
+  if (tpm_marshal_BYTE(ptr, length, v->label)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DELEGATE_LABEL(BYTE **ptr, UINT32 *length, TPM_DELEGATE_LABEL *v)
+{
+  if (tpm_unmarshal_BYTE(ptr, length, &v->label)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_DELEGATE_PUBLIC(BYTE **ptr, UINT32 *length, TPM_DELEGATE_PUBLIC *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_DELEGATE_LABEL(ptr, length, &v->rowLabel)
+      || tpm_marshal_TPM_PCR_INFO_SHORT(ptr, length, &v->pcrInfo)
+      || tpm_marshal_TPM_DELEGATIONS(ptr, length, &v->permissions)
+      || tpm_marshal_TPM_FAMILY_ID(ptr, length, v->familyID)
+      || tpm_marshal_TPM_FAMILY_VERIFICATION(ptr, length, v->verificationCount)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DELEGATE_PUBLIC(BYTE **ptr, UINT32 *length, TPM_DELEGATE_PUBLIC *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_DELEGATE_LABEL(ptr, length, &v->rowLabel)
+      || tpm_unmarshal_TPM_PCR_INFO_SHORT(ptr, length, &v->pcrInfo)
+      || tpm_unmarshal_TPM_DELEGATIONS(ptr, length, &v->permissions)
+      || tpm_unmarshal_TPM_FAMILY_ID(ptr, length, &v->familyID)
+      || tpm_unmarshal_TPM_FAMILY_VERIFICATION(ptr, length, &v->verificationCount)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_DELEGATE_PUBLIC_ARRAY(BYTE **ptr, UINT32 *length,
+                                          TPM_DELEGATE_PUBLIC *v, UINT32 n)
+{
+  UINT32 i;
+  for (i = 0; i < n; i++) {
+    if (tpm_marshal_TPM_DELEGATE_PUBLIC(ptr, length, &v[i])) return -1;
+  }
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DELEGATE_PUBLIC_ARRAY(BYTE **ptr, UINT32 *length,
+                                            TPM_DELEGATE_PUBLIC *v, UINT32 n)
+{
+  UINT32 i;
+  for (i = 0; i < n; i++) {
+    if (tpm_unmarshal_TPM_DELEGATE_PUBLIC(ptr, length, &v[i])) return -1;
+  }
+  return 0;
+}
+
+
+int tpm_marshal_TPM_DELEGATE_OWNER_BLOB(BYTE **ptr, UINT32 *length, TPM_DELEGATE_OWNER_BLOB *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_DELEGATE_PUBLIC(ptr, length, &v->pub)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->integrityDigest)
+      || tpm_marshal_UINT32(ptr, length, v->additionalSize)
+      || tpm_marshal_BLOB(ptr, length, v->additionalArea, v->additionalSize)
+      || tpm_marshal_UINT32(ptr, length, v->sensitiveSize)
+      || tpm_marshal_BLOB(ptr, length, v->sensitiveArea, v->sensitiveSize)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DELEGATE_OWNER_BLOB(BYTE **ptr, UINT32 *length, TPM_DELEGATE_OWNER_BLOB *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_DELEGATE_PUBLIC(ptr, length, &v->pub)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->integrityDigest)
+      || tpm_unmarshal_UINT32(ptr, length, &v->additionalSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->additionalArea, v->additionalSize)
+      || tpm_unmarshal_UINT32(ptr, length, &v->sensitiveSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->sensitiveArea, v->sensitiveSize)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_DELEGATE_KEY_BLOB(BYTE **ptr, UINT32 *length, TPM_DELEGATE_KEY_BLOB *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_DELEGATE_PUBLIC(ptr, length, &v->pub)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->integrityDigest)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->pubKeyDigest)
+      || tpm_marshal_UINT32(ptr, length, v->additionalSize)
+      || tpm_marshal_BLOB(ptr, length, v->additionalArea, v->additionalSize)
+      || tpm_marshal_UINT32(ptr, length, v->sensitiveSize)
+      || tpm_marshal_BLOB(ptr, length, v->sensitiveArea, v->sensitiveSize)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DELEGATE_KEY_BLOB(BYTE **ptr, UINT32 *length, TPM_DELEGATE_KEY_BLOB *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_DELEGATE_PUBLIC(ptr, length, &v->pub)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->integrityDigest)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->pubKeyDigest)
+      || tpm_unmarshal_UINT32(ptr, length, &v->additionalSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->additionalArea, v->additionalSize)
+      || tpm_unmarshal_UINT32(ptr, length, &v->sensitiveSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->sensitiveArea, v->sensitiveSize)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_GPIO_CHANNEL(BYTE **ptr, UINT32 *length, TPM_GPIO_CHANNEL *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_PLATFORM_SPECIFIC(ptr, length, v->ps)
+      || tpm_marshal_UINT16(ptr, length, v->channelNumber)
+      || tpm_marshal_TPM_GPIO_ATTRIBUTES(ptr, length, v->attr)
+      || tpm_marshal_TPM_GPIO_BUS(ptr, length, v->busInfo)
+      || tpm_marshal_UINT32(ptr, length, v->sizeOfAddress)
+      || tpm_marshal_BLOB(ptr, length, v->address, v->sizeOfAddress)
+      || tpm_marshal_UINT32(ptr, length, v->sizeOfPubKey)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->pubKey)
+      || tpm_marshal_UINT32(ptr, length, v->sizeOfPcrInfo)
+      || tpm_marshal_TPM_PCR_INFO_SHORT(ptr, length, &v->pcrInfo)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_GPIO_CHANNEL(BYTE **ptr, UINT32 *length, TPM_GPIO_CHANNEL *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_PLATFORM_SPECIFIC(ptr, length, &v->ps)
+      || tpm_unmarshal_UINT16(ptr, length, &v->channelNumber)
+      || tpm_unmarshal_TPM_GPIO_ATTRIBUTES(ptr, length, &v->attr)
+      || tpm_unmarshal_TPM_GPIO_BUS(ptr, length, &v->busInfo)
+      || tpm_unmarshal_UINT32(ptr, length, &v->sizeOfAddress)
+      || tpm_unmarshal_BLOB(ptr, length, &v->address, v->sizeOfAddress)
+      || tpm_unmarshal_UINT32(ptr, length, &v->sizeOfPubKey)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->pubKey)
+      || tpm_unmarshal_UINT32(ptr, length, &v->sizeOfPcrInfo)
+      || tpm_unmarshal_TPM_PCR_INFO_SHORT(ptr, length, &v->pcrInfo)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_GPIO_AUTHORIZE(BYTE **ptr, UINT32 *length, TPM_GPIO_AUTHORIZE *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_GPIO_CHANNEL(ptr, length, &v->channel)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->blobIntegrity)
+      || tpm_marshal_UINT32(ptr, length, v->additionalSize)
+      || tpm_marshal_BLOB(ptr, length, v->additionalData, v->additionalSize)
+      || tpm_marshal_UINT32(ptr, length, v->sensitiveSize)
+      || tpm_marshal_BLOB(ptr, length, v->sensitiveData, v->sensitiveSize)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_GPIO_AUTHORIZE(BYTE **ptr, UINT32 *length, TPM_GPIO_AUTHORIZE *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_GPIO_CHANNEL(ptr, length, &v->channel)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->blobIntegrity)
+      || tpm_unmarshal_UINT32(ptr, length, &v->additionalSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->additionalData, v->additionalSize)
+      || tpm_unmarshal_UINT32(ptr, length, &v->sensitiveSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->sensitiveData, v->sensitiveSize)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_PERMANENT_FLAGS(BYTE **ptr, UINT32 *length, TPM_PERMANENT_FLAGS *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_BOOL(ptr, length, v->disable)
+      || tpm_marshal_BOOL(ptr, length, v->ownership)
+      || tpm_marshal_BOOL(ptr, length, v->deactivated)
+      || tpm_marshal_BOOL(ptr, length, v->readPubek)
+      || tpm_marshal_BOOL(ptr, length, v->disableOwnerClear)
+      || tpm_marshal_BOOL(ptr, length, v->allowMaintenance)
+      || tpm_marshal_BOOL(ptr, length, v->physicalPresenceLifetimeLock)
+      || tpm_marshal_BOOL(ptr, length, v->physicalPresenceHWEnable)
+      || tpm_marshal_BOOL(ptr, length, v->physicalPresenceCMDEnable)
+      || tpm_marshal_BOOL(ptr, length, v->CEKPUsed)
+      || tpm_marshal_BOOL(ptr, length, v->TPMpost)
+      || tpm_marshal_BOOL(ptr, length, v->TPMpostLock)
+      || tpm_marshal_BOOL(ptr, length, v->FIPS)
+      || tpm_marshal_BOOL(ptr, length, v->operator)
+      || tpm_marshal_BOOL(ptr, length, v->enableRevokeEK)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_PERMANENT_FLAGS(BYTE **ptr, UINT32 *length, TPM_PERMANENT_FLAGS *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_BOOL(ptr, length, &v->disable)
+      || tpm_unmarshal_BOOL(ptr, length, &v->ownership)
+      || tpm_unmarshal_BOOL(ptr, length, &v->deactivated)
+      || tpm_unmarshal_BOOL(ptr, length, &v->readPubek)
+      || tpm_unmarshal_BOOL(ptr, length, &v->disableOwnerClear)
+      || tpm_unmarshal_BOOL(ptr, length, &v->allowMaintenance)
+      || tpm_unmarshal_BOOL(ptr, length, &v->physicalPresenceLifetimeLock)
+      || tpm_unmarshal_BOOL(ptr, length, &v->physicalPresenceHWEnable)
+      || tpm_unmarshal_BOOL(ptr, length, &v->physicalPresenceCMDEnable)
+      || tpm_unmarshal_BOOL(ptr, length, &v->CEKPUsed)
+      || tpm_unmarshal_BOOL(ptr, length, &v->TPMpost)
+      || tpm_unmarshal_BOOL(ptr, length, &v->TPMpostLock)
+      || tpm_unmarshal_BOOL(ptr, length, &v->FIPS)
+      || tpm_unmarshal_BOOL(ptr, length, &v->operator)
+      || tpm_unmarshal_BOOL(ptr, length, &v->enableRevokeEK)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_STCLEAR_FLAGS(BYTE **ptr, UINT32 *length, TPM_STCLEAR_FLAGS *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_BOOL(ptr, length, v->deactivated)
+      || tpm_marshal_BOOL(ptr, length, v->disableForceClear)
+      || tpm_marshal_BOOL(ptr, length, v->physicalPresence)
+      || tpm_marshal_BOOL(ptr, length, v->physicalPresenceLock)
+      || tpm_marshal_BOOL_ARRAY(ptr, length, v->tableAdmin, TPM_MAX_FAMILY)
+      || tpm_marshal_BOOL(ptr, length, v->bGlobalLock)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_STCLEAR_FLAGS(BYTE **ptr, UINT32 *length, TPM_STCLEAR_FLAGS *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_BOOL(ptr, length, &v->deactivated)
+      || tpm_unmarshal_BOOL(ptr, length, &v->disableForceClear)
+      || tpm_unmarshal_BOOL(ptr, length, &v->physicalPresence)
+      || tpm_unmarshal_BOOL(ptr, length, &v->physicalPresenceLock)
+      || tpm_unmarshal_BOOL_ARRAY(ptr, length, v->tableAdmin, TPM_MAX_FAMILY)
+      || tpm_unmarshal_BOOL(ptr, length, &v->bGlobalLock)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_STANY_FLAGS(BYTE **ptr, UINT32 *length, TPM_STANY_FLAGS *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_BOOL(ptr, length, v->postInitialise)
+      || tpm_marshal_UINT32(ptr, length, v->localityModifier)
+      || tpm_marshal_BOOL(ptr, length, v->transportExclusive)) return -1;
+  return 0;
+} 
+
+int tpm_unmarshal_TPM_STANY_FLAGS(BYTE **ptr, UINT32 *length, TPM_STANY_FLAGS *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_BOOL(ptr, length, &v->postInitialise)
+      || tpm_unmarshal_UINT32(ptr, length, &v->localityModifier)
+      || tpm_unmarshal_BOOL(ptr, length, &v-> transportExclusive)) return -1;
+  return 0;
+}
+
+int tpm_marshal_RSA(BYTE **ptr, UINT32 *length, rsa_private_key_t *v)
+{
+  UINT32 m_len, e_len, q_len;
+  if (*length < sizeof_RSA((*v))) return -1;
+  if (v->size > 0) {
+    rsa_export_modulus(v, &(*ptr)[6], &m_len);
+    rsa_export_exponent(v, &(*ptr)[6+m_len], &e_len);
+    rsa_export_prime1(v, &(*ptr)[6+m_len+e_len], &q_len);
+    tpm_marshal_UINT16(ptr, length, m_len);
+    tpm_marshal_UINT16(ptr, length, e_len);
+    tpm_marshal_UINT16(ptr, length, q_len);
+    *ptr += m_len + e_len + q_len;
+    *length -= m_len + e_len + q_len;
+  } else {
+    tpm_marshal_UINT16(ptr, length, 0);
+    tpm_marshal_UINT16(ptr, length, 0);
+    tpm_marshal_UINT16(ptr, length, 0);
+  }
+  return 0;
+}
+
+int tpm_unmarshal_RSA(BYTE **ptr, UINT32 *length, rsa_private_key_t *v)
+{
+  UINT16 m_len, e_len, q_len;
+  if (tpm_unmarshal_UINT16(ptr, length, &m_len)
+      || tpm_unmarshal_UINT16(ptr, length, &e_len)
+      || tpm_unmarshal_UINT16(ptr, length, &q_len)) return -1;
+  if (m_len == 0) {
+    v->size = 0;
+    return 0;
+  }
+  if (*length < m_len + e_len + q_len
+      || q_len != m_len/2
+      || rsa_import_key(v, RSA_MSB_FIRST,
+                        &(*ptr)[0], m_len,
+                        &(*ptr)[m_len], e_len,
+                        &(*ptr)[m_len+e_len], NULL)) return -1;
+  *ptr += m_len + e_len + q_len;
+  *length -= m_len + e_len + q_len;
+  return 0;
+}
+
+int tpm_marshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v)
+{
+  if (tpm_marshal_BOOL(ptr, length, v->valid)) return -1;
+  if (v->valid) {
+    if (tpm_marshal_TPM_KEY_USAGE(ptr, length, v->keyUsage)
+        || tpm_marshal_TPM_KEY_FLAGS(ptr, length, v->keyFlags)
+        || tpm_marshal_TPM_KEY_CONTROL(ptr, length, v->keyControl)
+        || tpm_marshal_TPM_AUTH_DATA_USAGE(ptr, length, v->authDataUsage)
+        || tpm_marshal_TPM_ENC_SCHEME(ptr, length, v->encScheme)
+        || tpm_marshal_TPM_SIG_SCHEME(ptr, length, v->sigScheme)
+        || tpm_marshal_TPM_SECRET(ptr, length, &v->usageAuth)
+        || (!(v->keyFlags & TPM_KEY_FLAG_PCR_IGNORE)
+            && tpm_marshal_TPM_PCR_INFO(ptr, length, &v->pcrInfo))
+        || tpm_marshal_BOOL(ptr, length, v->parentPCRStatus)
+        || tpm_marshal_RSA(ptr, length, &v->key)) return -1;
+  }
+  return 0;
+}
+
+int tpm_unmarshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v)
+{
+  if (tpm_unmarshal_BOOL(ptr, length, &v->valid)) return -1;
+  if (v->valid) {
+    if (tpm_unmarshal_TPM_KEY_USAGE(ptr, length, &v->keyUsage)
+        || tpm_unmarshal_TPM_KEY_FLAGS(ptr, length, &v->keyFlags)
+        || tpm_unmarshal_TPM_KEY_CONTROL(ptr, length, &v->keyControl)
+        || tpm_unmarshal_TPM_AUTH_DATA_USAGE(ptr, length, &v->authDataUsage)
+        || tpm_unmarshal_TPM_ENC_SCHEME(ptr, length, &v->encScheme)
+        || tpm_unmarshal_TPM_SIG_SCHEME(ptr, length, &v->sigScheme)
+        || tpm_unmarshal_TPM_SECRET(ptr, length, &v->usageAuth)
+        || (!(v->keyFlags & TPM_KEY_FLAG_PCR_IGNORE)
+            && tpm_unmarshal_TPM_PCR_INFO(ptr, length, &v->pcrInfo))
+        || tpm_unmarshal_BOOL(ptr, length, &v->parentPCRStatus)
+        || tpm_unmarshal_RSA(ptr, length, &v->key)) return -1;
+    }
+  return 0;
+}
+
+int tpm_marshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DATA *v)
+{
+  UINT32 i;
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_VERSION(ptr, length, &v->version)
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->tpmProof)
+      || tpm_marshal_TPM_SECRET(ptr, length, &v->ownerAuth)
+      || tpm_marshal_TPM_SECRET(ptr, length, &v->operatorAuth)
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->ekReset)
+      || tpm_marshal_RSA(ptr, length, &v->endorsementKey)
+      || tpm_marshal_TPM_KEY_DATA(ptr, length, &v->srk)) return -1;
+  for (i = 0; i < TPM_MAX_COUNTERS; i++) {
+    if (tpm_marshal_TPM_COUNTER_VALUE(ptr, length, &v->counters[i])
+        || tpm_marshal_TPM_SECRET(ptr, length, &v->counters[i].usageAuth)
+        || tpm_marshal_BOOL(ptr, length, v->counters[i].valid)) return -1;
+  } 
+  for (i = 0; i < TPM_NUM_PCR; i++) {
+    if (tpm_marshal_TPM_PCR_ATTRIBUTES(ptr, length, &v->pcrAttrib[i])
+        || tpm_marshal_TPM_PCRVALUE(ptr, length, &v->pcrValue[i])) return -1;
+  }
+  for (i = 0; i < TPM_MAX_KEYS; i++) {
+    if (tpm_marshal_TPM_KEY_DATA(ptr, length, &v->keys[i])) return -1;
+  }
+  return 0;
+}
+
+int tpm_unmarshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DATA *v)
+{
+  UINT32 i;
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_VERSION(ptr, length, &v->version)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->tpmProof)
+      || tpm_unmarshal_TPM_SECRET(ptr, length, &v->ownerAuth)
+      || tpm_unmarshal_TPM_SECRET(ptr, length, &v->operatorAuth)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->ekReset)
+      || tpm_unmarshal_RSA(ptr, length, &v->endorsementKey)
+      || tpm_unmarshal_TPM_KEY_DATA(ptr, length, &v->srk)) return -1;
+  for (i = 0; i < TPM_MAX_COUNTERS; i++) {
+    if (tpm_unmarshal_TPM_COUNTER_VALUE(ptr, length, &v->counters[i])
+        || tpm_unmarshal_TPM_SECRET(ptr, length, &v->counters[i].usageAuth)
+        || tpm_unmarshal_BOOL(ptr, length, &v->counters[i].valid)) return -1;
+  }
+  for (i = 0; i < TPM_NUM_PCR; i++) {
+    if (tpm_unmarshal_TPM_PCR_ATTRIBUTES(ptr, length, &v->pcrAttrib[i])
+        || tpm_unmarshal_TPM_PCRVALUE(ptr, length, &v->pcrValue[i])) return -1;
+  }
+  for (i = 0; i < TPM_MAX_KEYS; i++) {
+    if (tpm_unmarshal_TPM_KEY_DATA(ptr, length, &v->keys[i])) return -1;
+  }
+  return 0;
+}
+
+int tpm_marshal_TPM_RESPONSE(BYTE **ptr, UINT32 *length, TPM_RESPONSE *v)
+{
+  if (tpm_marshal_TPM_TAG(ptr, length, v->tag)
+      || tpm_marshal_UINT32(ptr, length, v->size)
+      || tpm_marshal_TPM_RESULT(ptr, length, v->result)
+      || tpm_marshal_BLOB(ptr, length, v->param, v->paramSize)) return -1;
+  if (v->tag == TPM_TAG_RSP_AUTH2_COMMAND) {
+    if (tpm_marshal_TPM_AUTH(ptr, length, v->auth1)
+        || tpm_marshal_TPM_AUTH(ptr, length, v->auth2)) return -1;
+  } else if (v->tag == TPM_TAG_RSP_AUTH1_COMMAND) {
+    if (tpm_marshal_TPM_AUTH(ptr, length, v->auth1)) return -1;
+  }
+  return 0;
+}
+
+int tpm_unmarshal_TPM_REQUEST(BYTE **ptr, UINT32 *length, TPM_REQUEST *v)
+{
+  if (tpm_unmarshal_TPM_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_UINT32(ptr, length, &v->size)
+      || tpm_unmarshal_TPM_COMMAND_CODE(ptr, length, &v->ordinal)) return -1;
+  v->param = *ptr;
+  v->paramSize = *length;
+  if (v->tag == TPM_TAG_RQU_AUTH2_COMMAND) {
+    if (*length < 2 * 45) return -1;
+    v->paramSize = *length - 2 * 45;
+    if (tpm_unmarshal_BLOB(ptr, length, &v->param, v->paramSize)
+        || tpm_unmarshal_TPM_AUTH(ptr, length, &v->auth1)
+        || tpm_unmarshal_TPM_AUTH(ptr, length, &v->auth2)) return -1;
+  } else if (v->tag == TPM_TAG_RQU_AUTH1_COMMAND) {
+    if (*length < 45) return -1;
+    v->paramSize = *length - 45;
+    if (tpm_unmarshal_BLOB(ptr, length, &v->param, v->paramSize)
+        || tpm_unmarshal_TPM_AUTH(ptr, length, &v->auth1)) return -1;
+  } else {
+    v->auth1.authHandle = TPM_INVALID_HANDLE;
+    v->auth2.authHandle = TPM_INVALID_HANDLE;
+  }
+  return 0;
+}
+

@@ -1,0 +1,86 @@
+ _____ ____  __  __           _____                 _       _
+|_   _|  _ \|  \/  |         | ____|_ __ ___  _   _| | __ _| |_ ___  _ __
+  | | | |_) | |\/| |  _____  |  _| | '_ ` _ \| | | | |/ _` | __/ _ \| '__|
+  | | |  __/| |  | | |_____| | |___| | | | | | |_| | | (_| | || (_) | |
+  |_| |_|   |_|  |_|         |_____|_| |_| |_|\__,_|_|\__,_|\__\___/|_|
+
+ TPM-Emulator v0.2 - 
+ A Software-Based Trusted Platform Module (TPM) Emulator for Linux.
+--------------------------------------------------------------------------
+
+$Id$
+
+Copyright
+--------------------------------------------------------------------------
+Copyright (C) 2004 Mario Strasser <mast@gmx.net> and Swiss Federal 
+Institute of Technology (ETH) Zurich.
+              
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+
+Configuration of GNU MP Library
+--------------------------------------------------------------------------
+By defining the variables GMP_LIB and GMP_HEADER to the static GNU MP
+library and the corresponding header file, respectively, some of the 
+highly optimised GNU MP core functions (mpz_*, mpn_*) are linked against 
+the kernel module. The possibility to use the adapted generic GNU MP 
+sources is no longer supported.
+
+Example:
+GMP_LIB        := /usr/lib/libgmp.a
+GMP_HEADER     := /usr/include/gmp.h
+
+Installation
+--------------------------------------------------------------------------
+The compilation and installation process uses the build environment for 
+external kernel modules of the 2.5.X Linux kernels, which must therefore
+be setup properly. If you are using a pre-compiled standard kernel of 
+some distribution, install the appropriate kernel-source packages and call
+the following commands:
+
+bash# cd /usr/src/linux
+bash# make cloneconfig
+bash# make prepare-all
+
+The actual compilation and installation of the module is done as follows:
+
+bash# tar -xvzf tpm_emulator-X.Y.tar.gz
+bash# cd tpm_emulator-X.Y
+bash# make
+bash# make install
+
+
+Startup
+--------------------------------------------------------------------------
+The startup mode of the TPM emulator (see TPM Spec. Part 1, section 7.3) 
+can be defined by means of a module parameter called startup, which can 
+either be set to clear, save (default) or deactivated.
+
+Note: If the emulator is started in mode 'save' and fails to load
+a previously stored TPM state it will go into fail-stop mode and has
+to be reloaded. Therefore, the first time the emulator module is 
+loaded, startup SHOULD be set to 'clear':
+
+bash# modprobe tpm_emulator startup="clear"
+
+
+Description
+--------------------------------------------------------------------------
+TODO: 
+
+
+Contact
+--------------------------------------------------------------------------
+Any comments, suggestions and bug reports are welcome. Please, mention
+the keyword 'TPM-Emulator' in the subject.
+Mario Strasser <mast@gmx.net>
+
+
