@@ -1,0 +1,41 @@
+@TITLE=TPM Emulator Documentation Page @
+$Date$
+
+
+<BR><BR>
+<A NAME="top">
+<CENTER>
+<TABLE width="80%" border=0>
+  <TBODY>
+  <TR>
+<TD>
+@ENTRY("USERS")@
+<p>
+Until something Better is created, you should refer to the README
+and INSTALL included in the distribution
+</p>
+@ENDENTRY()@
+
+@ENTRY("STATUS")@
+<p>
+This is the current status of each section
+<!--
+	@STATUS("Startup and State", "tpm_startup.c")@
+
+		@BEGINSTATUS@
+		@STATUSITEM("TPM_Init","check.gif")@
+-->
+		@ENDSTATUS@
+@ENDENTRY()@
+
+@ENTRY("DEVELOPERS")@
+<p>
+The core of the project was created by Mario Strasser and documented
+for his Semester's Thesis @LINK("here","www.infsec.ethz.ch/people/psevinc/TPMEmulatorReport.pdf ")@
+</p>
+@ENDENTRY()@
+
+</TD>
+</TR>
+</TBODY>
+</TABLE>

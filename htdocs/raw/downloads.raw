@@ -1,0 +1,25 @@
+@TITLE=TPM Emulator Download Page @
+$Date$
+
+
+<BR><BR>
+<A NAME="top">
+<CENTER>
+<TABLE width="80%" border=0>
+  <TBODY>
+  <TR>
+  <TD>
+@ENTRY("File Releases")@
+<p>
+Go to the main download page at @LINK("Berlios","http://developer.berlios.de/projects/tpm-emulator/")@
+</p>
+@ENDENTRY()@
+@ENTRY("Subversion tree")@
+<p>
+You can Browse the tree @LINK("here","http://svn.berlios.de/viewcvs/tpm-emulator/")@
+</p>
+@ENDENTRY()@
+</TD>
+</TR>
+</TBODY>
+</TABLE>

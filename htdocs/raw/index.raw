@@ -1,0 +1,25 @@
+
+@TITLE=TPM Emulator Main Page@
+
+$Date$
+
+<BR><BR>
+<A NAME="top">
+<CENTER>
+<TABLE width="80%" border=0>
+  <TBODY>
+  <TR>
+<TD>
+@ENTRY("Introduction")@
+ <P>The project aims to create a fully working Trusted
+Platform Module (TPM) emulator  follwing the specifications of the
+@LINK("Trusted Computing Group","https://www.trustedcomputinggroup.org/home")@
+</p>
+<P>The TPM Emulator is in the form of a Kernel Module<BR></P>
+
+@ENDENTRY()@
+
+</TD>
+</TR>
+</TBODY>
+</TABLE>

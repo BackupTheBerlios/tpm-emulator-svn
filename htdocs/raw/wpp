@@ -1,0 +1,2105 @@
+#!/usr/bin/perl -w
+# You may need to change the above path.
+#
+#- WPP - The Web Preprocessor ------------------------------------------------
+#
+#  Copyright (C) 1997-03 Marco Lamberto
+#
+#  This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2, or (at your option) any later
+# version.
+#
+#  This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+#-----------------------------------------------------------------------------
+#
+# Author: Marco Lamberto - lm AT sunnyspot DOT org
+# Web page: http://the.sunnyspot.org/wpp/
+# $Id: wpp,v 2.13.1.35 2004/07/09 14:00:59 lm Exp lm $
+#
+
+require 5.004;
+
+use strict;
+use File::Basename;
+use File::Path;
+use File::Spec;
+use File::Spec::Functions;
+use IO::Scalar;
+use Getopt::Long;
+use POSIX;
+use Term::ANSIColor;
+
+
+package WPP;
+
+sub eval {
+	@_ or error("Few arguments to WPP::eval");
+	return main::wpp_eval(@_);
+}
+
+sub set {
+	$#_ >= 1 or error("Few arguments to WPP::eval");
+	return main::wpp_set(@_);
+}
+
+sub get {
+	@_ or error("Few arguments to WPP::get");
+	return main::wpp_get(@_);
+}
+
+sub canonpath {
+	@_ or error("Few arguments to WPP::canonpath");
+	return main::wpp_canonpath(@_);
+}
+
+sub rurl {
+	@_ or error("Few arguments to WPP::rurl");
+	return main::wpp_rurl(@_);
+}
+
+sub _message {
+	#print STDERR Term::ANSIColor::colored(join('', (@_, "\n")), 'bold');
+	print STDERR @_, "\n";
+}
+
+sub message {
+	_message(('|   ', @_));
+}
+
+sub debug {
+	_message(('|D: ', @_));
+}
+
+sub warning {
+	_message(Term::ANSIColor::colored(
+		join('', ('|W: ', @_, " (" . current_file() . ":$.)")), 'bold'));
+}
+
+sub error {
+	_message(Term::ANSIColor::colored(
+		join('', ('|E: ', @_, " (" . current_file() . ":$.)")), 'bold'));
+	die;
+}
+
+sub current_file {
+	return main::wpp_get_current_file();
+}
+
+sub depend {
+	return main::wpp_depend(@_);
+}
+
+sub call {
+	return main::wpp_macro_call(@_);
+}
+
+1;
+
+
+package main;
+
+#
+# Constants declarations
+#
+
+# wpp version
+my $VERSION				=
+	do {
+		my @r = (q$Revision: 2.13.1.35 $ =~ /\d+/go);
+		sprintf "%d.%02d".".%d" x ($#r - 1), @r;
+	};
+
+# built-in macros
+my $BUILTINMACROS	= 'HTML_IMAGE|HTML_IMAGE_SIZE|HTML_IMAGE_SIZEO|'.
+										'HTML_IMAGE_WIDTH|HTML_IMAGE_HEIGHT|IMAGE_WIDTH|'.
+										'IMAGE_HEIGHT|CERN2HTML|NCSA2HTML|FILE_SIZE|FILE_DATE|'.
+										'SYSTEM|SYSTEM_PP|RANDOM|EVAL|ENV|XHTML_OUTPUT|RURL';
+my %BUILTINMACROS_HTML = ();
+
+# directives
+my $KEYWORDS			= 'INCLUDE|INCLUDECFG|IF|ELSE|FI|ENDIF|MACRO|ENDMACRO|HEAD|'.
+										'TAIL|INLINE';
+
+# predefined constants
+my $CONSTANTS			= 'HEAD|TAIL|TMPL(PATH|DIR)|OUTPUTDIR|OUTPUTSUBDIR|'.
+										'EXTENSION|RAW_EXTENSION|TMPL_EXTENSION|FILENAME|RAWDIR|'.
+										'TEMPLATE|WPP_VERSION|AT|DATE|RCS_DATE';
+
+# variables only modifiable in configuration files
+my $CCONSTANTS		= 'DEFAULT_(HEAD|TAIL|TMPL(PATH|DIR)|OUTPUTDIR|EXTENSION|'.
+										'RAW_EXTENSION|TMPL_EXTENSION)';
+
+# internal prefix for macro arguments
+my $MARGPREFIX		= '__WPP__INTERNAL_MACRO_SYMBOL__';
+
+
+# true and false
+my $TRUE					= 1;
+my $FALSE					= 0;
+
+
+# message levels
+my $W_VERBOSE			= 7;
+my $W_DEBUG				= 6;
+my $W_MESSAGE			= 5;
+my $W_NOTICE			= 4;
+my $W_WARNING			= 3;
+my $W_ERROR				= 2;
+my $W_FATAL				= 1;
+my $W_NONE				= 0;
+
+
+#
+# Global variables declarations
+#
+my $debug					= 0;					# flag for debug output
+my $quiet					= 0;					# flag printing messages
+my $warnlev 			= $W_WARNING;	# message level
+my $dep						= 0;					# depend flag
+my $dep_cfg				= 0;					# depend flag for config files
+my %depf					= ();					# depend files
+my %config				= ();					# config vars
+my $configf				= 'config';		# config file
+my %var						= ();					# variables pool
+my @do						= (1);				# 'if' stack
+my $isInline			= 0;					# 1 if it's loading inlined perl
+my $inline				= '';					# inlined perl code
+my $isMacro				= 0;					# 1 if it's loading a macro body
+my $macro_name		= '';					# current macro name when defining it
+my %macro_argv		= ();					# hash for macros argv
+my %macro_body		= ();					# hash for macros code
+my %cfgmac_argv		= ();					# hash for macros argv defined in configs
+my %cfgmac_body		= ();					# hash for macros code defined in configs
+my $os						= '';					# handler for output stream
+my $source				= '';					# current source file
+my $file_cur			= '';					# current open file
+my @file_curs			= '';					# current open file stack
+my %images				= ();					# images size cache (for built-in macros)
+my $last_fstat		= '';					# last file passed to "stat"
+my $mtime					= 0;					# modification time of current source file
+my $rcstime				= 0;					# RCS modification time of current source file
+my @tmpl_path			= ();					# templates dirs path list
+my $xhtml					= $FALSE;			# built-in macros generate xhtml compliant code
+my $cfg_xhtml			= $FALSE;			# built-in macros generate xhtml compliant code
+my $pre_filters		= '';					# preprocess filters
+my $post_filters	= '';					# postprocess filters
+my %opt_defines		= ();					# getopt -D defined vars
+my $outfile				= '';					# output file
+
+
+select(*STDERR); $| = 0;
+select(*STDOUT);
+
+
+#
+# main
+#
+{
+	my $opt						= '';
+	#my $sigINT				= $SIG{INT};
+	my $ret;
+
+	my (
+		$opt_help, $opt_version, $opt_warn, $opt_xhtml, $opt_stdin,
+		$opt_prefilter, $opt_postfilter);
+
+
+	if ($#ARGV < 0) { usage(); }
+
+	Getopt::Long::config("no_ignore_case");
+	$ret = GetOptions(
+		"depend|d",					\$dep,
+		"quiet|q",					\$quiet,
+		"help|h",						\$opt_help,
+		"version|v",				\$opt_version,
+		"xhtml|x",					\$opt_xhtml,
+		"config|c=s",				\$configf,
+		"pre-filter|F=s",		\$opt_prefilter,
+		"post-filter|f=s",	\$opt_postfilter,
+		"debug|g",					\$debug,
+		"define|D=s%",			\%opt_defines,
+		"warn|W=s",					\$opt_warn,
+		"",									\$opt_stdin);
+
+	if ($opt_help || !$ret) {
+		usage();
+	}
+	
+	if ($opt_version) {
+		version();
+	}
+	
+	if ($opt_stdin) {
+		push @ARGV, '-';
+	}
+	
+	if ($opt_warn) {
+		if ($opt_warn eq 'all') {
+			$warnlev = $W_VERBOSE;
+		} elsif ($opt_warn eq 'none') {
+			$warnlev = $W_NONE;
+		} elsif ($opt_warn >= $W_NONE && $opt_warn <= $W_VERBOSE) {
+			# warnlev ok, nothing to do.
+		} else {
+			error("Invalid warning level '$opt_warn'");
+		}
+	}
+	
+	if ($opt_prefilter) {
+		$pre_filters	= '(' . check_opt_filters($opt_prefilter) . ')';
+	}
+	
+	if ($opt_postfilter) {
+		$post_filters	= '| ' . check_opt_filters($opt_postfilter);
+	}
+
+	$configf = wpp_canonpath($configf);
+	
+	xhtml_output($cfg_xhtml = defined($opt_xhtml));
+
+	foreach (keys(%opt_defines)) {
+		$_ =~ /^($CONSTANTS|$KEYWORDS|$BUILTINMACROS)$/o &&
+			error("'$_' is a constant or a reserved keyword");
+		!defined $config{$_} && ($CCONSTANTS .= "|$_");
+		#$config{$_} = $opt_defines{$_};
+	}
+
+	if ($#ARGV < 0) {
+		push @ARGV, '-';
+	}
+
+	foreach (@ARGV) {
+		wpp($_);
+	}
+
+	exit 0;
+}
+
+
+#
+# wpp
+#
+sub wpp {
+	my ($file) = @_;
+	my $out;
+
+
+	debug("RAW_FILE	$file");
+	$dep &&	$file eq '-' && error("Cannot create dependencies from STDIN");
+
+	wpp_config(dirname($file) . '/' . $configf);
+	
+	init($file);
+
+	if ($file eq '-') {
+		if ($post_filters eq '') {
+			$os = *STDOUT;
+		} else {
+			local *OS;
+			open(OS, "$post_filters") or error("Cannot apply filters '$post_filters' ($!)");
+			$os = *OS;
+		}
+	} else {
+		$outfile = wpp_canonpath(
+			"$var{OUTPUTDIR}/$var{OUTPUTSUBDIR}/$var{FILENAME}.$var{EXTENSION}");
+
+		print STDERR ($dep ? 'Depend' : 'Creating').": $outfile\n" if !$quiet;
+
+		if (!$dep) {
+			mkpath(dirname($outfile));
+
+			local *OS;
+			open(OS,
+				$post_filters ne '' ? "$post_filters > $outfile" : "> $outfile")
+				or error("Cannot open '$outfile' ($!)");
+			$os = *OS;
+		}
+		$| = 0;
+	}
+
+	# last modification date
+	$mtime			= $source ne '-' ? (stat($source))[9] : time();
+	$var{DATE}	= strftime($var{DATE_FORMAT}, localtime($mtime));
+
+	# remove empty lines at the beginning
+	($out = reader($file)) =~ s/^\s+//s;
+
+	print $os $out if !$dep;
+
+	close($os) if ($file ne '-');
+}
+
+
+#
+# wpp_eval (runtime support for EVAL)
+#
+sub wpp_eval {
+	my ($code) = @_;
+
+	if (!defined $code) {
+		warning($W_WARNING, "invalid argument to WPP::eval");
+		return -1;
+	}
+
+	return analyzer($code);
+}
+
+
+#
+# wpp_set (runtime support for setting vars)
+#
+sub wpp_set {
+	my ($id, $value) = @_;
+
+	if (!(defined $id && defined $value)) {
+		warning($W_WARNING, "invalid arguments to WPP::set");
+		return -1;
+	}
+
+	if ($id !~ /^[A-Z_\d]+$/) {
+		warning($W_WARNING, "invalid variable name '$id'");
+		return -1;
+	}
+	
+	debug("  VAR_ASSIGN:\t\@$id=$value - $value@");
+
+	$id =~ /^($CONSTANTS|$CCONSTANTS|$KEYWORDS|$BUILTINMACROS)$/ &&
+		error("'$id' is a constant or a reserved keyword");
+
+	exists $macro_argv{$id} && 
+		warning($W_WARNING, "'$id' is already defined as a macro");
+
+	$var{$id} = $value;
+
+	if ($id eq 'DATE_FORMAT' && $var{RCS_DATE} ne '') {
+		$var{DATE}			= strftime($var{DATE_FORMAT}, localtime($mtime));
+		$var{RCS_DATE}	= strftime($var{DATE_FORMAT}, localtime($rcstime))
+	}
+}
+
+
+#
+# wpp_get (runtime support for getting vars values)
+#
+sub wpp_get {
+	my ($v) = @_;
+
+	return ($v && exists $var{$v}) ? $var{$v} : '';
+}
+
+
+#
+# wpp_get_current_file (runtime support for getting current open file)
+#
+sub wpp_get_current_file {
+	return $file_cur;
+}
+
+
+#
+# wpp_depend (runtime support for adding dependencies)
+#
+sub wpp_depend {
+	depend_add(@_);
+}
+
+
+#
+# wpp_canonpath
+#
+sub wpp_canonpath {
+	my ($p0) = @_;
+
+	if (!defined $p0) {
+		warning($W_WARNING, "invalid arguments to WPP::canonpath");
+		return -1;
+	}
+	
+	my $path		= canonpath($p0);
+	my @dir_st	= ();
+	my @path_st	= File::Spec->splitdir($path);
+
+	#warning(0, "** CP0: " . $path);
+	foreach my $d (@path_st) {
+		if ($d eq '..' && $#dir_st != -1 && $dir_st[$#dir_st] ne '..') {
+			pop(@dir_st);
+			next;
+		}
+		push(@dir_st, $d);
+	}
+	$path = canonpath(join('/', @dir_st)); 
+	#warning(0, "** CP1: " . $path);
+
+	return $path;
+}
+
+
+#
+# wpp_rurl
+#
+sub wpp_rurl
+{
+	my $url			= $_[0];
+	my $nodeps	= $#_ >= 1 ? $_[1] : '';
+
+	debug("RURL (wpp_rurl) '$url'");
+
+	# protocol specified, not a local url
+	if ($url =~ m#^\w{3,}:#) {
+		return check_url($url, 1);
+	}
+
+	my $path = wpp_canonpath($url);
+
+	debug("RURL (wpp_rurl) s1 ($path)");
+
+	# ending /, adding 'index.html'
+	if ($url =~ m#/$#) {
+		$path .= '/index.html';
+	}
+
+	# replacing multiple /
+	$path =~ s#/+#/#g;
+
+	# absolute path
+	if ($path =~ m#^/#) {
+		my $dir = wpp_get('OUTPUTSUBDIR');
+
+		if (length($dir) > 0) {
+			$dir =~ s#\\#/#g;
+			$dir =~ s#[^/]{1,}#..#g;
+
+			debug("RURL (wpp_rurl) s2a");
+
+			return check_url($dir . $path, $nodeps);
+		} else {
+			debug("RURL (wpp_rurl) s2b");
+
+			return check_url(substr($path, 1), $nodeps);
+		}
+	}
+
+	debug("RURL (wpp_rurl) s2c ($path)");
+
+	return check_url($path, $nodeps);
+}
+
+
+#
+# check_url
+#
+sub check_url
+{
+	my ($url, $nodeps) = @_;
+
+	debug("RURL (check_url#0) '$url' '$nodeps'");
+
+	if ($url =~ /\<\?.*\?\>/) {
+		warning($W_WARNING, "URL check skipped, found PHP code '$url'");
+	} elsif ($url =~ /^\w{3,}:/) {
+		warning($W_NOTICE, "Remote link not checked ('$url')");
+		# FIXME: http-only check: new LWP::UserAgent()->head('url')->code
+	} elsif ($url =~ /^#/) {
+		warning($W_NOTICE, "Local anchor not checked ('$url')");
+	} else {
+		my $file = wpp_canonpath(
+			wpp_get('OUTPUTDIR') . '/' . wpp_get('OUTPUTSUBDIR') . '/' . $url);
+
+		if ($file =~ /^([^#?]*)(?:[#?].*)?$/ && ! -e $1) {
+			warning($W_WARNING, "LINK WARNING: local file '$1' desn't exists");
+		}
+
+		if (!$nodeps) {
+			# depend non wpp generated data only and avoid non existent files,
+			# directories, .css, .js
+			my $ext = wpp_get('EXTENSION');
+			if ($1 !~ /\.(?:$ext|css|js)$/ && -e $1 && !-d $1) {
+				wpp_depend($1);
+			}
+		}
+	}
+
+	debug("RURL (check_url#1) '$url'");
+
+	return $url;
+}
+
+
+#
+# wpp_macro_call
+#
+sub wpp_macro_call {
+	my $name = shift;
+	my @args = @_;
+
+	$macro_name = $name . '(v' . ($#args + 1) . ')';
+
+	debug("    NAME:\t$macro_name");
+
+	if (exists $macro_argv{$macro_name}) {
+		my $margv			= $macro_argv{$macro_name};
+		my $buf_marg	= '';
+		my $buf_macro	= $macro_body{$macro_name};
+
+		debug("  MACRO_ARGS $macro_argv{$macro_name} $#args $#$margv");
+
+		my $RAND_PFX = $MARGPREFIX . int(rand()*10000) . "__";
+
+		for (my $i = 0; $i <= $#$margv; $i++) {
+			debug("  MARG $$margv[$i] - ".$args[$i]); 
+
+			$buf_marg		.= "\@$RAND_PFX$$margv[$i]=$args[$i]\@";
+			$buf_macro	=~ s/(@)($$margv[$i])([^A-Z_\d])/$1$RAND_PFX$2$3/g;
+			$buf_macro	=~ s/([^A-Z_\d])($$margv[$i])((?:\s*(?:!|=)=.*?)?@)/$1$RAND_PFX$2$3/g;
+		};
+
+		debug("  MBODY\n***\n$buf_marg\n$buf_macro\n***");
+
+		return analyzer($buf_marg.$buf_macro);
+	} else {
+		return builtin_macro($name, @args);
+	}
+}
+
+
+#
+# wpp_config
+#
+sub wpp_config {
+	my ($scfg) = @_;
+
+	cfg_init();
+
+	if (-e $configf && -s $configf) { 
+		init($configf);
+		cfg_reader($configf);
+	}
+	
+	$scfg = wpp_canonpath($scfg);
+
+	my $cdir = '';
+	my $ccfg;
+
+	foreach (File::Spec->splitdir($scfg)) {
+		$cdir .= $_ . '/';
+
+		next if (!-d $cdir);
+		
+		$ccfg = $cdir . $configf;
+
+		if ($ccfg ne $configf && -e $ccfg && -s $ccfg) {
+			debug("#### '$ccfg' '$configf'");
+			cfg_reader($ccfg);
+		}
+	}
+
+	#debug("#### '$scfg' '$configf'");
+	#if ($scfg ne $configf && -e $scfg && -s $scfg) {
+	#	cfg_reader($scfg);
+	#}
+}
+
+
+
+#
+# init
+#
+sub init {
+	my ($file) = @_;
+
+	%var = (
+		'DEFAULT_HEAD',						'head',
+		'DEFAULT_TAIL',						'tail',
+		'DEFAULT_TMPLPATH',				'templates',
+		'DEFAULT_OUTPUTDIR',			'..',
+		'DEFAULT_EXTENSION',			'html',
+		'DEFAULT_RAW_EXTENSION',	'raw',
+		'DEFAULT_TMPL_EXTENSION',	'tmpl',
+		'TEMPLATE',								'',
+		'INCLUDE',								'',
+		'RCS_DATE',								'',
+		'DATE_FORMAT',						'%Y/%m/%d %H:%M:%S',	# RCS date tag format
+		'WPP_VERSION',						$VERSION,
+		'AT',											'@'
+	);
+	
+	foreach (keys(%config)) {
+		$var{$_} = $config{$_};
+	}
+
+	%macro_argv								= %cfgmac_argv;
+	%macro_body								= %cfgmac_body;
+
+	# compatibility vs wpp <= 2.13
+	if (defined $var{DEFAULT_TMPLDIR}) {
+		$var{DEFAULT_TMPLPATH} = $var{DEFAULT_TMPLDIR};
+	}
+	
+	# remove ending '/' from paths
+	$var{DEFAULT_TMPLPATH} 		=~ s#(?:^:|:/$|/(:))#defined $1 ? $1 : ''#ge;
+	
+	# remove empty path entries '::'
+	$var{DEFAULT_TMPLPATH}	 	=~ s/(:)+/defined $1 ? $1 : ''/ge;
+	$var{TMPLPATH}						= $var{DEFAULT_TMPLPATH};
+	debug("TMPLPATH: $var{TMPLPATH}");
+
+	# compatibility vs wpp <= 2.13
+	$var{DEFAULT_TMPLDIR}			= $var{DEFAULT_TMPLPATH};
+	$var{TMPLDIR}							= $var{DEFAULT_TMPLPATH};
+	
+	@tmpl_path								= split(/:/, $var{TMPLPATH});
+	if ($debug) {
+		foreach (@tmpl_path) {
+			debug("TMPL_PATH: $_");
+		}
+	}
+	
+	$var{HEAD}								= $var{DEFAULT_HEAD};
+	$var{TAIL}								= $var{DEFAULT_TAIL};
+	($var{OUTPUTDIR}					= $var{DEFAULT_OUTPUTDIR}) =~ s|/$||o;
+	$var{OUTPUTDIR}						= wpp_canonpath($var{OUTPUTDIR});
+	$var{EXTENSION}						= $var{DEFAULT_EXTENSION};
+	$var{RAW_EXTENSION}				= $var{DEFAULT_RAW_EXTENSION};
+	$var{TMPL_EXTENSION}			= $var{DEFAULT_TMPL_EXTENSION};
+	$var{FILENAME}						= basename($file, ".$var{RAW_EXTENSION}"),
+	$var{RAWDIR}							= dirname($file);
+	@do												= (1);
+	$isMacro									= 0;
+	$isInline									= 0;
+	$inline										= '';
+	$source										= ($file ne '-') ?
+		wpp_canonpath("$var{RAWDIR}/$var{FILENAME}.$var{RAW_EXTENSION}") : $file;
+	
+	# setup PWD with environments without it.
+	$ENV{PWD} = getcwd() if (!exists $ENV{PWD});
+	
+	my $ofile;
+	($ofile = $source) =~ s/^$ENV{PWD}|\.$var{RAW_EXTENSION}$//g;
+	if ($ofile ne $var{FILENAME}) {
+		($var{OUTPUTSUBDIR} = wpp_canonpath($ofile)) =~ s/\/$var{FILENAME}$//;
+	} else {
+		$var{OUTPUTSUBDIR} = '';
+	}
+	#print "$ofile | $var{FILENAME} | $var{OUTPUTSUBDIR}\n";
+
+	# add ENV_* variables
+	foreach (keys(%ENV)) {
+		$var{'ENV_' . $_} = $ENV{$_};
+	}
+
+	# add QS_* variables
+	if (defined $ENV{QUERY_STRING}) {
+		my @v = ();
+
+		foreach (split(/&/, $ENV{QUERY_STRING})) {
+			@v = split(/=/, $_);
+
+ 			$v[0] =~ s/%([0-9A-F]{2})/pack('c', hex($1))/ge;
+			$v[0] = uc($v[0]);
+			$v[0] =~ s/[^A-Z\d_]/_/g;
+
+			if ($#v > 0) {
+				$v[1] =~ tr/+/ /;
+				$v[1] =~ s/%([0-9A-F]{2})/pack('c', hex($1))/ge;
+			}
+
+			$var{'QS_' . $v[0]} = $#v > 0 ? $v[1] : '';
+		}
+	}
+
+	# setup (once) built-in macros html fragments
+	xhtml_output($cfg_xhtml);
+
+	if ($debug) {
+		foreach (sort(keys(%var))) {
+			debug("'$_' = '$var{$_}'");
+		}
+	}
+}
+
+
+#
+# cfg_init
+#
+sub cfg_init {
+	%config				= ();
+	%cfgmac_argv	= ();
+	%cfgmac_body	= ();
+	%depf					= ();
+
+	foreach (keys(%opt_defines)) {
+		$config{$_} = $opt_defines{$_};
+	}
+}
+
+
+#
+# check pre/post processing filters pipes
+#
+sub check_opt_filters
+{
+	my ($fl)		= @_;
+	my @filter	= split(?\s*\|\s*?, $fl);
+
+	# FIXME: check filter existence and list syntax
+	#foreach (@filter) {
+	#	debug("FILTER '$_'");
+	#}
+
+	return join(' | ', @filter);
+}
+
+
+#
+# file reader, checks for circular/recursive inclusions and handle lines
+# splitted by using '\'.
+#
+sub reader {
+	my ($file)			= @_;
+	my $line				= '';
+	my $nif					= $#do;				# number of nested IF, checked at the end
+	my $outb				= '';
+	my $otemplate		= $var{TEMPLATE};
+	my $is;
+
+	$file = wpp_canonpath(dirname($_[0]) . '/' . basename($_[0]))
+		if $file ne '-';
+	
+	push(@file_curs, $file_cur = $file);
+	
+	debug("START\tFH $file");
+
+	depend_add($file);
+
+	$var{TEMPLATE} = $var{INCLUDE} = $file ne $source ? $file : '';
+
+	if ($file eq '-') {
+		if ($pre_filters eq '') {
+			$is = *STDIN;
+		} else {
+			local *IS;
+			open(IS, "$pre_filters |")
+				or error("Cannot apply filters '$pre_filters' ($!)");
+			$is = *IS;
+		}
+	} else {
+		if ($file eq $source) {
+			local *IS;
+			open(IS, $pre_filters ne '' ? "$pre_filters < $file |" : "< $file")
+				or error("Cannot open file '$file' ($!)");
+			$is = *IS;
+		} else {
+			local *IS;
+			open(IS, "< $file")
+				or error("Cannot open file '$file' ($!)");
+			$is = *IS;
+		}
+	}
+
+	while(<$is>) {
+		$line .= $_;
+
+		if (/(?:^|[^\\])\\$/o) {
+			# ending '\' join lines if not escaped into '\\'
+
+			# remove the ending '\n'
+			chomp $line;
+
+			# expand the ending '\\' into '\'
+			$line =~ s/\\$//o;
+		} else {
+			# expand the ending '\\' into '\'
+			$line =~ s/\\$//o;
+
+			# analyze the completed line
+			$outb .= analyzer($line);
+
+			$line = '';
+		}
+	}
+	
+	close($is) if ($file ne '-');
+
+	$var{INCLUDE}		= $var{TEMPLATE};
+	$var{TEMPLATE}	= $otemplate;
+	
+	$#do != $nif && error("Unterminated IF");
+	$isMacro && error("Missing ENDMACRO for MACRO $macro_name");
+	$isInline && error("Missing ENDINLINE for INLINE");
+
+	# check if it's the end of main raw
+	if ($file eq $source || $file eq '-') {
+		warning($W_WARNING, "No \$Date\$ tag found, header inclusion skipped")
+			if ($var{RCS_DATE} eq '' && $var{HEAD} ne '');
+
+		# tail inclusion
+		$outb .= reader(tmpl_resolver($var{TAIL})) if ($var{TAIL} ne '');
+
+		depend_print();
+	}
+
+	debug("END\tFH $file $var{FILENAME}");
+
+	pop(@file_curs);
+	$file_cur = $file_curs[$#file_curs];
+
+	return $outb;
+}
+
+
+
+#
+# tmpl_resolver
+#
+sub tmpl_resolver {
+	my ($file) = @_;
+
+	foreach my $dir (@tmpl_path) {
+		$_ = "$dir/$file.$var{TMPL_EXTENSION}";
+		debug("TMPL_RES: $_");
+		return $_ if ( -f $_ );
+	}
+
+	# unresolved template
+	debug("TMPL_RES: UNRESOLVED TMPL '$file'!");
+	error("Cannot find template '$file.$var{TMPL_EXTENSION}'!");
+}
+
+
+
+#
+# syntax analyzer, variable expansion, conditonal generation, macro expansion.
+#
+sub analyzer {
+	my ($line)	= @_;			# text line to analyze
+	my $outb		= '';			# output buffer
+
+
+	debug("$file_cur:$.\t$line");
+
+	if (!$isMacro && $line =~ /\$(?:Date)((?::?\s+(.+)\s+)?)\$/o) {
+		$outb .= analyzer($`);
+
+		if ($var{RCS_DATE} ne '') {
+			warning($W_WARNING, "\$Date\$ already used, header inclusion skipped");
+		} else {
+			$rcstime				= $1 ne '' ? rcstime($2) : $source ne '-' ? (stat($source))[9] : time();
+			$var{DATE}			= strftime($var{DATE_FORMAT}, localtime($mtime));
+			$var{RCS_DATE}	= strftime($var{DATE_FORMAT}, localtime($rcstime));
+
+			debug("  RCS_DATE_TAG:\t".$var{RCS_DATE});
+
+			$var{HEAD} ne '' && ($outb .=
+				reader(tmpl_resolver($var{HEAD})));
+		}
+
+		return $outb.analyzer($');
+	}
+
+	while ($line =~ /@([A-Z_\d]+)(\s*)(.)/o) {
+		$do[$#do] && !($isMacro || $isInline) && ($outb .= $`);
+
+		if ($isMacro) {
+			$line = $';
+
+			if (!$do[$#do]) {
+				$isMacro = 0 if $1 eq 'ENDMACRO';
+			} else {
+				$macro_body{$macro_name} .= $`;
+
+				if ($1 eq 'ENDMACRO') {
+					$isMacro = 0;
+					$macro_body{$macro_name} =~ s/^\n|\n$//go;
+					debug("MACRO $macro_name\n***\n$macro_body{$macro_name}\n***");
+				} else {
+					$macro_body{$macro_name} .= "\@$1$2$3";
+				}
+			}
+		} elsif ($isInline) {
+			$inline	.= $`;
+			$line		= $';
+
+			if ($1 eq 'ENDINLINE') {
+				$isInline = 0;
+
+				debug("INLINED DATA [raw]:\n $inline");
+
+				if ($do[$#do]) {
+					$inline =~ s/\@([a-z_][\s;])([^@])/\@AT\@$1$2/gi;
+					debug("INLINED DATA [prep]:\n $inline");
+					my $pd = analyzer($inline);
+					debug("INLINED DATA [parsed]:\n $pd");
+					$outb .= perl_eval($pd);
+				}
+				$inline = '';
+			} else {
+				$inline .= "\@" . (defined $1 ? $1 : '') . (defined $2 ? $2 : '') . (defined $3 ? $3 : '');
+			}
+		} elsif ($3 eq '@' && $2 eq '') {								# directive/variable subst.
+			$line = $';
+
+			if ($do[$#do]) {
+				if ($1 =~ /^($KEYWORDS)$/) {
+					debug("  DIRECTIVE0:\t\@$1@");
+
+					if ($1 eq 'ENDMACRO') {
+						error("ENDMACRO without MACRO");
+					} elsif ($1 eq 'ENDINLINE') {
+						error("ENDINLINE without INLINE");
+					} elsif ($1 =~ /^(HEAD|TAIL)$/o) {
+						$var{$1} = '';
+					} elsif ($1 eq 'INCLUDE') {
+						$outb .= exists $var{$1} ? $var{$1} : '';
+						debug("  VAR_SUBST:\t\@$1@");
+					}
+				} else {
+					if (!exists $var{$1}) {
+						warning($W_NOTICE, "Undefined variable '$1', using default value ''");
+						$outb .= '';
+					} else {
+						$outb .= $var{$1};
+					}
+
+					exists $macro_argv{$1} && warning($W_WARNING,
+						"Possible typo when using the macro '$1' as a variable");
+
+					debug("  VAR_SUBST:\t\@$1@");
+				}
+			}
+
+			if ($1 eq 'ELSE') {
+				$#do == 0 && error("ELSE without IF");
+				$do[$#do - 1] && ($do[$#do] = $do[$#do] ? $FALSE : $TRUE);
+				#debug("** ELSE $#do $do[$#do]");
+			} elsif ($1 =~ /^(FI|ENDIF)$/o) {
+				$#do == 0 && error("$1 without IF");
+				pop(@do);
+				#debug("** $1 $#do");
+			} elsif ($1 eq 'IF') {
+				error("Incorrect syntax when using IF");
+			} elsif ($1 eq 'INLINE') {
+				$isInline	= 1;
+				$inline		= '';
+				debug("    \t\t  $1");
+			}
+		} elsif ($3 eq '=') {														# variable assignment
+			$line =~ /@([A-Z_\d]+)\s*=((?:@[A-Z_\d]+@|@[A-Z_\d]+\s*\((?:.*?[^\\][@"]\s*)?\)@|[^@]+)*)@/o;
+			$line = $';
+
+			if ($do[$#do]) {
+				my $id = $1;
+				my $value = analyzer($2);
+
+				debug("  VAR_ASSIGN:\t\@$id=$2 - $value@");
+				$id =~ /^($CONSTANTS|$CCONSTANTS|$KEYWORDS|$BUILTINMACROS)$/ &&
+					error("'$id' is a constant or a reserved keyword");
+					
+				exists $macro_argv{$id} && 
+					warning($W_WARNING, "'$id' is already defined as a macro");
+					
+				$var{$id} = $value;
+
+				if ($id eq 'DATE_FORMAT' && $var{RCS_DATE} ne '') {
+					$var{DATE}			= strftime($var{DATE_FORMAT}, localtime($mtime));
+					$var{RCS_DATE}	= strftime($var{DATE_FORMAT}, localtime($rcstime));
+				}
+			}
+		} elsif ($3 eq '(') {														# macro call
+			$line =~ /@([A-Z_\d]+)\s*\((.*?[^\\][@"]\s*|)\)@/o;
+			$line = $';
+
+			if ($do[$#do]) {
+				debug("  MACRO_CALL:\t\@$1($2");
+
+				my @args = split(/\s*(@[A-Z_\d]+@|""|".*?[^\\]")\s*,?/o, $2);
+
+				$#args == 0 && $args[0] eq '(' &&
+					error("Incorrect argument syntax when calling the macro '$1'");
+
+				debug("    ARGS#:\t$#args");
+				for (my $i = 1; $i <= $#args; $i += 2) {
+					$args[$i] =~ s/(^"|"$)|(\\)(")/defined $3 ? $3 : ''/geo;
+					debug("    \t\t  $args[$i]");
+				}
+				debug("  \t\t)@");
+
+				$macro_name = $1 . "(v" . (($#args - 1) / 2 + 1) . ")";
+				debug("    NAME:\t$macro_name");
+
+				if (exists $macro_argv{$macro_name}) {
+					my $margv = $macro_argv{$macro_name};
+					my $buf_marg = '';
+					my $buf_macro = $macro_body{$macro_name};
+
+					debug("  MACRO_ARGS $macro_argv{$macro_name} $#args $#$margv");
+
+					my $RAND_PFX = $MARGPREFIX . int(rand()*10000) . "__";
+
+					for (my $i = 0; $i <= $#$margv; $i++) {
+						debug("  MARG $$margv[$i] - ".$args[$i * 2 + 1]); 
+						$buf_marg		.= "\@$RAND_PFX$$margv[$i]=$args[$i * 2 + 1]\@";
+						$buf_macro	=~ s/(@)($$margv[$i])([^A-Z_\d])/$1$RAND_PFX$2$3/g;
+						$buf_macro	=~ s/([^A-Z_\d])($$margv[$i])((?:\s*(?:!|=)=.*?)?@)/$1$RAND_PFX$2$3/g;
+					};
+
+					debug("  MBODY\n***\n$buf_marg\n$buf_macro\n***");
+					$outb .= analyzer($buf_marg.$buf_macro);
+				} else {
+					my @nargs = ();
+
+					for (my $i = 1; $i <= $#args; $i += 2) {
+						push(@nargs, $args[$i]);
+					}
+
+					$outb .= builtin_macro($1, @nargs);
+				}
+			}
+		} else {																				# directive with parameters
+			debug("  DIRECTIVE1:\t\@$1 ");
+
+			if ($1 eq 'MACRO' &&
+				"$3$'" =~ /([A-Z_\d]+)\s*\(\s*([A-Z_\d,\s]*?)\s*\)@/o)
+			{
+				$isMacro	= 1;
+				$line			= $';
+
+				if ($do[$#do]) {
+					my @arg = split(/\s*,\s*/, $2);
+
+					$macro_name = $1 . "(v" . ($#arg + 1) . ")";
+
+					exists $macro_argv{$macro_name} &&
+						error("Macro '$macro_name' already defined");
+
+					$macro_argv{$1}						= 'DEFINED';		# just for IF tests
+					$macro_argv{$macro_name}	= \@arg;
+					$macro_body{$macro_name}	= '';
+
+					debug("    \t\t  N: '$1'\n    \t\t  A: '$2' (".($#arg + 1).")");
+				}
+			} elsif ($1 eq 'INCLUDE' && "$3$'" =~ /((?:@[A-Z_\d]+@|[^@]+)*)@/o) {
+				debug("    \t\t  $1");
+				$line = $';
+				$do[$#do] && ($outb .= reader(tmpl_resolver(analyzer($1))));
+			} elsif ($1 eq 'HEAD' && "$3$'" =~ /((?:@[A-Z_\d]+@|[^@]+)*)@/o) {
+				$var{HEAD} = analyzer($1);
+				$line = $';
+			} elsif ($1 eq 'TAIL' && "$3$'" =~ /((?:@[A-Z_\d]+@|[^@]+)*)@/o) {
+				$var{TAIL}	= analyzer($1);
+				$line				= $';
+			} elsif ($1 eq 'IF') {
+				$line = $';
+
+				if ("$3$'" =~ /^\s*(!?)(?:\s*)([A-Z_\d]+)@/o) {
+					if ($do[$#do]) {
+						!exists $var{$2} && !exists $macro_argv{$2} &&
+							warning($W_NOTICE, "Undefined variable '$2', using default value ''");
+
+						push(@do, (exists $var{$2} && $var{$2} ne '') ||
+							exists $macro_argv{$2} ? $TRUE : $FALSE);
+
+						($1 eq '!') && ($do[$#do] = $do[$#do] ? $FALSE : $TRUE);
+					} else {
+						push(@do, $FALSE);
+					}
+
+					debug("    \t\t  F:$1 V:$2 - $do[$#do]");
+				} elsif ("$3$'" =~
+					/^\s*([A-Z_\d]+)\s*(!|=)=\s*"((?:@[A-Z_\d]+@|[^@]+)*)"@/o)
+				{
+					if ($do[$#do]) {
+						!exists $var{$1} && !exists $macro_argv{$1} &&
+							warning($W_NOTICE, "Undefined variable '$1', using default value ''");
+							
+						push(@do, (exists $var{$1} ? $var{$1} : '') eq analyzer($3)
+							? $TRUE : $FALSE);
+							
+						($2 eq '!') && ($do[$#do] = $do[$#do] ? $FALSE : $TRUE);
+					} else {
+						push(@do, $FALSE);
+					}
+					
+					debug("    \t\t  F:$1 V:$3 - $do[$#do]");
+				} else {
+					error("Incorrect syntax for IF condition");
+				}
+				
+				$line = $';
+			} elsif ($1 !~ /^($KEYWORDS)$/o) {
+				error("Unknown directive '$1'");
+			} else {
+				error("Incorrect syntax when using directive '$1'");
+			}
+		}
+	}
+
+	if ($do[$#do]) {
+		if ($isMacro) { 
+			$macro_body{$macro_name} .= $line;
+			$line		= '';
+		} elsif ($isInline) {
+			$inline	.= $line;
+			$line		= '';
+		} else {
+			$outb		.= $line;
+		}
+	}
+
+	return $outb;
+}
+
+
+
+#
+# builtin_macro
+#
+sub builtin_macro {
+	my ($macro, @args) = @_;
+
+
+	($macro !~ /^($BUILTINMACROS)$/o) && 
+		error("Undeclared macro '$macro_name'");
+
+	debug($#args);
+
+	if ($#args < 0 && $macro ne 'RANDOM') {
+		error("Few arguments when calling '$macro'");
+	}
+
+	for (my $i = 0; $i <= $#args; $i++) {
+		$args[$i] = analyzer($args[$i]);
+	}
+
+	#debug("BIM $macro($#args)");
+
+	if ($macro eq 'RURL') {
+		return wpp_rurl($args[0], $#args >= 1 ? $args[1] : '');
+	} elsif ($macro =~ /IMAGE/o) {
+		$args[0] = wpp_rurl($args[0], 1);
+
+		my @dim = @{image_size($args[0])};
+
+		if ($macro eq 'HTML_IMAGE') {
+			return sprintf($BUILTINMACROS_HTML{HTML_IMAGE},
+				$args[0], $dim[0], $dim[1],
+				$#args >= 1 ? $args[1] : '', $#args >= 2 ? $args[2] : '');
+		} elsif ($macro eq 'HTML_IMAGE_SIZE') {
+			return sprintf($BUILTINMACROS_HTML{HTML_IMAGE_SIZE},
+				$args[0], $dim[0], $dim[1]);
+		} elsif ($macro eq 'HTML_IMAGE_SIZEO') {
+			return sprintf($BUILTINMACROS_HTML{HTML_IMAGE_SIZEO},
+				$dim[0], $dim[1]);
+		} elsif ($macro eq 'HTML_IMAGE_WIDTH') {
+			return sprintf($BUILTINMACROS_HTML{HTML_IMAGE_WIDTH}, $dim[0]);
+		} elsif ($macro eq 'HTML_IMAGE_HEIGHT') {
+			return sprintf($BUILTINMACROS_HTML{HTML_IMAGE_HEIGHT}, $dim[1]);
+		} elsif ($macro eq 'IMAGE_WIDTH') {
+			return $dim[0];
+		} elsif ($macro eq 'IMAGE_HEIGHT') {
+			return $dim[1];
+		}
+	} elsif ($macro eq 'CERN2HTML') {
+		my $name	= $#args >= 1 ? $args[1] : $args[0];
+		my $id		= $#args >= 2 ? $args[2] : $name;
+
+		return cern2html(wpp_rurl($args[0], 1), $name, $id);
+	} elsif ($macro eq 'NCSA2HTML') {
+		my $name	= $#args >= 1 ? $args[1] : $args[0];
+		my $id		= $#args >= 2 ? $args[2] : $name;
+
+		return ncsa2html(wpp_rurl($args[0], 1), $name, $id);
+	} elsif ($macro eq 'FILE_DATE') {
+		return file_date(wpp_rurl($args[0], 1));
+	} elsif ($macro eq 'FILE_SIZE') {
+		return file_size(wpp_rurl($args[0], 1), $#args >= 1 ? $args[1] : 'b');
+	} elsif ($macro eq 'SYSTEM') {
+		my $sout;
+
+		chomp($sout = `$args[0]`);
+
+		return ($#args >= 1 && $args[1] ne '') ? analyzer($sout) : $sout;
+	} elsif ($macro eq 'SYSTEM_PP') {
+		my $sout;
+
+		chomp($sout = `$args[0]`);
+
+		return analyzer($sout);
+	} elsif ($macro eq 'RANDOM') {
+		if ($#args == -1) {
+			($_ = rand()) =~ s/^0\.//;
+			return $_;
+		} elsif ($#args == 0) {
+			return floor(rand($args[0] + 1));
+		} elsif ($#args == 1) {
+			return floor($args[0] + rand($args[1] - $args[0] + 1));
+		}
+	} elsif ($macro eq 'EVAL') {
+		return perl_eval($args[0]);
+	} elsif ($macro eq 'ENV') {
+		return exists $ENV{$args[0]} ? $ENV{$args[0]} : '';
+	} elsif ($macro eq 'XHTML_OUTPUT') {
+		xhtml_output($args[0]);
+		return '';
+	}
+}
+
+
+
+#
+# image_size
+#
+sub image_size {
+	my $image = wpp_canonpath($_[0] =~ m#^/#o ?
+		"$var{OUTPUTDIR}/$_[0]" :
+		"$var{OUTPUTDIR}/$var{OUTPUTSUBDIR}/$_[0]");
+	my $magic	= '';
+	my @dim		= ();
+
+	debug("IMAGE $image [$_[0]]");
+	depend_add($image);
+
+	if (exists $images{$image}) {
+		debug("IMAGE CACHE HIT: $image\n");
+		return $images{$image};
+	}
+
+	local *IMG;
+	open(IMG, $image) ||
+		error("Can't open file '$image' $!");
+	binmode(IMG);
+
+	read(IMG, $magic, 3);
+
+	if ($magic eq 'GIF') {																		# GIF
+		read(IMG, $magic, 3);
+
+		$dim[0] = ord(getc(IMG)) + ord(getc(IMG)) * 256;
+		$dim[1] = ord(getc(IMG)) + ord(getc(IMG)) * 256;
+	} elsif (substr($magic, 0, 2) eq chr(0xff).chr(0xd8)) {		# JPEG
+		# FIXME: cleanup this code!!
+		while(1) {
+			read(IMG, $magic, 1);
+
+			if (ord($magic) == 0xc0 || ord($magic) == 0xc2) {
+				read(IMG, $magic, 3);
+
+				$dim[1] = ord(getc(IMG)) * 256 + ord(getc(IMG));
+				$dim[0] = ord(getc(IMG)) * 256 + ord(getc(IMG));
+
+				last;
+			} else {
+				read(IMG, $magic, ord(getc(IMG)) * 256 + ord(getc(IMG)) - 1);
+			}
+		}
+	} elsif ($magic eq chr(0x89) . 'PN') {										# PNG
+		read(IMG, $magic, 13);
+
+		$dim[0] = ord(getc(IMG)) * 16777216 + ord(getc(IMG)) * 65536 +
+			ord(getc(IMG)) * 256 + ord(getc(IMG));
+		$dim[1] = ord(getc(IMG)) * 16777216 + ord(getc(IMG)) * 65536 +
+			ord(getc(IMG)) * 256 + ord(getc(IMG));
+	} else {
+		close(IMG);
+		error("Unknown image format for '$_[0]'");
+	}
+
+	close(IMG);
+
+	return $images{$image} = \@dim;
+}
+
+
+#
+# cern2html
+#
+sub cern2html {
+	my ($mapf, $name, $id) = @_;
+	my $mapfile	= wpp_canonpath($_[0] =~ m#^/#o ?
+		"$var{OUTPUTDIR}/$mapf" :
+		"$var{OUTPUTDIR}/$var{OUTPUTSUBDIR}/$mapf");
+	my $mdata		= '';
+	my $alt			= '';
+	my $default	= '';
+	my ($foo, $href);
+
+	debug("MAP $mapfile");
+	depend_add($mapfile);
+
+	local *MAP;
+	open(MAP, "$mapfile") ||
+		error("Can't open file '$mapfile' $!");
+
+	while (<MAP>) {
+		if (/^rect\s+\((.+)\)\s+\((.+)\)\s+(.+)$/io) {
+			$mdata .= sprintf($BUILTINMACROS_HTML{HTML_MAP_AREA},
+				'rect', wpp_rurl($3), "$1,$2", $alt, $alt);
+			$alt = '';
+		} elsif (/^circle\s+\((.+)\)\s+(.+?)\s+(.+)$/io) {
+			$mdata .= sprintf($BUILTINMACROS_HTML{HTML_MAP_AREA},
+				'circle', wpp_rurl($3), "$1,$2", $alt, $alt);
+			$alt = '';
+		} elsif (/^poly\s+(.+)\s+(.+)$/io) {
+			$href = $2;
+			($foo = $1) =~ s/^\(|\)$//go;
+			$foo =~ s/\)\s+\(/,/go;
+			$mdata .= sprintf($BUILTINMACROS_HTML{HTML_MAP_AREA},
+				'poly', wpp_rurl($href), $foo, $alt, $alt);
+			$alt = '';
+		} elsif (/^default\s+(.*)$/o) {
+			$default = sprintf($BUILTINMACROS_HTML{HTML_MAP_AREA},
+				'rect', wpp_rurl($1), '0,0,2000,2000', $alt, $alt);
+			$alt = '';
+		} elsif (/^#(.*)/o) {
+			$alt = $1;
+		} else {
+			$alt = '';
+		}
+	}
+	
+	close(MAP);
+
+ 	return sprintf($BUILTINMACROS_HTML{HTML_MAP_TAG}, $name, $id, $mdata . $default); 
+}
+
+
+#
+# ncsa2html
+#
+sub ncsa2html {
+	my ($mapf, $name, $id) = @_;
+	my $mapfile = wpp_canonpath($_[0] =~ m#^/#o ?
+		"$var{OUTPUTDIR}/$mapf" :
+		"$var{OUTPUTDIR}/$var{OUTPUTSUBDIR}/$mapf");
+	my $mdata		= '';
+	my $alt			= '';
+	my $default	= '';
+	my ($foo, $shape, $href);
+
+	debug("MAP $mapfile");
+	depend_add($mapfile);
+
+	local *MAP;
+	open(MAP, "$mapfile") ||
+		error("Can't open file '$mapfile' $!");
+
+	while (<MAP>) {
+		if (/^#\s*(.*)\s*$/o) {
+			$alt = $1;
+		} elsif (/^(.+?)\s+(.+?)\s+(.+)$/o) {
+			$shape	= $1;
+			$href		= $2;
+			$foo		= $3;
+
+			if ($shape =~ /circle/i) {
+				# x,y radius
+				$foo =~ /(\d+),(\d+)\s+(\d+),(\d+)/o;
+				$foo = "$1,$2," .
+					int(sqrt(($1 - $3) * ($1 - $3) + ($2 - $4) * ($2 - $4)));
+			} else {
+				$foo =~ s/\s/,/go;
+				$foo =~ s/,$//go;
+			}
+			$mdata .= sprintf($BUILTINMACROS_HTML{HTML_MAP_AREA},
+				$shape, wpp_rurl($href), $foo, $alt, $alt);
+			$alt = '';
+		} elsif (/^default\s+(.*)$/o) {
+			$default = sprintf($BUILTINMACROS_HTML{HTML_MAP_AREA},
+				'rect', wpp_rurl($1), '0,0,2000,2000', $alt, $alt);
+			$alt = '';
+		} else {
+			$alt = '';
+		}
+	}
+
+	close(MAP);
+
+ 	return sprintf($BUILTINMACROS_HTML{HTML_MAP_TAG}, $name, $id, $mdata . $default); 
+}
+
+
+#
+# rcstime
+#
+sub rcstime {
+	my ($time) = @_;
+
+	$time =~ /^([0-9]{2})([0-9]+)\/([0-9]+)\/([0-9]+) ([0-9]+):([0-9]+):([0-9]+)$/;
+
+	return mktime($7, $6, $5, $4, $3 - 1, ($1 >= 20 ? 100 : 0) + $2);
+}
+
+
+#
+# file_date
+#
+sub file_date {
+	my ($filename) = @_;
+	my $mtime;
+	my $fdate;
+
+	if ($filename eq '-') {
+		$mtime = time();
+	} else {
+		$filename = wpp_canonpath($_[0] =~ m#^/#o ?
+			"$var{OUTPUTDIR}/$_[0]" :
+			"$var{OUTPUTDIR}/$var{OUTPUTSUBDIR}/$_[0]");
+
+		if (! -e $filename) {
+			$mtime = time();
+		} else {
+			$mtime = (($last_fstat eq $filename) ? stat(_) : stat($filename))[9];
+			$last_fstat = $filename;
+		}
+	}
+
+	$fdate = strftime($var{DATE_FORMAT}, localtime($mtime));
+
+	debug('FILE_DATE ' . $filename . ' = ' . $fdate);
+
+	return $fdate;
+};
+
+
+#
+# file_size
+#
+sub file_size {
+	my $filename	= $_[0];
+	my $unit			= lc($_[1]);
+	my $size;
+
+	return -1 if (!$filename || $filename eq '-');
+
+	$filename = wpp_canonpath($_[0] =~ m#^/#o ?
+		"$var{OUTPUTDIR}/$_[0]" :
+		"$var{OUTPUTDIR}/$var{OUTPUTSUBDIR}/$_[0]");
+
+	debug("FILE_SIZE '$filename'");
+
+	return -1	if (! -e $filename);
+
+	$size = (($last_fstat eq $filename) ? stat(_) : stat($filename))[7];
+	$last_fstat = $filename;
+
+	{
+		# round values to int values
+		use integer;
+
+		if ($unit eq 'b') {
+			# do nothing
+		} elsif ($unit eq 'k') {
+			$size /= 1024;
+			$size++;
+		} elsif ($unit eq 'm') {
+			$size /= 1048576;
+		} elsif ($unit eq 'g') {
+			$size /= 1073741824;
+		} else {
+			warning($W_WARNING, "unknown unit '$unit', defaulting to 'b'");
+		}
+	}
+	
+	debug('FILE_SIZE ' . $filename . ' = ' . $size);
+
+	return $size;
+}
+
+
+#
+# perl_eval
+#
+sub perl_eval {
+	my ($code) = @_;
+	my $retv;
+
+	local $SIG{__WARN__} = sub
+		{
+			my $msg = "@_";
+
+			if ($msg =~ /^Subroutine [^ ]+ redefined at/) {
+				warning($W_NOTICE, "Caught '$msg'");
+				return;
+			}
+
+			chomp($msg);
+			warning($W_ERROR, "EVAL error '$msg' ($macro_name)");
+			my $i				= 1;
+			my $codefmt	= '';
+			foreach (split /\r?\n/, $code) {
+				$codefmt .= $i++ . "\t$_\n";
+			}
+			warning($W_ERROR, "EVAL error\n****\n$codefmt\n****");
+		};
+	
+	my $out = '';
+	my $os 	= new IO::Scalar(\$out);
+	{
+		local *STDOUT = $os;
+		$retv = eval('use strict; { $| = 1; ' . $code . ' }');
+	}
+	$retv = $out . $retv if $out;
+
+	if (!defined $retv) {
+		my $msg = "$@";
+
+		chomp($msg);
+		warning($W_ERROR, "EVAL error '$msg' ($macro_name)");
+		my $i				= 1;
+		my $codefmt	= '';
+		foreach (split /\r?\n/, $code) {
+			$codefmt .= $i++ . "\t$_\n";
+		}
+		warning($W_ERROR, "EVAL error\n****\n$codefmt\n****");
+		$retv = '';
+	}
+	
+	return $retv;
+}
+
+
+#
+# xhtml_output
+#
+sub xhtml_output {
+	my ($flag) = @_;
+
+	debug("XHTML_OUTPUT($flag)");
+	$xhtml = $flag;
+	if (!$flag) {
+		%BUILTINMACROS_HTML = (
+			'HTML_IMAGE' 				=>
+				'<IMG SRC="%s" WIDTH="%d" HEIGHT="%d" ALT="%s" %s>',
+			'HTML_IMAGE_SIZE'		=> ' SRC="%s" WIDTH="%d" HEIGHT="%d" ',
+			'HTML_IMAGE_SIZEO'	=> ' WIDTH="%d" HEIGHT="%d" ',
+			'HTML_IMAGE_WIDTH'	=> ' WIDTH="%d" ',
+			'HTML_IMAGE_HEIGHT'	=> ' HEIGHT="%d" ',
+			'HTML_MAP_TAG'			=> "<MAP NAME=\"%s\" ID=\"%s\">\n%s</MAP>\n",
+			'HTML_MAP_AREA'			=>
+				"  <AREA SHAPE=\"%s\" HREF=\"%s\" COORDS=\"%s\" ALT=\"%s\" TITLE=\"%s\">\n"
+		);
+	} else {
+		%BUILTINMACROS_HTML = (
+			'HTML_IMAGE' 				=>
+				'<img src="%s" width="%d" height="%d" alt="%s" %s />',
+			'HTML_IMAGE_SIZE'		=> ' src="%s" width="%d" height="%d" ',
+			'HTML_IMAGE_SIZEO'	=> ' width="%d" height="%d" ',
+			'HTML_IMAGE_WIDTH'	=> ' width="%d" ',
+			'HTML_IMAGE_HEIGHT'	=> ' height="%d" ',
+			'HTML_MAP_TAG'			=> "<map name=\"%s\" id=\"%s\">\n%s</map>\n",
+			'HTML_MAP_AREA'			=>
+				"  <area shape=\"%s\" href=\"%s\" coords=\"%s\" alt=\"%s\" title=\"%s\" />\n"
+		);
+	}
+}
+
+
+#
+# cfg_reader
+#
+sub cfg_reader {
+	my ($file)			= @_;
+	my $line				= '';
+	my $nif					= $#do;				# number of nested IF, checked at the end
+	my $outb				= '';
+
+
+	$file = wpp_canonpath($file);
+	
+	push(@file_curs, $file_cur = $file);
+
+	debug("CFG START\tFH $file");
+	local	*IS;
+	open(IS, "< $file") || error("Cannot open file '$file' ($!)");
+	$dep_cfg = 1;
+
+	depend_add($file);
+	
+	while(<IS>) {
+		$line .= $_;
+		if (/(?:^|[^\\])\\$/o) {			# ending '\' join lines if not escaped into '\\'
+			chomp $line;								# remove the ending '\n'
+			$line =~ s/\\$//o;					# expand the ending '\\' into '\'
+		} else {
+			$line =~ s/\\$//o;					# expand the ending '\\' into '\'
+			$outb .= cfg_analyzer($line, dirname($file));
+			$line = '';
+		}
+	}
+	close(IS);
+
+	$#do != $nif && error("Unterminated IF");
+	$isMacro && error("Missing ENDMACRO for MACRO $macro_name");
+	$isInline && error("Missing ENDINLINE for INLINE");
+
+	debug("CFG END\tFH $file $var{FILENAME}");
+
+	$dep_cfg = 0;
+
+	pop(@file_curs);
+	$file_cur = $file_curs[$#file_curs];
+
+	return $outb;
+}
+
+
+
+#
+# cfg_analyzer
+#
+sub cfg_analyzer {
+	my ($line, $path) = @_;			# line to analyze, config file path
+	my $outb = '';							# output buffer
+
+
+	debug("CFG $.\t$line");
+	if (!$isMacro && $line =~ /^\$(?:Date)(?::?\s+(.+)\s+)?\$$/o) {
+		debug("CFG  RCS_DATE_TAG:\t$1");
+		warning($W_WARNING, "Can't use \$Date\$ tag into config file");
+		return $outb;
+	}
+	while ($line =~ /@([A-Z_\d]+)(\s*)(.)/o) {
+		$do[$#do] && !($isMacro || $isInline) && ($outb .= $`);
+		if ($isMacro) {
+			$line = $';
+			if (!$do[$#do]) {
+				$isMacro = 0 if $1 eq 'ENDMACRO';
+			} else {
+				$cfgmac_body{$macro_name} .= $`;
+				if ($1 eq 'ENDMACRO') {
+					$isMacro = 0;
+					$cfgmac_body{$macro_name} =~ s/^\n|\n$//go;
+					debug("MACRO $macro_name\n***\n$cfgmac_body{$macro_name}\n***");
+				} else {
+					$cfgmac_body{$macro_name} .= "\@$1$2$3";
+				}
+			}
+		} elsif ($isInline) {
+			$inline .= $`;
+			$line = $';
+			if ($1 eq 'ENDINLINE') {
+				$isInline = 0;
+				debug("INLINED DATA [raw]:\n $inline");
+				if ($do[$#do]) {
+					my $pd = analyzer($inline);
+					debug("INLINED DATA [parsed]:\n $pd"); 
+					$outb .= perl_eval($pd);
+				}
+				$inline = '';
+			} else {
+				$inline .= "\@" . (defined $1 ? $1 : '') . (defined $2 ? $2 : '') . (defined $3 ? $3 : '');
+			}
+		} elsif ($3 eq '@' && $2 eq '') {								# directive/variable subst.
+			$line = $';
+			if ($do[$#do]) {
+				if ($1 =~ /^($KEYWORDS)$/) {
+					debug("  DIRECTIVE0:\t\@$1@");
+					if ($1 eq 'ENDMACRO') {
+						error("ENDMACRO without MACRO");
+					} elsif ($1 eq 'ENDINLINE') {
+						error("ENDINLINE without INLINE");
+					} elsif ($1 =~ /^(HEAD|TAIL)$/o) {
+						$var{$1} = '';
+					} elsif ($1 eq 'INCLUDE') {
+						$outb .= exists $var{$1} ? $var{$1} : '';
+						debug("  VAR_SUBST:\t\@$1@");
+					}
+				} else {
+					if (!exists $var{$1}) {
+						warning($W_NOTICE, "Undefined variable '$1', using default value ''");
+						$outb .= '';
+					} else {
+						$outb .= $var{$1};
+					}
+					exists $cfgmac_argv{$1} && warning($W_WARNING, "Possible typo when using the ".
+						"macro '$1' as a variable");
+					debug("  VAR_SUBST:\t\@$1@");
+				}
+			}
+			if ($1 eq 'ELSE') {
+				$#do == 0 && error("ELSE without IF");
+				$do[$#do - 1] && ($do[$#do] = $do[$#do] ? $FALSE : $TRUE);
+				#debug("** ELSE $#do $do[$#do]");
+			} elsif ($1 =~ /^(FI|ENDIF)$/o) {
+				$#do == 0 && error("$1 without IF");
+				pop(@do);
+				#debug("** $1 $#do");
+			} elsif ($1 eq 'IF') {
+				error("Incorrect syntax when using IF");
+			} elsif ($1 eq 'INLINE') {
+				$isInline = 1;
+				$inline = '';
+				debug("    \t\t  $1");
+			}
+		} elsif ($3 eq '=') {														# variable assignment
+			$line =~ /@([A-Z_\d]+)\s*=((?:@[A-Z_\d]+@|@[A-Z_\d]+\s*\((?:.*?[^\\][@"]\s*)?\)@|[^@]+)*)@/o;
+			$line = $';
+			if ($do[$#do]) {
+				my $id = $1;
+				my $value = cfg_analyzer($2);
+				debug("  VAR_ASSIGN:\t\@$id=$2 - $value@");
+				$id =~ /^($CONSTANTS|$KEYWORDS|$BUILTINMACROS)$/ &&
+					error("'$id' is a constant or a reserved keyword");
+				exists $cfgmac_argv{$id} && 
+					warning($W_WARNING, "'$id' is already defined as a macro");
+				$config{$id} = $var{$id} = $value;
+				$id =~ /^($CCONSTANTS)$/ && $id =~ /^DEFAULT_(.+)/ &&
+					($config{$1} = $var{$1} = $value);
+			}
+		} elsif ($3 eq '(') {														# macro call
+			$line =~ /@([A-Z_\d]+)\s*\((.*?[^\\][@"]\s*|)\)@/o;
+			$line = $';
+			if ($do[$#do]) {
+				debug("  MACRO_CALL:\t\@$1($2");
+				my @args = split(/\s*(@[A-Z_\d]+@|""|".*?[^\\]")\s*,?/o, $2);
+				$#args == 0 && $args[0] eq '(' &&
+					error("Incorrect argument syntax when calling the macro '$1'");
+				my $i;
+				debug("    ARGS#:\t$#args");
+				for ($i = 1; $i <= $#args; $i += 2) {
+					$args[$i] =~ s/(^"|"$)|(\\)(")/defined $3 ? $3 : ''/geo;
+					debug("    \t\t  $args[$i]");
+				}
+				debug("  \t\t)@");
+				$macro_name = $1 . "(v" . (($#args - 1) / 2 + 1) . ")";
+				debug("    NAME:\t$macro_name");
+				if (exists $cfgmac_argv{$macro_name}) {
+					my $margv = $cfgmac_argv{$macro_name};
+					my $buf_marg = '';
+					my $buf_macro = $cfgmac_body{$macro_name};
+					debug("  MACRO_ARGS $cfgmac_argv{$macro_name} $#args $#$margv");
+					#if ($#args < $#$margv * 2 + 1) {
+					#	error("Few arguments when calling '$macro_name'");
+					#} elsif ($#args > $#$margv * 2 + 1) {
+					#	warning($W_WARNING, "Too many arguments when calling '$macro_name'");
+					#}
+					my $RAND_PFX = $MARGPREFIX . int(rand()*10000) . "__";
+					foreach ($i = 0; $i <= $#$margv; $i++) {
+						debug("  MARG $$margv[$i] - ".$args[$i * 2 + 1]); 
+						$buf_marg .= "\@$RAND_PFX$$margv[$i]=$args[$i * 2 + 1]\@";
+						$buf_macro =~ s/(@)($$margv[$i])([^A-Z_\d])/$1$RAND_PFX$2$3/g;
+						$buf_macro =~ s/([^A-Z_\d])($$margv[$i])((?:\s*(?:!|=)=.*?)?@)/$1$RAND_PFX$2$3/g;
+					};
+					debug("  MBODY\n***\n$buf_marg\n$buf_macro\n***");
+					$outb .= cfg_analyzer($buf_marg.$buf_macro);
+				} else {
+					my @nargs = ();
+
+					for (my $i = 1; $i <= $#args; $i += 2) {
+						push(@nargs, $args[$i]);
+					}
+
+					$outb .= builtin_macro($1, @nargs);
+				}
+			}
+		} else {																				# directive with parameters
+			debug("  DIRECTIVE1:\t\@$1 ");
+			if ($1 eq 'MACRO' &&
+				"$3$'" =~ /([A-Z_\d]+)\s*\(\s*([A-Z_\d,\s]*?)\s*\)@/o) {
+				$isMacro = 1;
+				if ($do[$#do]) {
+					my @arg = split(/\s*,\s*/, $2);
+					$macro_name = $1 . "(v" . ($#arg + 1) . ")";
+					exists $cfgmac_argv{$macro_name} &&
+						error("Macro '$macro_name' already defined");
+					$cfgmac_argv{$1} = "DEFINED";				# just for IF tests
+					$cfgmac_argv{$macro_name} = \@arg;
+					$cfgmac_body{$macro_name} = '';
+					debug("    \t\t  N: '$1'\n    \t\t  A: '$2' (".($#arg + 1).")");
+				}
+				$line = $';
+			} elsif ($1 eq 'INCLUDE') {
+				error("Can't use '$1' into config file");
+			} elsif ($1 eq 'INCLUDECFG' && "$3$'" =~ /((?:@[A-Z_\d]+@|[^@]+)*)@/o) {
+				debug("    \t\t  $1");
+				$line = $';
+				$do[$#do] && ($outb .= cfg_reader("$path/" . cfg_analyzer($1)));
+			} elsif ($1 =~ /^(HEAD|TAIL)$/o) {
+				error("Can't use '$1' into config file");
+			} elsif ($1 eq 'IF') {
+				$line = $';
+				if ("$3$'" =~ /^\s*(!?)\s*([A-Z_\d]+)@/o) {
+					if ($do[$#do]) {
+						!exists $var{$2} && !exists $cfgmac_argv{$2} &&
+							warning($W_NOTICE, "Undefined variable '$2', using default value ''");
+						push(@do, (exists $var{$2} && $var{$2} ne '') ||
+							exists $cfgmac_argv{$2} ? $TRUE : $FALSE);
+						($1 eq '!') && ($do[$#do] = $do[$#do] ? $FALSE : $TRUE);
+					} else {
+						push(@do, $FALSE);
+					}
+					debug("    \t\t  F:$1 V:$2 - $do[$#do]");
+				} elsif ("$3$'" =~
+					/^\s*([A-Z_\d]+)\s*(!|=)=\s*"((?:@[A-Z_\d]+@|[^@]+)*)"@/o) {
+					if ($do[$#do]) {
+						!exists $var{$1} && !exists $cfgmac_argv{$1} &&
+							warning($W_NOTICE, "Undefined variable '$1', using default value ''");
+						push(@do, (exists $var{$1} ? $var{$1} : '') eq
+							cfg_analyzer($3) ? $TRUE : $FALSE);
+						($2 eq '!') && ($do[$#do] = $do[$#do] ? $FALSE : $TRUE);
+					} else {
+						push(@do, $FALSE);
+					}
+					debug("    \t\t  F:$1 V:$3 - $do[$#do]");
+				} else {
+					error("Incorrect syntax for IF condition");
+				}
+				$line = $';
+			} elsif ($1 !~ /^($KEYWORDS)$/o) {
+				error("Unknown directive '$1'");
+			} else {
+				error("Incorrect syntax when using directive '$1'");
+			}
+		}
+	}
+
+	if ($do[$#do]) {
+		if ($isMacro) { 
+			$cfgmac_body{$macro_name} .= $line;
+			$line = '';
+		} elsif ($isInline) {
+			$inline .= $line;
+			$line = '';
+		} else {
+			$outb .= $line;
+		}
+	}
+
+	return $outb;
+}
+
+
+#
+# depend_add
+#
+sub depend_add {
+	return 0 if !$dep;
+
+	my $f;
+	foreach (@_) {
+		$f = wpp_canonpath($_);
+		$depf{$f} = 1 if !exists $depf{$f} && $f ne $outfile && $f ne $source;
+	}
+	return 1;
+}
+
+
+#
+# depend_print
+#
+sub depend_print {
+	return if !$dep || !defined $var{OUTPUTDIR};
+
+	print
+		wpp_canonpath(
+			"$var{OUTPUTDIR}/$var{OUTPUTSUBDIR}/$var{FILENAME}.$var{EXTENSION}"
+		), ": \\\n";
+
+	foreach (sort(keys(%depf))) {
+		print "\t", $_, " \\\n";
+	}
+
+	print "\t", $source, "\n";
+}
+
+
+#
+# error
+#
+sub error {
+	print STDERR Term::ANSIColor::colored(
+		join('',
+			(
+				'E0: ', @_, ' (', wpp_get_current_file(), ':', $., ")\n"
+			)),
+			'bold')
+		if (!$quiet);
+
+	# remove incomplete output file
+	unlink($outfile) if (-z $outfile);
+
+	# try to complete a partial dependence
+	depend_print();
+
+	exit 1;
+}
+
+
+
+#
+# warning
+#
+sub warning {
+	my ($lev, @msg) = @_;
+	
+	print STDERR Term::ANSIColor::colored(
+		join('',
+			(
+				"W$lev: ", @msg, ' (', wpp_get_current_file(), ':', $., ")\n"
+			)),
+			'bold')
+		if (!$quiet && $lev <= $warnlev);
+}
+
+
+
+#
+# debug
+#
+sub debug {
+	print STDERR @_, "\n" if $debug;
+}
+
+
+
+#
+# usage
+#
+sub usage {
+	print <<'EofUsage';
+Usage: wpp [POSIX or GNU style options] file ...
+Options:
+  -c FILE, --config=FILE  Use FILE as config file (default is 'config').
+  -D CONST=VAL, -D CONST  Declare a constant CONST.
+  --define CONST=VAL      Declare a constant CONST.
+  --define CONST          Declare a constant CONST.
+  -d, --depend            Generate dependencies.
+  -F FL, --pre-filter=FL  Preprocess output data through FL filters.
+  -f FL, --post-filter=FL Postprocess output data through FL filters.
+  -g, --debug             Enable the debugging output of the internal parser.
+  -h, --help              Print this message and exit.
+  -q, --quiet             Run without printing any message and warning.
+  -v, --version           Print the version number of wpp and exit.
+  -W all,  --warn=all     Enable printing all warnings.
+  -W none, --warn=none    Disable warnings.
+  -W LEV,  --warn=LEV     Set warning level LEV from 0 (none) to 7 (all).
+  -x, --xhtml             Enable XHTML compliant output for built-in macros.
+EofUsage
+	exit 0;
+}
+
+
+
+#
+# version
+#
+sub version {
+	print <<"EofVersion";
+WPP $VERSION, by Marco Lamberto.
+Copyright (C) 1997, 98, 99, 2000, 2001, 2002, 2003\n\tMarco Lamberto.
+This is free software; see the source for copying conditions.
+There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
+
+Report bugs to <lm\@sunnyspot.org>.
+WPP Web-page <http://the.sunnyspot.org/wpp/>.
+EofVersion
+	exit 0;
+}
+
+1;
+
+__END__
+
+=head1 NAME
+
+WPP - The Web Preprocessor
+
+=head1 SYNOPSIS
+
+B<wpp> S<[POSIX or GNU style options]> file ...
+
+=head1 DESCRIPTION
+
+WPP is a small perl5 script that allows preprocessing of html files.
+It's useful for giving an uniform layout to different html pages.
+It allows you to define "variables", which are abbreviations
+for longer constructs, and include common html fragments.
+
+WPP provides four separate facilities that you can use as you
+fit: inclusion of templates, variables expansion, conditional generation and
+macro expansion.
+
+It can be used into cgi scripts for dynamic generation of pages.
+With less html code inside them you can make more flexible and
+readable cgi-scripts.
+
+WPP is distributed under the terms of the GNU General Public License (GPL).
+As such, you can use this program free of charge but there is no warranty.
+
+=head1 OPTIONS
+
+S<-c B<FILE>, --config=B<FILE>>
+    Use FILE as config file (default is 'config').
+
+S<-D B<CONST>=B<VAL>, -D B<CONST>, --define B<CONST>=B<VAL>, --define B<CONST>>
+    Declare a constant B<CONST> with the optional associated
+    value B<VAL>.
+
+S<-d, --depend>
+    Generate dependencies for make.
+
+S<-F B<FL>, --pre-filter=B<FL>>
+    Preprocess input data through FL filters.
+    Each filter should be separated by a pipe ('|') char.
+    Example:
+
+      wpp -F "filter1 | filter2 -opt" in.raw
+
+S<-f B<FL>, --post-filter=B<FL>>
+    Postprocess output data through FL filters.
+    Each filter should be separated by a pipe ('|') char.
+    Example:
+
+      wpp -f "filter1 | filter2 -opt" in.raw
+		
+S<-g, --debug>
+    Enable the debugging output of the internal parser.
+
+S<-h, --help>
+    Print the list of command line switches with a short
+    description.
+
+S<-q, --quiet>
+    Run without printing any message and warning.
+
+S<-v, --version>
+    Print the version number of wpp and exit.
+
+S<-W all, --warn=all>
+    Enable printing all warnings.
+
+S<-W none, --warn=none>
+    Disable warnings.
+
+S<-W B<LEV>, --warn=B<LEV>>
+    Set warning level B<LEV>:
+      0 = none          4 = notice
+      1 = fatal         5 = message
+      2 = error         6 = debug
+      3 = warning (*)   7 = all
+
+    (*) default warning level
+
+S<-x, --xhtml>
+    Enable XHTML compliant output for built-in macros.
+
+S<->
+    Read raw data from the standard input, html file is
+    written to the standard output.
+
+=head1 AUTHOR
+
+Marco Lamberto <lm AT sunnyspot DOT org>
+
+=head1 OFFICIAL WEB SITE
+
+http://the.sunnyspot.org/wpp/
+
+=cut
+
+# vim: set nowrap ts=2 ai:

@@ -1,0 +1,20 @@
+@TITLE=TPM Emulator Mail Page @
+$Date$
+
+
+<BR><BR>
+<A NAME="top">
+<CENTER>
+<TABLE width="80%" border=0>
+  <TBODY>
+  <TR>
+</TD>
+@ENTRY("MAIL")@
+<p>
+There is no mailing list setup (yet). Meanwhile please mail any question 
+to nomesigas ad gmail dot com, with the word emulator in the subject
+</p>
+</TD>
+</TR>
+</TBODY>
+</TABLE>
