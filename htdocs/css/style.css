@@ -1,0 +1,96 @@
+UNKNOWN {
+	FONT-WEIGHT: bold; COLOR: #707070; TEXT-DECORATION: none
+}
+
+ /* ###################### MAin Header ###################### */
+
+.theader {
+	font-size: 18px;
+}
+.theader:link {
+	FONT-WEIGHT: bold; COLOR: #707070; TEXT-DECORATION: none
+}
+/*
+.theader:visited {
+	FONT-WEIGHT: bold; COLOR: #330033; TEXT-DECORATION: none
+}
+
+*/
+.theader:hover {
+	FONT-WEIGHT: bold; COLOR: #FF0000; TEXT-DECORATION: none
+}
+
+ /* ###################### SubHeader ###################### */
+
+.sheader {
+	font-size: 16px;
+}
+.sheader:link {
+	FONT-WEIGHT: bold; COLOR: #707070; TEXT-DECORATION: none
+}
+.sheader:visited {
+	FONT-WEIGHT: bold; COLOR: #707070; TEXT-DECORATION: none
+}
+
+
+
+.bheader {
+	PADDING-RIGHT: 25px;
+	PADDING-LEFT: 25px;
+	PADDING-BOTTOM: 5px;
+	BACKGROUND-COLOR: #FFFFFF;
+	font-size: 18px;
+}
+.topics {
+	PADDING-RIGHT: 18px; PADDING-LEFT: 18px; FONT-WEIGHT: bold; BACKGROUND-COLOR: #cccccc; TEXT-DECORATION: underline overline
+}
+/* A {
+	FONT-WEIGHT: bold; COLOR: #707070; TEXT-DECORATION: none
+}
+*/
+ /* ###################### LINKS ###################### */
+a:link{
+  color            : #330033;
+  font-weight	   : bold;
+  text-decoration  : none;
+}
+a:visited {
+  color            : #330033;
+  font-weight	   : bold;
+  text-decoration  : none;
+}
+
+a:hover {
+  color            : #AF0000;
+  text-decoration  : underline;
+}
+
+a:active {
+  color            : #F3F6F7;
+  background-color : #242C31;
+  text-decoration  : underline;
+}
+.blogdate {
+	FONT-WEIGHT: bold
+}
+.tuheader {
+	FONT-WEIGHT: bold; COLOR: #707070; TEXT-DECORATION: none
+}
+.tuheader:link {
+	FONT-WEIGHT: bold; COLOR: #707070; TEXT-DECORATION: none
+}
+.tuheader:visited {
+	FONT-WEIGHT: bold; COLOR: #707070; TEXT-DECORATION: none
+}
+.ihangp {
+	TEXT-INDENT: -15px
+}
+.texthunk {
+	BORDER-RIGHT: #000000 1px solid; PADDING-RIGHT: 50px; BORDER-TOP: #000000 1px solid; MARGIN-TOP: 5px; MARGIN-BOTTOM: 5px; BORDER-LEFT: #000000 1px solid; BORDER-BOTTOM: #000000 1px solid; BACKGROUND-COLOR: #FFFFFF; TEXT-ALIGN: left
+}
+.nobordertext {
+	BORDER-TOP-WIDTH: 0px; BORDER-LEFT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BACKGROUND-COLOR: #f9f9f9; TEXT-ALIGN: left; BORDER-RIGHT-WIDTH: 0px
+}
+.topbar {
+	BORDER-RIGHT: #000000 1px solid; PADDING-RIGHT: 50px; BORDER-TOP: #000000 1px solid; MARGIN-TOP: 5px; MARGIN-BOTTOM: 5px; BORDER-LEFT: #000000 1px solid; BORDER-BOTTOM: #000000 1px solid; HEIGHT: 25px; BACKGROUND-COLOR: #d0d0d0; TEXT-ALIGN: right
+}
