@@ -28,6 +28,13 @@ GNU General Public License for more details.
 
 Configuration of GNU MP Library
 --------------------------------------------------------------------------
+You must install first the GNU MP library. If you have the file
+libgmp.a and the header file gmp.h, then it is already installed in your
+system. If not, you can download it from:
+http://www.gnu.org/software/gmp/gmp.html
+
+or use one of the pre-compiled binaries for your distribution.
+
 By defining the variables GMP_LIB and GMP_HEADER to the static GNU MP
 library and the corresponding header file, respectively, some of the 
 highly optimised GNU MP core functions (mpz_*, mpn_*) are linked against 
