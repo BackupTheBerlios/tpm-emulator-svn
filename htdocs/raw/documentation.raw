@@ -1,6 +1,7 @@
 @TITLE=TPM Emulator Documentation Page @
-$Date$
+@SCRIPTDOC=<SCRIPT language=JavaScript> var openImg = new Image(); openImg.src = "open.gif"; var closedImg = new Image(); closedImg.src = "closed.gif"; function showBranch(branch){ var objBranch = document.getElementById(branch).style; if(objBranch.display=="block") objBranch.display="none"; else objBranch.display="block"; } function swapFolder(img){ objImg = document.getElementById(img); if(objImg.src.indexOf('closed.gif')>-1) objImg.src = openImg.src; else objImg.src = closedImg.src; } </SCRIPT> @
 
+$Date$
 
 <BR><BR>
 <A NAME="top">
@@ -19,13 +20,485 @@ and INSTALL included in the distribution
 @ENTRY("STATUS")@
 <p>
 This is the current status of each section
-<!--
-	@STATUS("Startup and State", "tpm_startup.c")@
 
-		@BEGINSTATUS@
-		@STATUSITEM("TPM_Init","check.gif")@
+
+<p>fully implemented: <span class="done">+</span></p>
+<p>partially implemented: <span class="part">&#177</span> </p>
+<p>not implemented yet: <span class="notdone">-</span></p>
+ 
+<DIV class=trigger onclick="showBranch('branch1');swapFolder('folder1')"><IMG 
+id=folder1 src="closed.gif" border=0> STARTUP AND STATE <span class="done">+</span>
+</DIV><SPAN class=branch id=branch1>
+<span class="done">+</span>TPM_Init<BR>
+<span class="done">+</span>TPM_startup<BR>
+<span class="done">+</span>TPM_SaveState</SPAN>
+
+<DIV class=trigger onclick="showBranch('branch2');swapFolder('folder2')"><IMG 
+id=folder2 src="closed.gif" border=0> TESTING <span class="done">+</span>
+</DIV><SPAN class=branch id=branch2>
+<span class="done">+</span>TPM_SelfTestFull<BR>
+<span class="done">+</span>TPM_ContinueSelfTest<BR>
+<span class="done">+</span>TPM_GetTestResult<BR>
+</SPAN>
+
+<DIV class=trigger onclick="showBranch('branch3');swapFolder('folder3')"><IMG 
+id=folder3 src="closed.gif" border=0> OPT-IN <span class="done">+</span>
+</DIV><SPAN class=branch id=branch3>
+<span class="done">+</span>TPM_SetOwnerInstall<BR>
+<span class="done">+</span>TPM_OwnerSetDisable<BR>
+<span class="done">+</span>TPM_PhysicalEnable<BR>
+<span class="done">+</span>TPM_PhysicalEnable<BR>
+<span class="done">+</span>TPM_PhysicalDisable<BR>
+<span class="done">+</span>TPM_PhysicalSetDeactivated<BR>
+<span class="done">+</span>TPM_SetTempDeactivated <BR>
+<span class="done">+</span>TPM_SetOperatorAuth<BR>
+</SPAN>
+
+<!--
+1.0.4 Ownership
+File: tpm_owner.c
+TPM_TakeOwnership +
+TPM_OwnerClear +
+TPM_ForceClear +
+TPM_DisableOwnerClear +
+TPM_DisableForceClear +
+TSC_PhysicalPresence +
+TSC_ResetEstablishmentBit +
 -->
-		@ENDSTATUS@
+
+<DIV class=trigger onclick="showBranch('branch4');swapFolder('folder4')"><IMG 
+id=folder4 src="closed.gif" border=0> OWNERSHIP <span class="done">+</span>
+</DIV><SPAN class=branch id=branch4>
+<span class="done">+</span>TPM_TakeOwnership<BR>
+<span class="done">+</span>TPM_OwnerClear<BR>
+<span class="done">+</span>TPM_ForceClear<BR>
+<span class="done">+</span>TPM_DisableOwnerClear<BR>
+<span class="done">+</span>TPM_DisableForceClear<BR>
+<span class="done">+</span>TSC_PhysicalPresence<BR>
+<span class="done">+</span>TSC_ResetEstablishmentBit <BR>
+</SPAN>
+
+<!--
+1.0.5 Capabilities
+File: tpm_capability.c
+TPM_GetCapability ±
+-->
+
+<DIV class=trigger onclick="showBranch('branch5');swapFolder('folder5')"><IMG 
+id=folder5 src="closed.gif" border=0> CAPABILITIES <span class="part">&#177</span>
+</DIV><SPAN class=branch id=branch5>
+<span class="part">&#177</span>TPM_GetCapability<BR>
+</SPAN>
+
+<!--
+1.0.6 Auditing
+File: tpm_audit.c
+TPM_GetAuditDigest -
+TPM_GetAuditDigestSigned -
+TPM_SetOrdinalAuditStatus -
+-->
+
+<DIV class=trigger onclick="showBranch('branch6');swapFolder('folder6')"><IMG 
+id=folder6 src="closed.gif" border=0> AUDITING <span class="notdone">-</span>
+</DIV><SPAN class=branch id=branch6>
+<span class="notdone">-</span>TPM_GetAuditDigest<BR>
+<span class="notdone">-</span>TPM_GetAuditDigestSigned<BR>
+<span class="notdone">-</span>TPM_SetOrdinalAuditStatus<BR>
+</SPAN>
+
+
+<!--
+1.0.7 Administrative Functions
+File: tpm_management.c
+TPM_FieldUpgrade -
+TPM_SetRedirection -
+-->
+
+<DIV class=trigger onclick="showBranch('branch7');swapFolder('folder7')"><IMG 
+id=folder7 src="closed.gif" border=0> ADMIN. FUNCTIONS <span class="notdone">-</span>
+</DIV><SPAN class=branch id=branch7>
+<span class="notdone">-</span>TPM_FieldUpgrade<BR>
+<span class="notdone">-</span>TPM_SetRedirection<BR>
+</SPAN>
+
+
+
+<!--
+1.0.8 Storage Functions
+File: tpm_storage.c
+TPM_Seal +
+TPM_Unseal +
+TPM_UnBind -
+TPM_CreateWrapKey +
+TPM_LoadKey +
+TPM_GetPubKey +
+-->
+
+<DIV class=trigger onclick="showBranch('branch8');swapFolder('folder8')"><IMG 
+id=folder8 src="closed.gif" border=0> STORAGE FUNCTIONS <span class="part">&#177</span>
+</DIV><SPAN class=branch id=branch8>
+<span class="done">+</span>TPM_Seal<BR>
+<span class="done">+</span>TPM_Unseal<BR>
+<span class="notdone">-</span>TPM_UnBind<BR>
+<span class="done">+</span>TPM_CreateWrapKey<BR>
+<span class="done">+</span>TPM_LoadKey<BR>
+<span class="done">+</span>TPM_GetPubKey<BR>
+</SPAN>
+
+<!--
+1.0.9 Migration
+File: tpm_migration.c
+TPM_CreateMigrationBlob -
+TPM_ConvertMigrationBlob -
+TPM_AuthorizeMigrationKey -
+TPM_CMK_CreateKey -
+TPM_CMK_CreateTicket -
+TPM_CMK_CreateBlob -
+TPM_CMK_SetRestrictions -
+-->
+
+<DIV class=trigger onclick="showBranch('branch9');swapFolder('folder9')"><IMG 
+id=folder9 src="closed.gif" border=0> MIGRATION <span class="notdone">-</span>
+</DIV><SPAN class=branch id=branch9>
+<span class="notdone">-</span>TPM_CreateMigrationBlob<BR>
+<span class="notdone">-</span>TPM_ConvertMigrationBlob<BR>
+<span class="notdone">-</span>TPM_AuthorizeMigrationKey<BR>
+<span class="notdone">-</span>TPM_CMK_CreateKey<BR>
+<span class="notdone">-</span>TPM_CMK_CreateTicket<BR>
+<span class="notdone">-</span>TPM_CMK_CreateBlob<BR>
+<span class="notdone">-</span>TPM_CMK_SetRestrictions <BR>
+</SPAN>
+
+<!--
+1.0.10 Maintenance Functions
+File: tpm_maintenance.c
+TPM_CreateMaintenanceArchive -
+TPM_LoadMaintenanceArchive -
+TPM_KillMaintenanceFeature -
+TPM_LoadManuMaintPub -
+TPM_ReadManuMaintPub -
+-->
+<DIV class=trigger onclick="showBranch('branch10');swapFolder('folder10')"><IMG 
+id=folder10 src="closed.gif" border=0> MAINTENANCE FUNCS <span class="notdone">-</span>
+</DIV><SPAN class=branch id=branch10>
+<span class="notdone">-</span>TPM_CreateMaintenanceArchive<BR>
+<span class="notdone">-</span>TPM_LoadMaintenanceArchive<BR>
+<span class="notdone">-</span>TPM_KillMaintenanceFeature<BR>
+<span class="notdone">-</span>TPM_LoadManuMaintPub<BR>
+<span class="notdone">-</span>TPM_ReadManuMaintPub<BR>
+</SPAN>
+
+
+<!--
+1.0.11 Cryptographic Functions
+File: tpm_crypto.c
+4 Chapter 1 - Command Summary
+TPM_SHA1Start +
+TPM_SHA1Update +
+TPM_SHA1Complete +
+TPM_SHA1CompleteExtend +
+TPM_Sign +
+TPM_GetRandom +
+TPM_StirRandom +
+TPM_CertifyKey -
+TPM_CertifyKey2 -
+-->
+
+<DIV class=trigger onclick="showBranch('branch11');swapFolder('folder11')"><IMG 
+id=folder11 src="closed.gif" border=0> CRYPTOGRAPHIC FUNCTIONS <span class="part">&#177</span>
+</DIV><SPAN class=branch id=branch11>
+<span class="done">+</span>TPM_SHA1Start<BR>
+<span class="done">+</span>TPM_SHA1Update<BR>
+<span class="done">+</span>TPM_SHA1Complete<BR>
+<span class="done">+</span>TPM_SHA1CompleteExtend<BR>
+<span class="done">+</span>TPM_Sign<BR>
+<span class="done">+</span>TPM_GetRandom<BR>
+<span class="done">+</span>TPM_StirRandom<BR>
+<span class="notdone">-</span>TPM_CertifyKey<BR>
+<span class="notdone">-</span>TPM_CertifyKey2<BR>
+</SPAN>
+
+<!--
+
+1.0.12 Credential Handling
+File: tpm_credentials.c
+TPM_CreateEndorsementKeyPair +
+TPM_CreateRevocableEK +
+TPM_RevokeTrust +
+TPM_ReadPubek +
+TPM_DisablePubekRead +
+TPM_OwnerReadInternalPub +
+-->
+
+<DIV class=trigger onclick="showBranch('branch12');swapFolder('folder12')"><IMG 
+id=folder12 src="closed.gif" border=0> CREDENTIAL HANDLING <span class="done">+</span>
+</DIV><SPAN class=branch id=branch12>
+<span class="done">+</span>TPM_CreateEndorsementKeyPair<BR>
+<span class="done">+</span>TPM_CreateRevocableEK<BR>
+<span class="done">+</span>TPM_RevokeTrust<BR>
+<span class="done">+</span>TPM_ReadPubek<BR>
+<span class="done">+</span>TPM_DisablePubekRead<BR>
+<span class="done">+</span>TPM_OwnerReadInternalPub<BR>
+</SPAN>
+
+<!--
+1.0.13 Identity Creation and Activation
+File: tpm_credentials.c
+TPM_MakeIdentity -
+TPM_ActivateIdentity -
+-->
+
+<DIV class=trigger onclick="showBranch('branch13');swapFolder('folder13')"><IMG 
+id=folder13 src="closed.gif" border=0> OWNERSHIP <span class="notdone">-</span>
+</DIV><SPAN class=branch id=branch13>
+<span class="notdone">-</span>TPM_MakeIdentity<BR>
+<span class="notdone">-</span>TPM_ActivateIdentity<BR>
+</SPAN>
+
+<!--
+
+1.0.14 Integrity Collection and Reporting
+File: tpm_integrity.c
+TPM_Extend +
+TPM_PCRRead +
+TPM_Quote +
+TPM_PCR_Reset +
+-->
+
+<DIV class=trigger onclick="showBranch('branch14');swapFolder('folder14')"><IMG 
+id=folder14 src="closed.gif" border=0> INTEGRITY COLLECTING <span class="done">+</span>
+</DIV><SPAN class=branch id=branch14>
+<span class="done">+</span>TPM_Extend<BR>
+<span class="done">+</span>TPM_PCRRead<BR>
+<span class="done">+</span>TPM_Quote<BR>
+<span class="done">+</span>TPM_PCR_Reset<BR>
+</SPAN>
+
+<!--
+
+1.0.15 Authorization Changing
+File: tpm_authorization.c
+TPM_ChangeAuth -
+TPM_ChangeAuthOwner -
+TPM_OIAP +
+TPM_OSAP +
+TPM_DSAP -
+TPM_SetOwnerPointer -
+-->
+
+<DIV class=trigger onclick="showBranch('branch15');swapFolder('folder15')"><IMG 
+id=folder15 src="closed.gif" border=0> AUTHORIZATION CHANGING <span class="part">&#177</span>
+</DIV><SPAN class=branch id=branch15>
+<span class="notdone">-</span>TPM_ChangeAuth<BR>
+<span class="notdone">-</span>TPM_ChangeAuthOwner<BR>
+<span class="done">+</span>TPM_OIAP<BR>
+<span class="done">+</span>TPM_OSAP<BR>
+<span class="notdone">-</span>TPM_DSAP<BR>
+<span class="notdone">-</span>TPM_SetOwnerPointer<BR>
+</SPAN>
+
+<!--
+
+1.0.16 Delegation Commands
+File: tpm_delegation.c
+TPM_Delegate_Manage -
+TPM_Delegate_CreateKeyDelegation -
+TPM_Delegate_CreateOwnerDelegation -
+TPM_Delegate_LoadOwnerDelegation -
+TPM_Delegate_ReadTable -
+TPM_Delegate_UpdateVerification -
+TPM_Delegate_VerifyDelegation -
+-->
+
+<DIV class=trigger onclick="showBranch('branch16');swapFolder('folder16')"><IMG 
+id=folder16 src="closed.gif" border=0> DELEGATION COMMANDS <span class="notdone">-</span>
+</DIV><SPAN class=branch id=branch16>
+<span class="notdone">-</span>TPM_Delegate_Manage<BR>
+<span class="notdone">-</span>TPM_Delegate_CreateKeyDelegation<BR>
+<span class="notdone">-</span>TPM_Delegate_CreateOwnerDelegation<BR>
+<span class="notdone">-</span>TPM_Delegate_LoadOwnerDelegation<BR>
+<span class="notdone">-</span>TPM_Delegate_ReadTable<BR>
+<span class="notdone">-</span>TPM_Delegate_UpdateVerification<BR>
+<span class="notdone">-</span>TPM_Delegate_VerifyDelegation<BR>
+</SPAN>
+
+<!--
+
+1.0.17 Non-volatile Storage
+File: tpm_nv_storage.c
+TPM_NV_DefineSpace -
+TPM_NV_WriteValue -
+TPM_NV_WriteValueAuth -
+TPM_NV_ReadValue -
+TPM_NV_ReadValueAuth -
+-->
+
+<DIV class=trigger onclick="showBranch('branch17');swapFolder('folder17')"><IMG 
+id=folder17 src="closed.gif" border=0> NON-VOLATILE STORAGE <span class="notdone">-</span>
+</DIV><SPAN class=branch id=branch17>
+<span class="notdone">-</span>TPM_NV_DefineSpace<BR>
+<span class="notdone">-</span>TPM_NV_WriteValue<BR>
+<span class="notdone">-</span>TPM_NV_WriteValueAuth<BR>
+<span class="notdone">-</span>TPM_NV_ReadValue<BR>
+<span class="notdone">-</span>TPM_NV_ReadValueAuth<BR>
+</SPAN>
+
+<!--
+1.0.18 Session Management
+File: tpm_context.c
+6 Chapter 1 - Command Summary
+TPM_KeyControlOwner -
+TPM_SaveContext -
+TPM_LoadContext -
+-->
+
+<DIV class=trigger onclick="showBranch('branch18');swapFolder('folder18')"><IMG 
+id=folder18 src="closed.gif" border=0> SESSION MANAGEMENT <span class="notdone">-</span>
+</DIV><SPAN class=branch id=branch18>
+<span class="notdone">-</span>TPM_KeyControlOwner<BR>
+<span class="notdone">-</span>TPM_SaveContext<BR>
+<span class="notdone">-</span>TPM_LoadContext<BR>
+</SPAN>
+
+<!--
+
+1.0.19 Eviction
+File: tpm_eviction.c
+TPM_FlushSpecific +
+-->
+
+
+<DIV class=trigger onclick="showBranch('branch19');swapFolder('folder19')"><IMG 
+id=folder19 src="closed.gif" border=0> EVICTION <span class="done">+</span>
+</DIV><SPAN class=branch id=branch19>
+<span class="done">+</span>TPM_FlushSpecific<BR>
+</SPAN>
+
+<!--
+1.0.20 Timing Ticks
+File: tpm_ticks.c
+TPM_SetTickType -
+TPM_GetTicks -
+TPM_TickStampBlob -
+-->
+
+<DIV class=trigger onclick="showBranch('branch20');swapFolder('folder20')"><IMG 
+id=folder20 src="closed.gif" border=0> TIMING TICKS <span class="notdone">-</span>
+</DIV><SPAN class=branch id=branch20>
+<span class="notdone">-</span>TPM_SetTickType<BR>
+<span class="notdone">-</span>TPM_GetTicks<BR>
+<span class="notdone">-</span>TPM_TickStampBlob<BR>
+</SPAN>
+
+<!--
+
+1.0.21 Transport Sessions
+File: tpm_transport.c
+TPM_EstablishTransport -
+TPM_ExecuteTransport -
+TPM_ReleaseTransportSigned -
+-->
+
+<DIV class=trigger onclick="showBranch('branch21');swapFolder('folder21')"><IMG 
+id=folder21 src="closed.gif" border=0> TRANSPORT SESSIONS <span class="notdone">-</span>
+</DIV><SPAN class=branch id=branch21>
+<span class="notdone">-</span>TPM_EstablishTransport<BR>
+<span class="notdone">-</span>TPM_ExecuteTransport<BR>
+<span class="notdone">-</span>TPM_ReleaseTransportSigned<BR>
+</SPAN>
+
+<!--
+1.0.22 Monotonic Counter
+File: tpm_counter.c
+TPM_CreateCounter +
+TPM_IncrementCounter +
+TPM_ReadCounter +
+TPM_ReleaseCounter +
+TPM_ReleaseCounterOwner +
+-->
+
+<DIV class=trigger onclick="showBranch('branch22');swapFolder('folder22')"><IMG 
+id=folder22 src="closed.gif" border=0> MONOTONIC COUNTER <span class="done">+</span>
+</DIV><SPAN class=branch id=branch22>
+<span class="done">+</span>TPM_CreateCounter<BR>
+<span class="done">+</span>TPM_IncrementCounter<BR>
+<span class="done">+</span>TPM_ReadCounter<BR>
+<span class="done">+</span>TPM_ReleaseCounter<BR>
+<span class="done">+</span>TPM_ReleaseCounterOwnerr<BR>
+</SPAN>
+
+<!--
+
+1.0.23 DAA commands
+File: tpm_daa.c
+7
+TPM_DAA_Join -
+TPM_DAA_Sign -
+-->
+
+<DIV class=trigger onclick="showBranch('branch23');swapFolder('folder23')"><IMG 
+id=folder23 src="closed.gif" border=0> DAA COMMANDS <span class="notdone">-</span>
+</DIV><SPAN class=branch id=branch23>
+<span class="notdone">-</span>TPM_DAA_Join<BR>
+<span class="notdone">-</span>TPM_DAA_Sign<BR>
+</SPAN>
+
+
+<!--
+1.0.24 GPIO
+File: tpm_gpio.c
+TPM_GPIO_AuthChannel -
+TPM_GPIO_ReadWrite -
+-->
+
+<DIV class=trigger onclick="showBranch('branch24');swapFolder('folder24')"><IMG 
+id=folder24 src="closed.gif" border=0> GPIO <span class="notdone">-</span>
+</DIV><SPAN class=branch id=branch24>
+<span class="notdone">-</span>TPM_GPIO_AuthChannel<BR>
+<span class="notdone">-</span>TPM_GPIO_ReadWrite<BR>
+</SPAN>
+
+
+<!--
+1.0.25 Deprecated commands
+File: tpm_deprecated.c
+TPM_EvictKey +
+TPM_Terminate_Handle +
+TPM_SaveKeyContext -
+TPM_LoadKeyContext -
+TPM_SaveAuthContext -
+TPM_LoadAuthContext -
+TPM_DirWriteAuth -
+TPM_DirRead -
+TPM_ChangeAuthAsymStart -
+TPM_ChangeAuthAsymFinish -
+TPM_Reset +
+TPM_CertifySelfTest -
+TPM_OwnerReadPubek -
+-->
+
+
+<DIV class=trigger onclick="showBranch('branch25');swapFolder('folder25')"><IMG 
+id=folder25 src="closed.gif" border=0> DEPRECATED <span class="part">&#177</span>
+</DIV><SPAN class=branch id=branch25>
+<span class="done">+</span>TPM_EvictKey<BR>
+<span class="done">+</span>TPM_Terminate_Handle<BR>
+<span class="notdone">-</span>TPM_SaveKeyContext<BR>
+<span class="notdone">-</span>TPM_LoadKeyContext<BR>
+<span class="notdone">-</span>TPM_SaveAuthContext<BR>
+<span class="notdone">-</span>TPM_LoadAuthContext<BR>
+<span class="notdone">-</span>TPM_DirWriteAuth<BR>
+<span class="notdone">-</span>TPM_DirRead<BR>
+<span class="notdone">-</span>TPM_ChangeAuthAsymStart<BR>
+<span class="notdone">-</span>TPM_ChangeAuthAsymFinish<BR>
+<span class="done">+</span>TPM_Reset<BR>
+<span class="notdone">-</span>TPM_CertifySelfTest<BR>
+<span class="notdone">-</span>TPM_OwnerReadPubek<BR>
+</SPAN>
+
+
+
+
 @ENDENTRY()@
 
 @ENTRY("DEVELOPERS")@

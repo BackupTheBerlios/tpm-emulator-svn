@@ -2,6 +2,24 @@ UNKNOWN {
 	FONT-WEIGHT: bold; COLOR: #707070; TEXT-DECORATION: none
 }
 
+
+ /* ###################### JavaScript ###################### */
+.trigger {
+	CURSOR: hand
+}
+.branch {
+	DISPLAY: none; MARGIN-LEFT: 16px
+}
+
+.done {
+	font-size: 18px;
+	font-weight: bold;
+	color: #00FF00;
+}
+.part {font-size: 18px; font-weight: bold; color: #0000CC; }
+.notdone {font-size: 18px; font-weight: bold; color: #FF0000; }
+
+
  /* ###################### MAin Header ###################### */
 
 .theader {
