@@ -104,7 +104,6 @@ int decrypt_sealed_data(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
   return 0;
 }
 
-
 TPM_RESULT TPM_Seal(TPM_KEY_HANDLE keyHandle, TPM_ENCAUTH *encAuth,
                     UINT32 pcrInfoSize, TPM_PCR_INFO *pcrInfo,
                     UINT32 inDataSize, BYTE *inData,
@@ -184,15 +183,14 @@ TPM_RESULT TPM_Unseal(TPM_KEY_HANDLE parentHandle, TPM_STORED_DATA *inData,
   key = tpm_get_key(parentHandle);
   if (key == NULL) return TPM_INVALID_KEYHANDLE;
   /* verify authorization, if only auth1 is present we use it for the data */
-  if (auth2->authHandle != TPM_INVALID_HANDLE // 
+  if (auth2->authHandle != TPM_INVALID_HANDLE  
       || key->authDataUsage != TPM_AUTH_NEVER) {
     res = tpm_verify_auth(auth1, key->usageAuth, parentHandle);
     if (res != TPM_SUCCESS) return res;    
   }
   /* verify key properties */
   if (key->keyUsage != TPM_KEY_STORAGE
-      || key->keyFlags & TPM_KEY_FLAG_MIGRATABLE)
-    return TPM_INVALID_KEYUSAGE;
+      || key->keyFlags & TPM_KEY_FLAG_MIGRATABLE) return TPM_INVALID_KEYUSAGE;
   /* verify PCR info */
   if (inData->sealInfoSize > 0) {
     res = tpm_compute_pcr_digest(&inData->sealInfo.releasePCRSelection,
@@ -237,18 +235,53 @@ TPM_RESULT TPM_Unseal(TPM_KEY_HANDLE parentHandle, TPM_STORED_DATA *inData,
   return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_UnBind(  
-  TPM_KEY_HANDLE keyHandle,
-  UINT32 inDataSize,
-  BYTE *inData,
-  TPM_AUTH *auth1,  
-  UINT32 *outDataSize,
-  BYTE **outData  
-)
+TPM_RESULT TPM_UnBind(TPM_KEY_HANDLE keyHandle, UINT32 inDataSize,
+                      BYTE *inData, TPM_AUTH *auth1, 
+                      UINT32 *outDataSize, BYTE **outData)
 {
-  info("TPM_UnBind() not implemented yet");
-  /* TODO: implement TPM_UnBind() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  TPM_KEY_DATA *key;
+  int scheme;
+  info("TPM_UnBind()");
+  /* get key */
+  key = tpm_get_key(keyHandle);
+  if (key == NULL) return TPM_INVALID_KEYHANDLE;
+  /* verify auth */
+  if (auth1->authHandle != TPM_INVALID_HANDLE 
+      || key->authDataUsage != TPM_AUTH_NEVER) {
+    res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
+    if (res != TPM_SUCCESS) return res;    
+  }
+  /* verify key properties */
+  if (key->keyUsage != TPM_KEY_BIND 
+      && key->keyUsage != TPM_KEY_LEGACY) return TPM_INVALID_KEYUSAGE;
+  /* the size of the input data muss be greater than zero */
+  if (inDataSize == 0) return TPM_BAD_PARAMETER;
+  /* decrypt data */
+  *outDataSize = inDataSize;
+  *outData = tpm_malloc(*outDataSize);
+  if (*outData == NULL) return TPM_FAIL;
+  switch (key->encScheme) {
+    case TPM_ES_RSAESOAEP_SHA1_MGF1: scheme = RSA_ES_OAEP_SHA1; break;
+    case TPM_ES_RSAESPKCSv15: scheme = RSA_ES_PKCSV15; break;
+    default: tpm_free(*outData); return TPM_DECRYPT_ERROR;
+  }
+  if (rsa_decrypt(&key->key, scheme, inData, inDataSize, 
+      *outData, outDataSize)) {
+    tpm_free(*outData);
+    return TPM_DECRYPT_ERROR;
+  }
+  /* verify data if it is of type TPM_BOUND_DATA */
+  if (key->encScheme == TPM_ES_RSAESOAEP_SHA1_MGF1 
+      || key->keyUsage != TPM_KEY_LEGACY) {
+    if (*outDataSize < 5 || memcmp(*outData, "\x01\x01\00\x00\x02", 5) != 0) {
+      tpm_free(*outData);
+      return TPM_DECRYPT_ERROR;
+    }
+    *outDataSize -= 5;
+    memmove(*outData, &(*outData)[5], *outDataSize);   
+  } 
+  return TPM_SUCCESS;
 }
 
 static int compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest)

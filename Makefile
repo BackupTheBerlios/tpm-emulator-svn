@@ -56,6 +56,7 @@ dist:	$(DISTSRC)
 	rm -rf $(DISTDIR)
 	mkdir $(DISTDIR)
 	cp --parents $(DISTSRC) $(DISTDIR)/
+	rm -f $(DISTDIR)/crypto/gmp.h 
 	tar -chzf $(DISTDIR).tar.gz $(DISTDIR)
 	rm -rf $(DISTDIR)
 

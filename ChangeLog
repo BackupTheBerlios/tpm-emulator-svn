@@ -3,6 +3,7 @@
 	* tpm_authorization.c: TPM_ChangeAuth and TPM_ChangeAuthOwner added
 	* tpm_storage, tpm_crypto.c, tpm_integrity.c: authorization 
 		verification now considers the value of authDataUsage
+	* tpm_storage: TPM_UnBind added
 
 
 2004-10-24  Mario Strasser  <mast@gmx.net>
