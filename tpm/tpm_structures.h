@@ -1086,6 +1086,7 @@ typedef struct tdTPM_CURRENT_TICKS {
   UINT16 tickSecurity;
   TPM_NONCE tickNonce;
 } TPM_CURRENT_TICKS;
+#define sizeof_TPM_CURRENT_TICKS(s) (2 + 8 + 2 + 2 + 2 + 20)
 
 /*
  * TPM_TICKTYPE values ([TPM_Part2], Section 15.1.1)
@@ -1102,6 +1103,8 @@ typedef BYTE TPM_TICKTYPE;
 #define TICK_STCLEAR            0x06
 #define TICK_STCLEAR_SAVE       0x07
 #define TICK_ALWAYS             0x08
+#define TICK_SEC_NO_CHECK       0x01
+#define TICK_SEC_RATE_CHECK     0x02
 
 /*
  * Transport Structures
@@ -1986,7 +1989,7 @@ typedef struct tdTPM_PERMANENT_DATA {
   //TPM_KEY contextKey;
   //TPM_KEY delegateKey;
   TPM_COUNTER_VALUE counters[TPM_MAX_COUNTERS];
-  //TPM_TICKTYPE tickType;
+  TPM_TICKTYPE tickType;
   TPM_PCR_ATTRIBUTES pcrAttrib[TPM_NUM_PCR];
   TPM_PCRVALUE pcrValue[TPM_NUM_PCR];
   //BYTE* ordinalAuditStatus;
@@ -2005,7 +2008,7 @@ typedef struct tdTPM_PERMANENT_DATA {
   + sizeof_RSA(s.endorsementKey) \
   + (1+TPM_MAX_KEYS)*sizeof_TPM_KEY_DATA(s.srk) \
   + TPM_NUM_PCR*(sizeof_TPM_PCR_ATTRIBUTES(x)+20) \
-  + TPM_MAX_COUNTERS*sizeof_TPM_COUNTER_VALUE2(x)) 
+  + TPM_MAX_COUNTERS*sizeof_TPM_COUNTER_VALUE2(x) + 1) 
 
 /*
  * TPM_STCLEAR_DATA ([TPM_Part2], Section 7.5)
@@ -2046,7 +2049,7 @@ typedef struct tdTPM_STANY_DATA {
   TPM_STRUCTURE_TAG tag;
   //TPM_NONCE contextNonceSession;
   //TPM_DIGEST auditDigest ;
-  //TPM_CURRENT_TICKS currentTicks;
+  TPM_CURRENT_TICKS currentTicks;
   //UINT32 contextCount;
   //UINT32 contextList[TPM_MAX_SESSION_LIST];
   TPM_SESSION_DATA sessions[TPM_MAX_SESSIONS];

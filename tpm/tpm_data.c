@@ -87,6 +87,8 @@ void tpm_init_data(void)
   for (i = 0; i < TPM_NUM_PCR; i++) {
     tpmData.permanent.data.pcrAttrib[i].pcrReset = TRUE;
   }
+  /* set tick type */
+  tpmData.permanent.data.tickType = TICK_INC;
 #ifdef TPM_GENERATE_EK
   /* generate a new endorsement key */
   rsa_generate_key(&tpmData.permanent.data.endorsementKey, 2048);

@@ -54,8 +54,8 @@ static int verify_store_digest(TPM_STORED_DATA *store, TPM_DIGEST *digest)
     sizeof(store_digest.digest));
 }
 
-static int encrypt_sealed_data(TPM_KEY_DATA *key, TPM_SEALED_DATA *seal,
-                               BYTE *enc, UINT32 *enc_size)
+int encrypt_sealed_data(TPM_KEY_DATA *key, TPM_SEALED_DATA *seal,
+                        BYTE *enc, UINT32 *enc_size)
 {
   UINT32 len;
   BYTE *buf, *ptr;
@@ -82,8 +82,9 @@ static int encrypt_sealed_data(TPM_KEY_DATA *key, TPM_SEALED_DATA *seal,
   return 0;
 }
 
-static int decrypt_sealed_data(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
-                               TPM_SEALED_DATA *seal, BYTE **buf) {
+int decrypt_sealed_data(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
+                        TPM_SEALED_DATA *seal, BYTE **buf) 
+{
   UINT32 len;
   BYTE *ptr;
   int scheme;
@@ -182,9 +183,12 @@ TPM_RESULT TPM_Unseal(TPM_KEY_HANDLE parentHandle, TPM_STORED_DATA *inData,
   /* get key */
   key = tpm_get_key(parentHandle);
   if (key == NULL) return TPM_INVALID_KEYHANDLE;
-  /* verify authorization */
-  res = tpm_verify_auth(auth1, key->usageAuth, parentHandle);
-  if (res != TPM_SUCCESS) return res;
+  /* verify authorization, if only auth1 is present we use it for the data */
+  if (auth2->authHandle != TPM_INVALID_HANDLE // 
+      || key->authDataUsage != TPM_AUTH_NEVER) {
+    res = tpm_verify_auth(auth1, key->usageAuth, parentHandle);
+    if (res != TPM_SUCCESS) return res;    
+  }
   /* verify key properties */
   if (key->keyUsage != TPM_KEY_STORAGE
       || key->keyFlags & TPM_KEY_FLAG_MIGRATABLE)
@@ -213,9 +217,14 @@ TPM_RESULT TPM_Unseal(TPM_KEY_HANDLE parentHandle, TPM_STORED_DATA *inData,
     tpm_free(seal_buf);
     return TPM_NOTSEALED_BLOB;
   }
-  /* verify auth2 */
-  res = tpm_verify_auth(auth2, seal.authData, TPM_INVALID_HANDLE);
-  if (res != TPM_SUCCESS) return (res == TPM_AUTHFAIL) ? TPM_AUTH2FAIL : res;
+  /* verify data auth */
+  if (auth2->authHandle != TPM_INVALID_HANDLE) {
+    res = tpm_verify_auth(auth2, seal.authData, TPM_INVALID_HANDLE);
+    if (res != TPM_SUCCESS) return (res == TPM_AUTHFAIL) ? TPM_AUTH2FAIL : res;
+  } else {
+    res = tpm_verify_auth(auth1, seal.authData, TPM_INVALID_HANDLE);
+    if (res != TPM_SUCCESS) return res;  
+  }
   /* return secret */
   *sealedDataSize = seal.dataSize;
   *secret = tpm_malloc(*sealedDataSize);
@@ -268,8 +277,8 @@ static int verify_key_digest(TPM_KEY *key, TPM_DIGEST *digest)
   return memcmp(key_digest.digest, digest->digest, sizeof(key_digest.digest));
 }
 
-static int encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
-                               BYTE *enc, UINT32 *enc_size)
+int encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
+                        BYTE *enc, UINT32 *enc_size)
 {
   UINT32 len;
   BYTE *buf, *ptr;
@@ -296,8 +305,9 @@ static int encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
   return 0;
 } 
 
-static int decrypt_private_key(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size, 
-                               TPM_STORE_ASYMKEY *store, BYTE **buf) {
+int decrypt_private_key(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size, 
+                        TPM_STORE_ASYMKEY *store, BYTE **buf) 
+{
   UINT32 len;
   BYTE *ptr;
   int scheme;
@@ -441,8 +451,11 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
   parent = tpm_get_key(parentHandle);
   if (parent == NULL) return TPM_INVALID_KEYHANDLE;
   /* verify authorization */
-  res = tpm_verify_auth(auth1, parent->usageAuth, parentHandle);
-  if (res != TPM_SUCCESS) return res;
+  if (auth1->authHandle != TPM_INVALID_HANDLE
+      || parent->authDataUsage != TPM_AUTH_NEVER) {
+    res = tpm_verify_auth(auth1, parent->usageAuth, parentHandle);
+    if (res != TPM_SUCCESS) return res;    
+  }
   if (parent->keyUsage != TPM_KEY_STORAGE) return TPM_INVALID_KEYUSAGE;
   /* verify key properties */
   if (inKey->algorithmParms.algorithmID != TPM_ALG_RSA
@@ -523,9 +536,12 @@ TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
   key = tpm_get_key(keyHandle);
   if (key == NULL) return TPM_INVALID_KEYHANDLE;
   /* verify authorization */
-  res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
-  if (key->authDataUsage != TPM_AUTH_PRIV_USE_ONLY 
-      && res != TPM_SUCCESS) return res;
+  if (auth1->authHandle != TPM_INVALID_HANDLE
+      || (key->authDataUsage != TPM_AUTH_NEVER
+          && key->authDataUsage != TPM_AUTH_PRIV_USE_ONLY)) {
+    res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
+    if (res != TPM_SUCCESS) return res;    
+  }
   if (!(key->keyFlags & TPM_KEY_FLAG_PCR_IGNORE)) {
     res = tpm_compute_pcr_digest(&key->pcrInfo.releasePCRSelection, 
       &digest, NULL);

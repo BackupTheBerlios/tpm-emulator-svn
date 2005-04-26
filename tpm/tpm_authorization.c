@@ -27,34 +27,132 @@
  * Authorization Changing ([TPM_Part3], Section 17)
  */
 
-TPM_RESULT TPM_ChangeAuth(
-  TPM_KEY_HANDLE parentHandle,
-  TPM_PROTOCOL_ID protocolID,
-  TPM_ENCAUTH *newAuth,
-  TPM_ENTITY_TYPE entityType,
-  UINT32 encDataSize,
-  BYTE *encData,
-  TPM_AUTH *auth1,
-  TPM_AUTH *auth2,
-  UINT32 *outDataSize,
-  BYTE **outData
-)
+extern int encrypt_sealed_data(TPM_KEY_DATA *key, TPM_SEALED_DATA *seal,
+                               BYTE *enc, UINT32 *enc_size);
+                               
+extern int decrypt_sealed_data(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
+                               TPM_SEALED_DATA *seal, BYTE **buf);
+                               
+extern int encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
+                               BYTE *enc, UINT32 *enc_size);
+                  
+extern int decrypt_private_key(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size, 
+                               TPM_STORE_ASYMKEY *store, BYTE **buf);
+
+TPM_RESULT TPM_ChangeAuth(TPM_KEY_HANDLE parentHandle,
+                          TPM_PROTOCOL_ID protocolID, TPM_ENCAUTH *newAuth,
+                          TPM_ENTITY_TYPE entityType, UINT32 encDataSize,
+                          BYTE *encData, TPM_AUTH *auth1, TPM_AUTH *auth2,
+                          UINT32 *outDataSize, BYTE **outData)
 {
-  info("TPM_ChangeAuth() not implemented yet");
-  /* TODO: implement TPM_ChangeAuth() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  TPM_KEY_DATA *parent;
+  TPM_SESSION_DATA *session;
+  TPM_SECRET plainAuth;
+  info("TPM_ChangeAuth()");
+  /* get parent key */
+  parent = tpm_get_key(parentHandle);
+  if (parent == NULL) return TPM_INVALID_KEYHANDLE;
+  /* verify entity authorization */ 
+  auth2->continueAuthSession = FALSE;
+  session = tpm_get_auth(auth2->authHandle);
+  if (session->type != TPM_ST_OIAP) return TPM_BAD_MODE; 
+  /* verify parent authorization */
+  res = tpm_verify_auth(auth1, parent->usageAuth, parentHandle);
+  if (res != TPM_SUCCESS) return res;
+  auth1->continueAuthSession = FALSE;
+  session = tpm_get_auth(auth1->authHandle);
+  if (session->type != TPM_ST_OSAP) return TPM_BAD_MODE;  
+  /* decrypt auth */
+  tpm_decrypt_auth_secret(*newAuth, session->sharedSecret,
+                          &session->lastNonceEven, plainAuth);
+  /* decrypt the entity, replace authData, and encrypt it again */
+  if (entityType == TPM_ET_DATA) {
+    TPM_SEALED_DATA seal;
+    BYTE *seal_buf;
+    /* decrypt entity */
+    if (decrypt_sealed_data(parent, encData, encDataSize,
+        &seal, &seal_buf)) return TPM_DECRYPT_ERROR;
+    /* verify auth2 */
+    res = tpm_verify_auth(auth2, seal.authData, TPM_INVALID_HANDLE);
+    if (res != TPM_SUCCESS) return (res == TPM_AUTHFAIL) ? TPM_AUTH2FAIL : res;
+    /* change authData and use it also for auth2 */
+    memcpy(seal.authData, plainAuth, sizeof(TPM_SECRET));    
+    /* encrypt entity */
+    *outDataSize = parent->key.size >> 3;
+    *outData = tpm_malloc(*outDataSize);
+    if (encrypt_sealed_data(parent, &seal, *outData, outDataSize)) {
+      tpm_free(encData);
+      tpm_free(seal_buf);      
+      return TPM_ENCRYPT_ERROR;
+    }                    
+    tpm_free(seal_buf); 
+  } else if (entityType == TPM_ET_KEY) {
+    TPM_STORE_ASYMKEY store;
+    BYTE *store_buf;
+    /* decrypt entity */
+    if (decrypt_private_key(parent, encData, encDataSize,
+        &store, &store_buf)) return TPM_DECRYPT_ERROR;
+    /* verify auth2 */
+    res = tpm_verify_auth(auth2, store.usageAuth, TPM_INVALID_HANDLE);
+    if (res != TPM_SUCCESS) return (res == TPM_AUTHFAIL) ? TPM_AUTH2FAIL : res;
+    /* change usageAuth and use it also for auth2 */
+    memcpy(store.usageAuth, plainAuth, sizeof(TPM_SECRET));  
+    /* encrypt entity */
+    *outDataSize = parent->key.size >> 3;
+    *outData = tpm_malloc(*outDataSize);
+    if (encrypt_private_key(parent, &store, *outData, outDataSize)) {
+      tpm_free(encData);
+      tpm_free(store_buf);      
+      return TPM_ENCRYPT_ERROR;
+    }                    
+    tpm_free(store_buf); 
+  } else {
+    return TPM_WRONG_ENTITYTYPE;
+  }
+  return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_ChangeAuthOwner(
-  TPM_PROTOCOL_ID protocolID,
-  TPM_ENCAUTH *newAuth,
-  TPM_ENTITY_TYPE entityType,
-  TPM_AUTH *auth1
-)
+TPM_RESULT TPM_ChangeAuthOwner(TPM_PROTOCOL_ID protocolID, 
+                               TPM_ENCAUTH *newAuth, 
+                               TPM_ENTITY_TYPE entityType, TPM_AUTH *auth1)
 {
-  info("TPM_ChangeAuthOwner() not implemented yet");
-  /* TODO: implement TPM_ChangeAuthOwner() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  TPM_SESSION_DATA *session;
+  TPM_SECRET plainAuth;
+  int i;
+  info("TPM_ChangeAuthOwner()");
+  /* verify authorization */
+  res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
+  if (res != TPM_SUCCESS) return res;
+  auth1->continueAuthSession = FALSE;
+  session = tpm_get_auth(auth1->authHandle);
+  if (session->type != TPM_ST_OSAP) return TPM_AUTHFAIL;
+  /* decrypt auth */
+  tpm_decrypt_auth_secret(*newAuth, session->sharedSecret,
+                          &session->lastNonceEven, plainAuth);
+  /* change autorization data */
+  if (entityType == TPM_ET_OWNER) {
+    memcpy(tpmData.permanent.data.ownerAuth, plainAuth, sizeof(TPM_SECRET));  
+    /* invalidate all associated sessions */
+    for (i = 0; i < TPM_MAX_SESSIONS; i++) {
+      if (tpmData.stany.data.sessions[i].handle == TPM_KH_OWNER) {
+          memset(session, 0, sizeof(*session));   
+      }           
+    }
+  } else if (entityType == TPM_ET_SRK) {
+    memcpy(tpmData.permanent.data.srk.usageAuth, plainAuth, sizeof(TPM_SECRET));
+    tpmData.permanent.data.srk.authDataUsage = TPM_AUTH_ALWAYS; /* right? */  
+    /* invalidate all associated sessions */
+    for (i = 0; i < TPM_MAX_SESSIONS; i++) {
+      if (tpmData.stany.data.sessions[i].handle == TPM_KH_SRK) {
+          memset(session, 0, sizeof(*session));   
+      }           
+    }
+  } else {
+    return TPM_WRONG_ENTITYTYPE;
+  }
+  return TPM_SUCCESS;
 }
 
 /*

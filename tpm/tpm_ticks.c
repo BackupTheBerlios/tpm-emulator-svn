@@ -17,6 +17,9 @@
 
 #include "tpm_emulator.h"
 #include "tpm_commands.h"
+#include "tpm_data.h"
+#include "tpm_handles.h"
+#include "tpm_marshalling.h"
 
 /*
  * Timing Ticks ([TPM_Part3], Section 23)
@@ -25,36 +28,80 @@
  * See the design document for details. 
  */
 
-TPM_RESULT TPM_SetTickType(  
-  TPM_TICKTYPE tickType
-)
+TPM_RESULT TPM_SetTickType(TPM_TICKTYPE tickType)
 {
-  info("TPM_SetTickType() not implemented yet");
-  /* TODO: implement TPM_SetTickType() */
-  return TPM_FAIL;
+  info("TPM_SetTickType()");
+  return TPM_DISABLED_CMD;
 }
 
-TPM_RESULT TPM_GetTicks(  
-  TPM_CURRENT_TICKS *currentTime 
-)
+TPM_RESULT TPM_GetTicks(TPM_CURRENT_TICKS *currentTime)
 {
-  info("TPM_GetTicks() not implemented yet");
-  /* TODO: implement TPM_GetTicks() */
-  return TPM_FAIL;
+  info("TPM_GetTicks()");
+  memcpy(currentTime, &tpmData.stany.data.currentTicks, 
+    sizeof(TPM_CURRENT_TICKS));
+  return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_TickStampBlob(  
-  TPM_KEY_HANDLE keyHandle,
-  TPM_NONCE *antiReplay,
-  TPM_DIGEST *digestToStamp,
-  TPM_AUTH *auth1,  
-  TPM_CURRENT_TICKS *currentTicks,
-  UINT32 *sigSize,
-  BYTE **sig  
-)
+TPM_RESULT TPM_TickStampBlob(TPM_KEY_HANDLE keyHandle, TPM_NONCE *antiReplay,
+                             TPM_DIGEST *digestToStamp, TPM_AUTH *auth1,  
+                             TPM_CURRENT_TICKS *currentTicks, 
+                             UINT32 *sigSize, BYTE **sig)
 {
-  info("TPM_TickStampBlob() not implemented yet");
-  /* TODO: implement TPM_TickStampBlob() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  TPM_KEY_DATA *key;
+  BYTE *info, *p;
+  UINT32 info_length, length;
+  info("TPM_TickStampBlob()");
+  /* get key */
+  key = tpm_get_key(keyHandle);
+  if (key == NULL) return TPM_INVALID_KEYHANDLE;
+  /* verify authorization */ 
+  res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
+  if (res != TPM_SUCCESS) return res;
+  if (key->keyUsage != TPM_KEY_SIGNING && key->keyUsage != TPM_KEY_LEGACY
+      && key->keyUsage != TPM_KEY_IDENTITY) return TPM_INVALID_KEYUSAGE;
+  /* get current ticks */
+  TPM_GetTicks(currentTicks);
+  /* sign data using signature scheme PKCS1_SHA1 and TPM_SIGN_INFO container */
+  *sigSize = key->key.size >> 3;
+  *sig = tpm_malloc(*sigSize);
+  if (*sig == NULL) return TPM_FAIL; 
+  /* setup TPM_SIGN_INFO structure */
+  info_length = 30 + sizeof(TPM_DIGEST) + sizeof_TPM_CURRENT_TICKS(currentTicks);
+  info = tpm_malloc(info_length);
+  if (info == NULL) {
+    tpm_free(*sig);
+    return TPM_FAIL;
+  }
+  memcpy(&info[0], "\x05\x00TSTP", 6);
+  memcpy(&info[6], antiReplay->nonce, 20);
+  *(UINT32*)&info[26] = cpu_to_be32(20
+                        + sizeof_TPM_CURRENT_TICKS(currentTicks));
+  memcpy(&info[30], digestToStamp->digest, sizeof(TPM_DIGEST));
+  p = &info[30 + sizeof(TPM_DIGEST)]; 
+  length = sizeof_TPM_CURRENT_TICKS(currentTicks);
+  if (tpm_marshal_TPM_CURRENT_TICKS(&p, &length, currentTicks)
+      || rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, info, info_length, *sig)) {   
+    tpm_free(*sig);
+    tpm_free(info);
+    return TPM_FAIL;
+  } 
+  return TPM_SUCCESS;
 }
+
+void tpm_update_ticks(void)
+{
+  if (tpmData.stany.data.currentTicks.tag == 0) {
+    tpmData.stany.data.currentTicks.tag = TPM_TAG_CURRENT_TICKS;
+    tpmData.stany.data.currentTicks.currentTicks += tpm_get_ticks();
+    tpmData.stany.data.currentTicks.tickType = tpmData.permanent.data.tickType;
+    tpm_get_random_bytes(tpmData.stany.data.currentTicks.tickNonce.nonce, 
+      sizeof(TPM_NONCE));
+    tpmData.stany.data.currentTicks.tickRate = 1;
+    tpmData.stany.data.currentTicks.tickSecurity = TICK_SEC_NO_CHECK;
+  } else {
+    tpmData.stany.data.currentTicks.currentTicks += tpm_get_ticks();   
+  }
+}
+  
 

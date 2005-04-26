@@ -1129,7 +1129,8 @@ int tpm_marshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DAT
       || tpm_marshal_TPM_SECRET(ptr, length, &v->operatorAuth)
       || tpm_marshal_TPM_NONCE(ptr, length, &v->ekReset)
       || tpm_marshal_RSA(ptr, length, &v->endorsementKey)
-      || tpm_marshal_TPM_KEY_DATA(ptr, length, &v->srk)) return -1;
+      || tpm_marshal_TPM_KEY_DATA(ptr, length, &v->srk)
+      || tpm_marshal_BYTE(ptr, length, v->tickType)) return -1;
   for (i = 0; i < TPM_MAX_COUNTERS; i++) {
     if (tpm_marshal_TPM_COUNTER_VALUE(ptr, length, &v->counters[i])
         || tpm_marshal_TPM_SECRET(ptr, length, &v->counters[i].usageAuth)
@@ -1155,7 +1156,8 @@ int tpm_unmarshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_D
       || tpm_unmarshal_TPM_SECRET(ptr, length, &v->operatorAuth)
       || tpm_unmarshal_TPM_NONCE(ptr, length, &v->ekReset)
       || tpm_unmarshal_RSA(ptr, length, &v->endorsementKey)
-      || tpm_unmarshal_TPM_KEY_DATA(ptr, length, &v->srk)) return -1;
+      || tpm_unmarshal_TPM_KEY_DATA(ptr, length, &v->srk)
+      || tpm_unmarshal_BYTE(ptr, length, &v->tickType)) return -1;
   for (i = 0; i < TPM_MAX_COUNTERS; i++) {
     if (tpm_unmarshal_TPM_COUNTER_VALUE(ptr, length, &v->counters[i])
         || tpm_unmarshal_TPM_SECRET(ptr, length, &v->counters[i].usageAuth)
@@ -1204,6 +1206,7 @@ int tpm_unmarshal_TPM_REQUEST(BYTE **ptr, UINT32 *length, TPM_REQUEST *v)
     v->paramSize = *length - 45;
     if (tpm_unmarshal_BLOB(ptr, length, &v->param, v->paramSize)
         || tpm_unmarshal_TPM_AUTH(ptr, length, &v->auth1)) return -1;
+    v->auth2.authHandle = TPM_INVALID_HANDLE;
   } else {
     v->auth1.authHandle = TPM_INVALID_HANDLE;
     v->auth2.authHandle = TPM_INVALID_HANDLE;

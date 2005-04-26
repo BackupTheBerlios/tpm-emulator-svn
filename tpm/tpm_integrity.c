@@ -78,8 +78,11 @@ TPM_RESULT TPM_Quote(TPM_KEY_HANDLE keyHandle, TPM_NONCE *extrnalData,
   key = tpm_get_key(keyHandle);
   if (key == NULL) return TPM_INVALID_KEYHANDLE;
   /* verify authorization */
-  res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
-  if (res != TPM_SUCCESS) return res;
+  if (auth1->authHandle != TPM_INVALID_HANDLE
+      || key->authDataUsage != TPM_AUTH_NEVER) {      
+    res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
+    if (res != TPM_SUCCESS) return res;    
+  }
   if ((key->keyUsage != TPM_KEY_SIGNING && key->keyUsage != TPM_KEY_LEGACY)
       || key->sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1) 
     return TPM_INVALID_KEYUSAGE;

@@ -80,8 +80,11 @@ TPM_RESULT TPM_Sign(TPM_KEY_HANDLE keyHandle, UINT32 areaToSignSize,
   key = tpm_get_key(keyHandle);
   if (key == NULL) return TPM_INVALID_KEYHANDLE;
   /* verify authorization */ 
-  res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
-  if (res != TPM_SUCCESS) return res;
+  if (auth1->authHandle != TPM_INVALID_HANDLE
+      || key->authDataUsage != TPM_AUTH_NEVER) {
+    res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
+    if (res != TPM_SUCCESS) return res;
+  }
   if (key->keyUsage != TPM_KEY_SIGNING && key->keyUsage != TPM_KEY_LEGACY) 
     return TPM_INVALID_KEYUSAGE;
   /* sign data */
@@ -107,14 +110,14 @@ TPM_RESULT TPM_Sign(TPM_KEY_HANDLE keyHandle, UINT32 areaToSignSize,
       return TPM_FAIL;
     }
   } else if (key->sigScheme == TPM_SS_RSASSAPKCS1v15_INFO) {
-    /* use signature scheme PKCS1_SHA1 and TPM_SIG_INFO container */
+    /* use signature scheme PKCS1_SHA1 and TPM_SIGN_INFO container */
     BYTE buf[areaToSignSize + 30];
     if ((areaToSignSize + 30) > (key->key.size >> 3)
         || areaToSignSize == 0) return TPM_BAD_PARAMETER;    
     *sigSize = key->key.size >> 3;
     *sig = tpm_malloc(*sigSize);
     if (*sig == NULL) return TPM_FAIL; 
-    /* setup TPM_SIG_INFO structure */
+    /* setup TPM_SIGN_INFO structure */
     memcpy(&buf[0], "\x05\x00SIGN", 6);
     memcpy(&buf[6], auth1->nonceOdd.nonce, 20);
     *(UINT32*)&buf[26] = cpu_to_be32(areaToSignSize);

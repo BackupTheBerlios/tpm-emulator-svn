@@ -47,7 +47,7 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
   tpmData.stany.flags.tag = TPM_TAG_STANY_FLAGS;
   /* reset STANY_DATA (invalidates ALL sessions) */
   SET_TO_ZERO(&tpmData.stany.data);
-  tpmData.stany.data.tag = TPM_TAG_STANY_DATA;
+  tpmData.stany.data.tag = TPM_TAG_STANY_DATA;  
   /* set data and flags according to the given startup type */
   if (startupType == TPM_ST_CLEAR) {
     /* reset PCR values */

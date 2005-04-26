@@ -1938,6 +1938,11 @@ TPM_RESULT TPM_TickStampBlob(
   BYTE **sig  
 );
 
+/**
+ * tpm_update_ticks - updates the current tick session
+ */
+void tpm_update_ticks(void);
+
 /*
  * Transport Sessions ([TPM_Part3], Section 24)
  * [tpm_transport.c]

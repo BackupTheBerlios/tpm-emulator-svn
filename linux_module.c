@@ -151,3 +151,13 @@ void __exit cleanup_tpm_module(void)
 module_init(init_tpm_module);
 module_exit(cleanup_tpm_module);
 
+uint64_t tpm_get_ticks(void)
+{
+  static struct timespec old_time = {0, 0}; 
+  struct timespec new_time = current_kernel_time();
+  uint64_t ticks = (uint64_t)(old_time.tv_sec - new_time.tv_sec) * 1000000
+                   + (old_time.tv_nsec - new_time.tv_nsec) / 1000;
+  old_time = new_time;
+  return (ticks > 0) ? ticks : 1;
+}
+

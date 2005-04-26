@@ -1,11 +1,17 @@
+2005-04-26  Mario Strasser  <mast@gmx.net>
+	* tpm_ticks.c: timing ticks functionality added
+	* tpm_authorization.c: TPM_ChangeAuth and TPM_ChangeAuthOwner added
+	* tpm_storage, tpm_crypto.c, tpm_integrity.c: authorization 
+		verification now considers the value of authDataUsage
+
 
 2004-10-24  Mario Strasser  <mast@gmx.net>
 	
 	* Makefile: new makefile for Linux kernels > 2.5.0 build system
 	* tpm_testing.c: replacement of some floating-point calculations 
-	                 with fix-point arithmetic 
+		with fix-point arithmetic 
 	* all: minor changes int the directory and header file structure
-	       to make the package easier portable and maintainable 
+	       	to make the package easier portable and maintainable 
 
 
 2004-07-01  Mario Strasser  <mast@gmx.net>  

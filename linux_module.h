@@ -23,6 +23,7 @@
 #include <linux/types.h>
 #include <linux/string.h>
 #include <linux/random.h>
+#include <linux/time.h>
 #include <asm/byteorder.h>
 
 /* module settings */
@@ -68,6 +69,10 @@ static inline void tpm_get_random_bytes(void *buf, int nbytes)
 {
   get_random_bytes(buf, nbytes);
 }
+
+/* usec since last call */
+
+uint64_t tpm_get_ticks(void);
 
 /* byteorder conversions */
 

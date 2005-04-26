@@ -3848,6 +3848,9 @@ int tpm_handle_command(const uint8_t *in, uint32_t in_size, uint8_t **out, uint3
     error("tpm_unmarshal_TPM_REQUEST() failed");
     return -1;
   }
+  
+  /* update timing ticks */
+  tpm_update_ticks();
 
   /* execute command */
   tpm_execute_command(&req, &rsp);
