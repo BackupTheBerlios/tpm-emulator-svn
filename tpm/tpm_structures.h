@@ -371,6 +371,8 @@ typedef struct tdTPM_KEY_HANDLE_LIST {
 #define TPM_KEY_FLAG_VOLATILE   0x00000004
 #define TPM_KEY_FLAG_PCR_IGNORE 0x00000008
 #define TPM_KEY_FLAG_AUTHORITY  0x0000000C
+#define TPM_KEY_FLAG_HAS_PCR    0x10000000 /* to use with TPM_KEY_DATA only! */
+#define TPM_KEY_FLAG_MASK       0x0fffffff
 
 /*
  * TPM_CHANGEAUTH_VALIDATE ([TPM_Part2], Section 5.10)
@@ -908,34 +910,13 @@ typedef struct tdTPM_MIGRATIONKEYAUTH {
  */
 
 /*
- * CERTIFY_INFO Structure ([TPM_Part2], Section 11.1)
- * This structure provides the mechanism to provide a signature with a TPM
- * identity key on information that describes that key.
- */
-typedef struct tdTPM_CERTIFY_INFO {
-  TPM_STRUCT_VER version;
-  TPM_KEY_USAGE keyUsage;
-  TPM_KEY_FLAGS keyFlags;
-  TPM_AUTH_DATA_USAGE authDataUsage;
-  TPM_KEY_PARMS algorithmParms;
-  TPM_DIGEST pubkeyDigest;
-  TPM_NONCE data;
-  BOOL parentPCRStatus;
-  UINT32 PCRInfoSize;
-  BYTE* PCRInfo;
-} TPM_CERTIFY_INFO;
-#define sizeof_TPM_CERTIFY_INFO(s) (4 + 2 + 4 + 1 + \
-  sizeof_TPM_KEY_PARMS(s.algorithmParms) + 20 + 20 + 1 + 4 + s.PCRInfoSize)
-#define free_TPM_CERTIFY_INFO(s) { free_TPM_KEY_PARMS(s.algorithmParms); \
-  tpm_free(s.PCRInfo); }
-
-/*
+ * TPM_CERTIFY_INFO Structure ([TPM_Part2], Section 11.1)
  * TPM_CERTIFY_INFO2 Structure ([TPM_Part2], Section 11.2)
  * This structure provides the mechanism to provide a signature with a TPM
  * identity key on information that describes that key.
  */
 #define TPM_TAG_CERTIFY_INFO2 0x0029
-typedef struct tdTPM_CERTIFY_INFO2 {
+typedef struct tdTPM_CERTIFY_INFO {
   TPM_STRUCTURE_TAG tag;
   UINT16 fill;
   TPM_KEY_USAGE keyUsage;
@@ -948,9 +929,14 @@ typedef struct tdTPM_CERTIFY_INFO2 {
   UINT32 migrationAuthoritySize;
   BYTE* migrationAuthority;
   UINT32 PCRInfoSize;
-  BYTE* PCRInfo;
-} TPM_CERTIFY_INFO2;
-
+  TPM_PCR_INFO PCRInfo;
+} TPM_CERTIFY_INFO;
+#define sizeof_TPM_CERTIFY_INFO(s) (4 + 2 + 4 + 1 + \
+  sizeof_TPM_KEY_PARMS(s.algorithmParms) + 20 + 20 + 1 + 4 \
+  + s.PCRInfoSize + s.migrationAuthoritySize)
+#define free_TPM_CERTIFY_INFO(s) { free_TPM_KEY_PARMS(s.algorithmParms); \
+  if (s.migrationAuthoritySize > 0) tpm_free(s.migrationAuthority); }
+ 
 /*
  * TPM_QUOTE_INFO Structure ([TPM_Part2], Section 11.3)
  * This structure provides the mechanism for the TPM to quote the

@@ -1,3 +1,8 @@
+2005-04-27  Mario Strasser  <mast@gmx.net>
+	* tpm_crypto.c: TPM_CertifyKey and TPM_CertifyKey2 added
+	* tpm_deprecated: TPM_OwnerReadPubek and TPM_CertifySelfTest added
+
+
 2005-04-26  Mario Strasser  <mast@gmx.net>
 	* tpm_ticks.c: timing ticks functionality added
 	* tpm_authorization.c: TPM_ChangeAuth and TPM_ChangeAuthOwner added

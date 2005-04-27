@@ -18,6 +18,7 @@
 #include "tpm_emulator.h"
 #include "tpm_commands.h"
 #include "tpm_data.h"
+#include "tpm_handles.h"
 
 /*
  * Deprecated commands ([TPM_Part3], Section 28)
@@ -157,26 +158,45 @@ TPM_RESULT TPM_Reset()
   return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_CertifySelfTest(  
-  TPM_KEY_HANDLE keyHandle,
-  TPM_NONCE *antiReplay,
-  TPM_AUTH *auth1,  
-  UINT32 *sigSize,
-  BYTE **sig  
-)
+extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, 
+  BYTE *areaToSign, UINT32 areaToSignSize, BYTE **sig, UINT32 *sigSize);
+
+TPM_RESULT TPM_CertifySelfTest(TPM_KEY_HANDLE keyHandle, TPM_NONCE *antiReplay,
+                               TPM_AUTH *auth1, UINT32 *sigSize, BYTE **sig)
 {
-  info("TPM_CertifySelfTest() not implemented yet");
-  /* TODO: implement TPM_CertifySelfTest() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  TPM_KEY_DATA *key;
+  BYTE buf[35];
+  info("TPM_CertifySelfTest()");
+  key = tpm_get_key(keyHandle);
+  if (key == NULL) return TPM_INVALID_KEYHANDLE;
+  /* perform self test */
+  res = TPM_SelfTestFull();
+  if (res != TPM_SUCCESS) return res;
+  /* verify authorization */ 
+  if (auth1->authHandle != TPM_INVALID_HANDLE
+      || key->authDataUsage != TPM_AUTH_NEVER) {
+    res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
+    if (res != TPM_SUCCESS) return res;
+  }
+  /* setup and sign result */
+  memcpy(&buf, "Test Passed", 11);
+  memcpy(&buf[11], antiReplay->nonce, sizeof(TPM_NONCE));
+  memcpy(&buf[31], "\x52\x00\x00\x00", 4);
+  return tpm_sign(key, auth1, buf, sizeof(buf), sig, sigSize); 
 }
 
-TPM_RESULT TPM_OwnerReadPubek(  
-  TPM_AUTH *auth1,  
-  TPM_PUBKEY *pubEndorsementKey 
-)
+extern TPM_RESULT tpm_get_pubek(TPM_PUBKEY *pubEndorsementKey);
+
+TPM_RESULT TPM_OwnerReadPubek(TPM_AUTH *auth1, TPM_PUBKEY *pubEndorsementKey)
 {
-  info("TPM_OwnerReadPubek() not implemented yet");
-  /* TODO: implement TPM_OwnerReadPubek() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  info("TPM_OwnerReadPubek()");
+  /* verify authorization */
+  res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
+  if (res != TPM_SUCCESS) return res;
+  res = tpm_get_pubek(pubEndorsementKey);
+  if (res != TPM_SUCCESS) return res; 
+  return TPM_SUCCESS;
 }
 

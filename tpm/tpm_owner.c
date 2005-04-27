@@ -156,6 +156,7 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   /* we do not allow binding of the SRK to PCRs */
   if (srkParams->PCRInfoSize != 0) return TPM_BAD_KEY_PROPERTY;
   srk->keyFlags |= TPM_KEY_FLAG_PCR_IGNORE;
+  srk->keyFlags &= ~TPM_KEY_FLAG_HAS_PCR;
   srk->parentPCRStatus = FALSE;
   /* TODO: generate context Key */
   /* TODO: generate delegate Key */

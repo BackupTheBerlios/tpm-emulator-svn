@@ -547,14 +547,31 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
   memcpy(&key->usageAuth, &store.usageAuth, sizeof(TPM_SECRET));
   /* setup PCR info */
   if (inKey->PCRInfoSize > 0) {
-    memcpy(&key->pcrInfo, &inKey->PCRInfo, sizeof(TPM_PCR_INFO));
-    key->keyFlags &= ~TPM_KEY_FLAG_PCR_IGNORE;  
+    memcpy(&key->pcrInfo, &inKey->PCRInfo, sizeof(TPM_PCR_INFO));    
+    key->keyFlags |= TPM_KEY_FLAG_HAS_PCR; 
   } else {
-    key->keyFlags |= TPM_KEY_FLAG_PCR_IGNORE;
+    key->keyFlags |= TPM_KEY_FLAG_PCR_IGNORE;    
+    key->keyFlags &= ~TPM_KEY_FLAG_HAS_PCR;
   }
   key->parentPCRStatus = parent->parentPCRStatus;
   tpm_free(key_buf);
   return TPM_SUCCESS;
+}
+
+int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms)
+{
+  parms->algorithmID = TPM_ALG_RSA;
+  parms->encScheme = key->encScheme;
+  parms->sigScheme = key->sigScheme;
+  parms->parms.rsa.keyLength = key->key.size;
+  parms->parms.rsa.numPrimes = 2;
+  parms->parms.rsa.exponentSize = key->key.size >> 3;
+  parms->parms.rsa.exponent = tpm_malloc(parms->parms.rsa.exponentSize);
+  if (parms->parms.rsa.exponent == NULL) return -1;
+  rsa_export_exponent(&key->key, parms->parms.rsa.exponent,
+    &parms->parms.rsa.exponentSize);
+  parms->parmSize = 12 + parms->parms.rsa.exponentSize;  
+  return 0;
 }
 
 TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1, 
@@ -584,7 +601,7 @@ TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
     if (key->pcrInfo.tag == TPM_TAG_PCR_INFO_LONG
         && !(key->pcrInfo.localityAtRelease
              & (1 << tpmData.stany.flags.localityModifier)))
-       return TPM_BAD_LOCALITY;
+       return TPM_BAD_LOCALITY;   
   }
   /* setup pubKey */
   pubKey->pubKey.keyLength = key->key.size >> 3;
@@ -592,22 +609,10 @@ TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
   if (pubKey->pubKey.key == NULL) return TPM_FAIL;
   rsa_export_modulus(&key->key, pubKey->pubKey.key, 
     &pubKey->pubKey.keyLength);
-  pubKey->algorithmParms.algorithmID = TPM_ALG_RSA;
-  pubKey->algorithmParms.encScheme = key->encScheme;
-  pubKey->algorithmParms.sigScheme = key->sigScheme;
-  pubKey->algorithmParms.parms.rsa.keyLength = key->key.size;
-  pubKey->algorithmParms.parms.rsa.numPrimes = 2;
-  pubKey->algorithmParms.parms.rsa.exponentSize = key->key.size;;
-  pubKey->algorithmParms.parms.rsa.exponent = 
-    tpm_malloc(pubKey->algorithmParms.parms.rsa.exponentSize);
-  if (pubKey->algorithmParms.parms.rsa.exponent == NULL) {
+  if (tpm_setup_key_parms(key, &pubKey->algorithmParms) != 0) {
     tpm_free(pubKey->pubKey.key);
-    return TPM_FAIL;
-  }
-  rsa_export_exponent(&key->key, pubKey->algorithmParms.parms.rsa.exponent,
-    &pubKey->algorithmParms.parms.rsa.exponentSize);
-  pubKey->algorithmParms.parmSize = 12 
-    + pubKey->algorithmParms.parms.rsa.exponentSize;
+    return TPM_FAIL;  
+  }  
   return TPM_SUCCESS;
 }
 

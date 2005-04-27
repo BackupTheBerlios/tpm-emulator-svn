@@ -167,3 +167,33 @@ TPM_RESULT tpm_compute_pcr_digest(TPM_PCR_SELECTION *pcrSelection,
   return TPM_SUCCESS;
 }
 
+TPM_RESULT tpm_verify_pcr(TPM_KEY_DATA *key, BOOL atrelease, BOOL atcreation)
+{
+  TPM_RESULT res;
+  TPM_DIGEST digest;
+  info("tpm_verify_pcr()");
+  if (atrelease) {
+    res = tpm_compute_pcr_digest(&key->pcrInfo.releasePCRSelection, 
+                                 &digest, NULL);
+    if (res != TPM_SUCCESS) return res;
+    if (memcmp(&digest, &key->pcrInfo.digestAtRelease, 
+        sizeof(TPM_DIGEST))) return TPM_WRONGPCRVAL;
+    if (key->pcrInfo.tag == TPM_TAG_PCR_INFO_LONG
+        && !(key->pcrInfo.localityAtRelease
+             & (1 << tpmData.stany.flags.localityModifier)))
+      return TPM_BAD_LOCALITY;
+  }
+  if (atcreation) {
+    res = tpm_compute_pcr_digest(&key->pcrInfo.creationPCRSelection, 
+                                 &digest, NULL);
+    if (res != TPM_SUCCESS) return res;
+    if (memcmp(&digest, &key->pcrInfo.digestAtCreation, 
+        sizeof(TPM_DIGEST))) return TPM_WRONGPCRVAL;
+    if (key->pcrInfo.tag == TPM_TAG_PCR_INFO_LONG
+        && !(key->pcrInfo.localityAtCreation
+             & (1 << tpmData.stany.flags.localityModifier))) 
+      return TPM_BAD_LOCALITY;  
+  }
+  return TPM_SUCCESS;
+}
+

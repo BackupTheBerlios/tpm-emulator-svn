@@ -1345,6 +1345,22 @@ TPM_RESULT tpm_compute_pcr_digest(
   TPM_PCR_COMPOSITE *composite
 );
 
+/**
+ * tpm_verify_pcr - verifies the PCR composite hash of the specified key
+ * @key: [in] The key whose PCR composite hash should be verified
+ * @atrelease: [in] If TRUE the AtRelease composite hash is verified
+ * @atcreation: [in] If TRUE the AtCreation composite hash is verified
+ * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
+ *
+ * Description: ([TPM_Part3], Section 5.3.1)
+ * Computes the PCR composite hash over a given set of PCRs.
+ */
+TPM_RESULT tpm_verify_pcr(
+  TPM_KEY_DATA *key, 
+  BOOL atrelease, 
+  BOOL atcreation
+);
+
 /*
  * Authorization Changing ([TPM_Part3], Section 17)
  * [tpm_authorization.c]

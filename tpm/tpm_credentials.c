@@ -45,7 +45,7 @@ int tpm_compute_pubkey_checksum(TPM_NONCE *antiReplay, TPM_PUBKEY *pubKey,
   return 0;
 }
 
-static TPM_RESULT get_pubek(TPM_PUBKEY *pubEndorsementKey)
+TPM_RESULT tpm_get_pubek(TPM_PUBKEY *pubEndorsementKey)
 {
   UINT32 key_length;
   if (!tpmData.permanent.data.endorsementKey.size) return TPM_NO_ENDORSEMENT;
@@ -98,7 +98,7 @@ TPM_RESULT TPM_CreateRevocableEK(TPM_NONCE *antiReplay, TPM_KEY_PARMS *keyInfo,
   if (rsa_generate_key(&tpmData.permanent.data.endorsementKey, 
       keyInfo->parms.rsa.keyLength)) return TPM_FAIL;
   /* return PUBEK */
-  res = get_pubek(pubEndorsementKey);
+  res = tpm_get_pubek(pubEndorsementKey);
   if (res != TPM_SUCCESS) {
     rsa_release_private_key(&tpmData.permanent.data.endorsementKey);
     tpmData.permanent.data.endorsementKey.size = 0;
@@ -143,7 +143,7 @@ TPM_RESULT TPM_ReadPubek(TPM_NONCE *antiReplay, TPM_PUBKEY *pubEndorsementKey,
   info("TPM_ReadPubek()");
   if (!tpmData.permanent.flags.readPubek) return TPM_DISABLED_CMD;
   /* get PUBEK */
-  res = get_pubek(pubEndorsementKey);
+  res = tpm_get_pubek(pubEndorsementKey);
   if (res != TPM_SUCCESS) return res; 
   /* compute checksum */
   if (tpm_compute_pubkey_checksum(antiReplay, pubEndorsementKey, checksum)) {
@@ -174,7 +174,7 @@ TPM_RESULT TPM_OwnerReadInternalPub(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
   res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
   if (res != TPM_SUCCESS) return res;
   if (keyHandle == TPM_KH_EK) {
-    return get_pubek(publicPortion);
+    return tpm_get_pubek(publicPortion);
   } else if (keyHandle == TPM_KH_SRK) {
     publicPortion->pubKey.keyLength = srk->key.size >> 3;
     publicPortion->pubKey.key = tpm_malloc(publicPortion->pubKey.keyLength);

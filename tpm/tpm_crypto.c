@@ -21,6 +21,7 @@
 #include "tpm_handles.h"
 #include "crypto/sha1.h"
 #include "linux_module.h"
+#include "tpm_marshalling.h"
 
 /*
  * Cryptographic Functions ([TPM_Part3], Section 13)
@@ -69,25 +70,9 @@ TPM_RESULT TPM_SHA1CompleteExtend(TPM_PCRINDEX pcrNum, UINT32 hashDataSize,
   return TPM_Extend(pcrNum, hashValue, outDigest);
 }
 
-TPM_RESULT TPM_Sign(TPM_KEY_HANDLE keyHandle, UINT32 areaToSignSize, 
-                    BYTE *areaToSign, TPM_AUTH *auth1,  
-                    UINT32 *sigSize, BYTE **sig)
-{
-  TPM_RESULT res;
-  TPM_KEY_DATA *key;
-  info("TPM_Sign()");
-  /* get key */
-  key = tpm_get_key(keyHandle);
-  if (key == NULL) return TPM_INVALID_KEYHANDLE;
-  /* verify authorization */ 
-  if (auth1->authHandle != TPM_INVALID_HANDLE
-      || key->authDataUsage != TPM_AUTH_NEVER) {
-    res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
-    if (res != TPM_SUCCESS) return res;
-  }
-  if (key->keyUsage != TPM_KEY_SIGNING && key->keyUsage != TPM_KEY_LEGACY) 
-    return TPM_INVALID_KEYUSAGE;
-  /* sign data */
+TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BYTE *areaToSign,
+                    UINT32 areaToSignSize, BYTE **sig, UINT32 *sigSize)
+{  
   if (key->sigScheme == TPM_SS_RSASSAPKCS1v15_SHA1) {
     /* use signature scheme PKCS1_SHA1_RAW */ 
     if (areaToSignSize != 20) return TPM_BAD_PARAMETER;
@@ -119,7 +104,7 @@ TPM_RESULT TPM_Sign(TPM_KEY_HANDLE keyHandle, UINT32 areaToSignSize,
     if (*sig == NULL) return TPM_FAIL; 
     /* setup TPM_SIGN_INFO structure */
     memcpy(&buf[0], "\x05\x00SIGN", 6);
-    memcpy(&buf[6], auth1->nonceOdd.nonce, 20);
+    memcpy(&buf[6], auth->nonceOdd.nonce, 20);
     *(UINT32*)&buf[26] = cpu_to_be32(areaToSignSize);
     memcpy(&buf[30], areaToSign, areaToSignSize);
     if (rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, 
@@ -131,6 +116,28 @@ TPM_RESULT TPM_Sign(TPM_KEY_HANDLE keyHandle, UINT32 areaToSignSize,
     return TPM_INVALID_KEYUSAGE;
   }
   return TPM_SUCCESS;
+}                    
+
+TPM_RESULT TPM_Sign(TPM_KEY_HANDLE keyHandle, UINT32 areaToSignSize, 
+                    BYTE *areaToSign, TPM_AUTH *auth1,  
+                    UINT32 *sigSize, BYTE **sig)
+{
+  TPM_RESULT res;
+  TPM_KEY_DATA *key;
+  info("TPM_Sign()");
+  /* get key */
+  key = tpm_get_key(keyHandle);
+  if (key == NULL) return TPM_INVALID_KEYHANDLE;
+  /* verify authorization */ 
+  if (auth1->authHandle != TPM_INVALID_HANDLE
+      || key->authDataUsage != TPM_AUTH_NEVER) {
+    res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
+    if (res != TPM_SUCCESS) return res;
+  }
+  if (key->keyUsage != TPM_KEY_SIGNING && key->keyUsage != TPM_KEY_LEGACY) 
+    return TPM_INVALID_KEYUSAGE;
+  /* sign data */
+  return tpm_sign(key, auth1, areaToSign, areaToSignSize, sig, sigSize);
 }
 
 TPM_RESULT TPM_GetRandom(UINT32 bytesRequested, UINT32 *randomBytesSize, 
@@ -151,36 +158,212 @@ TPM_RESULT TPM_StirRandom(UINT32 dataSize, BYTE *inData)
   return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_CertifyKey(  
-  TPM_KEY_HANDLE certHandle,
-  TPM_KEY_HANDLE keyHandle,
-  TPM_NONCE *antiReplay,
-  TPM_AUTH *auth1,
-  TPM_AUTH *auth2,  
-  TPM_CERTIFY_INFO *certifyInfo,
-  UINT32 *outDataSize,
-  BYTE **outData  
-)
+extern int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms);
+
+TPM_RESULT TPM_CertifyKey(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
+                          TPM_NONCE *antiReplay, TPM_AUTH *auth1, 
+                          TPM_AUTH *auth2, TPM_CERTIFY_INFO *certifyInfo,
+                          UINT32 *outDataSize, BYTE **outData)
 {
-  info("TPM_CertifyKey() not implemented yet");
-  /* TODO: implement TPM_CertifyKey() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  TPM_KEY_DATA *cert, *key;
+  sha1_ctx_t sha1_ctx;
+  BYTE *buf, *p;
+  UINT32 length;
+  info("TPM_CertifyKey()");
+  /* get keys */
+  cert = tpm_get_key(certHandle);
+  if (cert == NULL) return TPM_INVALID_KEYHANDLE;
+  key = tpm_get_key(keyHandle);
+  if (key == NULL) return TPM_INVALID_KEYHANDLE;
+  /* verify authorization */ 
+  if (auth2->authHandle != TPM_INVALID_HANDLE
+      || cert->authDataUsage != TPM_AUTH_NEVER) {
+    res = tpm_verify_auth(auth1, cert->usageAuth, certHandle);
+    if (res != TPM_SUCCESS) return res;
+  }
+  if (auth1->authHandle != TPM_INVALID_HANDLE
+      || key->authDataUsage != TPM_AUTH_NEVER) {
+    res = tpm_verify_auth(auth2, key->usageAuth, keyHandle);
+    if (res != TPM_SUCCESS) return (res == TPM_AUTHFAIL) ? TPM_AUTH2FAIL : res;    
+  }
+  /* verify key usage */
+  if (cert->sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1 
+      && cert->sigScheme != TPM_SS_RSASSAPKCS1v15_INFO) return TPM_BAD_SCHEME;
+  if (cert->keyUsage == TPM_KEY_IDENTITY 
+      && (key->keyFlags & TPM_KEY_FLAG_MIGRATABLE)
+      && !(key->keyFlags & TPM_KEY_FLAG_AUTHORITY)) return TPM_MIGRATEFAIL;
+  if (key->keyFlags & TPM_KEY_FLAG_HAS_PCR) {
+    if (!(key->keyFlags & TPM_KEY_FLAG_PCR_IGNORE)) {
+      TPM_DIGEST digest;
+      res = tpm_compute_pcr_digest(&key->pcrInfo.releasePCRSelection, 
+        &digest, NULL);
+      if (res != TPM_SUCCESS) return res;
+      if (memcmp(&digest, &key->pcrInfo.digestAtRelease, sizeof(TPM_DIGEST)))
+        return TPM_WRONGPCRVAL;
+      if (key->pcrInfo.tag == TPM_TAG_PCR_INFO_LONG
+        && !(key->pcrInfo.localityAtRelease
+             & (1 << tpmData.stany.flags.localityModifier)))
+        return TPM_BAD_LOCALITY;  
+    } 
+    /* if sizeOfSelect is two use a TPM_CERTIFY_INFO structure ... */
+    if (key->pcrInfo.releasePCRSelection.sizeOfSelect == 2) {
+      certifyInfo->tag = 0x0101;
+      certifyInfo->fill = 0x0000;    
+      certifyInfo->migrationAuthoritySize = 0;    
+      memcpy(&certifyInfo->PCRInfo, &key->pcrInfo, sizeof(TPM_PCR_INFO));
+      memset(&certifyInfo->PCRInfo.digestAtCreation, 0, sizeof(TPM_DIGEST));
+      certifyInfo->PCRInfoSize = sizeof(certifyInfo->PCRInfo);      
+    /* ... otherwise use a TPM_CERTIFY_INFO2 structure */  
+    } else {
+      certifyInfo->tag = TPM_TAG_CERTIFY_INFO2;
+      certifyInfo->fill = 0x0000;    
+      certifyInfo->migrationAuthoritySize = 0;   
+      memcpy(&certifyInfo->PCRInfo, &key->pcrInfo, sizeof(TPM_PCR_INFO));
+      certifyInfo->PCRInfoSize = sizeof(certifyInfo->PCRInfo);      
+    } 
+  } else {
+    /* setup TPM_CERTIFY_INFO structure */
+    certifyInfo->tag = 0x0101;
+    certifyInfo->fill = 0x0000;    
+    certifyInfo->migrationAuthoritySize = 0;    
+    certifyInfo->PCRInfoSize = 0;
+  }
+  /* setup CERTIFY_INFO[2] structure */
+  certifyInfo->keyUsage = key->keyUsage;
+  certifyInfo->keyFlags = key->keyFlags & TPM_KEY_FLAG_MASK;
+  certifyInfo->authDataUsage = key->authDataUsage;
+  certifyInfo->parentPCRStatus = key->parentPCRStatus;
+  if (tpm_setup_key_parms(key, &certifyInfo->algorithmParms)) return TPM_FAIL;
+  memcpy(&certifyInfo->data, antiReplay, sizeof(TPM_NONCE));
+  /* compute pubKeyDigest */
+  length = key->key.size >> 3;
+  buf = tpm_malloc(length);
+  if (buf == NULL) {
+    free_TPM_KEY_PARMS(certifyInfo->algorithmParms);
+    return TPM_FAIL;
+  }
+  rsa_export_modulus(&key->key, buf, &length);
+  sha1_init(&sha1_ctx);
+  sha1_update(&sha1_ctx, buf, length);
+  sha1_final(&sha1_ctx, certifyInfo->pubkeyDigest.digest);
+  tpm_free(buf);
+  /* compute the digest of the CERTIFY_INFO[2] structure and sign it */
+  length = sizeof_TPM_CERTIFY_INFO((*certifyInfo));
+  p = buf = tpm_malloc(length);
+  if (buf == NULL
+      || tpm_marshal_TPM_CERTIFY_INFO(&p, &length, certifyInfo)) {
+    free_TPM_KEY_PARMS(certifyInfo->algorithmParms);
+    return TPM_FAIL;
+  }
+  length = sizeof_TPM_CERTIFY_INFO((*certifyInfo));
+  sha1_init(&sha1_ctx);
+  sha1_update(&sha1_ctx, buf, length);
+  sha1_final(&sha1_ctx, buf);
+  res = tpm_sign(cert, auth1, buf, SHA1_DIGEST_LENGTH, outData, outDataSize);
+  tpm_free(buf);
+  if (res != TPM_SUCCESS) {
+    free_TPM_KEY_PARMS(certifyInfo->algorithmParms);
+    return res;  
+  }  
+  return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_CertifyKey2(  
-  TPM_KEY_HANDLE certHandle,
-  TPM_KEY_HANDLE keyHandle,
-  TPM_DIGEST *migrationPubDigest,
-  TPM_NONCE *antiReplay,
-  TPM_AUTH *auth1,
-  TPM_AUTH *auth2,  
-  TPM_CERTIFY_INFO *certifyInfo,
-  UINT32 *outDataSize,
-  BYTE **outData  
-)
+TPM_RESULT TPM_CertifyKey2(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
+                           TPM_DIGEST *migrationPubDigest, 
+                           TPM_NONCE *antiReplay, TPM_AUTH *auth1, 
+                           TPM_AUTH *auth2, TPM_CERTIFY_INFO *certifyInfo,
+                           UINT32 *outDataSize, BYTE **outData)
 {
-  info("TPM_CertifyKey2() not implemented yet");
-  /* TODO: implement TPM_CertifyKey2() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  TPM_KEY_DATA *cert, *key;
+  sha1_ctx_t sha1_ctx;
+  BYTE *buf, *p;
+  UINT32 length;
+  info("TPM_CertifyKey2()");
+  /* get keys */
+  cert = tpm_get_key(certHandle);
+  if (cert == NULL) return TPM_INVALID_KEYHANDLE;
+  key = tpm_get_key(keyHandle);
+  if (key == NULL) return TPM_INVALID_KEYHANDLE;
+  /* verify authorization */ 
+  if (auth2->authHandle != TPM_INVALID_HANDLE
+      || cert->authDataUsage != TPM_AUTH_NEVER) {
+    res = tpm_verify_auth(auth1, cert->usageAuth, certHandle);
+    if (res != TPM_SUCCESS) return res;
+  }
+  if (auth1->authHandle != TPM_INVALID_HANDLE
+      || key->authDataUsage != TPM_AUTH_NEVER) {
+    res = tpm_verify_auth(auth2, key->usageAuth, keyHandle);
+    if (res != TPM_SUCCESS) return (res == TPM_AUTHFAIL) ? TPM_AUTH2FAIL : res;    
+  }
+  /* verify key usage */
+  if (cert->sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1) return TPM_BAD_SCHEME;
+  if (cert->keyUsage == TPM_KEY_IDENTITY 
+      && (key->keyFlags & TPM_KEY_FLAG_MIGRATABLE)
+      && !(key->keyFlags & TPM_KEY_FLAG_AUTHORITY)) return TPM_MIGRATEFAIL;      
+  if (key->keyFlags & TPM_KEY_FLAG_HAS_PCR) {
+    if (!(key->keyFlags & TPM_KEY_FLAG_PCR_IGNORE)) {
+      TPM_DIGEST digest;
+      res = tpm_compute_pcr_digest(&key->pcrInfo.releasePCRSelection, 
+        &digest, NULL);
+      if (res != TPM_SUCCESS) return res;
+      if (memcmp(&digest, &key->pcrInfo.digestAtRelease, sizeof(TPM_DIGEST)))
+        return TPM_WRONGPCRVAL;
+      if (key->pcrInfo.tag == TPM_TAG_PCR_INFO_LONG
+        && !(key->pcrInfo.localityAtRelease
+             & (1 << tpmData.stany.flags.localityModifier)))
+        return TPM_BAD_LOCALITY;  
+    } 
+    memcpy(&certifyInfo->PCRInfo, &key->pcrInfo, sizeof(TPM_PCR_INFO));
+    certifyInfo->PCRInfoSize = sizeof(certifyInfo->PCRInfo);       
+  } else {
+    certifyInfo->PCRInfoSize = 0;   
+  }
+  /* setup migration authority values */
+  if (/* TODO: handle CMK keys */FALSE) {    
+  } else {
+    certifyInfo->migrationAuthoritySize = 0;
+  }
+  /* setup CERTIFY_INFO2 structure */
+  certifyInfo->tag = TPM_TAG_CERTIFY_INFO2;
+  certifyInfo->fill = 0x0000; 
+  certifyInfo->keyUsage = key->keyUsage;
+  certifyInfo->keyFlags = key->keyFlags & TPM_KEY_FLAG_MASK;
+  certifyInfo->authDataUsage = key->authDataUsage;
+  certifyInfo->parentPCRStatus = key->parentPCRStatus;
+  if (tpm_setup_key_parms(key, &certifyInfo->algorithmParms)) return TPM_FAIL;
+  memcpy(&certifyInfo->data, antiReplay, sizeof(TPM_NONCE));
+  /* compute pubKeyDigest */
+  length = key->key.size >> 3;
+  buf = tpm_malloc(length);
+  if (buf == NULL) {
+    free_TPM_KEY_PARMS(certifyInfo->algorithmParms);
+    return TPM_FAIL;
+  }
+  rsa_export_modulus(&key->key, buf, &length);
+  sha1_init(&sha1_ctx);
+  sha1_update(&sha1_ctx, buf, length);
+  sha1_final(&sha1_ctx, certifyInfo->pubkeyDigest.digest);
+  tpm_free(buf);
+  /* compute the digest of the CERTIFY_INFO[2] structure and sign it */
+  length = sizeof_TPM_CERTIFY_INFO((*certifyInfo));
+  p = buf = tpm_malloc(length);
+  if (buf == NULL
+      || tpm_marshal_TPM_CERTIFY_INFO(&p, &length, certifyInfo)) {
+    free_TPM_KEY_PARMS(certifyInfo->algorithmParms);
+    return TPM_FAIL;
+  }
+  length = sizeof_TPM_CERTIFY_INFO((*certifyInfo));
+  sha1_init(&sha1_ctx);
+  sha1_update(&sha1_ctx, buf, length);
+  sha1_final(&sha1_ctx, buf);
+  res = tpm_sign(cert, auth1, buf, SHA1_DIGEST_LENGTH, outData, outDataSize);
+  tpm_free(buf);
+  if (res != TPM_SUCCESS) {
+    free_TPM_KEY_PARMS(certifyInfo->algorithmParms);
+    return res;  
+  }  
+  return TPM_SUCCESS;
 }
 

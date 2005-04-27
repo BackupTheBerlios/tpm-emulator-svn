@@ -636,7 +636,8 @@ int tpm_unmarshal_TPM_MIGRATIONKEYAUTH(BYTE **ptr, UINT32 *length, TPM_MIGRATION
 
 int tpm_marshal_TPM_CERTIFY_INFO(BYTE **ptr, UINT32 *length, TPM_CERTIFY_INFO *v)
 {
-  if (tpm_marshal_TPM_STRUCT_VER(ptr, length, &v->version)
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_UINT16(ptr, length, v->fill)  
       || tpm_marshal_TPM_KEY_USAGE(ptr, length, v->keyUsage)
       || tpm_marshal_TPM_KEY_FLAGS(ptr, length, v->keyFlags)
       || tpm_marshal_TPM_AUTH_DATA_USAGE(ptr, length, v->authDataUsage)
@@ -644,14 +645,21 @@ int tpm_marshal_TPM_CERTIFY_INFO(BYTE **ptr, UINT32 *length, TPM_CERTIFY_INFO *v
       || tpm_marshal_TPM_DIGEST(ptr, length, &v->pubkeyDigest)
       || tpm_marshal_TPM_NONCE(ptr, length, &v->data)
       || tpm_marshal_BOOL(ptr, length, v->parentPCRStatus)
+      || (v->tag == TPM_TAG_CERTIFY_INFO2
+          && tpm_marshal_UINT32(ptr, length, v->migrationAuthoritySize))
+      || (v->tag == TPM_TAG_CERTIFY_INFO2 && v->migrationAuthoritySize > 0
+          && tpm_marshal_BLOB(ptr, length, v->migrationAuthority, 
+                              v->migrationAuthoritySize))
       || tpm_marshal_UINT32(ptr, length, v->PCRInfoSize)
-      || tpm_marshal_BLOB(ptr, length, v->PCRInfo, v->PCRInfoSize)) return -1;
-  return 0;
+      || (v->PCRInfoSize > 0
+          && tpm_marshal_TPM_PCR_INFO(ptr, length, &v->PCRInfo))) return -1;      
+  return 0;    
 }
 
 int tpm_unmarshal_TPM_CERTIFY_INFO(BYTE **ptr, UINT32 *length, TPM_CERTIFY_INFO *v)
 {
-  if (tpm_unmarshal_TPM_STRUCT_VER(ptr, length, &v->version)
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_UINT16(ptr, length, &v->fill)   
       || tpm_unmarshal_TPM_KEY_USAGE(ptr, length, &v->keyUsage)
       || tpm_unmarshal_TPM_KEY_FLAGS(ptr, length, &v->keyFlags)
       || tpm_unmarshal_TPM_AUTH_DATA_USAGE(ptr, length, &v->authDataUsage)
@@ -659,8 +667,14 @@ int tpm_unmarshal_TPM_CERTIFY_INFO(BYTE **ptr, UINT32 *length, TPM_CERTIFY_INFO 
       || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->pubkeyDigest)
       || tpm_unmarshal_TPM_NONCE(ptr, length, &v->data)
       || tpm_unmarshal_BOOL(ptr, length, &v->parentPCRStatus)
+      || (!(v->migrationAuthoritySize = 0) && v->tag == TPM_TAG_CERTIFY_INFO2
+          && tpm_unmarshal_UINT32(ptr, length, &v->migrationAuthoritySize))
+      || (v->tag == TPM_TAG_CERTIFY_INFO2 && v->migrationAuthoritySize > 0
+          && tpm_unmarshal_BLOB(ptr, length, &v->migrationAuthority,
+                                v->migrationAuthoritySize))
       || tpm_unmarshal_UINT32(ptr, length, &v->PCRInfoSize)
-      || tpm_unmarshal_BLOB(ptr, length, &v->PCRInfo, v->PCRInfoSize)) return -1;
+      || (v->PCRInfoSize > 0
+          && tpm_unmarshal_TPM_PCR_INFO(ptr, length, &v->PCRInfo))) return -1;     
   return 0;
 }
 
@@ -1092,7 +1106,7 @@ int tpm_marshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v)
         || tpm_marshal_TPM_ENC_SCHEME(ptr, length, v->encScheme)
         || tpm_marshal_TPM_SIG_SCHEME(ptr, length, v->sigScheme)
         || tpm_marshal_TPM_SECRET(ptr, length, &v->usageAuth)
-        || (!(v->keyFlags & TPM_KEY_FLAG_PCR_IGNORE)
+        || (v->keyFlags & TPM_KEY_FLAG_HAS_PCR
             && tpm_marshal_TPM_PCR_INFO(ptr, length, &v->pcrInfo))
         || tpm_marshal_BOOL(ptr, length, v->parentPCRStatus)
         || tpm_marshal_RSA(ptr, length, &v->key)) return -1;
@@ -1111,7 +1125,7 @@ int tpm_unmarshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v)
         || tpm_unmarshal_TPM_ENC_SCHEME(ptr, length, &v->encScheme)
         || tpm_unmarshal_TPM_SIG_SCHEME(ptr, length, &v->sigScheme)
         || tpm_unmarshal_TPM_SECRET(ptr, length, &v->usageAuth)
-        || (!(v->keyFlags & TPM_KEY_FLAG_PCR_IGNORE)
+        || (v->keyFlags & TPM_KEY_FLAG_HAS_PCR
             && tpm_unmarshal_TPM_PCR_INFO(ptr, length, &v->pcrInfo))
         || tpm_unmarshal_BOOL(ptr, length, &v->parentPCRStatus)
         || tpm_unmarshal_RSA(ptr, length, &v->key)) return -1;
