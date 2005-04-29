@@ -2,7 +2,7 @@
 <HTML>
 <HEAD>
 <title>TPM Emulator Documentation Page </title>
-
+<SCRIPT language=JavaScript> var openImg = new Image(); openImg.src = "open.gif"; var closedImg = new Image(); closedImg.src = "closed.gif"; function showBranch(branch){ var objBranch = document.getElementById(branch).style; if(objBranch.display=="block") objBranch.display="none"; else objBranch.display="block"; } function swapFolder(img){ objImg = document.getElementById(img); if(objImg.src.indexOf('closed.gif')>-1) objImg.src = openImg.src; else objImg.src = closedImg.src; } </SCRIPT> 
 <META http-equiv=Content-Type content="text/html; charset=utf-8"><LINK 
 href="css/style.css" type=text/css rel=stylesheet> 
 <META content="MSHTML 6.00.2800.1458" name=GENERATOR>
@@ -12,8 +12,6 @@ href="css/style.css" type=text/css rel=stylesheet>
 -->
 </style>
 
-
-<SCRIPT language=JavaScript> var openImg = new Image(); openImg.src = "open.gif"; var closedImg = new Image(); closedImg.src = "closed.gif"; function showBranch(branch){ var objBranch = document.getElementById(branch).style; if(objBranch.display=="block") objBranch.display="none"; else objBranch.display="block"; } function swapFolder(img){ objImg = document.getElementById(img); if(objImg.src.indexOf('closed.gif')>-1) objImg.src = openImg.src; else objImg.src = closedImg.src; } </SCRIPT> 
 
 
 </HEAD>
@@ -191,18 +189,18 @@ id=folder7 src="closed.gif" border=0> ADMIN. FUNCTIONS <span class="notdone">-</
 File: tpm_storage.c
 TPM_Seal +
 TPM_Unseal +
-TPM_UnBind -
+TPM_UnBind +
 TPM_CreateWrapKey +
 TPM_LoadKey +
 TPM_GetPubKey +
 -->
 
 <DIV class=trigger onclick="showBranch('branch8');swapFolder('folder8')"><IMG 
-id=folder8 src="closed.gif" border=0> STORAGE FUNCTIONS <span class="part">&#177</span>
+id=folder8 src="closed.gif" border=0> STORAGE FUNCTIONS <span class="done">+</span>
 </DIV><SPAN class=branch id=branch8>
 <span class="done">+</span>TPM_Seal<BR>
 <span class="done">+</span>TPM_Unseal<BR>
-<span class="notdone">-</span>TPM_UnBind<BR>
+<span class="done">+</span>TPM_UnBind<BR>
 <span class="done">+</span>TPM_CreateWrapKey<BR>
 <span class="done">+</span>TPM_LoadKey<BR>
 <span class="done">+</span>TPM_GetPubKey<BR>
@@ -263,12 +261,12 @@ TPM_SHA1CompleteExtend +
 TPM_Sign +
 TPM_GetRandom +
 TPM_StirRandom +
-TPM_CertifyKey -
-TPM_CertifyKey2 -
+TPM_CertifyKey +
+TPM_CertifyKey2 +
 -->
 
 <DIV class=trigger onclick="showBranch('branch11');swapFolder('folder11')"><IMG 
-id=folder11 src="closed.gif" border=0> CRYPTOGRAPHIC FUNCTIONS <span class="part">&#177</span>
+id=folder11 src="closed.gif" border=0> CRYPTOGRAPHIC FUNCTIONS <span class="done">+</span>
 </DIV><SPAN class=branch id=branch11>
 <span class="done">+</span>TPM_SHA1Start<BR>
 <span class="done">+</span>TPM_SHA1Update<BR>
@@ -277,8 +275,8 @@ id=folder11 src="closed.gif" border=0> CRYPTOGRAPHIC FUNCTIONS <span class="part
 <span class="done">+</span>TPM_Sign<BR>
 <span class="done">+</span>TPM_GetRandom<BR>
 <span class="done">+</span>TPM_StirRandom<BR>
-<span class="notdone">-</span>TPM_CertifyKey<BR>
-<span class="notdone">-</span>TPM_CertifyKey2<BR>
+<span class="done">+</span>TPM_CertifyKey<BR>
+<span class="done">+</span>TPM_CertifyKey2<BR>
 </SPAN>
 
 <!--
@@ -341,8 +339,8 @@ id=folder14 src="closed.gif" border=0> INTEGRITY COLLECTING <span class="done">+
 
 1.0.15 Authorization Changing
 File: tpm_authorization.c
-TPM_ChangeAuth -
-TPM_ChangeAuthOwner -
+TPM_ChangeAuth +
+TPM_ChangeAuthOwner +
 TPM_OIAP +
 TPM_OSAP +
 TPM_DSAP -
@@ -352,8 +350,8 @@ TPM_SetOwnerPointer -
 <DIV class=trigger onclick="showBranch('branch15');swapFolder('folder15')"><IMG 
 id=folder15 src="closed.gif" border=0> AUTHORIZATION CHANGING <span class="part">&#177</span>
 </DIV><SPAN class=branch id=branch15>
-<span class="notdone">-</span>TPM_ChangeAuth<BR>
-<span class="notdone">-</span>TPM_ChangeAuthOwner<BR>
+<span class="done">+</span>TPM_ChangeAuth<BR>
+<span class="done">+</span>TPM_ChangeAuthOwner<BR>
 <span class="done">+</span>TPM_OIAP<BR>
 <span class="done">+</span>TPM_OSAP<BR>
 <span class="notdone">-</span>TPM_DSAP<BR>
@@ -410,17 +408,17 @@ id=folder17 src="closed.gif" border=0> NON-VOLATILE STORAGE <span class="notdone
 1.0.18 Session Management
 File: tpm_context.c
 6 Chapter 1 - Command Summary
-TPM_KeyControlOwner -
-TPM_SaveContext -
-TPM_LoadContext -
+TPM_KeyControlOwner +
+TPM_SaveContext +
+TPM_LoadContext +
 -->
 
 <DIV class=trigger onclick="showBranch('branch18');swapFolder('folder18')"><IMG 
-id=folder18 src="closed.gif" border=0> SESSION MANAGEMENT <span class="notdone">-</span>
+id=folder18 src="closed.gif" border=0> SESSION MANAGEMENT <span class="done">+</span>
 </DIV><SPAN class=branch id=branch18>
-<span class="notdone">-</span>TPM_KeyControlOwner<BR>
-<span class="notdone">-</span>TPM_SaveContext<BR>
-<span class="notdone">-</span>TPM_LoadContext<BR>
+<span class="done">+</span>TPM_KeyControlOwner<BR>
+<span class="done">+</span>TPM_SaveContext<BR>
+<span class="done">+</span>TPM_LoadContext<BR>
 </SPAN>
 
 <!--
@@ -440,17 +438,17 @@ id=folder19 src="closed.gif" border=0> EVICTION <span class="done">+</span>
 <!--
 1.0.20 Timing Ticks
 File: tpm_ticks.c
-TPM_SetTickType -
-TPM_GetTicks -
-TPM_TickStampBlob -
+TPM_SetTickType +
+TPM_GetTicks +
+TPM_TickStampBlob +
 -->
 
 <DIV class=trigger onclick="showBranch('branch20');swapFolder('folder20')"><IMG 
-id=folder20 src="closed.gif" border=0> TIMING TICKS <span class="notdone">-</span>
+id=folder20 src="closed.gif" border=0> TIMING TICKS <span class="done">+</span>
 </DIV><SPAN class=branch id=branch20>
-<span class="notdone">-</span>TPM_SetTickType<BR>
-<span class="notdone">-</span>TPM_GetTicks<BR>
-<span class="notdone">-</span>TPM_TickStampBlob<BR>
+<span class="done">+</span>TPM_SetTickType<BR>
+<span class="done">+</span>TPM_GetTicks<BR>
+<span class="done">+</span>TPM_TickStampBlob<BR>
 </SPAN>
 
 <!--
@@ -527,17 +525,17 @@ id=folder24 src="closed.gif" border=0> GPIO <span class="notdone">-</span>
 File: tpm_deprecated.c
 TPM_EvictKey +
 TPM_Terminate_Handle +
-TPM_SaveKeyContext -
-TPM_LoadKeyContext -
-TPM_SaveAuthContext -
-TPM_LoadAuthContext -
-TPM_DirWriteAuth -
-TPM_DirRead -
+TPM_SaveKeyContext +
+TPM_LoadKeyContext +
+TPM_SaveAuthContext +
+TPM_LoadAuthContext +
+TPM_DirWriteAuth +
+TPM_DirRead +
 TPM_ChangeAuthAsymStart -
 TPM_ChangeAuthAsymFinish -
 TPM_Reset +
-TPM_CertifySelfTest -
-TPM_OwnerReadPubek -
+TPM_CertifySelfTest +
+TPM_OwnerReadPubek +
 -->
 
 
@@ -546,17 +544,17 @@ id=folder25 src="closed.gif" border=0> DEPRECATED <span class="part">&#177</span
 </DIV><SPAN class=branch id=branch25>
 <span class="done">+</span>TPM_EvictKey<BR>
 <span class="done">+</span>TPM_Terminate_Handle<BR>
-<span class="notdone">-</span>TPM_SaveKeyContext<BR>
-<span class="notdone">-</span>TPM_LoadKeyContext<BR>
-<span class="notdone">-</span>TPM_SaveAuthContext<BR>
-<span class="notdone">-</span>TPM_LoadAuthContext<BR>
-<span class="notdone">-</span>TPM_DirWriteAuth<BR>
-<span class="notdone">-</span>TPM_DirRead<BR>
+<span class="done">+</span>TPM_SaveKeyContext<BR>
+<span class="done">+</span>TPM_LoadKeyContext<BR>
+<span class="done">+</span>TPM_SaveAuthContext<BR>
+<span class="done">+</span>TPM_LoadAuthContext<BR>
+<span class="done">+</span>TPM_DirWriteAuth<BR>
+<span class="done">+</span>TPM_DirRead<BR>
 <span class="notdone">-</span>TPM_ChangeAuthAsymStart<BR>
 <span class="notdone">-</span>TPM_ChangeAuthAsymFinish<BR>
 <span class="done">+</span>TPM_Reset<BR>
-<span class="notdone">-</span>TPM_CertifySelfTest<BR>
-<span class="notdone">-</span>TPM_OwnerReadPubek<BR>
+<span class="done">+</span>TPM_CertifySelfTest<BR>
+<span class="done">+</span>TPM_OwnerReadPubek<BR>
 </SPAN>
 
 
