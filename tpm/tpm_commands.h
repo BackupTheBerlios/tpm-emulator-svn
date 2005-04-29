@@ -2333,7 +2333,7 @@ TPM_RESULT TPM_LoadKeyContext(
 
 /**
  * TPM_SaveAuthContext - saves an authorization session outside the TPM
- * @authandle: [in] Authorization session which will be kept outside the TPM
+ * @authHandle: [in] Authorization session which will be kept outside the TPM
  * @authContextSize: [out] The size of the outgoing authorization context blob
  * @authContextBlob: [out] The authorization context blob
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
@@ -2343,7 +2343,7 @@ TPM_RESULT TPM_LoadKeyContext(
  * The format of the authorization context blob is specific to a TPM.
  */
 TPM_RESULT TPM_SaveAuthContext(  
-  TPM_AUTHHANDLE authandle,  
+  TPM_AUTHHANDLE authHandle,  
   UINT32 *authContextSize,
   BYTE **authContextBlob  
 );

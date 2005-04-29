@@ -159,7 +159,7 @@ TPM_RESULT TPM_ChangeAuthOwner(TPM_PROTOCOL_ID protocolID,
  * Authorization Sessions ([TPM_Part3], Section 18)
  */
 
-static UINT32 get_free_session(BYTE type)
+UINT32 tpm_get_free_session(BYTE type)
 {
   UINT32 i;
   for (i = 0; i < TPM_MAX_SESSIONS; i++) {
@@ -176,7 +176,7 @@ TPM_RESULT TPM_OIAP(TPM_AUTHHANDLE *authHandle, TPM_NONCE *nonceEven)
   TPM_SESSION_DATA *session;
   info("TPM_OIAP()");
   /* get a free session if any is left */
-  *authHandle = get_free_session(TPM_ST_OIAP); 
+  *authHandle = tpm_get_free_session(TPM_ST_OIAP); 
   session = tpm_get_auth(*authHandle);
   if (session == NULL) return TPM_RESOURCES;
   /* setup session */
@@ -194,7 +194,7 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
   TPM_SECRET *secret = NULL;
   info("TPM_OSAP()");
   /* get a free session if any is left */
-  *authHandle = get_free_session(TPM_ST_OSAP);
+  *authHandle = tpm_get_free_session(TPM_ST_OSAP);
   session = tpm_get_auth(*authHandle);
   if (session == NULL) return TPM_RESOURCES;
   /* get ressource handle and the dedicated secret */
@@ -257,14 +257,10 @@ TPM_RESULT TPM_DSAP(
   return TPM_FAIL;
 }
 
-TPM_RESULT TPM_SetOwnerPointer(  
-  TPM_ENTITY_TYPE entityType,
-  UINT32 entityValue
-)
+TPM_RESULT TPM_SetOwnerPointer(TPM_ENTITY_TYPE entityType, UINT32 entityValue)
 {
-  info("TPM_SetOwnerPointer() not implemented yet");
-  /* TODO: implement TPM_SetOwnerPointer() */
-  return TPM_FAIL;
+  info("TPM_SetOwnerPointer() is not supported");
+  return TPM_DISABLED_CMD;
 }
 
 TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret, 

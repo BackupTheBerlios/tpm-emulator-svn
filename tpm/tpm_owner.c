@@ -158,7 +158,9 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   srk->keyFlags |= TPM_KEY_FLAG_PCR_IGNORE;
   srk->keyFlags &= ~TPM_KEY_FLAG_HAS_PCR;
   srk->parentPCRStatus = FALSE;
-  /* TODO: generate context Key */
+  /* generate context Key */
+  tpm_get_random_bytes(tpmData.permanent.data.contextKey,
+    sizeof(tpmData.permanent.data.contextKey));
   /* TODO: generate delegate Key */
   /* export SRK */
   memcpy(srkPub, srkParams, sizeof(TPM_KEY));
@@ -172,7 +174,7 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   rsa_export_modulus(&srk->key, srkPub->pubKey.key,
     &srkPub->pubKey.keyLength);
   /* setup tpmProof and set state to owned */
-  get_random_bytes(tpmData.permanent.data.tpmProof.nonce, 
+  tpm_get_random_bytes(tpmData.permanent.data.tpmProof.nonce, 
     sizeof(tpmData.permanent.data.tpmProof.nonce));
   tpmData.permanent.flags.owned = TRUE;
   return TPM_SUCCESS;

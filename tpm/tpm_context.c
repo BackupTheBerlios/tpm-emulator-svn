@@ -17,46 +17,273 @@
 
 #include "tpm_emulator.h"
 #include "tpm_commands.h"
+#include "tpm_data.h"
+#include "tpm_handles.h"
+#include "tpm_marshalling.h"
+#include <crypto/rc4.h>
+#include <crypto/hmac.h>
 
 /*
  * Session Management ([TPM_Part3], Section 21)
  */
 
-TPM_RESULT TPM_KeyControlOwner(  
-  TPM_KEY_HANDLE keyHandle,
-  UINT32 bitName,
-  BOOL bitValue,
-  TPM_AUTH *auth1
-)
+TPM_RESULT TPM_KeyControlOwner(TPM_KEY_HANDLE keyHandle, UINT32 bitName,
+                               BOOL bitValue, TPM_AUTH *auth1)
 {
-  info("TPM_KeyControlOwner() not implemented yet");
-  /* TODO: implement TPM_KeyControlOwner() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  TPM_KEY_DATA *key;
+  info("TPM_KeyControlOwner()");
+  /* get key */
+  key = tpm_get_key(keyHandle);
+  if (key == NULL) return TPM_INVALID_KEYHANDLE;
+  /* verify authorization */
+  res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
+  if (res != TPM_SUCCESS) return res;
+  /* get bit name */
+  switch (bitName) {
+    case TPM_KEY_CONTROL_OWNER_EVICT:
+      if (bitValue) {
+        int i, num = 0;
+        for (i = 0; i < TPM_MAX_KEYS; i++) {
+          if (!tpmData.permanent.data.keys[i].valid ||
+              !(tpmData.permanent.data.keys[i].keyControl 
+                & TPM_KEY_CONTROL_OWNER_EVICT)) num++;
+        }
+        if (num < 2) return TPM_NOSPACE;
+        if (key->parentPCRStatus || (key->keyFlags & TPM_KEY_FLAG_VOLATILE)) 
+          return TPM_BAD_PARAMETER;
+        key->keyControl |= TPM_KEY_CONTROL_OWNER_EVICT;      
+      } else {
+        key->keyControl &= ~TPM_KEY_CONTROL_OWNER_EVICT; 
+      }
+      return TPM_SUCCESS;
+    default:
+      return TPM_BAD_PARAMETER;
+  }  
 }
 
-TPM_RESULT TPM_SaveContext(  
-  TPM_HANDLE handle,
-  TPM_RESOURCE_TYPE resourceType,
-  BYTE label[16],  
-  UINT32 *contextSize,
-  TPM_CONTEXT_BLOB *contextBlob 
-)
+int encrypt_context(TPM_CONTEXT_SENSITIVE *context, BYTE **enc, UINT32 *enc_size)
 {
-  info("TPM_SaveContext() not implemented yet");
-  /* TODO: implement TPM_SaveContext() */
-  return TPM_FAIL;
+  UINT32 len;
+  BYTE *ptr;
+  rc4_ctx_t rc4_ctx;
+  /* marshal context */
+  *enc_size = len = sizeof_TPM_CONTEXT_SENSITIVE((*context));
+  *enc = ptr = tpm_malloc(len);
+  if (*enc == NULL || tpm_marshal_TPM_CONTEXT_SENSITIVE(&ptr, &len, context)) {     
+    tpm_free(*enc);    
+    return -1;
+  }
+  /* encrypt context */
+  rc4_init(&rc4_ctx, tpmData.permanent.data.contextKey, 
+    sizeof(tpmData.permanent.data.contextKey));  
+  rc4_crypt(&rc4_ctx, *enc, *enc, *enc_size);
+  return 0;
 }
 
-TPM_RESULT TPM_LoadContext(  
-  BOOL keepHandle,
-  TPM_HANDLE hintHandle,
-  UINT32 contextSize,
-  TPM_CONTEXT_BLOB *contextBlob,  
-  TPM_HANDLE *handle 
-)
+int decrypt_context(BYTE *enc, UINT32 enc_size, 
+                    TPM_CONTEXT_SENSITIVE *context, BYTE **buf) 
 {
-  info("TPM_LoadContext() not implemented yet");
-  /* TODO: implement TPM_LoadContext() */
-  return TPM_FAIL;
+  UINT32 len;
+  BYTE *ptr;
+  rc4_ctx_t rc4_ctx;
+  len = enc_size;
+  *buf = ptr = tpm_malloc(len);
+  if (*buf == NULL) return -1;
+  /* decrypt context */
+  rc4_init(&rc4_ctx, tpmData.permanent.data.contextKey, 
+    sizeof(tpmData.permanent.data.contextKey));  
+  rc4_crypt(&rc4_ctx, enc, *buf, enc_size);
+  /* unmarshal context */
+  if (tpm_unmarshal_TPM_CONTEXT_SENSITIVE(&ptr, &len, context)) {
+    tpm_free(*buf);
+    return -1;
+  }
+  return 0;
+}
+
+int compute_context_digest(TPM_CONTEXT_BLOB *contextBlob, TPM_DIGEST *digest)
+{
+  BYTE *buf, *ptr;
+  UINT32 len;
+  hmac_ctx_t hmac_ctx;
+  len = sizeof_TPM_CONTEXT_BLOB((*contextBlob));
+  buf = ptr = tpm_malloc(len);
+  if (buf == NULL
+      || tpm_marshal_TPM_CONTEXT_BLOB(&ptr, &len, contextBlob)) {
+    tpm_free(buf);    
+    return -1;
+  }
+  memset(&buf[30], 0, 20);
+  hmac_init(&hmac_ctx, tpmData.permanent.data.tpmProof.nonce, 
+    sizeof(tpmData.permanent.data.tpmProof.nonce));
+  hmac_update(&hmac_ctx, buf, sizeof_TPM_CONTEXT_BLOB((*contextBlob)));
+  hmac_final(&hmac_ctx, digest->digest);
+  tpm_free(buf);
+  return 0;
+}
+
+TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
+                           BYTE label[16], UINT32 *contextSize,
+                           TPM_CONTEXT_BLOB *contextBlob)
+{
+  TPM_CONTEXT_SENSITIVE context;
+  TPM_SESSION_DATA *session = NULL;
+  TPM_KEY_DATA *key = NULL;
+  int i = 0;
+  info("TPM_SaveContext()");
+  /* setup context data */
+  context.tag = TPM_TAG_CONTEXT_SENSITIVE;
+  context.resourceType = resourceType;
+  if (resourceType == TPM_RT_AUTH || resourceType == TPM_RT_TRANS) {
+    session = (resourceType == TPM_RT_AUTH) ? tpm_get_auth(handle) : 
+              tpm_get_transport(handle);
+    if (session == NULL) return TPM_INVALID_RESOURCE;
+    /* store session data */
+    memcpy(&context.internalData.session, session, sizeof(TPM_SESSION_DATA));
+    context.internalSize = sizeof_TPM_SESSION_DATA((*session));
+    /* set context nonce */
+    memcpy(&context.contextNonce, &tpmData.stany.data.contextNonceSession, 
+           sizeof(TPM_NONCE));    
+  } else if (resourceType == TPM_RT_KEY) {
+    key = tpm_get_key(handle);
+    if (key == NULL) return TPM_INVALID_RESOURCE;
+    if (key->keyControl & TPM_KEY_CONTROL_OWNER_EVICT) return TPM_OWNER_CONTROL;
+    /* store key data */
+    memcpy(&context.internalData.key, key, sizeof(TPM_KEY_DATA));
+    rsa_copy_key(&context.internalData.key.key, &key->key);  
+    context.internalSize = sizeof_TPM_KEY_DATA((*key));      
+    /* set context nonce */
+    memcpy(&context.contextNonce, &tpmData.stclear.data.contextNonceKey, 
+           sizeof(TPM_NONCE));        
+  } else {
+    return TPM_INVALID_RESOURCE;
+  }
+  /* setup context blob */
+  contextBlob->tag = TPM_TAG_CONTEXTBLOB;
+  contextBlob->resourceType = resourceType;
+  contextBlob->handle = handle; 
+  memset(&contextBlob->blobIntegrity, 0, sizeof(TPM_DIGEST));
+  memcpy(contextBlob->label, label, sizeof(label));
+  contextBlob->additionalData = NULL;
+  contextBlob->additionalSize = 0;
+  /* increment context counter */
+  if (resourceType == TPM_RT_KEY) {
+    contextBlob->contextCount = 0;
+  } else {
+    if (tpmData.stany.data.contextCount >= 0xffffffff) 
+      return TPM_TOOMANYCONTEXTS;    
+    contextBlob->contextCount = ++tpmData.stany.data.contextCount;
+    for (i = 0; i < TPM_MAX_SESSION_LIST; i++) {
+      if (tpmData.stany.data.contextList[i] == 0) break;
+    } 
+    if (i >= TPM_MAX_SESSION_LIST) return TPM_NOCONTEXTSPACE;      
+    tpmData.stany.data.contextList[i] = contextBlob->contextCount;
+  }
+  /* encrypt sensitive data */
+  if (encrypt_context(&context, &contextBlob->sensitiveData, 
+      &contextBlob->sensitiveSize)) return TPM_DECRYPT_ERROR;
+  if (compute_context_digest(contextBlob, &contextBlob->blobIntegrity)) {
+    tpm_free(contextBlob->sensitiveData);
+    return TPM_FAIL;
+  }
+  *contextSize = sizeof_TPM_CONTEXT_BLOB((*contextBlob));
+  if (resourceType != TPM_RT_KEY) session->type = TPM_ST_INVALID;
+  return TPM_SUCCESS;
+}
+
+extern TPM_KEY_HANDLE tpm_get_free_key(void);
+extern UINT32 tpm_get_free_session(BYTE type);
+
+TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
+                           UINT32 contextSize, TPM_CONTEXT_BLOB *contextBlob,  
+                           TPM_HANDLE *handle)
+{
+  TPM_CONTEXT_SENSITIVE context;
+  BYTE *context_buf;
+  TPM_SESSION_DATA *session;
+  TPM_KEY_DATA *key;
+  TPM_DIGEST digest;
+  int i = 0;
+  info("TPM_LoadContext()");
+  if (decrypt_context(contextBlob->sensitiveData, contextBlob->sensitiveSize, 
+      &context, &context_buf)) return TPM_DECRYPT_ERROR;
+  /* validate structure */
+  if (compute_context_digest(contextBlob, &digest)
+      || memcmp(&digest, &contextBlob->blobIntegrity, 
+                sizeof(TPM_DIGEST))) {
+    tpm_free(context_buf);
+    return TPM_BADCONTEXT;
+  }
+  if (contextBlob->resourceType != TPM_RT_KEY) {
+    /* check contextNonce */
+    if (memcmp(&context.contextNonce, &tpmData.stany.data.contextNonceSession,
+        sizeof(TPM_NONCE)) != 0) {
+      tpm_free(context_buf);
+      return TPM_BADCONTEXT;
+    }
+    if (context.internalData.session.type == TPM_ST_OSAP
+        && tpm_get_key(context.internalData.session.handle) == NULL) {
+      tpm_free(context_buf);             
+      return TPM_RESOURCEMISSING;    
+    }
+    /* check context list */
+    for (i = 0; i < TPM_MAX_SESSION_LIST; i++)
+      if (tpmData.stany.data.contextList[i] == contextBlob->contextCount) break;
+    if (i >= TPM_MAX_SESSION_LIST) {
+      tpm_free(context_buf);
+      return TPM_BADCONTEXT;
+    }      
+    tpmData.stany.data.contextList[i] = 0;
+    /* check handle */
+    session = tpm_get_session_slot(hintHandle);
+    if (session == NULL || session->type != TPM_ST_INVALID) {
+      if (keepHandle) {
+        tpm_free(context_buf);
+        return TPM_BADHANDLE;
+      }    
+      *handle = tpm_get_free_session(context.internalData.session.type);
+      if (*handle == TPM_INVALID_HANDLE) {
+        tpm_free(context_buf);
+        return TPM_RESOURCES;
+      }
+      session = &tpmData.stany.data.sessions[HANDLE_TO_INDEX(*handle)];         
+    } else {
+      *handle = hintHandle;
+    }          
+    /* reload ressource */
+    memcpy(session, &context.internalData.session, sizeof(TPM_SESSION_DATA));    
+  } else {
+    /* check contextNonce */  
+    if (context.internalData.key.parentPCRStatus 
+        || (context.internalData.key.keyFlags & TPM_KEY_FLAG_VOLATILE)) {
+      if (memcmp(&context.contextNonce, &tpmData.stclear.data.contextNonceKey,
+          sizeof(TPM_NONCE)) != 0) {
+        tpm_free(context_buf);
+        return TPM_BADCONTEXT;
+      }    
+    }
+    /* check handle */
+    key = tpm_get_key_slot(hintHandle);
+    if (key == NULL || key->valid) {
+      if (keepHandle) {
+        tpm_free(context_buf);
+        return TPM_BADHANDLE;
+      }    
+      *handle = tpm_get_free_key();
+      if (*handle == TPM_INVALID_HANDLE) {
+        tpm_free(context_buf);
+        return TPM_RESOURCES;
+      }
+      key = &tpmData.permanent.data.keys[HANDLE_TO_INDEX(*handle)];         
+    } else {
+      *handle = hintHandle;
+    }          
+    /* reload ressource */
+    memcpy(key, &context.internalData.key, sizeof(TPM_KEY_DATA));
+    rsa_copy_key(&key->key, &context.internalData.key.key);
+  }         
+  tpm_free(context_buf);
+  return TPM_SUCCESS;
 }
 

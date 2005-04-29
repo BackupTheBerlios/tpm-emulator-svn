@@ -34,8 +34,16 @@
 #define INDEX_TO_COUNTER_HANDLE(i)     (i | (TPM_RT_COUNTERS << 24))
 
 /*
+ * marco to convert handles to indices
+ */
+#define HANDLE_TO_INDEX(h)             (i & 0x00FFFFFF)
+
+/*
  * functions to get the dedicated data for a handle
  */
+TPM_KEY_DATA *tpm_get_key_slot(TPM_KEY_HANDLE handle);
+TPM_SESSION_DATA *tpm_get_session_slot(TPM_HANDLE handle);
+
 TPM_KEY_DATA *tpm_get_key(TPM_KEY_HANDLE handle);
 TPM_SESSION_DATA *tpm_get_auth(TPM_AUTHHANDLE handle);
 TPM_SESSION_DATA *tpm_get_transport(TPM_TRANSHANDLE handle);

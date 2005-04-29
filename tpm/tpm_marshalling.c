@@ -748,6 +748,32 @@ int tpm_unmarshal_TPM_CONTEXT_BLOB(BYTE **ptr, UINT32 *length, TPM_CONTEXT_BLOB 
   return 0;
 }
 
+int tpm_marshal_TPM_CONTEXT_SENSITIVE(BYTE **ptr, UINT32 *length, TPM_CONTEXT_SENSITIVE *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->contextNonce)
+      || tpm_marshal_UINT32(ptr, length, v->internalSize)
+      || tpm_marshal_TPM_RESOURCE_TYPE(ptr, length, v->resourceType)
+      || (v->resourceType == TPM_RT_KEY 
+          && tpm_marshal_TPM_KEY_DATA(ptr, length, &v->internalData.key))
+      || (v->resourceType != TPM_RT_KEY
+          && tpm_marshal_TPM_SESSION_DATA(ptr, length, &v->internalData.session))) return -1; 
+  return 0;     
+}  
+
+int tpm_unmarshal_TPM_CONTEXT_SENSITIVE(BYTE **ptr, UINT32 *length, TPM_CONTEXT_SENSITIVE *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->contextNonce)
+      || tpm_unmarshal_UINT32(ptr, length, &v->internalSize)
+      || tpm_unmarshal_TPM_RESOURCE_TYPE(ptr, length, &v->resourceType)
+      || (v->resourceType == TPM_RT_KEY 
+          && tpm_unmarshal_TPM_KEY_DATA(ptr, length, &v->internalData.key))
+      || (v->resourceType != TPM_RT_KEY
+          && tpm_unmarshal_TPM_SESSION_DATA(ptr, length, &v->internalData.session))) return -1;       
+  return 0;
+}  
+
 int tpm_marshal_TPM_NV_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_NV_ATTRIBUTES *v)
 {
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
@@ -1144,7 +1170,10 @@ int tpm_marshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DAT
       || tpm_marshal_TPM_NONCE(ptr, length, &v->ekReset)
       || tpm_marshal_RSA(ptr, length, &v->endorsementKey)
       || tpm_marshal_TPM_KEY_DATA(ptr, length, &v->srk)
-      || tpm_marshal_BYTE(ptr, length, v->tickType)) return -1;
+      || tpm_marshal_BYTE_ARRAY(ptr, length, v->contextKey, sizeof(v->contextKey))
+      || tpm_marshal_BYTE(ptr, length, v->tickType)
+      || tpm_marshal_UINT32(ptr, length, v->noOwnerNVWrite)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->DIR)) return -1;
   for (i = 0; i < TPM_MAX_COUNTERS; i++) {
     if (tpm_marshal_TPM_COUNTER_VALUE(ptr, length, &v->counters[i])
         || tpm_marshal_TPM_SECRET(ptr, length, &v->counters[i].usageAuth)
@@ -1171,7 +1200,10 @@ int tpm_unmarshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_D
       || tpm_unmarshal_TPM_NONCE(ptr, length, &v->ekReset)
       || tpm_unmarshal_RSA(ptr, length, &v->endorsementKey)
       || tpm_unmarshal_TPM_KEY_DATA(ptr, length, &v->srk)
-      || tpm_unmarshal_BYTE(ptr, length, &v->tickType)) return -1;
+      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->contextKey, sizeof(v->contextKey))
+      || tpm_unmarshal_BYTE(ptr, length, &v->tickType)
+      || tpm_unmarshal_UINT32(ptr, length, &v->noOwnerNVWrite)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DIR)) return -1;
   for (i = 0; i < TPM_MAX_COUNTERS; i++) {
     if (tpm_unmarshal_TPM_COUNTER_VALUE(ptr, length, &v->counters[i])
         || tpm_unmarshal_TPM_SECRET(ptr, length, &v->counters[i].usageAuth)
@@ -1186,6 +1218,26 @@ int tpm_unmarshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_D
   }
   return 0;
 }
+
+int tpm_marshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA *v)
+{
+  if (tpm_marshal_BYTE(ptr, length, v->type)
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->nonceEven)
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->lastNonceEven)
+      || tpm_marshal_TPM_SECRET(ptr, length, &v->sharedSecret)
+      || tpm_marshal_TPM_HANDLE(ptr, length, v->handle)) return -1;  
+  return 0;
+} 
+
+int tpm_unmarshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA *v)
+{
+  if (tpm_unmarshal_BYTE(ptr, length, &v->type)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->nonceEven)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->lastNonceEven)
+      || tpm_unmarshal_TPM_SECRET(ptr, length, &v->sharedSecret)
+      || tpm_unmarshal_TPM_HANDLE(ptr, length, &v->handle)) return -1;  
+  return 0;
+} 
 
 int tpm_marshal_TPM_RESPONSE(BYTE **ptr, UINT32 *length, TPM_RESPONSE *v)
 {

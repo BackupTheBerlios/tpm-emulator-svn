@@ -1,6 +1,15 @@
+2005-04-29  Mario Strasser  <mast@gmx.net>
+	* tpm_context.c: TPM_KeyControlOwner, TPM_SaveContext, 
+		and TPM_LoadContext added
+	* tpm_deprecated: TPM_(Save|Load)(Key|Auth)Context added
+	* rc4.[ch]: RC4 encryption added
+	* rsa.c: rsa_copy_key added
+
+
 2005-04-27  Mario Strasser  <mast@gmx.net>
 	* tpm_crypto.c: TPM_CertifyKey and TPM_CertifyKey2 added
-	* tpm_deprecated: TPM_OwnerReadPubek and TPM_CertifySelfTest added
+	* tpm_deprecated: TPM_OwnerReadPubek, TPM_CertifySelfTest,
+		TPM_DirWriteAuth, and TPM_DirRead added
 
 
 2005-04-26  Mario Strasser  <mast@gmx.net>

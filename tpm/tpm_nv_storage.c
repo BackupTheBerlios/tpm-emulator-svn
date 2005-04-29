@@ -22,7 +22,7 @@
  * Non-volatile Storage ([TPM_Part3], Section 20)
  * This section handles the allocation and use of the TPM non-volatile storage.
  */
-
+ 
 TPM_RESULT TPM_NV_DefineSpace(  
   TPM_NV_DATA_PUBLIC *pubInfo,
   TPM_ENCAUTH *encAuth,

@@ -19,6 +19,22 @@
 #include "tpm_handles.h"
 #include "tpm_data.h"
 
+TPM_KEY_DATA *tpm_get_key_slot(TPM_KEY_HANDLE handle)
+{
+  if (handle == TPM_INVALID_HANDLE) return NULL;
+  handle &= 0x00ffffff;
+  if (handle >= TPM_MAX_KEYS) return NULL;
+  return &tpmData.permanent.data.keys[handle];      
+}
+
+TPM_SESSION_DATA *tpm_get_session_slot(TPM_HANDLE handle)
+{
+  if (handle == TPM_INVALID_HANDLE) return NULL;
+  handle &= 0x00ffffff;
+  if (handle >= TPM_MAX_SESSIONS) return NULL;
+  return &tpmData.stany.data.sessions[handle];
+}
+
 TPM_KEY_DATA *tpm_get_key(TPM_KEY_HANDLE handle)
 {
   /* handle reserved key handles */

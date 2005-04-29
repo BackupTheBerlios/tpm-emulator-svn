@@ -19,6 +19,7 @@
 #include "tpm_commands.h"
 #include "tpm_data.h"
 #include "tpm_handles.h"
+#include "tpm_marshalling.h"
 
 /*
  * Deprecated commands ([TPM_Part3], Section 28)
@@ -41,69 +42,88 @@ TPM_RESULT TPM_Terminate_Handle(TPM_AUTHHANDLE handle)
   return TPM_FlushSpecific(handle, TPM_RT_AUTH);
 }
 
-TPM_RESULT TPM_SaveKeyContext(  
-  TPM_KEY_HANDLE keyHandle,  
-  UINT32 *keyContextSize,
-  BYTE **keyContextBlob  
-)
+TPM_RESULT TPM_SaveKeyContext(TPM_KEY_HANDLE keyHandle,  
+                              UINT32 *keyContextSize, BYTE **keyContextBlob)
 {
-  info("TPM_SaveKeyContext() not implemented yet");
-  /* TODO: implement TPM_SaveKeyContext() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  TPM_CONTEXT_BLOB contextBlob;
+  BYTE *ptr;
+  UINT32 len;
+  info("TPM_SaveKeyContext()");
+  res = TPM_SaveContext(keyHandle, TPM_RT_KEY, "SaveKeyContext..", 
+                        keyContextSize, &contextBlob);
+  if (res != TPM_SUCCESS) return res;
+  len = *keyContextSize;
+  *keyContextBlob = ptr = tpm_malloc(len);
+  if (ptr == NULL
+      || tpm_marshal_TPM_CONTEXT_BLOB(&ptr, &len, &contextBlob)) res = TPM_FAIL;
+  else res = TPM_SUCCESS;
+  free_TPM_CONTEXT_BLOB(contextBlob);
+  return res;
 }
 
-TPM_RESULT TPM_LoadKeyContext(  
-  UINT32 keyContextSize,
-  BYTE *keyContextBlob,  
-  TPM_KEY_HANDLE *keyHandle 
-)
+TPM_RESULT TPM_LoadKeyContext(UINT32 keyContextSize,
+                              BYTE *keyContextBlob, TPM_KEY_HANDLE *keyHandle)
 {
-  info("TPM_LoadKeyContext() not implemented yet");
-  /* TODO: implement TPM_LoadKeyContext() */
-  return TPM_FAIL;
+  TPM_CONTEXT_BLOB contextBlob;
+  UINT32 len = keyContextSize;
+  info("TPM_LoadKeyContext()");
+  if (tpm_unmarshal_TPM_CONTEXT_BLOB(&keyContextBlob, 
+      &len, &contextBlob)) return TPM_FAIL;
+  return TPM_LoadContext(FALSE, TPM_INVALID_HANDLE, keyContextSize, 
+                         &contextBlob, keyHandle);
 }
 
-TPM_RESULT TPM_SaveAuthContext(  
-  TPM_AUTHHANDLE authandle,  
-  UINT32 *authContextSize,
-  BYTE **authContextBlob  
-)
+TPM_RESULT TPM_SaveAuthContext(TPM_AUTHHANDLE authHandle,  
+                               UINT32 *authContextSize, BYTE **authContextBlob)
 {
-  info("TPM_SaveAuthContext() not implemented yet");
-  /* TODO: implement TPM_SaveAuthContext() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  TPM_CONTEXT_BLOB contextBlob;
+  BYTE *ptr;
+  UINT32 len;
+  info("TPM_SaveAuthContext()");
+  res = TPM_SaveContext(authHandle, TPM_RT_KEY, "SaveAuthContext.", 
+                        authContextSize, &contextBlob);
+  if (res != TPM_SUCCESS) return res;
+  len = *authContextSize;
+  *authContextBlob = ptr = tpm_malloc(len);
+  if (ptr == NULL
+      || tpm_marshal_TPM_CONTEXT_BLOB(&ptr, &len, &contextBlob)) res = TPM_FAIL;
+  else res = TPM_SUCCESS;
+  free_TPM_CONTEXT_BLOB(contextBlob);
+  return res;
 }
 
-TPM_RESULT TPM_LoadAuthContext(  
-  UINT32 authContextSize,
-  BYTE *authContextBlob,  
-  TPM_KEY_HANDLE *authHandle 
-)
+TPM_RESULT TPM_LoadAuthContext(UINT32 authContextSize, BYTE *authContextBlob, 
+                               TPM_KEY_HANDLE *authHandle)
 {
-  info("TPM_LoadAuthContext() not implemented yet");
-  /* TODO: implement TPM_LoadAuthContext() */
-  return TPM_FAIL;
+  TPM_CONTEXT_BLOB contextBlob;
+  UINT32 len = authContextSize;
+  info("TPM_LoadAuthContext()");
+  if (tpm_unmarshal_TPM_CONTEXT_BLOB(&authContextBlob, 
+      &len, &contextBlob)) return TPM_FAIL;
+  return TPM_LoadContext(FALSE, TPM_INVALID_HANDLE, authContextSize, 
+                         &contextBlob, authHandle);
 }
 
-TPM_RESULT TPM_DirWriteAuth(  
-  TPM_DIRINDEX dirIndex,
-  TPM_DIRVALUE *newContents,
-  TPM_AUTH *auth1
-)
+TPM_RESULT TPM_DirWriteAuth(TPM_DIRINDEX dirIndex, 
+                            TPM_DIRVALUE *newContents, TPM_AUTH *auth1)
 {
-  info("TPM_DirWriteAuth() not implemented yet");
-  /* TODO: implement TPM_DirWriteAuth() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  info("TPM_DirWriteAuth()");
+  res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
+  if (res != TPM_SUCCESS) return res;
+  if (dirIndex != 1) return TPM_BADINDEX;
+  memcpy(&tpmData.permanent.data.DIR, newContents, sizeof(TPM_DIRVALUE));
+  return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_DirRead(  
-  TPM_DIRINDEX dirIndex,  
-  TPM_DIRVALUE *dirContents 
-)
+TPM_RESULT TPM_DirRead(TPM_DIRINDEX dirIndex, TPM_DIRVALUE *dirContents)
 {
-  info("TPM_DirRead() not implemented yet");
-  /* TODO: implement TPM_DirRead() */
-  return TPM_FAIL;
+  info("TPM_DirRead()");
+  if (dirIndex != 1) return TPM_BADINDEX;
+  memcpy(dirContents, &tpmData.permanent.data.DIR, sizeof(TPM_DIRVALUE));
+  return TPM_SUCCESS;
 }
 
 TPM_RESULT TPM_ChangeAuthAsymStart(  

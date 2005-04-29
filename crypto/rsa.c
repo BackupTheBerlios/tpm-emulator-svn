@@ -161,6 +161,17 @@ int rsa_import_key(rsa_private_key_t *key, int endian,
   return 0;
 }
 
+void rsa_copy_key(rsa_private_key_t *dst, rsa_private_key_t *src)
+{
+  mpz_init_set(dst->n, src->n);
+  mpz_init_set(dst->e, src->n);
+  mpz_init_set(dst->d, src->n);
+  mpz_init_set(dst->p, src->n);
+  mpz_init_set(dst->q, src->n);
+  mpz_init_set(dst->u, src->n);
+  dst->size = src->size;
+}
+
 int rsa_generate_key(rsa_private_key_t *key, int key_size)
 {
   mpz_t e, p, q, n, t1, t2, phi, d, u;

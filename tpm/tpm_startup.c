@@ -36,6 +36,7 @@ void TPM_Init(TPM_STARTUP_TYPE startupType)
 
 #define SET_TO_ZERO(a) memset(a, 0x00, sizeof(*a))
 #define SET_TO_0xFF(a) memset(a, 0xff, sizeof(*a)) 
+#define SET_TO_RAND(a) tpm_get_random_bytes(a, sizeof(*a))
 
 TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
 {
@@ -48,6 +49,8 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
   /* reset STANY_DATA (invalidates ALL sessions) */
   SET_TO_ZERO(&tpmData.stany.data);
   tpmData.stany.data.tag = TPM_TAG_STANY_DATA;  
+  /* init session-context nonce */
+  SET_TO_RAND(&tpmData.stany.data.contextNonceSession);
   /* set data and flags according to the given startup type */
   if (startupType == TPM_ST_CLEAR) {
     /* reset PCR values */
@@ -71,6 +74,8 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
               || tpmData.permanent.data.keys[i].parentPCRStatus))
         TPM_FlushSpecific(INDEX_TO_KEY_HANDLE(i), TPM_RT_KEY);
     }
+    /* init key-context nonce */
+    SET_TO_RAND(&tpmData.stclear.data.contextNonceKey);
   } else if (startupType == TPM_ST_STATE) {
     if (tpm_restore_permanent_data()) {
       error("restoring permanent data failed");

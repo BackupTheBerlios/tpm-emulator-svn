@@ -460,7 +460,7 @@ TPM_RESULT TPM_CreateWrapKey(TPM_KEY_HANDLE parentHandle,
   return TPM_SUCCESS;
 }
 
-static TPM_KEY_HANDLE get_free_key(void)
+TPM_KEY_HANDLE tpm_get_free_key(void)
 {
   int i;
   for (i = 0; i < TPM_MAX_KEYS; i++) {
@@ -512,7 +512,7 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
   if (decrypt_private_key(parent, inKey->encData, inKey->encDataSize,
                           &store, &key_buf)) return TPM_DECRYPT_ERROR; 
   /* get a free key-slot if any is left */
-  *inkeyHandle = get_free_key();
+  *inkeyHandle = tpm_get_free_key();
   key = tpm_get_key(*inkeyHandle);
   if (key == NULL) {
     tpm_free(key_buf);

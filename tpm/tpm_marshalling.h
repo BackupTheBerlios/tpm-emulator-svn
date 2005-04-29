@@ -264,6 +264,9 @@ int tpm_unmarshal_TPM_TRANSPORT_PUBLIC(BYTE **ptr, UINT32 *length, TPM_TRANSPORT
 int tpm_marshal_TPM_CONTEXT_BLOB(BYTE **ptr, UINT32 *length, TPM_CONTEXT_BLOB *v);
 int tpm_unmarshal_TPM_CONTEXT_BLOB(BYTE **ptr, UINT32 *length, TPM_CONTEXT_BLOB *v);
 
+int tpm_marshal_TPM_CONTEXT_SENSITIVE(BYTE **ptr, UINT32 *length, TPM_CONTEXT_SENSITIVE *v);
+int tpm_unmarshal_TPM_CONTEXT_SENSITIVE(BYTE **ptr, UINT32 *length, TPM_CONTEXT_SENSITIVE *v);
+
 int tpm_marshal_TPM_NV_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_NV_ATTRIBUTES *v);
 int tpm_unmarshal_TPM_NV_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_NV_ATTRIBUTES *v);
 
@@ -308,6 +311,9 @@ int tpm_unmarshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v);
 
 int tpm_marshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DATA *);
 int tpm_unmarshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DATA *);
+
+int tpm_marshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA *v);
+int tpm_unmarshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA *v);
 
 int tpm_marshal_TPM_RESPONSE(BYTE **ptr, UINT32 *length, TPM_RESPONSE *v);
 int tpm_unmarshal_TPM_REQUEST(BYTE **ptr, UINT32 *length, TPM_REQUEST *v);

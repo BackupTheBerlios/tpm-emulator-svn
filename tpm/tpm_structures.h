@@ -667,7 +667,7 @@ typedef struct tdTPM_PCR_INFO_SHORT {
   TPM_COMPOSITE_HASH digestAtRelease;
 } TPM_PCR_INFO_SHORT;
 #define sizeof_TPM_PCR_INFO_SHORT(s) ( \
- sizeof_TPM_PCR_SELECTION(s.pcrSelection) + 1 + 20)
+  sizeof_TPM_PCR_SELECTION(s.pcrSelection) + 1 + 20)
 
 /*
  * TPM_PCR_ATTRIBUTES ([TPM_Part2], Section 8.8)
@@ -1274,46 +1274,11 @@ typedef struct tdTPM_AUDIT_EVENT_OUT {
 #define TPM_TRANSPORT_EXCLUSIVE         (TPM_BASE + 78)
 #define TPM_OWNER_CONTROL               (TPM_BASE + 79)
 #define TPM_DAA_RESOURCES               (TPM_BASE + 80)
+#define TPM_BADCONTEXT                  (TPM_BASE + 81) // FIXME
+#define TPM_BADHANDLE                   (TPM_BASE + 82) // FIXME 
+#define TPM_TOOMANYCONTEXTS             (TPM_BASE + 83) // FIXME
+#define TPM_NOCONTEXTSPACE              (TPM_BASE + 84) // FIXME
 #define TPM_RETRY                       (TPM_BASE + TPM_NON_FATAL)
-
-/*
- * Context Structures
- */
-
-/*
- * TPM_CONTEXT_BLOB ([TPM_Part2], Section 18.1)
- * This is the header for the wrapped context. The blob contains all
- * information necessary to reload the context back into the TPM.
- */
-#define TPM_TAG_CONTEXTBLOB 0x0001
-typedef struct tdTPM_CONTEXT_BLOB {
-  TPM_STRUCTURE_TAG tag;
-  TPM_RESOURCE_TYPE resourceType;
-  TPM_HANDLE handle;
-  BYTE label[16];
-  UINT32 contextCount;
-  TPM_DIGEST blobIntegrity;
-  UINT32 additionalSize;
-  BYTE* additionalData;
-  UINT32 sensitiveSize;
-  BYTE* sensitiveData;
-} TPM_CONTEXT_BLOB;
-#define sizeof_TPM_CONTEXT_BLOB(s) (2 + 4 + 4 + 16 + 4 + 20 + 4 \
- + s.additionalSize + 4 + s.sensitiveSize)
-#define free_TPM_CONTEXT_BLOB(s) { tpm_free(s.additionalData); \
-  tpm_free(s.sensitiveData); }
-
-/*
- * TPM_CONTEXT_SENSITIVE ([TPM_Part2], Section 18.2)
- * The internal areas that the TPM needs to encrypt and store off the TPM.
- */
-#define TPM_TAG_CONTEXT_SENSITIVE 0x0002
-typedef struct tdTPM_CONTEXT_SENSITIVE {
-  TPM_STRUCTURE_TAG tag;
-  TPM_NONCE contextNonce;
-  UINT32 internalSize;
-  BYTE* internalData;
-} TPM_CONTEXT_SENSITIVE;
 
 /*
  * NV Storage Structures
@@ -1358,6 +1323,9 @@ typedef struct tdTPM_NV_DATA_PUBLIC {
   BOOL bWriteDefine;
   UINT32 dataSize;
 } TPM_NV_DATA_PUBLIC;
+#define sizeof_TPM_NV_DATA_PUBLIC(s) (2 + 4 + 6 + 3 + 4 \
+  + sizeof_TPM_PCR_INFO_SHORT(s.pcrInfoRead) \
+  + sizeof_TPM_PCR_INFO_SHORT(s.pcrInfoWrite))
 
 /*
  * TPM_NV_DATA_SENSITIVE ([TPM_Part2], Section 19.4)
@@ -1370,7 +1338,12 @@ typedef struct tdTPM_NV_DATA_SENSITIVE {
   TPM_NV_DATA_PUBLIC pubInfo;
   TPM_SECRET authValue;
   BYTE* data;
+  /* next is only internally used to build a linked list */
+  struct tdTPM_NV_DATA_SENSITIVE *next; 
 } TPM_NV_DATA_SENSITIVE;
+#define sizeof_TPM_NV_DATA_SENSITIVE(s) (2 + 20 + \
+  sizeof_TPM_NV_DATA_PUBLIC(s.pubInfo) + s.pubInfo.dataSize)
+#define free_TPM_NV_DATA_SENSITIVE(s) { tpm_free(s.data); }
 
 /*
  * Delegate Structures
@@ -1967,12 +1940,11 @@ typedef struct tdTPM_PERMANENT_DATA {
   TPM_SECRET ownerAuth;
   TPM_SECRET operatorAuth;
   //TPM_SECRET adminAuth;
-  //TPM_DIRVALUE authDIR[1];
   //TPM_PUBKEY manuMaintPub;
   TPM_NONCE ekReset;
   rsa_private_key_t endorsementKey;
   TPM_KEY_DATA srk; 
-  //TPM_KEY contextKey;
+  BYTE contextKey[32];  
   //TPM_KEY delegateKey;
   TPM_COUNTER_VALUE counters[TPM_MAX_COUNTERS];
   TPM_TICKTYPE tickType;
@@ -1984,7 +1956,9 @@ typedef struct tdTPM_PERMANENT_DATA {
   //TPM_DELEGATE_TABLE delegateTable;
   //UINT32 maxNVBufSize;
   //UINT32 lastFamilyID;
-  //UINT32 noOwnerNVWrite;
+  UINT32 noOwnerNVWrite;
+  TPM_DIRVALUE DIR;
+  TPM_NV_DATA_SENSITIVE *nvStorage;
   //TPM_CMK_RESTRICTDELEGATE restrictDelegate;
   //TPM_DAA_TPM_SEED tpmDAASeed;
   TPM_KEY_DATA keys[TPM_MAX_KEYS];
@@ -2003,7 +1977,7 @@ typedef struct tdTPM_PERMANENT_DATA {
 #define TPM_TAG_STCLEAR_DATA 0x0023
 typedef struct tdTPM_STCLEAR_DATA {
   TPM_STRUCTURE_TAG tag;
-  //TPM_NONCE contextNonceKey;
+  TPM_NONCE contextNonceKey;
   TPM_COUNT_ID countID;
   //UINT32 ownerReference;
 } TPM_STCLEAR_DATA;
@@ -2023,6 +1997,7 @@ typedef struct tdTPM_SESSION_DATA {
   TPM_SECRET sharedSecret;
   TPM_HANDLE handle;
 } TPM_SESSION_DATA;
+#define sizeof_TPM_SESSION_DATA(s) (1 + 3*20 + 4)
 
 /*
  * TPM_STANY_DATA ([TPM_Part2], Section 7.6)
@@ -2033,11 +2008,11 @@ typedef struct tdTPM_SESSION_DATA {
 #define TPM_MAX_SESSION_LIST    16
 typedef struct tdTPM_STANY_DATA {
   TPM_STRUCTURE_TAG tag;
-  //TPM_NONCE contextNonceSession;
+  TPM_NONCE contextNonceSession;
   //TPM_DIGEST auditDigest ;
   TPM_CURRENT_TICKS currentTicks;
-  //UINT32 contextCount;
-  //UINT32 contextList[TPM_MAX_SESSION_LIST];
+  UINT32 contextCount;
+  UINT32 contextList[TPM_MAX_SESSION_LIST];
   TPM_SESSION_DATA sessions[TPM_MAX_SESSIONS];
 } TPM_STANY_DATA;
 
@@ -2059,6 +2034,50 @@ typedef struct tdTPM_DATA {
     TPM_STANY_DATA data;
   } stany;
 } TPM_DATA;
+
+/*
+ * Context Structures
+ */
+
+/*
+ * TPM_CONTEXT_BLOB ([TPM_Part2], Section 18.1)
+ * This is the header for the wrapped context. The blob contains all
+ * information necessary to reload the context back into the TPM.
+ */
+#define TPM_TAG_CONTEXTBLOB 0x0001
+typedef struct tdTPM_CONTEXT_BLOB {
+  TPM_STRUCTURE_TAG tag;
+  TPM_RESOURCE_TYPE resourceType;
+  TPM_HANDLE handle;
+  BYTE label[16];
+  UINT32 contextCount;
+  TPM_DIGEST blobIntegrity;
+  UINT32 additionalSize;
+  BYTE* additionalData;
+  UINT32 sensitiveSize;
+  BYTE* sensitiveData;
+} TPM_CONTEXT_BLOB;
+#define sizeof_TPM_CONTEXT_BLOB(s) (2 + 4 + 4 + 16 + 4 + 20 + 4 \
+ + s.additionalSize + 4 + s.sensitiveSize)
+#define free_TPM_CONTEXT_BLOB(s) { tpm_free(s.additionalData); \
+  tpm_free(s.sensitiveData); }
+
+/*
+ * TPM_CONTEXT_SENSITIVE ([TPM_Part2], Section 18.2)
+ * The internal areas that the TPM needs to encrypt and store off the TPM.
+ */
+#define TPM_TAG_CONTEXT_SENSITIVE 0x0002
+typedef struct tdTPM_CONTEXT_SENSITIVE {
+  TPM_STRUCTURE_TAG tag;
+  TPM_NONCE contextNonce;
+  UINT32 internalSize;
+  TPM_RESOURCE_TYPE resourceType;
+  union {
+    TPM_KEY_DATA key;
+    TPM_SESSION_DATA session;
+  } internalData;
+} TPM_CONTEXT_SENSITIVE;
+#define sizeof_TPM_CONTEXT_SENSITIVE(s) (2 + 20 + 4 + s.internalSize)
 
 /*
  * TPM communication packets
