@@ -64,8 +64,7 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_DIR:
       debug("[TPM_CAP_PROP_DIR]");
-      /* TODO: TPM_CAP_PROP_DIR */
-      return TPM_FAIL;
+      return return_UINT32(respSize, resp, 1);  
 
     case TPM_CAP_PROP_MANUFACTURER:
       debug("[TPM_CAP_PROP_MANUFACTURER]");
@@ -121,13 +120,13 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_CONTEXT:
       debug("[TPM_CAP_PROP_CONTEXT]");
-      /* TODO: TPM_CAP_PROP_CONTEXT */
-      return TPM_FAIL;
+      for (i = 0, j = 0; i < TPM_MAX_SESSION_LIST; i++)
+        if (tpmData.stany.data.contextList[i] == 0) j++;
+      return return_UINT32(respSize, resp, j);
 
     case TPM_CAP_PROP_MAX_CONTEXT:
       debug("[TPM_CAP_PROP_MAX_CONTEXT]");
-      /* TODO: TPM_CAP_PROP_MAX_CONTEXT */
-      return TPM_FAIL;
+      return return_UINT32(respSize, resp, TPM_MAX_SESSION_LIST);
 
     case TPM_CAP_PROP_FAMILYROWS:
       debug("[TPM_CAP_PROP_FAMILYROWS]");

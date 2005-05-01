@@ -38,6 +38,7 @@ void tpm_audit_request(TPM_COMMAND_CODE ordinal, TPM_REQUEST *req)
   TPM_COMMAND_CODE ord = ordinal & TPM_ORD_INDEX_MASK;
   if (ord < TPM_ORD_MAX
       && (AUDIT_STATUS[ord / 8] & (1 << (ord & 0x07)))) {
+    info("tpm_audit_request()");
     /* is there already an audit session running? */
     if (!tpmData.stany.data.auditSession) {       
       tpmData.stany.data.auditSession = TRUE;
@@ -67,6 +68,7 @@ void tpm_audit_response(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
   TPM_COMMAND_CODE ord = ordinal & TPM_ORD_INDEX_MASK;
   if (ord < TPM_ORD_MAX
       && (AUDIT_STATUS[ord / 8] & (1 << (ord & 0x07)))) {
+    info("tpm_audit_response()");
     /* update audit digest */
     *((UINT16*)&buf[0])  = cpu_to_be16(TPM_TAG_AUDIT_EVENT_OUT);
     *((UINT32*)&buf[2]) = cpu_to_be32(ordinal);
