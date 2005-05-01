@@ -70,8 +70,9 @@ TPM_RESULT TPM_SHA1CompleteExtend(TPM_PCRINDEX pcrNum, UINT32 hashDataSize,
   return TPM_Extend(pcrNum, hashValue, outDigest);
 }
 
-TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BYTE *areaToSign,
-                    UINT32 areaToSignSize, BYTE **sig, UINT32 *sigSize)
+TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
+                    BYTE *areaToSign, UINT32 areaToSignSize, 
+                    BYTE **sig, UINT32 *sigSize)
 {  
   if (key->sigScheme == TPM_SS_RSASSAPKCS1v15_SHA1) {
     /* use signature scheme PKCS1_SHA1_RAW */ 
@@ -94,7 +95,7 @@ TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BYTE *areaToSign,
       tpm_free(*sig);
       return TPM_FAIL;
     }
-  } else if (key->sigScheme == TPM_SS_RSASSAPKCS1v15_INFO) {
+  } else if (key->sigScheme == TPM_SS_RSASSAPKCS1v15_INFO && !isInfo) {
     /* use signature scheme PKCS1_SHA1 and TPM_SIGN_INFO container */
     BYTE buf[areaToSignSize + 30];
     if ((areaToSignSize + 30) > (key->key.size >> 3)
@@ -111,7 +112,19 @@ TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BYTE *areaToSign,
         buf, areaToSignSize + 30, *sig)) {
       tpm_free(*sig);
       return TPM_FAIL;
-    } 
+    }
+  } else if (key->sigScheme == TPM_SS_RSASSAPKCS1v15_INFO && isInfo) {
+    /* TPM_SIGN_INFO structure is already set up */    
+    if (areaToSignSize > (key->key.size >> 3)
+        || areaToSignSize == 0) return TPM_BAD_PARAMETER;    
+    *sigSize = key->key.size >> 3;
+    *sig = tpm_malloc(*sigSize);
+    if (*sig == NULL) return TPM_FAIL; 
+    if (rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, 
+        areaToSign, areaToSignSize, *sig)) {
+      tpm_free(*sig);
+      return TPM_FAIL;
+    }    
   } else {
     return TPM_INVALID_KEYUSAGE;
   }
@@ -137,7 +150,7 @@ TPM_RESULT TPM_Sign(TPM_KEY_HANDLE keyHandle, UINT32 areaToSignSize,
   if (key->keyUsage != TPM_KEY_SIGNING && key->keyUsage != TPM_KEY_LEGACY) 
     return TPM_INVALID_KEYUSAGE;
   /* sign data */
-  return tpm_sign(key, auth1, areaToSign, areaToSignSize, sig, sigSize);
+  return tpm_sign(key, auth1, FALSE, areaToSign, areaToSignSize, sig, sigSize);
 }
 
 TPM_RESULT TPM_GetRandom(UINT32 bytesRequested, UINT32 *randomBytesSize, 
@@ -260,7 +273,7 @@ TPM_RESULT TPM_CertifyKey(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
   sha1_init(&sha1_ctx);
   sha1_update(&sha1_ctx, buf, length);
   sha1_final(&sha1_ctx, buf);
-  res = tpm_sign(cert, auth1, buf, SHA1_DIGEST_LENGTH, outData, outDataSize);
+  res = tpm_sign(cert, auth1, FALSE, buf, SHA1_DIGEST_LENGTH, outData, outDataSize);
   tpm_free(buf);
   if (res != TPM_SUCCESS) {
     free_TPM_KEY_PARMS(certifyInfo->algorithmParms);
@@ -358,7 +371,7 @@ TPM_RESULT TPM_CertifyKey2(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
   sha1_init(&sha1_ctx);
   sha1_update(&sha1_ctx, buf, length);
   sha1_final(&sha1_ctx, buf);
-  res = tpm_sign(cert, auth1, buf, SHA1_DIGEST_LENGTH, outData, outDataSize);
+  res = tpm_sign(cert, auth1, FALSE, buf, SHA1_DIGEST_LENGTH, outData, outDataSize);
   tpm_free(buf);
   if (res != TPM_SUCCESS) {
     free_TPM_KEY_PARMS(certifyInfo->algorithmParms);

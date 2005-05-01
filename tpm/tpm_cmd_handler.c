@@ -376,7 +376,7 @@ static TPM_RESULT execute_TPM_GetAuditDigest(TPM_REQUEST *req, TPM_RESPONSE *rsp
       || tpm_marshal_TPM_DIGEST(&ptr, &len, &auditDigest)
       || tpm_marshal_BOOL(&ptr, &len, more)
       || tpm_marshal_UINT32(&ptr, &len, ordSize)
-      || tpm_marshal_UINT32_ARRAY(&ptr, &len, ordList, ordSize)) {
+      || tpm_marshal_UINT32_ARRAY(&ptr, &len, ordList, ordSize/4)) {
     tpm_free(rsp->param);
     res = TPM_FAIL;
   }
@@ -422,7 +422,7 @@ static TPM_RESULT execute_TPM_GetAuditDigestSigned(TPM_REQUEST *req, TPM_RESPONS
       || tpm_marshal_TPM_DIGEST(&ptr, &len, &auditDigest)
       || tpm_marshal_BOOL(&ptr, &len, more)
       || tpm_marshal_UINT32(&ptr, &len, ordSize)
-      || tpm_marshal_UINT32_ARRAY(&ptr, &len, ordinalList, ordSize)
+      || tpm_marshal_UINT32_ARRAY(&ptr, &len, ordinalList, ordSize/4)
       || tpm_marshal_UINT32(&ptr, &len, sigSize)
       || tpm_marshal_BLOB(&ptr, &len, sig, sigSize)) {
     tpm_free(rsp->param);
@@ -3851,9 +3851,15 @@ int tpm_handle_command(const uint8_t *in, uint32_t in_size, uint8_t **out, uint3
   
   /* update timing ticks */
   tpm_update_ticks();
+  
+  /* audit request */
+  tpm_audit_request(req.ordinal, &req);
 
   /* execute command */
   tpm_execute_command(&req, &rsp);
+
+  /* audit response */
+  tpm_audit_response(req.ordinal, &rsp);
 
   /* init output and marshal response */
   *out_size = len = rsp.size;

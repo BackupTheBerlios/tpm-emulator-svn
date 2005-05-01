@@ -178,7 +178,7 @@ TPM_RESULT TPM_Reset()
   return TPM_SUCCESS;
 }
 
-extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, 
+extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
   BYTE *areaToSign, UINT32 areaToSignSize, BYTE **sig, UINT32 *sigSize);
 
 TPM_RESULT TPM_CertifySelfTest(TPM_KEY_HANDLE keyHandle, TPM_NONCE *antiReplay,
@@ -203,7 +203,7 @@ TPM_RESULT TPM_CertifySelfTest(TPM_KEY_HANDLE keyHandle, TPM_NONCE *antiReplay,
   memcpy(&buf, "Test Passed", 11);
   memcpy(&buf[11], antiReplay->nonce, sizeof(TPM_NONCE));
   memcpy(&buf[31], "\x52\x00\x00\x00", 4);
-  return tpm_sign(key, auth1, buf, sizeof(buf), sig, sigSize); 
+  return tpm_sign(key, auth1, FALSE, buf, sizeof(buf), sig, sigSize); 
 }
 
 extern TPM_RESULT tpm_get_pubek(TPM_PUBKEY *pubEndorsementKey);

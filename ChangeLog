@@ -1,3 +1,7 @@
+2005-04-30  Mario Strasser <mast@gmx.net>
+	* tpm_digest.c: audit functionality added
+ 
+
 2005-04-29  Mario Strasser  <mast@gmx.net>
 	* tpm_context.c: TPM_KeyControlOwner, TPM_SaveContext, 
 		and TPM_LoadContext added

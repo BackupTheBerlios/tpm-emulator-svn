@@ -583,10 +583,12 @@ typedef UINT32 TPM_CMK_RESTRICTDELEGATE;
 #define TPM_ORD_TickStampBlob                   242
 #define TSC_ORD_PhysicalPresence                (10 + TPM_CONNECTION_COMMAND)
 #define TSC_ORD_ResetEstablishmentBit           (11 + TPM_CONNECTION_COMMAND)
-#define TPM_ORD_DAA_Join                        -1 /* TODO: determine TPM_ORD_DAA_Join */
-#define TPM_ORD_DAA_Sign                        -2 /* TODO: determine TPM_ORD_DAA_Sign */
-#define TPM_ORD_GPIO_AuthChannel                -3 /* TODO: determine TPM_ORD_GPIO_AuthChannel */
-#define TPM_ORD_GPIO_ReadWrite                  -4 /* TODO: determine TPM_ORD_GPIO_ReadWrite */
+#define TPM_ORD_DAA_Join                        250 /* TODO: determine TPM_ORD_DAA_Join */
+#define TPM_ORD_DAA_Sign                        251 /* TODO: determine TPM_ORD_DAA_Sign */
+#define TPM_ORD_GPIO_AuthChannel                252 /* TODO: determine TPM_ORD_GPIO_AuthChannel */
+#define TPM_ORD_GPIO_ReadWrite                  253 /* TODO: determine TPM_ORD_GPIO_ReadWrite */
+
+#define TPM_ORD_MAX                             256
 
 /*
  * PCR Structures
@@ -1172,6 +1174,8 @@ typedef struct tdTPM_AUDIT_EVENT_IN {
   TPM_DIGEST inputParms;
   TPM_COUNTER_VALUE auditCount;
 } TPM_AUDIT_EVENT_IN;
+#define sizeof_TPM_AUDIT_EVENT_IN(s) (2 + 4 + 20 \
+  + sizeof_TPM_COUNTER_VALUE(s.auditCount))
 
 /*
  * TPM_AUDIT_EVENT_OUT structure ([TPM_Part2], Section 14.2)
@@ -1186,6 +1190,8 @@ typedef struct tdTPM_AUDIT_EVENT_OUT {
   TPM_COUNTER_VALUE auditCount;
   TPM_RESULT returncode;
 } TPM_AUDIT_EVENT_OUT;
+#define sizeof_TPM_AUDIT_EVENT_OUT(s) (2 + 4 + 20 \
+  + sizeof_TPM_COUNTER_VALUE(s.auditCount) + 4)
 
 /*
  * TPM Return Codes ([TPM_Part2], Section 16)
@@ -1274,10 +1280,10 @@ typedef struct tdTPM_AUDIT_EVENT_OUT {
 #define TPM_TRANSPORT_EXCLUSIVE         (TPM_BASE + 78)
 #define TPM_OWNER_CONTROL               (TPM_BASE + 79)
 #define TPM_DAA_RESOURCES               (TPM_BASE + 80)
-#define TPM_BADCONTEXT                  (TPM_BASE + 81) // FIXME
-#define TPM_BADHANDLE                   (TPM_BASE + 82) // FIXME 
-#define TPM_TOOMANYCONTEXTS             (TPM_BASE + 83) // FIXME
-#define TPM_NOCONTEXTSPACE              (TPM_BASE + 84) // FIXME
+#define TPM_BADCONTEXT                  (TPM_BASE + 81) // TODO: determine correct value
+#define TPM_BADHANDLE                   (TPM_BASE + 82) // TODO: determine correct value
+#define TPM_TOOMANYCONTEXTS             (TPM_BASE + 83) // TODO: determine correct value
+#define TPM_NOCONTEXTSPACE              (TPM_BASE + 84) // TODO: determine correct value
 #define TPM_RETRY                       (TPM_BASE + TPM_NON_FATAL)
 
 /*
@@ -1946,11 +1952,12 @@ typedef struct tdTPM_PERMANENT_DATA {
   TPM_KEY_DATA srk; 
   BYTE contextKey[32];  
   //TPM_KEY delegateKey;
+  TPM_ACTUAL_COUNT auditMonotonicCounter;
   TPM_COUNTER_VALUE counters[TPM_MAX_COUNTERS];
   TPM_TICKTYPE tickType;
   TPM_PCR_ATTRIBUTES pcrAttrib[TPM_NUM_PCR];
   TPM_PCRVALUE pcrValue[TPM_NUM_PCR];
-  //BYTE* ordinalAuditStatus;
+  BYTE ordinalAuditStatus[TPM_ORD_MAX / 8];
   //BYTE* rngState;
   //TPM_FAMILY_TABLE familyTable;
   //TPM_DELEGATE_TABLE delegateTable;
@@ -1965,10 +1972,10 @@ typedef struct tdTPM_PERMANENT_DATA {
   const char *testResult;
 } TPM_PERMANENT_DATA;
 #define sizeof_TPM_PERMANENT_DATA(s) (2 + 4 + 4*20 \
-  + sizeof_RSA(s.endorsementKey) \
+  + sizeof_RSA(s.endorsementKey) + TPM_ORD_MAX/8 \
   + (1+TPM_MAX_KEYS)*sizeof_TPM_KEY_DATA(s.srk) \
   + TPM_NUM_PCR*(sizeof_TPM_PCR_ATTRIBUTES(x)+20) \
-  + TPM_MAX_COUNTERS*sizeof_TPM_COUNTER_VALUE2(x) + 1) 
+  + TPM_MAX_COUNTERS*sizeof_TPM_COUNTER_VALUE2(x) + 1 + 4) 
 
 /*
  * TPM_STCLEAR_DATA ([TPM_Part2], Section 7.5)
@@ -2009,7 +2016,8 @@ typedef struct tdTPM_SESSION_DATA {
 typedef struct tdTPM_STANY_DATA {
   TPM_STRUCTURE_TAG tag;
   TPM_NONCE contextNonceSession;
-  //TPM_DIGEST auditDigest ;
+  TPM_DIGEST auditDigest;
+  BOOL auditSession;
   TPM_CURRENT_TICKS currentTicks;
   UINT32 contextCount;
   UINT32 contextList[TPM_MAX_SESSION_LIST];

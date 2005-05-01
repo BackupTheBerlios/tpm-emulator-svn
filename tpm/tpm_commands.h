@@ -352,6 +352,26 @@ TPM_RESULT TPM_GetCapability(
  */
 
 /**
+ * tpm_audit_request - audits a TPM request
+ * @ordinal: [in] The ordinal of the request
+ * @req: [in] The request to audit
+ */
+void tpm_audit_request(
+  TPM_COMMAND_CODE ordinal, 
+  TPM_REQUEST *req
+);
+
+/**
+ * tpm_audit_response - audits a TPM response
+ * @ordinal: [in] The ordinal of the response
+ * @rsp: [in] The response to audit
+ */
+void tpm_audit_response(
+  TPM_COMMAND_CODE ordinal, 
+  TPM_RESPONSE *rsp
+);
+
+/**
  * TPM_GetAuditDigest - provides the current audit digest
  * @startOrdinal: [in] The starting ordinal for the list of audited ordinals
  * @counterValue: [out] The current value of the audit monotonic counter
