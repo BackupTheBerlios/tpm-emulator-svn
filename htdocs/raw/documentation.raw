@@ -93,17 +93,17 @@ id=folder5 src="closed.gif" border=0> CAPABILITIES <span class="part">&#177</spa
 <!--
 1.0.6 Auditing
 File: tpm_audit.c
-TPM_GetAuditDigest -
-TPM_GetAuditDigestSigned -
-TPM_SetOrdinalAuditStatus -
+TPM_GetAuditDigest +
+TPM_GetAuditDigestSigned +
+TPM_SetOrdinalAuditStatus +
 -->
 
 <DIV class=trigger onclick="showBranch('branch6');swapFolder('folder6')"><IMG 
-id=folder6 src="closed.gif" border=0> AUDITING <span class="notdone">-</span>
+id=folder6 src="closed.gif" border=0> AUDITING <span class="done">+</span>
 </DIV><SPAN class=branch id=branch6>
-<span class="notdone">-</span>TPM_GetAuditDigest<BR>
-<span class="notdone">-</span>TPM_GetAuditDigestSigned<BR>
-<span class="notdone">-</span>TPM_SetOrdinalAuditStatus<BR>
+<span class="done">+</span>TPM_GetAuditDigest<BR>
+<span class="done">+</span>TPM_GetAuditDigestSigned<BR>
+<span class="done">+</span>TPM_SetOrdinalAuditStatus<BR>
 </SPAN>
 
 
