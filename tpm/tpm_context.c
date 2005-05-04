@@ -62,11 +62,13 @@ TPM_RESULT TPM_KeyControlOwner(TPM_KEY_HANDLE keyHandle, UINT32 bitName,
   }  
 }
 
-int encrypt_context(TPM_CONTEXT_SENSITIVE *context, BYTE **enc, UINT32 *enc_size)
+int encrypt_context(BYTE *iv, UINT32 iv_size, TPM_CONTEXT_SENSITIVE *context, 
+                    BYTE **enc, UINT32 *enc_size)
 {
   UINT32 len;
   BYTE *ptr;
   rc4_ctx_t rc4_ctx;
+  BYTE key[TPM_CONTEXT_KEY_SIZE + iv_size];
   /* marshal context */
   *enc_size = len = sizeof_TPM_CONTEXT_SENSITIVE((*context));
   *enc = ptr = tpm_malloc(len);
@@ -75,24 +77,27 @@ int encrypt_context(TPM_CONTEXT_SENSITIVE *context, BYTE **enc, UINT32 *enc_size
     return -1;
   }
   /* encrypt context */
-  rc4_init(&rc4_ctx, tpmData.permanent.data.contextKey, 
-    sizeof(tpmData.permanent.data.contextKey));  
+  memcpy(key, tpmData.permanent.data.contextKey, TPM_CONTEXT_KEY_SIZE);
+  memcpy(&key[TPM_CONTEXT_KEY_SIZE], iv, iv_size);
+  rc4_init(&rc4_ctx, key, sizeof(key));
   rc4_crypt(&rc4_ctx, *enc, *enc, *enc_size);
   return 0;
 }
 
-int decrypt_context(BYTE *enc, UINT32 enc_size, 
+int decrypt_context(BYTE *iv, UINT32 iv_size, BYTE *enc, UINT32 enc_size, 
                     TPM_CONTEXT_SENSITIVE *context, BYTE **buf) 
 {
   UINT32 len;
   BYTE *ptr;
   rc4_ctx_t rc4_ctx;
+  BYTE key[TPM_CONTEXT_KEY_SIZE + iv_size];
   len = enc_size;
   *buf = ptr = tpm_malloc(len);
   if (*buf == NULL) return -1;
   /* decrypt context */
-  rc4_init(&rc4_ctx, tpmData.permanent.data.contextKey, 
-    sizeof(tpmData.permanent.data.contextKey));  
+  memcpy(key, tpmData.permanent.data.contextKey, TPM_CONTEXT_KEY_SIZE);
+  memcpy(&key[TPM_CONTEXT_KEY_SIZE], iv, iv_size);
+  rc4_init(&rc4_ctx, key, sizeof(key));  
   rc4_crypt(&rc4_ctx, enc, *buf, enc_size);
   /* unmarshal context */
   if (tpm_unmarshal_TPM_CONTEXT_SENSITIVE(&ptr, &len, context)) {
@@ -165,8 +170,9 @@ TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
   contextBlob->handle = handle; 
   memset(&contextBlob->blobIntegrity, 0, sizeof(TPM_DIGEST));
   memcpy(contextBlob->label, label, sizeof(label));
-  contextBlob->additionalData = NULL;
-  contextBlob->additionalSize = 0;
+  contextBlob->additionalSize = TPM_CONTEXT_KEY_SIZE;
+  contextBlob->additionalData = tpm_malloc(contextBlob->additionalSize);
+  if (contextBlob->additionalData == NULL) return TPM_FAIL;
   /* increment context counter */
   if (resourceType == TPM_RT_KEY) {
     contextBlob->contextCount = 0;
@@ -181,9 +187,11 @@ TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
     tpmData.stany.data.contextList[i] = contextBlob->contextCount;
   }
   /* encrypt sensitive data */
-  if (encrypt_context(&context, &contextBlob->sensitiveData, 
+  if (encrypt_context(contextBlob->additionalData, contextBlob->additionalSize,
+      &context, &contextBlob->sensitiveData, 
       &contextBlob->sensitiveSize)) return TPM_DECRYPT_ERROR;
   if (compute_context_digest(contextBlob, &contextBlob->blobIntegrity)) {
+    tpm_free(contextBlob->additionalData);  
     tpm_free(contextBlob->sensitiveData);
     return TPM_FAIL;
   }
@@ -206,7 +214,8 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
   TPM_DIGEST digest;
   int i = 0;
   info("TPM_LoadContext()");
-  if (decrypt_context(contextBlob->sensitiveData, contextBlob->sensitiveSize, 
+  if (decrypt_context(contextBlob->additionalData, contextBlob->additionalSize,
+      contextBlob->sensitiveData, contextBlob->sensitiveSize, 
       &context, &context_buf)) return TPM_DECRYPT_ERROR;
   /* validate structure */
   if (compute_context_digest(contextBlob, &digest)

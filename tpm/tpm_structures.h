@@ -1938,6 +1938,7 @@ typedef struct tdTPM_KEY_DATA {
 #define TPM_DELEGATE_KEY                TPM_KEY
 #define TPM_MAX_NV_WRITE_NOOWNER        64
 #define TPM_MAX_KEYS                    10
+#define TPM_CONTEXT_KEY_SIZE            32
 typedef struct tdTPM_PERMANENT_DATA {
   TPM_STRUCTURE_TAG tag;
   TPM_VERSION version;
@@ -1950,7 +1951,7 @@ typedef struct tdTPM_PERMANENT_DATA {
   TPM_NONCE ekReset;
   rsa_private_key_t endorsementKey;
   TPM_KEY_DATA srk; 
-  BYTE contextKey[32];  
+  BYTE contextKey[TPM_CONTEXT_KEY_SIZE];  
   //TPM_KEY delegateKey;
   TPM_ACTUAL_COUNT auditMonotonicCounter;
   TPM_COUNTER_VALUE counters[TPM_MAX_COUNTERS];
