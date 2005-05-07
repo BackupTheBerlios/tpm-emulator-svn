@@ -1,3 +1,7 @@
+2005-05-07  Mario Strasser <mast@gmx.net>
+	* bug in TPM_SaveContext fixed
+
+
 2005-04-30  Mario Strasser <mast@gmx.net>
 	* tpm_digest.c: audit functionality added
  

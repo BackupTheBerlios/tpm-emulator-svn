@@ -173,6 +173,8 @@ TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
   contextBlob->additionalSize = TPM_CONTEXT_KEY_SIZE;
   contextBlob->additionalData = tpm_malloc(contextBlob->additionalSize);
   if (contextBlob->additionalData == NULL) return TPM_FAIL;
+  tpm_get_random_bytes(contextBlob->additionalData, 
+                       contextBlob->additionalSize);
   /* increment context counter */
   if (resourceType == TPM_RT_KEY) {
     contextBlob->contextCount = 0;
