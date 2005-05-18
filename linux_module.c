@@ -87,7 +87,7 @@ static ssize_t tpm_write(struct file *file, const char *buf, size_t count, loff_
   if (tpm_response.data != NULL) kfree(tpm_response.data);
   if (tpm_handle_command(buf, count, &tpm_response.data, 
                          &tpm_response.size) != 0) { 
-    count = -1;
+    count = -EILSEQ;
     tpm_response.data = NULL;
   }
   up(&tpm_mutex);
