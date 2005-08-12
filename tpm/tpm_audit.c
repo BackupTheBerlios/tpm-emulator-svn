@@ -145,7 +145,7 @@ TPM_RESULT TPM_GetAuditDigestSigned(TPM_KEY_HANDLE keyHandle,
     res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
     if (res != TPM_SUCCESS) return res;
   }
-  /* get audit degest */    
+  /* get audit digest */    
   res = TPM_GetAuditDigest(startOrdinal, counterValue, auditDigest, 
                            more, ordSize, ordinalList);
   if (res != TPM_SUCCESS) return res;

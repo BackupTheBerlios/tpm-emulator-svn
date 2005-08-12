@@ -160,7 +160,7 @@ const char *tpm_error_to_string(TPM_RESULT res)
     case TPM_AUTH_CONFLICT:
       return "NV_LoadKey blob requires both owner and blob authorization.";
     case TPM_AREA_LOCKED:
-      return "The NV area is locked and not writtable.";
+      return "The NV area is locked and not writable.";
     case TPM_BAD_LOCALITY:
       return "The locality is incorrect for the attempted operation.";
     case TPM_READ_ONLY:
@@ -203,7 +203,7 @@ const char *tpm_error_to_string(TPM_RESULT res)
     case TPM_OWNER_CONTROL:
       return "Attempt to context save a owner evict controlled key.";
     case TPM_DAA_RESOURCES:
-      return "The DAA command has no resources availble to "
+      return "The DAA command has no resources available to "
 	"execute the command.";
     case TPM_RETRY:
       return "The TPM is too busy to respond to the command immediately, "

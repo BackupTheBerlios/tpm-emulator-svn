@@ -34,7 +34,7 @@ void rc4_init(rc4_ctx_t *ctx, uint8_t *key, size_t key_len)
         if (k >= key_len) k = 0;        
     }
     /* to strengthen the algorithm it is recommended to
-       discard the frist few (say 256) octets */
+       discard the first few (say 256) octets */
     for (i = 0; i < 16; i++) {
         uint8_t buf[16];
         rc4_crypt(ctx, buf, buf, sizeof(buf));

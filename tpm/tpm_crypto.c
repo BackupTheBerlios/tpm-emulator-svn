@@ -35,7 +35,7 @@ TPM_RESULT TPM_SHA1Start(UINT32 *maxNumBytes)
   info("TPM_SHA1Start()");
   sha1_init(&sha1_ctx);
   sha1_ctx_valid = TRUE;
-  /* this limit was arbitrarily choosen */
+  /* this limit was arbitrarily chosen */
   *maxNumBytes = 2048;
   return TPM_SUCCESS;
 }

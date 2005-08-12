@@ -169,7 +169,7 @@ static TPM_RESULT execute_TPM_OwnerSetDisable(TPM_REQUEST *req, TPM_RESPONSE *rs
   BYTE *ptr;
   UINT32 len;
   BOOL disableState;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -208,7 +208,7 @@ static TPM_RESULT execute_TPM_PhysicalSetDeactivated(TPM_REQUEST *req, TPM_RESPO
 
 static TPM_RESULT execute_TPM_SetTempDeactivated(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* execute command */
   return TPM_SetTempDeactivated(&req->auth1);
@@ -240,7 +240,7 @@ static TPM_RESULT execute_TPM_TakeOwnership(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   TPM_KEY srkParams;
   TPM_KEY srkPub;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -270,7 +270,7 @@ static TPM_RESULT execute_TPM_TakeOwnership(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 
 static TPM_RESULT execute_TPM_OwnerClear(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* execute command */
   return TPM_OwnerClear(&req->auth1);
@@ -284,7 +284,7 @@ static TPM_RESULT execute_TPM_ForceClear(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 
 static TPM_RESULT execute_TPM_DisableOwnerClear(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* execute command */
   return TPM_DisableOwnerClear(&req->auth1);
@@ -400,7 +400,7 @@ static TPM_RESULT execute_TPM_GetAuditDigestSigned(TPM_REQUEST *req, TPM_RESPONS
   UINT32 sigSize;
   BYTE *sig = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -439,7 +439,7 @@ static TPM_RESULT execute_TPM_SetOrdinalAuditStatus(TPM_REQUEST *req, TPM_RESPON
   UINT32 len;
   TPM_COMMAND_CODE ordinalToAudit;
   BOOL auditState;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -465,7 +465,7 @@ static TPM_RESULT execute_TPM_SetRedirection(TPM_REQUEST *req, TPM_RESPONSE *rsp
   TPM_REDIR_COMMAND redirCmd;
   UINT32 inputDataSize;
   BYTE *inputData;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -491,7 +491,7 @@ static TPM_RESULT execute_TPM_Seal(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   BYTE *inData;
   TPM_STORED_DATA sealedData;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -528,7 +528,7 @@ static TPM_RESULT execute_TPM_Unseal(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   UINT32 sealedDataSize;
   BYTE *secret = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -562,7 +562,7 @@ static TPM_RESULT execute_TPM_UnBind(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   UINT32 outDataSize;
   BYTE *outData = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -597,7 +597,7 @@ static TPM_RESULT execute_TPM_CreateWrapKey(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   TPM_KEY keyInfo;
   TPM_KEY wrappedKey;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -631,7 +631,7 @@ static TPM_RESULT execute_TPM_LoadKey(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   TPM_KEY inKey;
   TPM_KEY_HANDLE inkeyHandle;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -660,7 +660,7 @@ static TPM_RESULT execute_TPM_GetPubKey(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   TPM_KEY_HANDLE keyHandle;
   TPM_PUBKEY pubKey;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -696,7 +696,7 @@ static TPM_RESULT execute_TPM_CreateMigrationBlob(TPM_REQUEST *req, TPM_RESPONSE
   UINT32 outDataSize;
   BYTE *outData = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -739,7 +739,7 @@ static TPM_RESULT execute_TPM_ConvertMigrationBlob(TPM_REQUEST *req, TPM_RESPONS
   UINT32 outDataSize;
   BYTE *outData = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -775,7 +775,7 @@ static TPM_RESULT execute_TPM_AuthorizeMigrationKey(TPM_REQUEST *req, TPM_RESPON
   TPM_PUBKEY migrationKey;
   TPM_MIGRATIONKEYAUTH outData;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -808,7 +808,7 @@ static TPM_RESULT execute_TPM_CMK_CreateKey(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   TPM_DIGEST migrationAuthorityDigest;
   TPM_KEY wrappedKey;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -844,7 +844,7 @@ static TPM_RESULT execute_TPM_CMK_CreateTicket(TPM_REQUEST *req, TPM_RESPONSE *r
   BYTE *signatureValue;
   TPM_DIGEST sigTicket;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -888,7 +888,7 @@ static TPM_RESULT execute_TPM_CMK_CreateBlob(TPM_REQUEST *req, TPM_RESPONSE *rsp
   UINT32 outDataSize;
   BYTE *outData = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -930,7 +930,7 @@ static TPM_RESULT execute_TPM_CMK_SetRestrictions(TPM_REQUEST *req, TPM_RESPONSE
   BYTE *ptr;
   UINT32 len;
   TPM_CMK_RESTRICTDELEGATE restriction;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -951,7 +951,7 @@ static TPM_RESULT execute_TPM_CreateMaintenanceArchive(TPM_REQUEST *req, TPM_RES
   UINT32 archiveSize;
   BYTE *archive = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -987,7 +987,7 @@ static TPM_RESULT execute_TPM_LoadMaintenanceArchive(TPM_REQUEST *req, TPM_RESPO
   UINT32 outArgumentsSize;
   BYTE *outArguments = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -1014,7 +1014,7 @@ static TPM_RESULT execute_TPM_LoadMaintenanceArchive(TPM_REQUEST *req, TPM_RESPO
 
 static TPM_RESULT execute_TPM_KillMaintenanceFeature(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* execute command */
   return TPM_KillMaintenanceFeature(&req->auth1);
@@ -1180,7 +1180,7 @@ static TPM_RESULT execute_TPM_Sign(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   UINT32 sigSize;
   BYTE *sig = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -1261,7 +1261,7 @@ static TPM_RESULT execute_TPM_CertifyKey(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   UINT32 outDataSize;
   BYTE *outData = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -1301,7 +1301,7 @@ static TPM_RESULT execute_TPM_CertifyKey2(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   UINT32 outDataSize;
   BYTE *outData = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -1444,7 +1444,7 @@ static TPM_RESULT execute_TPM_ReadPubek(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 
 static TPM_RESULT execute_TPM_DisablePubekRead(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* execute command */
   return TPM_DisablePubekRead(&req->auth1);
@@ -1457,7 +1457,7 @@ static TPM_RESULT execute_TPM_OwnerReadInternalPub(TPM_REQUEST *req, TPM_RESPONS
   TPM_KEY_HANDLE keyHandle;
   TPM_PUBKEY publicPortion;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -1490,7 +1490,7 @@ static TPM_RESULT execute_TPM_MakeIdentity(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   UINT32 identityBindingSize;
   BYTE *identityBinding = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -1527,7 +1527,7 @@ static TPM_RESULT execute_TPM_ActivateIdentity(TPM_REQUEST *req, TPM_RESPONSE *r
   BYTE *blob;
   TPM_SYMMETRIC_KEY symmetricKey;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -1616,7 +1616,7 @@ static TPM_RESULT execute_TPM_Quote(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   UINT32 sigSize;
   BYTE *sig = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -1669,7 +1669,7 @@ static TPM_RESULT execute_TPM_ChangeAuth(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   UINT32 outDataSize;
   BYTE *outData = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -1705,7 +1705,7 @@ static TPM_RESULT execute_TPM_ChangeAuthOwner(TPM_REQUEST *req, TPM_RESPONSE *rs
   TPM_PROTOCOL_ID protocolID;
   TPM_ENCAUTH newAuth;
   TPM_ENTITY_TYPE entityType;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -1839,7 +1839,7 @@ static TPM_RESULT execute_TPM_Delegate_Manage(TPM_REQUEST *req, TPM_RESPONSE *rs
   UINT32 retDataSize;
   BYTE *retData = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -1876,7 +1876,7 @@ static TPM_RESULT execute_TPM_Delegate_CreateKeyDelegation(TPM_REQUEST *req, TPM
   UINT32 blobSize;
   TPM_DELEGATE_KEY_BLOB blob;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -1912,7 +1912,7 @@ static TPM_RESULT execute_TPM_Delegate_CreateOwnerDelegation(TPM_REQUEST *req, T
   UINT32 blobSize;
   TPM_DELEGATE_OWNER_BLOB blob;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -1944,7 +1944,7 @@ static TPM_RESULT execute_TPM_Delegate_LoadOwnerDelegation(TPM_REQUEST *req, TPM
   UINT32 len;
   TPM_DELEGATE_INDEX index;
   UINT32 blobSize;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -1993,7 +1993,7 @@ static TPM_RESULT execute_TPM_Delegate_UpdateVerification(TPM_REQUEST *req, TPM_
   UINT32 outputSize;
   BYTE *outputData = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2040,7 +2040,7 @@ static TPM_RESULT execute_TPM_NV_DefineSpace(TPM_REQUEST *req, TPM_RESPONSE *rsp
   UINT32 len;
   TPM_NV_DATA_PUBLIC pubInfo;
   TPM_ENCAUTH encAuth;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2058,7 +2058,7 @@ static TPM_RESULT execute_TPM_NV_WriteValue(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   UINT32 len;
   TPM_NV_INDEX nvIndex;
   UINT32 offset;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2078,7 +2078,7 @@ static TPM_RESULT execute_TPM_NV_WriteValueAuth(TPM_REQUEST *req, TPM_RESPONSE *
   UINT32 offset;
   UINT32 dataSize;
   BYTE *data;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2102,7 +2102,7 @@ static TPM_RESULT execute_TPM_NV_ReadValue(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   UINT32 outDataSize;
   BYTE *data = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2137,7 +2137,7 @@ static TPM_RESULT execute_TPM_NV_ReadValueAuth(TPM_REQUEST *req, TPM_RESPONSE *r
   UINT32 outDataSize;
   BYTE *data = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2169,7 +2169,7 @@ static TPM_RESULT execute_TPM_KeyControlOwner(TPM_REQUEST *req, TPM_RESPONSE *rs
   TPM_KEY_HANDLE keyHandle;
   UINT32 bitName;
   BOOL bitValue;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2308,7 +2308,7 @@ static TPM_RESULT execute_TPM_TickStampBlob(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   UINT32 sigSize;
   BYTE *sig = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2347,7 +2347,7 @@ static TPM_RESULT execute_TPM_EstablishTransport(TPM_REQUEST *req, TPM_RESPONSE 
   TPM_CURRENT_TICKS currentTicks;
   TPM_NONCE transNonce;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2384,7 +2384,7 @@ static TPM_RESULT execute_TPM_ExecuteTransport(TPM_REQUEST *req, TPM_RESPONSE *r
   UINT32 outWrappedCmdSize;
   BYTE *outWrappedCmd = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2420,7 +2420,7 @@ static TPM_RESULT execute_TPM_ReleaseTransportSigned(TPM_REQUEST *req, TPM_RESPO
   UINT32 signSize;
   BYTE *signature = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2455,7 +2455,7 @@ static TPM_RESULT execute_TPM_CreateCounter(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   TPM_COUNT_ID countID;
   TPM_COUNTER_VALUE counterValue;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2485,7 +2485,7 @@ static TPM_RESULT execute_TPM_IncrementCounter(TPM_REQUEST *req, TPM_RESPONSE *r
   TPM_COUNT_ID countID;
   TPM_COUNTER_VALUE count;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2537,7 +2537,7 @@ static TPM_RESULT execute_TPM_ReleaseCounter(TPM_REQUEST *req, TPM_RESPONSE *rsp
   BYTE *ptr;
   UINT32 len;
   TPM_COUNT_ID countID;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2553,7 +2553,7 @@ static TPM_RESULT execute_TPM_ReleaseCounterOwner(TPM_REQUEST *req, TPM_RESPONSE
   BYTE *ptr;
   UINT32 len;
   TPM_COUNT_ID countID;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2578,7 +2578,7 @@ static TPM_RESULT execute_TPM_DAA_Join(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   UINT32 outputSize;
   BYTE *outputData = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2622,7 +2622,7 @@ static TPM_RESULT execute_TPM_DAA_Sign(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   UINT32 outputSize;
   BYTE *outputData = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2661,7 +2661,7 @@ static TPM_RESULT execute_TPM_GPIO_AuthChannel(TPM_REQUEST *req, TPM_RESPONSE *r
   TPM_GPIO_CHANNEL channel;
   TPM_GPIO_AUTHORIZE channelAuth;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2697,7 +2697,7 @@ static TPM_RESULT execute_TPM_GPIO_ReadWrite(TPM_REQUEST *req, TPM_RESPONSE *rsp
   UINT32 readDataSize;
   BYTE *readData = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2873,7 +2873,7 @@ static TPM_RESULT execute_TPM_DirWriteAuth(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   UINT32 len;
   TPM_DIRINDEX dirIndex;
   TPM_DIRVALUE newContents;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2924,7 +2924,7 @@ static TPM_RESULT execute_TPM_ChangeAuthAsymStart(TPM_REQUEST *req, TPM_RESPONSE
   TPM_KEY_HANDLE ephHandle;
   TPM_KEY outTempKey;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -2971,7 +2971,7 @@ static TPM_RESULT execute_TPM_ChangeAuthAsymFinish(TPM_REQUEST *req, TPM_RESPONS
   TPM_NONCE saltNonce;
   TPM_DIGEST changeProof;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -3020,7 +3020,7 @@ static TPM_RESULT execute_TPM_CertifySelfTest(TPM_REQUEST *req, TPM_RESPONSE *rs
   UINT32 sigSize;
   BYTE *sig = NULL;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
@@ -3050,7 +3050,7 @@ static TPM_RESULT execute_TPM_OwnerReadPubek(TPM_REQUEST *req, TPM_RESPONSE *rsp
   UINT32 len;
   TPM_PUBKEY pubEndorsementKey;
   TPM_RESULT res;
-  /* compute parameter disgest */
+  /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* execute command */
   res = TPM_OwnerReadPubek(&req->auth1, &pubEndorsementKey);
@@ -3813,7 +3813,7 @@ static void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
     } 
 #endif     
   }
-  /* terminate authorizazion sessions if neccessary */
+  /* terminate authorization sessions if necessary */
   if (rsp->auth1 != NULL && !rsp->auth1->continueAuthSession) 
     TPM_FlushSpecific(rsp->auth1->authHandle, TPM_RT_AUTH);
   if (rsp->auth2 != NULL && !rsp->auth2->continueAuthSession) 

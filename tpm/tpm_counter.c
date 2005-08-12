@@ -66,7 +66,7 @@ TPM_RESULT TPM_CreateCounter(TPM_ENCAUTH *authData, BYTE label[4],
   auth1->continueAuthSession = FALSE;
   session = tpm_get_auth(auth1->authHandle);
   if (session->type != TPM_ST_OSAP) return TPM_AUTHFAIL;
-  /* decrypt authoritzaion secret */
+  /* decrypt authorization secret */
   tpm_decrypt_auth_secret(*authData, session->sharedSecret, 
     &session->lastNonceEven, counter->usageAuth);
   /* setup counter */

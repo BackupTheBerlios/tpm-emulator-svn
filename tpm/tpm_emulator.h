@@ -37,7 +37,7 @@ void tpm_emulator_shutdown(void);
 
 /**
  * tpm_handle_command - handles (i.e., executes) TPM commands
- * @in: [in] incomming TPM command
+ * @in: [in] incoming TPM command
  * @in_size: [in] total number of input bytes
  * @out: [out] outgoing TPM result
  * @out_size: [out] total number of output bytes

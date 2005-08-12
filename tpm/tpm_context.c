@@ -262,7 +262,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
     } else {
       *handle = hintHandle;
     }          
-    /* reload ressource */
+    /* reload resource */
     memcpy(session, &context.internalData.session, sizeof(TPM_SESSION_DATA));    
   } else {
     /* check contextNonce */  
@@ -290,7 +290,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
     } else {
       *handle = hintHandle;
     }          
-    /* reload ressource */
+    /* reload resource */
     memcpy(key, &context.internalData.key, sizeof(TPM_KEY_DATA));
     rsa_copy_key(&key->key, &context.internalData.key.key);
   }         

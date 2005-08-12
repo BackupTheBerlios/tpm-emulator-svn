@@ -1992,7 +1992,7 @@ typedef struct tdTPM_STCLEAR_DATA {
 
 /*
  * TPM_SESSION_DATA 
- * This structure contains the data for authrization and transport sessions.
+ * This structure contains the data for authorization and transport sessions.
  */
 #define TPM_ST_INVALID    0
 #define TPM_ST_OIAP       1

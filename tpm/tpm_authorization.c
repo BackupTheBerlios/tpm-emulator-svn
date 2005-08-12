@@ -131,7 +131,7 @@ TPM_RESULT TPM_ChangeAuthOwner(TPM_PROTOCOL_ID protocolID,
   /* decrypt auth */
   tpm_decrypt_auth_secret(*newAuth, session->sharedSecret,
                           &session->lastNonceEven, plainAuth);
-  /* change autorization data */
+  /* change authorization data */
   if (entityType == TPM_ET_OWNER) {
     memcpy(tpmData.permanent.data.ownerAuth, plainAuth, sizeof(TPM_SECRET));  
     /* invalidate all associated sessions */
@@ -197,7 +197,7 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
   *authHandle = tpm_get_free_session(TPM_ST_OSAP);
   session = tpm_get_auth(*authHandle);
   if (session == NULL) return TPM_RESOURCES;
-  /* get ressource handle and the dedicated secret */
+  /* get resource handle and the dedicated secret */
   switch (entityType) {
     case TPM_ET_KEYHANDLE:
       session->handle = entityValue;
@@ -271,7 +271,7 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
   UINT32 auth_handle = cpu_to_be32(auth->authHandle);
   
   info("tpm_verify_auth(%08x)", auth->authHandle);
-  /* get dedicated authorizaion session */
+  /* get dedicated authorization session */
   session = tpm_get_auth(auth->authHandle);
   if (session == NULL) return TPM_INVALID_AUTHHANDLE;
   /* setup authorization */

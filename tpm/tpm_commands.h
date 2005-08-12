@@ -318,9 +318,9 @@ TPM_RESULT TSC_ResetEstablishmentBit(void);
 /*
  * The GetCapability Commands ([TPM_Part3], Section 7)
  * [tpm_capability.c]
- * The GetCapability command allows the TPM to report back to the requestor 
+ * The GetCapability command allows the TPM to report back to the requester 
  * what type of TPM it is dealing with. The request for information requires 
- * the requestor to specify which piece of information that is required. 
+ * the requester to specify which piece of information that is required. 
  */
 
 /**
@@ -827,7 +827,7 @@ TPM_RESULT TPM_CMK_SetRestrictions(
  */
 
 /**
- * TPM_CreateMaintenanceArchive - creates the maintenance achive
+ * TPM_CreateMaintenanceArchive - creates the maintenance archive
  * @generateRandom: [in] Use RNG or Owner auth to generate random
  * @auth1: [in, out] Authorization protocol parameters
  * @randomSize: [out] Size of the returned random data
@@ -1105,7 +1105,7 @@ TPM_RESULT TPM_CertifyKey2(
  * [tpm_credentials.c]
  * There are two create EK commands. The first matches the 1.1 functionality. 
  * The second provides the mechanism to enable revokeEK and provides 
- * FIPS 140-2 compatability. 
+ * FIPS 140-2 compatibility. 
  */
 
 /**
@@ -1528,8 +1528,8 @@ TPM_RESULT TPM_SetOwnerPointer(
 /**
  * tpm_verify_auth - verifies an authorization session
  * @auth: [in] The handle to the authorization session
- * @secret: [in] The secret associated with the ressource
- * @handle: [in] The handle used to access the ressource
+ * @secret: [in] The secret associated with the resource
+ * @handle: [in] The handle used to access the resource
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  *
  * Description: ([TPM_Part3], Section 18.1.1 and 18.2.1)
@@ -1987,7 +1987,7 @@ void tpm_update_ticks(void);
 /**
  * TPM_EstablishTransport - establishes a transport session
  * @encHandle: [in] Handle to the key that encrypted the blob 
- * @transPublic: [in] The public information describing the transport sesion
+ * @transPublic: [in] The public information describing the transport session
  * @secretSize: [in] The size of the secret Area 
  * @secret: [in] The encrypted secret area
  * @auth1: [in, out] Authorization protocol parameters
@@ -2253,7 +2253,7 @@ TPM_RESULT TPM_GPIO_AuthChannel(
 
 /**
  * TPM_GPIO_ReadWrite - reads and/or writes to an IO channel
- * @channelAuthSize: [in] Size in bytes of channelAuth 5
+ * @channelAuthSize: [in] Size in bytes of channelAuth
  * @readBytes: [in] Number of bytes to be read
  * @writeBytes: [in] Number of bytes to be wriiten; size of writeData 
  * @writeData: [in] The bytes to be written to the channel

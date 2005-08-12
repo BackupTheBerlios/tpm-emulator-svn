@@ -168,7 +168,7 @@ TPM_RESULT TPM_Reset()
 {
   int i;
   info("TPM_Reset()");
-  /* invalidate all authorizaion sessions */
+  /* invalidate all authorization sessions */
   for (i = 0; i < TPM_MAX_SESSIONS; i++) {
     TPM_SESSION_DATA *session = &tpmData.stany.data.sessions[i]; 
     if (session->type == TPM_ST_OIAP || session->type == TPM_ST_OSAP)

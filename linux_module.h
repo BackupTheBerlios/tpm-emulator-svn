@@ -74,7 +74,7 @@ static inline void tpm_get_random_bytes(void *buf, int nbytes)
 
 uint64_t tpm_get_ticks(void);
 
-/* byteorder conversions */
+/* byte order conversions */
 
 #define CPU_TO_BE64(x) __cpu_to_be64(x)
 #define CPU_TO_LE64(x) __cpu_to_le64(x)

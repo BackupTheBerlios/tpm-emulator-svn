@@ -26,7 +26,7 @@
  * Credential Handling ([TPM_Part3], Section 14)
  * There are two create EK commands. The first matches the 1.1 functionality. 
  * The second provides the mechanism to enable revokeEK and provides 
- * FIPS 140-2 compatability. 
+ * FIPS 140-2 compatibility. 
  */
 
 int tpm_compute_pubkey_checksum(TPM_NONCE *antiReplay, TPM_PUBKEY *pubKey,

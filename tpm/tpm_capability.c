@@ -23,9 +23,9 @@
 
 /*
  * The GetCapability Commands ([TPM_Part3], Section 7)
- * The GetCapability command allows the TPM to report back to the requestor 
+ * The GetCapability command allows the TPM to report back to the requester 
  * what type of TPM it is dealing with. The request for information requires 
- * the requestor to specify which piece of information that is required. 
+ * the requester to specify which piece of information that is required. 
  */
 
 inline TPM_RESULT return_UINT32(UINT32 *respSize, BYTE **resp, UINT32 value)
