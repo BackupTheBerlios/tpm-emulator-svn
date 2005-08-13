@@ -36,16 +36,14 @@ TPM_RESULT TPM_Extend(TPM_PCRINDEX pcrNum, TPM_DIGEST *inDigest,
                       TPM_PCRVALUE *outDigest)
 {
   sha1_ctx_t ctx;
-  UINT32 be_num = cpu_to_be32(pcrNum);
 
   info("TPM_Extend()");
   if (pcrNum > TPM_NUM_PCR) return TPM_BADINDEX;
   if (!PCR_ATTRIB[pcrNum].pcrExtendLocal[LOCALITY]) return TPM_BAD_LOCALITY;
-  /* compute new PCR value as SHA-1(pcrNUM || old PCR value || inDigest) */
+  /* compute new PCR value as SHA-1(old PCR value || inDigest) */
   sha1_init(&ctx);
-  sha1_update(&ctx, (BYTE*)&be_num, 4);
-  sha1_update(&ctx, PCR_VALUE[pcrNum].digest, sizeof(*PCR_VALUE[pcrNum].digest));
-  sha1_update(&ctx, inDigest->digest, sizeof(*inDigest->digest));
+  sha1_update(&ctx, PCR_VALUE[pcrNum].digest, sizeof(PCR_VALUE[pcrNum].digest));
+  sha1_update(&ctx, inDigest->digest, sizeof(inDigest->digest));
   sha1_final(&ctx, PCR_VALUE[pcrNum].digest);  
   /* set output digest */
   if (tpmData.permanent.flags.disable) {
