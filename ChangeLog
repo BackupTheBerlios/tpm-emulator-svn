@@ -1,3 +1,8 @@
+2005-08-15  Mario Strasser <mast@gmx.net>
+	* all: some typos corrected
+	* tpm_integrity.c: bug in TPM_Extend fixed
+
+
 2005-05-07  Mario Strasser <mast@gmx.net>
 	* bug in TPM_SaveContext fixed
 

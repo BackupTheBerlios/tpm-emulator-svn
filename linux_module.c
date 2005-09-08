@@ -29,11 +29,11 @@ MODULE_SUPPORTED_DEVICE(TPM_DEVICE_NAME);
 
 /* module startup parameters */
 char *startup = "save";
-MODULE_PARM(startup, "s");
+module_param(startup, charp, 0444);
 MODULE_PARM_DESC(startup, " Sets the startup mode of the TPM. "
   "Possible values are 'clear', 'save' (default) and 'deactivated.");
 char *storage_file = "/var/tpm/tpm_emulator-1.2.0.1";
-MODULE_PARM(storage_file, "s");
+module_param(storage_file, charp, 0644);
 MODULE_PARM_DESC(storage_file, " Sets the persistent-data storage " 
   "file of the TPM.");
 
