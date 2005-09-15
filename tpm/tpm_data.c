@@ -26,6 +26,16 @@ BOOL tpm_get_physical_presence(void)
   return (tpmData.stclear.flags.physicalPresence || TRUE);
 }
 
+static inline void init_pcr_attr(int pcr, BOOL reset, BYTE rl, BYTE el)
+{
+  int i;
+  tpmData.permanent.data.pcrAttrib[pcr].pcrReset = reset;
+  for (i = 0; i < TPM_NUM_LOCALITY; i++) {
+    tpmData.permanent.data.pcrAttrib[pcr].pcrResetLocal[i] = (rl & (1 << i));
+    tpmData.permanent.data.pcrAttrib[pcr].pcrExtendLocal[i] = (el & (1 << i));
+  }
+}
+
 void tpm_init_data(void)
 {
   /* endorsement key */
@@ -84,8 +94,21 @@ void tpm_init_data(void)
   tpmData.permanent.data.version.revMajor = VERSION_MAJOR;
   tpmData.permanent.data.version.revMinor = VERSION_MINOR;
   /* setup PCR attributes */
-  for (i = 0; i < TPM_NUM_PCR; i++) {
-    tpmData.permanent.data.pcrAttrib[i].pcrReset = TRUE;
+  for (i = 0; i < min(16, TPM_NUM_PCR); i++) {
+    init_pcr_attr(i, FALSE, 0x00, 0x1f);
+  }
+  if (TPM_NUM_PCR >= 24) {
+    init_pcr_attr(16, TRUE, 0x1f, 0x1f);
+    init_pcr_attr(17, TRUE, 0x10, 0x1c);
+    init_pcr_attr(18, TRUE, 0x10, 0x1c);
+    init_pcr_attr(19, TRUE, 0x10, 0x0c);
+    init_pcr_attr(20, TRUE, 0x14, 0x0e);
+    init_pcr_attr(21, TRUE, 0x04, 0x04);
+    init_pcr_attr(22, TRUE, 0x04, 0x04);
+    init_pcr_attr(23, TRUE, 0x1f, 0x1f);
+  }
+  for (i = 24; i < TPM_NUM_PCR; i++) {
+    init_pcr_attr(i, TRUE, 0x00, 0x00);
   }
   /* set tick type */
   tpmData.permanent.data.tickType = TICK_INC;
