@@ -61,6 +61,12 @@ static int tpm_release(struct inode *inode, struct file *file)
 {
   debug("%s()", __FUNCTION__);
   clear_bit(STATE_IS_OPEN, (void*)&module_state);
+  down(&tpm_mutex);
+  if (tpm_response.data != NULL) {
+    kfree(tpm_response.data);
+    tpm_response.data = NULL;
+  }
+  up(&tpm_mutex);
   return 0;
 }
 
@@ -72,6 +78,10 @@ static ssize_t tpm_read(struct file *file, char *buf, size_t count, loff_t *ppos
     count = min(count, (size_t)tpm_response.size - (size_t)*ppos);
     count -= copy_to_user(buf, &tpm_response.data[*ppos], count);
     *ppos += count;
+    if ((size_t)tpm_response.size == (size_t)*ppos) {
+      kfree(tpm_response.data);
+      tpm_response.data = NULL;
+    }
   } else {
     count = 0;
   }
@@ -146,6 +156,7 @@ void __exit cleanup_tpm_module(void)
 {
   tpm_emulator_shutdown();
   misc_deregister(&tpm_dev);
+  if (tpm_response.data != NULL) kfree(tpm_response.data);
 }
 
 module_init(init_tpm_module);
