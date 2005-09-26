@@ -11,10 +11,13 @@ $Date$
 </TD>
 @ENTRY("MAIL")@
 <p>
-There is no mailing list setup (yet). Meanwhile please mail any question 
-to <em>mast at gmx dot net</em> or <em>nomesigas at gmail dot com</em>, 
-with the word <em>tpm emulator</em> in the subject
+For Users:<BR>
+@LINK("https://lists.berlios.de/mailman/listinfo/tpm-emulator-user","https://lists.berlios.de/mailman/listinfo/tpm-emulator-user")@
+<BR>
+For Developers:<BR>
+@LINK("https://lists.berlios.de/mailman/listinfo/tpm-emulator-devel","https://lists.berlios.de/mailman/listinfo/tpm-emulator-devel")@
 </p>
+@ENDENTRY()@
 </TD>
 </TR>
 </TBODY>

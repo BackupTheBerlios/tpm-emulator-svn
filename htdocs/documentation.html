@@ -69,9 +69,71 @@ href="css/style.css" type=text/css rel=stylesheet>
       <DIV class=texthunk><B class=bheader>USERS</B> 
       <BLOCKQUOTE>
 <p>
-Until something Better is created, you should refer to the README
-and INSTALL included in the distribution
+<br>
+<b>Distributions</b>
+<br>
+Gentoo users can emerge tpm-emulator
+<br>
+<br>
+<b>Prerequisites</b>
+<br>
+You must install first the GNU MP library. If you have the file
+libgmp.a and the header file gmp.h, then it is already installed in your
+system. If not, you can download it from:<br>
+<A HREF="http://www.gnu.org/software/gmp/gmp.html" TARGET="_blank">http://www.gnu.org/software/gmp/gmp.html</A>
+<br>
+or use one of the pre-compiled binaries for your distribution.
+<br><br>
+
+As the emulator is designed as a kernel module, the compilation and installation process uses the build environment for 
+external kernel modules of the 2.6.X Linux kernels, which must therefore
+be setup properly. If you are using a pre-compiled standard kernel of 
+some distribution, install the appropriate kernel-source. 
+
+<br>
+<br>
+
+
+<b>Compiling</b>
+<br>
+Download the latest tarball from the Downloads Section
+
+Actual compilation and installation of the module is done as follows:
+<br>
+bash# tar -xvzf tpm_emulator-X.Y.tar.gz<br>
+bash# cd tpm_emulator-X.Y<br>
+bash# make<br>
+bash# make install<br><br>
+
+The module will be compiled against your kernel sources and isntalled. If the
+virtual device /dev/tpm is not present, it will be created. 
+
+<br>
+<br>
+<b>usage</b>
+<br>
+Thn TPM emulator is a kernel modules, and as such should be 
+linked dinamically using modprobe or insmod.
+<br>
+
+<em>the first time the emulator module is 
+loaded, startup SHOULD be set to 'clear'</em>:
+<br>
+<br>
+bash# modprobe tpm_emulator startup="clear"
+<br>
+<br>
+The startup mode of the TPM emulator (see TPM Spec. Part 1, section 7.3) 
+can be defined by means of a module parameter called startup, which can 
+either be set to clear, save (default) or deactivated.
+
+<br>
+<br>
+Note: If the emulator is started in mode 'save' and fails to load
+a previously stored TPM state it will go into fail-stop mode and has
+to be reloaded. 
 </p>
+
 </BLOCKQUOTE></DIV>
       <DIV class=topbar><A 
       href="#top">top</A></DIV><BR><BR>
@@ -80,8 +142,9 @@ and INSTALL included in the distribution
       <DIV class=texthunk><B class=bheader>STATUS</B> 
       <BLOCKQUOTE>
 <p>
-This is the current status of each section
+This is the current implementation status of the emulator
 
+<br>
 
 <p>fully implemented: <span class="done">+</span></p>
 <p>partially implemented: <span class="part">&#177</span> </p>
@@ -569,7 +632,7 @@ id=folder25 src="closed.gif" border=0> DEPRECATED <span class="part">&#177</span
       <BLOCKQUOTE>
 <p>
 The core of the project was created by Mario Strasser and documented
-for his Semester's Thesis <A HREF="www.infsec.ethz.ch/people/psevinc/TPMEmulatorReport.pdf " TARGET="_blank">here</A>
+for his Semester's Thesis <A HREF="http://www.infsec.ethz.ch/people/psevinc/TPMEmulatorReport.pdf " TARGET="_blank">here</A>
 </p>
 </BLOCKQUOTE></DIV>
       <DIV class=topbar><A 

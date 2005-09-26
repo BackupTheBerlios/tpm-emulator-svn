@@ -29,7 +29,7 @@ use File::Basename;
 use File::Path;
 use File::Spec;
 use File::Spec::Functions;
-use IO::Scalar;
+#use IO::Scalar;
 use Getopt::Long;
 use POSIX;
 use Term::ANSIColor;
