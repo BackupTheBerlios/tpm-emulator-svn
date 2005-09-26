@@ -55,11 +55,11 @@ virtual device /dev/tpm is not present, it will be created.
 <br>
 <b>usage</b>
 <br>
-Thn TPM emulator is a kernel modules, and as such should be 
+The TPM emulator is a kernel modules, and as such should be 
 linked dinamically using modprobe or insmod.
 <br>
 
-<em>the first time the emulator module is 
+<em>The first time the emulator module is 
 loaded, startup SHOULD be set to 'clear'</em>:
 <br>
 <br>
