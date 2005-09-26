@@ -24,6 +24,8 @@
 #undef  TPM_STRONG_PERSISTENCE
 #undef  TPM_GENERATE_EK
 
+#define TPM_MANUFACTURER 0x4554485A /* 'ETHZ' */        
+
 /**
  * tpm_emulator_init - initialises and starts the TPM emulator
  * @startup: [in] startup mode

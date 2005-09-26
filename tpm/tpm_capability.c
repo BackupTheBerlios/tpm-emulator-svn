@@ -68,8 +68,7 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_MANUFACTURER:
       debug("[TPM_CAP_PROP_MANUFACTURER]");
-      /* TODO: TPM_CAP_PROP_MANUFACTURER */
-      return TPM_FAIL;
+      return return_UINT32(respSize, resp, TPM_MANUFACTURER);
 
     case TPM_CAP_PROP_KEYS:
       debug("[TPM_CAP_PROP_KEYS]");
