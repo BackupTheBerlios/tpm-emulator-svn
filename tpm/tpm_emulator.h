@@ -23,6 +23,7 @@
 #define TPM_STORE_TO_FILE       1
 #undef  TPM_STRONG_PERSISTENCE
 #undef  TPM_GENERATE_EK
+#undef  TPM_GENERATE_SEED_DAA
 
 #define TPM_MANUFACTURER 0x4554485A /* 'ETHZ' */        
 

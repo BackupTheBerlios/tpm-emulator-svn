@@ -18,6 +18,7 @@
 #include "tpm_emulator.h"
 #include "tpm_structures.h"
 #include "tpm_marshalling.h"
+#include "linux_module.h"
 
 TPM_DATA tpmData;
 
@@ -120,6 +121,17 @@ void tpm_init_data(void)
   rsa_import_key(&tpmData.permanent.data.endorsementKey, 
     RSA_MSB_FIRST, ek_n, 256, ek_e, 3, ek_p, ek_q);
 #endif
+#ifdef TPM_GENERATE_SEED_DAA
+  /* generate the DAA seed (cf. [TPM_Part2], v1.2 rev 85, Section 7.4) */
+  tpm_get_random_bytes(&tpmData.permanent.data.tpmDAASeed, 
+    sizeof(tpmData.permanent.data.tpmDAASeed));
+#else
+  /* setup DAA seed */
+  memcpy(&tpmData.permanent.data.tpmDAASeed,
+    "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    "\x00\x00\x00\x00", 20);
+#endif
+
   memcpy(tpmData.permanent.data.ekReset.nonce, "\xde\xad\xbe\xef", 4);
 }
 

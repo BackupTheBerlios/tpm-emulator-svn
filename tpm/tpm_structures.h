@@ -583,8 +583,8 @@ typedef UINT32 TPM_CMK_RESTRICTDELEGATE;
 #define TPM_ORD_TickStampBlob                   242
 #define TSC_ORD_PhysicalPresence                (10 + TPM_CONNECTION_COMMAND)
 #define TSC_ORD_ResetEstablishmentBit           (11 + TPM_CONNECTION_COMMAND)
-#define TPM_ORD_DAA_Join                        250 /* TODO: determine TPM_ORD_DAA_Join */
-#define TPM_ORD_DAA_Sign                        251 /* TODO: determine TPM_ORD_DAA_Sign */
+#define TPM_ORD_DAA_Join                        41
+#define TPM_ORD_DAA_Sign                        49
 #define TPM_ORD_GPIO_AuthChannel                252 /* TODO: determine TPM_ORD_GPIO_AuthChannel */
 #define TPM_ORD_GPIO_ReadWrite                  253 /* TODO: determine TPM_ORD_GPIO_ReadWrite */
 
@@ -1280,11 +1280,28 @@ typedef struct tdTPM_AUDIT_EVENT_OUT {
 #define TPM_TRANSPORT_EXCLUSIVE         (TPM_BASE + 78)
 #define TPM_OWNER_CONTROL               (TPM_BASE + 79)
 #define TPM_DAA_RESOURCES               (TPM_BASE + 80)
-#define TPM_BADCONTEXT                  (TPM_BASE + 81) // TODO: determine correct value
-#define TPM_BADHANDLE                   (TPM_BASE + 82) // TODO: determine correct value
-#define TPM_TOOMANYCONTEXTS             (TPM_BASE + 83) // TODO: determine correct value
-#define TPM_NOCONTEXTSPACE              (TPM_BASE + 84) // TODO: determine correct value
+#define TPM_DAA_INPUT_DATA0             (TPM_BASE + 81)
+#define TPM_DAA_INPUT_DATA1             (TPM_BASE + 82)
+#define TPM_DAA_ISSUER_SETTINGS         (TPM_BASE + 83)
+#define TPM_DAA_TPM_SETTINGS            (TPM_BASE + 84)
+#define TPM_DAA_STAGE                   (TPM_BASE + 85)
+#define TPM_DAA_ISSUER_VALIDITY         (TPM_BASE + 86)
+#define TPM_DAA_WRONG_W                 (TPM_BASE + 87)
+#define TPM_BADHANDLE                   (TPM_BASE + 88)
+#define TPM_BAD_DELEGATE                (TPM_BASE + 89)
+#define TPM_BADCONTEXT                  (TPM_BASE + 90)
+#define TPM_TOOMANYCONTEXTS             (TPM_BASE + 91)
+#define TPM_MA_TICKET_SIGNATURE         (TPM_BASE + 92)
+#define TPM_MA_DESTINATION              (TPM_BASE + 93)
+#define TPM_MA_SOURCE                   (TPM_BASE + 94)
+#define TPM_MA_AUTHORITY                (TPM_BASE + 95)
+#define TPM_PERMANENTEK                 (TPM_BASE + 97) // WATCH: 97 (v1.2 rev 85)
+#define TPM_BAD_SIGNATURE               (TPM_BASE + 98)
+#define TPM_NOCONTEXTSPACE              (TPM_BASE + 99) // FIXME: does not ex.
 #define TPM_RETRY                       (TPM_BASE + TPM_NON_FATAL)
+#define TPM_NEEDS_SELFTEST              (TPM_BASE + TPM_NON_FATAL + 1)
+#define TPM_DOING_SELFTEST              (TPM_BASE + TPM_NON_FATAL + 2)
+#define TPM_DEFEND_LOCK_RUNNING         (TPM_BASE + TPM_NON_FATAL + 3)
 
 /*
  * NV Storage Structures
@@ -1624,12 +1641,19 @@ typedef struct tdTPM_DELEGATE_KEY_BLOB {
 #define TPM_CAP_PROP_DELEGATE_ENTRIES   0x00000117
 #define TPM_CAP_PROP_NV_MAXBUF          0x00000118
 #define TPM_CAP_PROP_DAA_MAX            0x00000119
-#define TPM_CAP_PROP_GLOBALLOCK         0x0000011A
+#define TPM_CAP_PROP_SESSION_DAA        0x0000011A // WATCH: conflict (v1.2 rev 85)
+#define TPM_CAP_PROP_GLOBALLOCK         0x0001011A // FIXME
 #define TPM_CAP_PROP_CONTEXT_DIST       0x0000011B
 #define TPM_CAP_PROP_DAA_INTERRUPT      0x0000011C
-#define TPM_CAP_FLAG_STANY              0x0000011D
-#define TPM_CAP_PROP_GPIO_CHANNEL       0x0000011E
+#define TPM_CAP_PROP_SESSIONS           0x0000011D // WATCH: conflict (v1.2 rev 85)
+#define TPM_CAP_FLAG_STANY              0x0001011D // FIXME
+#define TPM_CAP_PROP_MAX_SESSIONS       0x0000011E // WATCH: conflict (v1.2 rev 85)
+#define TPM_CAP_PROP_GPIO_CHANNEL       0x0001011E // FIXME
 #define TPM_CAP_PROP_CMK_RESTRICTION    0x0000011F
+#define TPM_CAP_PROP_DURATION           0x00000120
+#define TPM_CAP_PROP_ACTIVE_COUNTER     0x00000122 // WATCH: 122 (v1.2 rev 85)
+#define TPM_CAP_PROP_MAX_NV_AVAILABLE   0x00000123
+#define TPM_CAP_PROP_INPUT_BUFFER       0x00000124
 
 /*
  * DAA Structures
@@ -1641,18 +1665,15 @@ typedef struct tdTPM_DELEGATE_KEY_BLOB {
 #define DAA_SIZE_r0             43
 #define DAA_SIZE_r1             43
 #define DAA_SIZE_r2             128
-#define DAA_SIZE_r3             158
+#define DAA_SIZE_r3             168
 #define DAA_SIZE_r4             219
 #define DAA_SIZE_NT             20
-#define DAA_SIZE_u11            138
-#define DAA_SIZE_u2             128
-#define DAA_SIZE_u3             189
-#define DAA_SIZE_NE             256
-#define DAA_SIZE_w              256
 #define DAA_SIZE_v0             128
 #define DAA_SIZE_v1             190
-#define DAA_SIZE_count          1
+#define DAA_SIZE_NE             256
+#define DAA_SIZE_w              256
 #define DAA_SIZE_issuerModulus  256
+
 #define DAA_power0              104
 #define DAA_power1              1024
 
@@ -1710,7 +1731,7 @@ typedef struct tdTPM_DAA_CONTEXT {
  */
 typedef struct tdTPM_DAA_JOINDATA {
   BYTE DAA_join_u0[128];
-  BYTE DAA_join_u1[128];
+  BYTE DAA_join_u1[138]; /* WATCH: 138 (v1.2 rev 85) */
   TPM_DIGEST DAA_digest_n0;
 } TPM_DAA_JOINDATA;
 
@@ -1968,7 +1989,7 @@ typedef struct tdTPM_PERMANENT_DATA {
   TPM_DIRVALUE DIR;
   TPM_NV_DATA_SENSITIVE *nvStorage;
   //TPM_CMK_RESTRICTDELEGATE restrictDelegate;
-  //TPM_DAA_TPM_SEED tpmDAASeed;
+  TPM_DAA_TPM_SEED tpmDAASeed;
   TPM_KEY_DATA keys[TPM_MAX_KEYS];
   const char *testResult;
 } TPM_PERMANENT_DATA;
@@ -1976,7 +1997,7 @@ typedef struct tdTPM_PERMANENT_DATA {
   + sizeof_RSA(s.endorsementKey) + TPM_ORD_MAX/8 \
   + (1+TPM_MAX_KEYS)*sizeof_TPM_KEY_DATA(s.srk) \
   + TPM_NUM_PCR*(sizeof_TPM_PCR_ATTRIBUTES(x)+20) \
-  + TPM_MAX_COUNTERS*sizeof_TPM_COUNTER_VALUE2(x) + 1 + 4) 
+  + TPM_MAX_COUNTERS*sizeof_TPM_COUNTER_VALUE2(x) + 1 + 4 + 20)
 
 /*
  * TPM_STCLEAR_DATA ([TPM_Part2], Section 7.5)
