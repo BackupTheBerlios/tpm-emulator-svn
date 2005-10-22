@@ -1971,8 +1971,8 @@ typedef struct tdTPM_PERMANENT_DATA {
   //TPM_PUBKEY manuMaintPub;
   TPM_NONCE ekReset;
   rsa_private_key_t endorsementKey;
-  TPM_KEY_DATA srk; 
-  BYTE contextKey[TPM_CONTEXT_KEY_SIZE];  
+  TPM_KEY_DATA srk;
+  BYTE contextKey[TPM_CONTEXT_KEY_SIZE];
   //TPM_KEY delegateKey;
   TPM_ACTUAL_COUNT auditMonotonicCounter;
   TPM_COUNTER_VALUE counters[TPM_MAX_COUNTERS];

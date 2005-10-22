@@ -126,10 +126,10 @@ void tpm_init_data(void)
   tpm_get_random_bytes(&tpmData.permanent.data.tpmDAASeed, 
     sizeof(tpmData.permanent.data.tpmDAASeed));
 #else
-  /* setup DAA seed */
-  memcpy(&tpmData.permanent.data.tpmDAASeed,
-    "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-    "\x00\x00\x00\x00", 20);
+  /* FIXME: setup DAA seed */
+  memcpy(&tpmData.permanent.data.tpmDAASeed, 
+    "\x77\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    "\x00\x00\x00\x77", 20);
 #endif
 
   memcpy(tpmData.permanent.data.ekReset.nonce, "\xde\xad\xbe\xef", 4);
@@ -223,7 +223,7 @@ int tpm_store_permanent_data(void)
   buf = ptr = tpm_malloc(buf_length);
   if (buf == NULL
       || tpm_marshal_TPM_VERSION(&ptr, &len, &tpmData.permanent.data.version)
-      || tpm_marshal_TPM_STCLEAR_FLAGS(&ptr, &len, &tpmData.stclear.flags) 
+      || tpm_marshal_TPM_STCLEAR_FLAGS(&ptr, &len, &tpmData.stclear.flags)
       || tpm_marshal_TPM_PERMANENT_FLAGS(&ptr, &len, &tpmData.permanent.flags)
       || tpm_marshal_BOOL(&ptr, &len, tpmData.permanent.flags.selfTestSucceeded)
       || tpm_marshal_BOOL(&ptr, &len, tpmData.permanent.flags.owned)

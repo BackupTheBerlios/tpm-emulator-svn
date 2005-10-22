@@ -1075,7 +1075,8 @@ int tpm_marshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DAT
       || tpm_marshal_UINT32(ptr, length, v->noOwnerNVWrite)
       || tpm_marshal_TPM_DIGEST(ptr, length, &v->DIR)
       || tpm_marshal_BYTE_ARRAY(ptr, length, v->ordinalAuditStatus, sizeof(v->ordinalAuditStatus))
-      || tpm_marshal_TPM_ACTUAL_COUNT(ptr, length, v->auditMonotonicCounter)) return -1;
+      || tpm_marshal_TPM_ACTUAL_COUNT(ptr, length, v->auditMonotonicCounter)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->tpmDAASeed)) return -1;
   for (i = 0; i < TPM_MAX_COUNTERS; i++) {
     if (tpm_marshal_TPM_COUNTER_VALUE(ptr, length, &v->counters[i])
         || tpm_marshal_TPM_SECRET(ptr, length, &v->counters[i].usageAuth)
@@ -1088,6 +1089,7 @@ int tpm_marshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DAT
   for (i = 0; i < TPM_MAX_KEYS; i++) {
     if (tpm_marshal_TPM_KEY_DATA(ptr, length, &v->keys[i])) return -1;
   }
+	
   return 0;
 }
 
@@ -1107,7 +1109,8 @@ int tpm_unmarshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_D
       || tpm_unmarshal_UINT32(ptr, length, &v->noOwnerNVWrite)
       || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DIR)
       || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->ordinalAuditStatus, sizeof(v->ordinalAuditStatus))
-      || tpm_unmarshal_TPM_ACTUAL_COUNT(ptr, length, &v->auditMonotonicCounter)) return -1;
+      || tpm_unmarshal_TPM_ACTUAL_COUNT(ptr, length, &v->auditMonotonicCounter)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->tpmDAASeed)) return -1;
   for (i = 0; i < TPM_MAX_COUNTERS; i++) {
     if (tpm_unmarshal_TPM_COUNTER_VALUE(ptr, length, &v->counters[i])
         || tpm_unmarshal_TPM_SECRET(ptr, length, &v->counters[i].usageAuth)
