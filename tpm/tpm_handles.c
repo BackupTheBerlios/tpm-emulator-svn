@@ -24,7 +24,7 @@ TPM_KEY_DATA *tpm_get_key_slot(TPM_KEY_HANDLE handle)
   if (handle == TPM_INVALID_HANDLE) return NULL;
   handle &= 0x00ffffff;
   if (handle >= TPM_MAX_KEYS) return NULL;
-  return &tpmData.permanent.data.keys[handle];      
+  return &tpmData.permanent.data.keys[handle];
 }
 
 TPM_SESSION_DATA *tpm_get_session_slot(TPM_HANDLE handle)
@@ -75,7 +75,7 @@ TPM_SESSION_DATA *tpm_get_transport(TPM_TRANSHANDLE handle)
       || (handle >> 24) != TPM_RT_TRANS) return NULL;
   handle &= 0x00ffffff;
   if (handle >= TPM_MAX_SESSIONS
-      || tpmData.stany.data.sessions[handle].type != TPM_ST_TRANSPORT) return NULL;  
+      || tpmData.stany.data.sessions[handle].type != TPM_ST_TRANSPORT) return NULL;
   return &tpmData.stany.data.sessions[handle];
 }
 

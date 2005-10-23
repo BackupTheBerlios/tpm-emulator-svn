@@ -1736,18 +1736,6 @@ typedef struct tdTPM_DAA_JOINDATA {
 } TPM_DAA_JOINDATA;
 
 /*
- * TPM_STANY_DATA ([TPM_Part2], Section 22.11)
- * This shows that the volatile data areas are added to the
- * TPM_STANY_DATA structure.
- */
-typedef struct tdTPM_VOLATILE_DATA {
-  TPM_DAA_ISSUER DAA_issuerSettings;
-  TPM_DAA_TPM DAA_tpmSpecific;
-  TPM_DAA_CONTEXT DAA_session;
-  TPM_DAA_JOINDATA DAA_joinSession;
-} TPM_VOLATILE_DATA;
-
-/*
  * TPM_DAA_BLOB ([TPM_Part2], Section 22.12)
  * The structure passed during the join process.
  */
@@ -2044,6 +2032,15 @@ typedef struct tdTPM_STANY_DATA {
   UINT32 contextCount;
   UINT32 contextList[TPM_MAX_SESSION_LIST];
   TPM_SESSION_DATA sessions[TPM_MAX_SESSIONS];
+  /*
+   * TPM_STANY_DATA ([TPM_Part2], Section 22.11)
+   * This shows that the volatile data areas are added to the
+   * TPM_STANY_DATA structure.
+   */
+  TPM_DAA_ISSUER DAA_issuerSettings;
+  TPM_DAA_TPM DAA_tpmSpecific;
+  TPM_DAA_CONTEXT DAA_session;
+  TPM_DAA_JOINDATA DAA_joinSession;
 } TPM_STANY_DATA;
 
 /*

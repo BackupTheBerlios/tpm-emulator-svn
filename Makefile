@@ -15,7 +15,7 @@ VERSION_MINOR  := 2
 VERSION_BUILD  := $(shell date +"%s")
 
 # enable/disable DEBUG messages
-EXTRA_CFLAGS   += -DDEBUG -g  
+EXTRA_CFLAGS   += -Wall -DDEBUG -g  
 
 # GNU MP configuration
 GMP_LIB        := /usr/lib/libgmp.a
