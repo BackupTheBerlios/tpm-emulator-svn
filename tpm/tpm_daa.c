@@ -23,6 +23,18 @@
 #include "tpm_marshalling.h"
 #include "crypto/sha1.h"
 
+UINT32 tpm_get_free_daa_session(void)
+{
+  UINT32 i;
+  for (i = 0; i < TPM_MAX_SESSIONS_DAA; i++) {
+    if (tpmData.stany.data.sessionsDAA[i].type == TPM_ST_INVALID) {
+      tpmData.stany.data.sessionsDAA[i].type = TPM_ST_DAA;
+      return INDEX_TO_DAA_HANDLE(i);
+    }
+  }
+  return TPM_INVALID_HANDLE;
+}
+
 /*
  * DAA commands ([TPM_Part3], Section 26)
  * Operations that are necessary to setup a TPM for DAA, execute the 
@@ -42,51 +54,60 @@ TPM_RESULT TPM_DAA_Join(
   BYTE **outputData
 )
 {
-  UINT32 tmp_counter;
-  TPM_HANDLE tmp_handle;
+  UINT32 cnt;
+  TPM_HANDLE hdl;
   sha1_ctx_t sha1;
   
   info("TPM_DAA_Join(), execute stage = %d", stage);
   switch (stage) {
     case 0:
       /* Determine that sufficient resources are available to perform a
-       * DAA_Join. */
+       * DAA_Join. Assign session handle for this DAA_Join. */
+      hdl = tpm_get_free_daa_session();
+      if (hdl == TPM_INVALID_HANDLE)
+        return TPM_RESOURCES;
 //TODO
       /* Set all fields in DAA_issuerSettings = NULL */
-      memset(&tpmData.stany.data.DAA_issuerSettings, 0, sizeof(TPM_DAA_ISSUER));
+      memset(&tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_issuerSettings, 
+        0, sizeof(TPM_DAA_ISSUER));
       /* Set all fields in DAA_tpmSpecific = NULL */
-      memset(&tpmData.stany.data.DAA_tpmSpecific, 0, sizeof(TPM_DAA_TPM));
+      memset(&tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_tpmSpecific, 
+        0, sizeof(TPM_DAA_TPM));
       /* Set all fields in DAA_session = NULL */
-      memset(&tpmData.stany.data.DAA_session, 0, sizeof(TPM_DAA_CONTEXT));
+      memset(&tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_session, 
+        0, sizeof(TPM_DAA_CONTEXT));
       /* Set all fields in DAA_joinSession = NULL */
-      memset(&tpmData.stany.data.DAA_joinSession, 0, sizeof(TPM_DAA_JOINDATA));
+      memset(&tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_joinSession, 
+        0, sizeof(TPM_DAA_JOINDATA));
       /* Verify that sizeOf(inputData0) == sizeOf(DAA_tpmSpecific->DAA_count)
        * and return error TPM_DAA_INPUT_DATA0 on mismatch */
-      if (!(inputSize0 == sizeof(tpmData.stany.data.DAA_tpmSpecific.DAA_count)))
+      if (!(inputSize0 == sizeof(tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_tpmSpecific.DAA_count)))
         return TPM_DAA_INPUT_DATA0;
       /* Verify that inputData0 > 0, and return TPM_DAA_INPUT_DATA0 on
        * mismatch */
-      memcpy(&tmp_counter, inputData0, 
-          sizeof(tpmData.stany.data.DAA_tpmSpecific.DAA_count));
-      if (!(tmp_counter > 0))
+      memcpy(&cnt, inputData0, sizeof(tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_tpmSpecific.DAA_count));
+      if (!(cnt > 0))
         return TPM_DAA_INPUT_DATA0;
       /* Set DAA_tpmSpecific->DAA_count = inputData0 */
-      tpmData.stany.data.DAA_tpmSpecific.DAA_count = tmp_counter;
+      tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_tpmSpecific.DAA_count = cnt;
       /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific ||
        * DAA_joinSession) */
       sha1_init(&sha1);
-      sha1_update(&sha1, (BYTE*) &tpmData.stany.data.DAA_tpmSpecific, 
-          sizeof(TPM_DAA_TPM));
-      sha1_update(&sha1, (BYTE*) &tpmData.stany.data.DAA_joinSession, 
-         sizeof(TPM_DAA_JOINDATA));
-      sha1_final(&sha1, tpmData.stany.data.DAA_session.DAA_digestContext.digest);
+      sha1_update(&sha1, 
+        (BYTE*) &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_tpmSpecific, 
+        sizeof(TPM_DAA_TPM));
+      sha1_update(&sha1, 
+        (BYTE*) &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_joinSession, 
+        sizeof(TPM_DAA_JOINDATA));
+      sha1_final(&sha1, 
+        tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_session.DAA_digestContext.digest);
       /* Set DAA_session->DAA_stage = 1 */
-      tpmData.stany.data.DAA_session.DAA_stage = 1;
+      tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_session.DAA_stage = 1;
       /* Assign session handle for DAA_Join */
-//TODO
+      // WATCH: this was done in the first step
       /* Set outputData = new session handle */
       *outputSize = sizeof(TPM_HANDLE);
-      memcpy(*outputData, &tmp_handle, *outputSize);
+      memcpy(*outputData, &hdl, *outputSize);
       /* return TPM_SUCCESS */
       return TPM_SUCCESS;
     case 1:
@@ -162,4 +183,3 @@ TPM_RESULT TPM_DAA_Sign(
   /* TODO: implement TPM_DAA_Sign() */
   return TPM_FAIL;
 }
-

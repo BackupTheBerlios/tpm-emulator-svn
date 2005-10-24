@@ -35,6 +35,14 @@ TPM_SESSION_DATA *tpm_get_session_slot(TPM_HANDLE handle)
   return &tpmData.stany.data.sessions[handle];
 }
 
+TPM_DAA_SESSION_DATA *tpm_get_daa_slot(TPM_HANDLE handle)
+{
+  if (handle == TPM_INVALID_HANDLE) return NULL;
+  handle &= 0x00ffffff;
+  if (handle >= TPM_MAX_SESSIONS_DAA) return NULL;
+  return &tpmData.stany.data.sessionsDAA[handle];
+}
+
 TPM_KEY_DATA *tpm_get_key(TPM_KEY_HANDLE handle)
 {
   /* handle reserved key handles */
@@ -87,3 +95,10 @@ TPM_COUNTER_VALUE *tpm_get_counter(TPM_COUNT_ID handle)
   return &tpmData.permanent.data.counters[handle & 0x00ffffff];
 }
 
+TPM_DAA_SESSION_DATA *tpm_get_daa(TPM_DAAHANDLE handle)
+{
+  if (handle == TPM_INVALID_HANDLE
+      || (handle >> 24) != TPM_RT_DAA_TPM
+      || (handle & 0x00ffffff) >= TPM_MAX_SESSIONS_DAA) return NULL;
+  return &tpmData.stany.data.sessionsDAA[handle & 0x00ffffff];
+}

@@ -64,7 +64,7 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_DIR:
       debug("[TPM_CAP_PROP_DIR]");
-      return return_UINT32(respSize, resp, 1);  
+      return return_UINT32(respSize, resp, 1);
 
     case TPM_CAP_PROP_MANUFACTURER:
       debug("[TPM_CAP_PROP_MANUFACTURER]");
@@ -154,7 +154,11 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_DAA_MAX:
       debug("[TPM_CAP_PROP_DAA_MAX]");
-      /* TODO: TPM_CAP_PROP_DAA_MAX */
+      return return_UINT32(respSize, resp, TPM_MAX_SESSIONS_DAA);
+
+    case TPM_CAP_PROP_SESSION_DAA:
+      debug("[TPM_CAP_PROP_SESSION_DAA]");
+      /* TODO: TPM_CAP_PROP_SESSION_DAA (number of available DAA sessions) */
       return TPM_FAIL;
 
     case TPM_CAP_PROP_GLOBALLOCK:

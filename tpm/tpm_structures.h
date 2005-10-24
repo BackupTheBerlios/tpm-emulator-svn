@@ -2000,7 +2000,7 @@ typedef struct tdTPM_STCLEAR_DATA {
 } TPM_STCLEAR_DATA;
 
 /*
- * TPM_SESSION_DATA 
+ * TPM_SESSION_DATA
  * This structure contains the data for authorization and transport sessions.
  */
 #define TPM_ST_INVALID    0
@@ -2009,7 +2009,7 @@ typedef struct tdTPM_STCLEAR_DATA {
 #define TPM_ST_TRANSPORT  4
 typedef struct tdTPM_SESSION_DATA {
   BYTE type;
-  TPM_NONCE nonceEven;  
+  TPM_NONCE nonceEven;
   TPM_NONCE lastNonceEven;
   TPM_SECRET sharedSecret;
   TPM_HANDLE handle;
@@ -2017,12 +2017,30 @@ typedef struct tdTPM_SESSION_DATA {
 #define sizeof_TPM_SESSION_DATA(s) (1 + 3*20 + 4)
 
 /*
+ * TPM_DAA_SESSION_DATA
+ * This structure contains the data for DAA sessions.
+ */
+#define TPM_ST_DAA        8
+typedef UINT32 TPM_DAAHANDLE;
+typedef struct tdTPM_DAA_SESSION_DATA {
+  BYTE type;
+  TPM_DAA_ISSUER DAA_issuerSettings;
+  TPM_DAA_TPM DAA_tpmSpecific;
+  TPM_DAA_CONTEXT DAA_session;
+  TPM_DAA_JOINDATA DAA_joinSession;
+  TPM_HANDLE handle;
+} TPM_DAA_SESSION_DATA;
+#define sizeof_TPM_DAA_SESSION_DATA(s) (1 + sizeof(TPM_DAA_ISSUER) + \
+  sizeof(TPM_DAA_TPM) + sizeof(TPM_DAA_CONTEXT) + sizeof(TPM_DAA_JOINDATA) + 4)
+
+/*
  * TPM_STANY_DATA ([TPM_Part2], Section 7.6)
  * Most of the data in this structure resets on TPM_Startup(ST_State).
  */
-#define TPM_TAG_STANY_DATA      0x0024
-#define TPM_MAX_SESSIONS        3
-#define TPM_MAX_SESSION_LIST    16
+#define TPM_TAG_STANY_DATA        0x0024
+#define TPM_MAX_SESSIONS          3
+#define TPM_MAX_SESSION_LIST      16
+#define TPM_MAX_SESSIONS_DAA      1
 typedef struct tdTPM_STANY_DATA {
   TPM_STRUCTURE_TAG tag;
   TPM_NONCE contextNonceSession;
@@ -2037,10 +2055,7 @@ typedef struct tdTPM_STANY_DATA {
    * This shows that the volatile data areas are added to the
    * TPM_STANY_DATA structure.
    */
-  TPM_DAA_ISSUER DAA_issuerSettings;
-  TPM_DAA_TPM DAA_tpmSpecific;
-  TPM_DAA_CONTEXT DAA_session;
-  TPM_DAA_JOINDATA DAA_joinSession;
+  TPM_DAA_SESSION_DATA sessionsDAA[TPM_MAX_SESSIONS_DAA];
 } TPM_STANY_DATA;
 
 /*
@@ -2102,6 +2117,7 @@ typedef struct tdTPM_CONTEXT_SENSITIVE {
   union {
     TPM_KEY_DATA key;
     TPM_SESSION_DATA session;
+    TPM_DAA_SESSION_DATA sessionDAA;
   } internalData;
 } TPM_CONTEXT_SENSITIVE;
 #define sizeof_TPM_CONTEXT_SENSITIVE(s) (2 + 20 + 4 + s.internalSize)

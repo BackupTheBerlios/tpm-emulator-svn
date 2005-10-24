@@ -32,22 +32,25 @@
 #define INDEX_TO_AUTH_HANDLE(i)        (i | (TPM_RT_AUTH << 24))
 #define INDEX_TO_TRANS_HANDLE(i)       (i | (TPM_RT_TRANS << 24))
 #define INDEX_TO_COUNTER_HANDLE(i)     (i | (TPM_RT_COUNTERS << 24))
+#define INDEX_TO_DAA_HANDLE(i)         (i | (TPM_RT_DAA_TPM << 24))
 
 /*
  * marco to convert handles to indices
  */
-#define HANDLE_TO_INDEX(h)             (i & 0x00FFFFFF)
+#define HANDLE_TO_INDEX(h)             (h & 0x00FFFFFF)
 
 /*
  * functions to get the dedicated data for a handle
  */
 TPM_KEY_DATA *tpm_get_key_slot(TPM_KEY_HANDLE handle);
 TPM_SESSION_DATA *tpm_get_session_slot(TPM_HANDLE handle);
+TPM_DAA_SESSION_DATA *tpm_get_daa_slot(TPM_HANDLE handle);
 
 TPM_KEY_DATA *tpm_get_key(TPM_KEY_HANDLE handle);
 TPM_SESSION_DATA *tpm_get_auth(TPM_AUTHHANDLE handle);
 TPM_SESSION_DATA *tpm_get_transport(TPM_TRANSHANDLE handle);
 TPM_COUNTER_VALUE *tpm_get_counter(TPM_COUNT_ID handle);
+TPM_DAA_SESSION_DATA *tpm_get_daa(TPM_DAAHANDLE handle);
 
 #endif /* _TPM_HANDLES_ */
 

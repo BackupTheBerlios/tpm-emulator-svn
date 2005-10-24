@@ -134,6 +134,7 @@ TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
 {
   TPM_CONTEXT_SENSITIVE context;
   TPM_SESSION_DATA *session = NULL;
+  TPM_DAA_SESSION_DATA *sessionDAA = NULL;
   TPM_KEY_DATA *key = NULL;
   int i = 0;
   info("TPM_SaveContext()");
@@ -161,13 +162,22 @@ TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
     /* set context nonce */
     memcpy(&context.contextNonce, &tpmData.stclear.data.contextNonceKey, 
            sizeof(TPM_NONCE));
+  } else if (resourceType == TPM_RT_DAA_TPM) {
+    sessionDAA = tpm_get_daa(handle);
+    if (sessionDAA == NULL) return TPM_INVALID_RESOURCE;
+    /* store session data */
+    memcpy(&context.internalData.sessionDAA, sessionDAA,
+      sizeof(TPM_DAA_SESSION_DATA));
+    context.internalSize = sizeof_TPM_DAA_SESSION_DATA((*sessionDAA));
+    /* FIXME: set context nonce */
+    
   } else {
     return TPM_INVALID_RESOURCE;
   }
   /* setup context blob */
   contextBlob->tag = TPM_TAG_CONTEXTBLOB;
   contextBlob->resourceType = resourceType;
-  contextBlob->handle = handle; 
+  contextBlob->handle = handle;
   memset(&contextBlob->blobIntegrity, 0, sizeof(TPM_DIGEST));
   memcpy(contextBlob->label, label, sizeof(label));
   contextBlob->additionalSize = TPM_CONTEXT_KEY_SIZE;
@@ -178,9 +188,11 @@ TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
   /* increment context counter */
   if (resourceType == TPM_RT_KEY) {
     contextBlob->contextCount = 0;
+  } else if (resourceType == TPM_RT_DAA_TPM) {
+    contextBlob->contextCount = 0;
   } else {
     if (tpmData.stany.data.contextCount >= 0xffffffff)
-      return TPM_TOOMANYCONTEXTS;    
+      return TPM_TOOMANYCONTEXTS;
     contextBlob->contextCount = ++tpmData.stany.data.contextCount;
     for (i = 0; i < TPM_MAX_SESSION_LIST; i++) {
       if (tpmData.stany.data.contextList[i] == 0) break;
@@ -198,12 +210,14 @@ TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
     return TPM_FAIL;
   }
   *contextSize = sizeof_TPM_CONTEXT_BLOB((*contextBlob));
-  if (resourceType != TPM_RT_KEY) session->type = TPM_ST_INVALID;
+  if (resourceType != TPM_RT_KEY && resourceType != TPM_RT_DAA_TPM)
+    session->type = TPM_ST_INVALID;
   return TPM_SUCCESS;
 }
 
 extern TPM_KEY_HANDLE tpm_get_free_key(void);
 extern UINT32 tpm_get_free_session(BYTE type);
+extern UINT32 tpm_get_free_daa_session(void);
 
 TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
                            UINT32 contextSize, TPM_CONTEXT_BLOB *contextBlob,  
@@ -212,6 +226,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
   TPM_CONTEXT_SENSITIVE context;
   BYTE *context_buf;
   TPM_SESSION_DATA *session;
+  TPM_DAA_SESSION_DATA *sessionDAA;
   TPM_KEY_DATA *key;
   TPM_DIGEST digest;
   int i = 0;
@@ -226,46 +241,8 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
     tpm_free(context_buf);
     return TPM_BADCONTEXT;
   }
-  if (contextBlob->resourceType != TPM_RT_KEY) {
-    /* check contextNonce */
-    if (memcmp(&context.contextNonce, &tpmData.stany.data.contextNonceSession,
-        sizeof(TPM_NONCE)) != 0) {
-      tpm_free(context_buf);
-      return TPM_BADCONTEXT;
-    }
-    if (context.internalData.session.type == TPM_ST_OSAP
-        && tpm_get_key(context.internalData.session.handle) == NULL) {
-      tpm_free(context_buf);
-      return TPM_RESOURCEMISSING;
-    }
-    /* check context list */
-    for (i = 0; i < TPM_MAX_SESSION_LIST; i++)
-      if (tpmData.stany.data.contextList[i] == contextBlob->contextCount) break;
-    if (i >= TPM_MAX_SESSION_LIST) {
-      tpm_free(context_buf);
-      return TPM_BADCONTEXT;
-    }
-    tpmData.stany.data.contextList[i] = 0;
-    /* check handle */
-    session = tpm_get_session_slot(hintHandle);
-    if (session == NULL || session->type != TPM_ST_INVALID) {
-      if (keepHandle) {
-        tpm_free(context_buf);
-        return TPM_BADHANDLE;
-      }    
-      *handle = tpm_get_free_session(context.internalData.session.type);
-      if (*handle == TPM_INVALID_HANDLE) {
-        tpm_free(context_buf);
-        return TPM_RESOURCES;
-      }
-      session = &tpmData.stany.data.sessions[HANDLE_TO_INDEX(*handle)];
-    } else {
-      *handle = hintHandle;
-    }
-    /* reload resource */
-    memcpy(session, &context.internalData.session, sizeof(TPM_SESSION_DATA));
-  } else {
-    /* check contextNonce */
+  if (contextBlob->resourceType == TPM_RT_KEY) {
+   /* check contextNonce */
     if (context.internalData.key.parentPCRStatus 
         || (context.internalData.key.keyFlags & TPM_KEY_FLAG_VOLATILE)) {
       if (memcmp(&context.contextNonce, &tpmData.stclear.data.contextNonceKey,
@@ -293,6 +270,66 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
     /* reload resource */
     memcpy(key, &context.internalData.key, sizeof(TPM_KEY_DATA));
     rsa_copy_key(&key->key, &context.internalData.key.key);
+  } else if (contextBlob->resourceType == TPM_RT_DAA_TPM) {
+    /* FIXME: check contextNonce */
+    
+    /* check handle */
+    sessionDAA = tpm_get_daa_slot(hintHandle);
+    if (sessionDAA == NULL || sessionDAA->type != TPM_ST_INVALID) {
+      if (keepHandle) {
+        tpm_free(context_buf);
+        return TPM_BADHANDLE;
+      }
+      *handle = tpm_get_free_daa_session();
+      if (*handle == TPM_INVALID_HANDLE) {
+        tpm_free(context_buf);
+        return TPM_RESOURCES;
+      }
+      sessionDAA = &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(*handle)];
+    } else {
+      *handle = hintHandle;
+    }
+    /* reload resource */
+    memcpy(sessionDAA, &context.internalData.sessionDAA, 
+      sizeof(TPM_DAA_SESSION_DATA));
+  } else {
+    /* check contextNonce */
+    if (memcmp(&context.contextNonce, &tpmData.stany.data.contextNonceSession,
+        sizeof(TPM_NONCE)) != 0) {
+      tpm_free(context_buf);
+      return TPM_BADCONTEXT;
+    }
+    if (context.internalData.session.type == TPM_ST_OSAP
+        && tpm_get_key(context.internalData.session.handle) == NULL) {
+      tpm_free(context_buf);
+      return TPM_RESOURCEMISSING;
+    }
+    /* check context list */
+    for (i = 0; i < TPM_MAX_SESSION_LIST; i++)
+      if (tpmData.stany.data.contextList[i] == contextBlob->contextCount) break;
+    if (i >= TPM_MAX_SESSION_LIST) {
+      tpm_free(context_buf);
+      return TPM_BADCONTEXT;
+    }
+    tpmData.stany.data.contextList[i] = 0;
+    /* check handle */
+    session = tpm_get_session_slot(hintHandle);
+    if (session == NULL || session->type != TPM_ST_INVALID) {
+      if (keepHandle) {
+        tpm_free(context_buf);
+        return TPM_BADHANDLE;
+      }
+      *handle = tpm_get_free_session(context.internalData.session.type);
+      if (*handle == TPM_INVALID_HANDLE) {
+        tpm_free(context_buf);
+        return TPM_RESOURCES;
+      }
+      session = &tpmData.stany.data.sessions[HANDLE_TO_INDEX(*handle)];
+    } else {
+      *handle = hintHandle;
+    }
+    /* reload resource */
+    memcpy(session, &context.internalData.session, sizeof(TPM_SESSION_DATA));
   }
   tpm_free(context_buf);
   return TPM_SUCCESS;
