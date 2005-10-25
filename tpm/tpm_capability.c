@@ -158,8 +158,9 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_SESSION_DAA:
       debug("[TPM_CAP_PROP_SESSION_DAA]");
-      /* TODO: TPM_CAP_PROP_SESSION_DAA (number of available DAA sessions) */
-      return TPM_FAIL;
+      for (i = 0, j = TPM_MAX_SESSIONS_DAA; i < TPM_MAX_SESSIONS_DAA; i++)
+        if (tpmData.stany.data.sessionsDAA[i].type != TPM_ST_INVALID) j--;
+      return return_UINT32(respSize, resp, j);
 
     case TPM_CAP_PROP_GLOBALLOCK:
       debug("[TPM_CAP_PROP_GLOBALLOCK]");
