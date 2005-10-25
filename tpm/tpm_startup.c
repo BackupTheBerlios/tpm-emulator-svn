@@ -48,16 +48,16 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
   tpmData.stany.flags.tag = TPM_TAG_STANY_FLAGS;
   /* reset STANY_DATA (invalidates ALL sessions) */
   SET_TO_ZERO(&tpmData.stany.data);
-  tpmData.stany.data.tag = TPM_TAG_STANY_DATA;  
+  tpmData.stany.data.tag = TPM_TAG_STANY_DATA;
   /* init session-context nonce */
   SET_TO_RAND(&tpmData.stany.data.contextNonceSession);
   /* set data and flags according to the given startup type */
   if (startupType == TPM_ST_CLEAR) {
     /* reset PCR values */
     for (i = 0; i < TPM_NUM_PCR; i++) {
-      if (tpmData.permanent.data.pcrAttrib[i].pcrReset) 
+      if (tpmData.permanent.data.pcrAttrib[i].pcrReset)
         SET_TO_ZERO(tpmData.permanent.data.pcrValue[i].digest);
-      else 
+      else
         SET_TO_0xFF(tpmData.permanent.data.pcrValue[i].digest);
     }
     /* reset STCLEAR_FLAGS */
@@ -66,7 +66,7 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
     tpmData.stclear.flags.deactivated = tpmData.permanent.flags.deactivated;
     /* reset STCLEAR_DATA */
     SET_TO_ZERO(&tpmData.stclear.data);
-    tpmData.stclear.data.tag = TPM_TAG_STCLEAR_DATA; 
+    tpmData.stclear.data.tag = TPM_TAG_STCLEAR_DATA;
     /* flush volatiles and PCR dependent keys keys */
     for (i = 0; i < TPM_MAX_KEYS; i++) {
       if (tpmData.permanent.data.keys[i].valid 
@@ -90,7 +90,7 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
   } else {
     return TPM_BAD_PARAMETER;
   }
-  tpmData.stany.flags.postInitialise = FALSE; 
+  tpmData.stany.flags.postInitialise = FALSE;
   return TPM_SUCCESS;
 }
 
