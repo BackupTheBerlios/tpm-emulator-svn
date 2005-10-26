@@ -59,6 +59,9 @@ int rsa_import_key(rsa_private_key_t *key, int endian,
 
 void rsa_copy_key(rsa_private_key_t *dst, rsa_private_key_t *src);
 
+int rsa_import_public_key(rsa_public_key_t *key, int endian, 
+                          uint8_t *n, size_t n_len, uint8_t *e, size_t e_len);
+
 int rsa_generate_key(rsa_private_key_t *key, int key_size);
 
 void rsa_release_private_key(rsa_private_key_t *key);

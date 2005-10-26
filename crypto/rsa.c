@@ -172,6 +172,24 @@ void rsa_copy_key(rsa_private_key_t *dst, rsa_private_key_t *src)
   dst->size = src->size;
 }
 
+int rsa_import_public_key(rsa_public_key_t *key, int endian,
+                          uint8_t *n, size_t n_len, uint8_t *e, size_t e_len)
+{
+  if (n == NULL || n_len == 0) return -1;
+  /* init key */
+  key->size = n_len << 3;
+  if (e == NULL || e_len == 0) {
+    mpz_init_set_ui(key->e, 65537);
+  } else {
+    mpz_init2(key->e, (e_len << 3) + GMP_NUMB_BITS);
+    mpz_import(key->e, e_len, endian, 1, 0, 0, e);
+  }
+  mpz_init2(key->n, key->size + GMP_NUMB_BITS);
+  /* import values */
+  mpz_import(key->n, n_len, endian, 1, 0, 0, n);
+  return 0;
+}
+
 int rsa_generate_key(rsa_private_key_t *key, int key_size)
 {
   mpz_t e, p, q, n, t1, t2, phi, d, u;
@@ -343,7 +361,7 @@ static int encode_message(int type, uint8_t *data, size_t data_len,
       msg[msg_len - data_len - 1] = 0x00;
       memcpy(&msg[msg_len - data_len], data, data_len);
       break;
-    case  RSA_ES_PKCSV15:
+    case RSA_ES_PKCSV15:
       /* EM = 0x00||0x02||nonzero random-pad||0x00||data */
       if (msg_len < data_len + 11) return -1;
       msg[0] = 0x00; msg[1] = 0x02;
