@@ -61,7 +61,7 @@ TPM_RESULT TPM_DAA_Join(
   
   info("TPM_DAA_Join(), execute stage = %d", stage);
   
-  /* Initalize scratch */
+  /* Initalize internal scratch board */
   memset(scratch, 0, sizeof(scratch));
   
   /* Verify and initalize the session, for all stages greater than zero. */
@@ -118,7 +118,7 @@ TPM_RESULT TPM_DAA_Join(
       /* Set DAA_session->DAA_stage = 1 */
       session->DAA_session.DAA_stage = 1;
       /* Assign session handle for DAA_Join */
-// WATCH: this step is included in step 1.
+// WATCH: this step is already done at the top
       /* Set outputData = new session handle */
       *outputSize = sizeof(TPM_HANDLE);
       memcpy(*outputData, &handle, *outputSize);
