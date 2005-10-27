@@ -68,10 +68,12 @@ TPM_RESULT TPM_DAA_Join(
   if (stage > 0) {
     if (!(HANDLE_TO_INDEX(handle) < TPM_MAX_SESSIONS_DAA))
       return TPM_BADHANDLE;
-    if (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].type != TPM_ST_DAA)
-      return TPM_BADHANDLE;
-    if (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].handle != handle)
-      return TPM_BADHANDLE;
+    if (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].type != 
+      TPM_ST_DAA)
+        return TPM_BADHANDLE;
+    if (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].handle != 
+      handle)
+        return TPM_BADHANDLE;
     session = &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)];
   }
   
@@ -122,7 +124,7 @@ TPM_RESULT TPM_DAA_Join(
       /* Set outputData = new session handle */
       *outputSize = sizeof(TPM_HANDLE);
       memcpy(*outputData, &handle, *outputSize);
-      /* return TPM_SUCCESS */
+      /* Return TPM_SUCCESS */
       return TPM_SUCCESS;
     }
     case 1:
@@ -145,7 +147,8 @@ TPM_RESULT TPM_DAA_Join(
       sha1_update(&sha1, (BYTE*) &session->DAA_joinSession, 
         sizeof(TPM_DAA_JOINDATA));
       sha1_final(&sha1, dgt.digest);
-      if (memcmp(dgt.digest, session->DAA_session.DAA_digestContext.digest, sizeof(TPM_DIGEST)))
+      if (memcmp(dgt.digest, session->DAA_session.DAA_digestContext.digest, 
+        sizeof(TPM_DIGEST)))
           return TPM_DAA_TPM_SETTINGS;
       /* Verify that sizeOf(inputData0) == DAA_SIZE_issuerModulus and
        * return error TPM_DAA_INPUT_DATA0 on mismatch */
@@ -166,7 +169,8 @@ TPM_RESULT TPM_DAA_Join(
         sha1_init(&sha1);
         sha1_update(&sha1, (BYTE*) tpmData.permanent.data.tpmDAASeed.digest, 
           sizeof(tpmData.permanent.data.tpmDAASeed.digest));
-        sha1_update(&sha1, (BYTE*) session->DAA_joinSession.DAA_digest_n0.digest, 
+        sha1_update(&sha1, 
+          (BYTE*) session->DAA_joinSession.DAA_digest_n0.digest, 
           sizeof(session->DAA_joinSession.DAA_digest_n0.digest));
         sha1_final(&sha1, session->DAA_tpmSpecific.DAA_rekey.digest);
       /* Else (If DAA_session->DAA_scratch != NULL): */
@@ -210,11 +214,90 @@ TPM_RESULT TPM_DAA_Join(
       sha1_final(&sha1, session->DAA_session.DAA_digestContext.digest);
       /* Set outputData = NULL */
       outputData = NULL;
-      /* return TPM_SUCCESS */
+      /* Return TPM_SUCCESS */
       return TPM_SUCCESS;
     }
     case 2:
-      break;
+    {
+      TPM_DIGEST dgt;
+      rsa_public_key_t key;
+      BYTE *signedData, *signatureValue;
+      
+      /* Verify that DAA_session->DAA_stage == 2. Return TPM_DAA_STAGE 
+       * and flush handle on mismatch */
+      if (!(session->DAA_session.DAA_stage == 2)) {
+        session->type = TPM_ST_INVALID;
+        return TPM_DAA_STAGE;
+      }
+      /* Verify that DAA_session->DAA_digestContext == 
+       * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error
+       * TPM_DAA_TPM_SETTINGS on mismatch */
+      sha1_init(&sha1);
+      sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific, 
+        sizeof(TPM_DAA_TPM));
+      sha1_update(&sha1, (BYTE*) &session->DAA_joinSession, 
+        sizeof(TPM_DAA_JOINDATA));
+      sha1_final(&sha1, dgt.digest);
+      if (memcmp(dgt.digest, session->DAA_session.DAA_digestContext.digest, 
+        sizeof(TPM_DIGEST)))
+          return TPM_DAA_TPM_SETTINGS;
+      /* Verify that sizeOf(inputData0) == sizeOf(TPM_DAA_ISSUER) and 
+       * return error TPM_DAA_INPUT_DATA0 on mismatch */
+      if (!(inputSize0 == sizeof(TPM_DAA_ISSUER)))
+        return TPM_DAA_INPUT_DATA0;
+      /* Set DAA_issuerSettings = inputData0. Verify that all fields in 
+       * DAA_issuerSettings are present and return error
+       * TPM_DAA_INPUT_DATA0 if not. */
+      memcpy(&session->DAA_issuerSettings, inputData0, 
+        sizeof(TPM_DAA_ISSUER));
+      if (!(session->DAA_issuerSettings.tag == TPM_TAG_DAA_ISSUER))
+        return TPM_DAA_INPUT_DATA0;
+      /* Verify that sizeOf(inputData1) == DAA_SIZE_issuerModulus and 
+       * return error TPM_DAA_INPUT_DATA1 on mismatch */
+      if (!(inputSize1 == DAA_SIZE_issuerModulus))
+        return TPM_DAA_INPUT_DATA1;
+      /* Set signatureValue = inputData1 */
+      signatureValue = inputData1;
+      /* Set signedData = (DAA_joinSession->DAA_digest_n0 || 
+       * DAA_issuerSettings) */
+//WATCH: ??? SHA-1(DAA_joinSession->DAA_digest_n0 || DAA_issuerSettings)
+      memcpy(scratch, session->DAA_joinSession.DAA_digest_n0.digest, 
+        sizeof(TPM_DIGEST));
+      memcpy(scratch + sizeof(session->DAA_joinSession.DAA_digest_n0.digest), 
+        &session->DAA_issuerSettings, sizeof(TPM_DAA_ISSUER));
+      signedData = scratch;
+      /* Use the RSA key [DAA_session->DAA_scratch] to verify that 
+       * signatureValue is a signature on signedData, and return error 
+       * TPM_DAA_ISSUER_VALIDITY on mismatch */
+//TODO: determine correct endianess and message encoding
+        if (rsa_import_public_key(&key, RSA_LSB_FIRST, 
+          session->DAA_session.DAA_scratch, DAA_SIZE_issuerModulus, NULL, 0))
+            return TPM_DAA_ISSUER_VALIDITY;
+        if (rsa_verify(&key, RSA_ES_OAEP_SHA1, signedData, 
+          sizeof(TPM_DIGEST) + sizeof(TPM_DAA_ISSUER), signatureValue))
+            return TPM_DAA_ISSUER_VALIDITY;
+        rsa_release_public_key(&key);
+      /* Set DAA_tpmSpecific->DAA_digestIssuer == SHA-1(DAA_issuerSettings) */
+      sha1_init(&sha1);
+      sha1_update(&sha1, (BYTE*) &session->DAA_issuerSettings, 
+        sizeof(TPM_DAA_ISSUER));
+      sha1_final(&sha1, session->DAA_tpmSpecific.DAA_digestIssuer.digest);
+      /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific || 
+       * DAA_joinSession) */
+      sha1_init(&sha1);
+      sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific, 
+        sizeof(TPM_DAA_TPM));
+      sha1_update(&sha1, (BYTE*) &session->DAA_joinSession, 
+        sizeof(TPM_DAA_JOINDATA));
+      sha1_final(&sha1, session->DAA_session.DAA_digestContext.digest);
+      /* Set DAA_session->DAA_scratch = NULL */
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
+      /* Increment DAA_session->DAA_stage by 1 */
+      session->DAA_session.DAA_stage++;
+      /* Return TPM_SUCCESS */
+      return TPM_SUCCESS;
+    }
     case 3:
       break;
     case 4:
