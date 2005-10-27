@@ -57,13 +57,14 @@ TPM_RESULT TPM_DAA_Join(
 {
   sha1_ctx_t sha1;
   BYTE scratch[256];
+  TPM_DAA_SESSION_DATA *session = NULL;
   
   info("TPM_DAA_Join(), execute stage = %d", stage);
   
   /* Initalize scratch */
   memset(scratch, 0, sizeof(scratch));
   
-  /* Check whether the handle is sane, for all stages greater than zero. */
+  /* Verify and initalize the session, for all stages greater than zero. */
   if (stage > 0) {
     if (!(HANDLE_TO_INDEX(handle) < TPM_MAX_SESSIONS_DAA))
       return TPM_BADHANDLE;
@@ -71,6 +72,7 @@ TPM_RESULT TPM_DAA_Join(
       return TPM_BADHANDLE;
     if (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].handle != handle)
       return TPM_BADHANDLE;
+    session = &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)];
   }
   
   /* TPM_DAA_JOIN [TPM_Part3], Section 26.1, Rev. 85 */
@@ -78,29 +80,25 @@ TPM_RESULT TPM_DAA_Join(
     case 0:
     {
       UINT32 cnt;
-      TPM_HANDLE hdl;
       
       /* Determine that sufficient resources are available to perform a
        * DAA_Join. Assign session handle for this DAA_Join. */
-      hdl = tpm_get_free_daa_session();
-      if (hdl == TPM_INVALID_HANDLE)
+      handle = tpm_get_free_daa_session();
+      if (handle == TPM_INVALID_HANDLE)
         return TPM_RESOURCES;
-//TODO
+      session = &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)];
+//TODO: check resources
       /* Set all fields in DAA_issuerSettings = NULL */
-      memset(&tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_issuerSettings, 
-        0, sizeof(TPM_DAA_ISSUER));
+      memset(&session->DAA_issuerSettings, 0, sizeof(TPM_DAA_ISSUER));
       /* Set all fields in DAA_tpmSpecific = NULL */
-      memset(&tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_tpmSpecific, 
-        0, sizeof(TPM_DAA_TPM));
+      memset(&session->DAA_tpmSpecific, 0, sizeof(TPM_DAA_TPM));
       /* Set all fields in DAA_session = NULL */
-      memset(&tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_session, 
-        0, sizeof(TPM_DAA_CONTEXT));
+      memset(&session->DAA_session, 0, sizeof(TPM_DAA_CONTEXT));
       /* Set all fields in DAA_joinSession = NULL */
-      memset(&tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_joinSession, 
-        0, sizeof(TPM_DAA_JOINDATA));
+      memset(&session->DAA_joinSession, 0, sizeof(TPM_DAA_JOINDATA));
       /* Verify that sizeOf(inputData0) == sizeOf(DAA_tpmSpecific->DAA_count)
        * and return error TPM_DAA_INPUT_DATA0 on mismatch */
-      if (!(inputSize0 == sizeof(tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_tpmSpecific.DAA_count)))
+      if (!(inputSize0 == sizeof(session->DAA_tpmSpecific.DAA_count)))
         return TPM_DAA_INPUT_DATA0;
       /* Verify that inputData0 > 0, and return TPM_DAA_INPUT_DATA0 on
        * mismatch */
@@ -108,25 +106,22 @@ TPM_RESULT TPM_DAA_Join(
       if (!(cnt > 0))
         return TPM_DAA_INPUT_DATA0;
       /* Set DAA_tpmSpecific->DAA_count = inputData0 */
-      tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_tpmSpecific.DAA_count = cnt;
+      session->DAA_tpmSpecific.DAA_count = cnt;
       /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific ||
        * DAA_joinSession) */
       sha1_init(&sha1);
-      sha1_update(&sha1, 
-        (BYTE*) &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_tpmSpecific, 
+      sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific, 
         sizeof(TPM_DAA_TPM));
-      sha1_update(&sha1, 
-        (BYTE*) &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_joinSession, 
+      sha1_update(&sha1, (BYTE*) &session->DAA_joinSession, 
         sizeof(TPM_DAA_JOINDATA));
-      sha1_final(&sha1, 
-        tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_session.DAA_digestContext.digest);
+      sha1_final(&sha1, session->DAA_session.DAA_digestContext.digest);
       /* Set DAA_session->DAA_stage = 1 */
-      tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(hdl)].DAA_session.DAA_stage = 1;
+      session->DAA_session.DAA_stage = 1;
       /* Assign session handle for DAA_Join */
-      // WATCH: this step was done at the top
+// WATCH: this step is included in step 1.
       /* Set outputData = new session handle */
       *outputSize = sizeof(TPM_HANDLE);
-      memcpy(*outputData, &hdl, *outputSize);
+      memcpy(*outputData, &handle, *outputSize);
       /* return TPM_SUCCESS */
       return TPM_SUCCESS;
     }
@@ -138,40 +133,42 @@ TPM_RESULT TPM_DAA_Join(
       
       /* Verify that DAA_session->DAA_stage == 1. Return TPM_DAA_STAGE
        * and flush handle on mismatch */
-      if (!(tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_session.DAA_stage == 1)) {
-        tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].type = TPM_ST_INVALID;
+      if (!(session->DAA_session.DAA_stage == 1)) {
+        session->type = TPM_ST_INVALID;
         return TPM_DAA_STAGE;
       }
-      /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific ||
-       * DAA_joinSession) */
+      /* Verify that DAA_session->DAA_digestContext == SHA-1(
+       * DAA_tpmSpecific || DAA_joinSession) */
       sha1_init(&sha1);
-      sha1_update(&sha1, 
-        (BYTE*) &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_tpmSpecific, 
+      sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific, 
         sizeof(TPM_DAA_TPM));
-      sha1_update(&sha1, 
-        (BYTE*) &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_joinSession, 
+      sha1_update(&sha1, (BYTE*) &session->DAA_joinSession, 
         sizeof(TPM_DAA_JOINDATA));
       sha1_final(&sha1, dgt.digest);
-      if (memcmp(dgt.digest, tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_session.DAA_digestContext.digest, sizeof(TPM_DIGEST)))
-        return TPM_DAA_TPM_SETTINGS;
+      if (memcmp(dgt.digest, session->DAA_session.DAA_digestContext.digest, sizeof(TPM_DIGEST)))
+          return TPM_DAA_TPM_SETTINGS;
       /* Verify that sizeOf(inputData0) == DAA_SIZE_issuerModulus and
        * return error TPM_DAA_INPUT_DATA0 on mismatch */
       if (!(inputSize0 == DAA_SIZE_issuerModulus))
         return TPM_DAA_INPUT_DATA0;
       /* If DAA_session->DAA_scratch == NULL: */
-      if (!memcmp(scratch, tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_session.DAA_scratch, sizeof(scratch))) {
+      if (!memcmp(scratch, session->DAA_session.DAA_scratch, sizeof(scratch))) {
         /* Set DAA_session->DAA_scratch = inputData0 */
-        memcpy(tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_session.DAA_scratch, inputData0, inputSize0);
-        /* Set DAA_joinSession->DAA_digest_n0 = SHA-1(DAA_session->DAA_scratch) */
+        memcpy(session->DAA_session.DAA_scratch, inputData0, inputSize0);
+        /* Set DAA_joinSession->DAA_digest_n0 = 
+         * SHA-1(DAA_session->DAA_scratch) */
         sha1_init(&sha1);
-        sha1_update(&sha1, (BYTE*) tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_session.DAA_scratch, sizeof(tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_session.DAA_scratch));
-        sha1_final(&sha1, tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_joinSession.DAA_digest_n0.digest);
+        sha1_update(&sha1, (BYTE*) session->DAA_session.DAA_scratch, 
+          sizeof(session->DAA_session.DAA_scratch));
+        sha1_final(&sha1, session->DAA_joinSession.DAA_digest_n0.digest);
         /* Set DAA_tpmSpecific->DAA_rekey = SHA-1(TPM_DAA_TPM_SEED || 
          * DAA_joinSession->DAA_digest_n0) */
         sha1_init(&sha1);
-        sha1_update(&sha1, (BYTE*) tpmData.permanent.data.tpmDAASeed.digest, sizeof(tpmData.permanent.data.tpmDAASeed.digest));
-        sha1_update(&sha1, (BYTE*) tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_joinSession.DAA_digest_n0.digest, sizeof(tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_joinSession.DAA_digest_n0.digest));
-        sha1_final(&sha1, tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_tpmSpecific.DAA_rekey.digest);
+        sha1_update(&sha1, (BYTE*) tpmData.permanent.data.tpmDAASeed.digest, 
+          sizeof(tpmData.permanent.data.tpmDAASeed.digest));
+        sha1_update(&sha1, (BYTE*) session->DAA_joinSession.DAA_digest_n0.digest, 
+          sizeof(session->DAA_joinSession.DAA_digest_n0.digest));
+        sha1_final(&sha1, session->DAA_tpmSpecific.DAA_rekey.digest);
       /* Else (If DAA_session->DAA_scratch != NULL): */
       } else {
         /* Set signedData = inputData0 */
@@ -186,32 +183,31 @@ TPM_RESULT TPM_DAA_Join(
          * signatureValue is a signature on signedData, and return error 
          * TPM_DAA_ISSUER_VALIDITY on mismatch */
 //TODO: determine correct endianess and message encoding
-        if (rsa_import_public_key(&key, RSA_LSB_FIRST, tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_session.DAA_scratch, DAA_SIZE_issuerModulus, NULL, 0))
-          return TPM_DAA_ISSUER_VALIDITY;
-        if (rsa_verify(&key, RSA_ES_OAEP_SHA1, signedData, inputSize0, signatureValue))
-          return TPM_DAA_ISSUER_VALIDITY;
+        if (rsa_import_public_key(&key, RSA_LSB_FIRST, 
+          session->DAA_session.DAA_scratch, DAA_SIZE_issuerModulus, NULL, 0))
+            return TPM_DAA_ISSUER_VALIDITY;
+        if (rsa_verify(&key, RSA_ES_OAEP_SHA1, signedData, inputSize0, 
+          signatureValue))
+            return TPM_DAA_ISSUER_VALIDITY;
         rsa_release_public_key(&key);
         /* Set DAA_session->DAA_scratch = signedData */
-        memcpy(tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_session.DAA_scratch, inputData0, inputSize0);
+        memcpy(session->DAA_session.DAA_scratch, inputData0, inputSize0);
       }
       /* Decrement DAA_tpmSpecific->DAA_count by 1 (unity) */
-      tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_tpmSpecific.DAA_count--;
+      session->DAA_tpmSpecific.DAA_count--;
       /* If DAA_tpmSpecific->DAA_count == 0: */
-      if (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_tpmSpecific.DAA_count == 0) {
+      if (session->DAA_tpmSpecific.DAA_count == 0) {
         /* Increment DAA_Session->DAA_Stage by 1 */
-        tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_session.DAA_stage++;
+        session->DAA_session.DAA_stage++;
       }
       /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific || 
        * DAA_joinSession) */
       sha1_init(&sha1);
-      sha1_update(&sha1, 
-        (BYTE*) &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_tpmSpecific, 
+      sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific, 
         sizeof(TPM_DAA_TPM));
-      sha1_update(&sha1, 
-        (BYTE*) &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_joinSession, 
+      sha1_update(&sha1, (BYTE*) &session->DAA_joinSession, 
         sizeof(TPM_DAA_JOINDATA));
-      sha1_final(&sha1, 
-        tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].DAA_session.DAA_digestContext.digest);
+      sha1_final(&sha1, session->DAA_session.DAA_digestContext.digest);
       /* Set outputData = NULL */
       outputData = NULL;
       /* return TPM_SUCCESS */
