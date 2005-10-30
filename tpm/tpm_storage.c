@@ -510,7 +510,7 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
     return TPM_INVALID_KEYUSAGE;
   /* decrypt private key */
   if (decrypt_private_key(parent, inKey->encData, inKey->encDataSize,
-                          &store, &key_buf)) return TPM_DECRYPT_ERROR; 
+                          &store, &key_buf)) return TPM_DECRYPT_ERROR;
   /* get a free key-slot if any is left */
   *inkeyHandle = tpm_get_free_key();
   key = tpm_get_key(*inkeyHandle);
@@ -547,10 +547,10 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
   memcpy(&key->usageAuth, &store.usageAuth, sizeof(TPM_SECRET));
   /* setup PCR info */
   if (inKey->PCRInfoSize > 0) {
-    memcpy(&key->pcrInfo, &inKey->PCRInfo, sizeof(TPM_PCR_INFO));    
+    memcpy(&key->pcrInfo, &inKey->PCRInfo, sizeof(TPM_PCR_INFO));
     key->keyFlags |= TPM_KEY_FLAG_HAS_PCR; 
   } else {
-    key->keyFlags |= TPM_KEY_FLAG_PCR_IGNORE;    
+    key->keyFlags |= TPM_KEY_FLAG_PCR_IGNORE;
     key->keyFlags &= ~TPM_KEY_FLAG_HAS_PCR;
   }
   key->parentPCRStatus = parent->parentPCRStatus;
