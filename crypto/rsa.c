@@ -304,8 +304,8 @@ void rsa_export_prime2(rsa_private_key_t *key,
   mpz_export(prime, length, 1 , 1, 0, 0, key->q);
 }
 
-static void mask_generation(uint8_t *seed, size_t seed_len, 
-                            uint8_t *data, size_t data_len)
+void mask_generation(uint8_t *seed, size_t seed_len, 
+                     uint8_t *data, size_t data_len)
 {
   sha1_ctx_t ctx;
   uint8_t mask[SHA1_DIGEST_LENGTH];
