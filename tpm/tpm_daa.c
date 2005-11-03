@@ -1260,7 +1260,52 @@ TPM_RESULT TPM_DAA_Join(
       return TPM_SUCCESS;
     }
     case 16:
-      break;
+    {
+      BYTE NT[DAA_SIZE_NT];
+      sha1_ctx_t sha1;
+      
+      /* Verify that DAA_session->DAA_stage == 16. Return TPM_DAA_STAGE 
+       * and flush handle on mismatch */
+      if (!(session->DAA_session.DAA_stage == 16)) {
+        session->type = TPM_ST_INVALID;
+        return TPM_DAA_STAGE;
+      }
+      /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
+       * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
+       * on mismatch */
+      if (tpm_daa_verify_digestIssuer(session))
+        return TPM_DAA_ISSUER_SETTINGS;
+      /* Verify that DAA_session->DAA_digestContext == 
+       * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
+       * TPM_DAA_TPM_SETTINGS on mismatch */
+      if (tpm_daa_verify_digestContext(session))
+        return TPM_DAA_TPM_SETTINGS;
+      /* Verify that inputSize0 == sizeOf(TPM_DIGEST) and return error 
+       * TPM_DAA_INPUT_DATA0 on mismatch */
+      if (!(inputSize0 == sizeof(TPM_DIGEST)))
+        return TPM_DAA_INPUT_DATA0;
+      /* Set DAA_session->DAA_digest = inputData0 */
+      memcpy(session->DAA_session.DAA_digest.digest, inputData0, inputSize0);
+      /* Obtain DAA_SIZE_NT bits from the RNG and label them NT */
+      tpm_get_random_bytes(&NT, DAA_SIZE_NT);
+      /* Set DAA_session->DAA_digest to the SHA-1(DAA_session->DAA_digest || 
+       * NT)*/
+      sha1_init(&sha1);
+      sha1_update(&sha1, (BYTE*) session->DAA_session.DAA_digest.digest, 
+          sizeof( session->DAA_session.DAA_digest.digest));
+      sha1_update(&sha1, (BYTE*) NT, sizeof(NT));
+      sha1_final(&sha1, session->DAA_session.DAA_digest.digest);
+      /* Set outputData = NT */
+      *outputSize = sizeof(NT);
+      if ((*outputData = tpm_malloc(*outputSize)) != NULL)
+        memcpy(*outputData, NT, *outputSize);
+      else
+        return TPM_NOSPACE;
+      /* Increment DAA_session->DAA_stage by 1 */
+      session->DAA_session.DAA_stage++;
+      /* Return TPM_SUCCESS */
+      return TPM_SUCCESS;
+    }
     case 17:
       break;
     case 18:
