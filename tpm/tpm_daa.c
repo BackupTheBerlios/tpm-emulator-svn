@@ -23,6 +23,8 @@
 #include "tpm_marshalling.h"
 #include "crypto/sha1.h"
 #include "crypto/rsa.h"
+#include "crypto/rc4.h"
+#include "crypto/hmac.h"
 #include "linux_module.h"
 
 UINT32 tpm_get_free_daa_session(void)
@@ -117,6 +119,74 @@ TPM_RESULT tpm_daa_verify_generic(
   return memcmp(dgt.digest, digest.digest, sizeof(TPM_DIGEST));
 }
 
+/* Encryption and decryption of TPM_DAA_SENSITIVE like TPM_CONTEXT_SENSITIVE */
+int encrypt_daa(BYTE *iv, UINT32 iv_size, TPM_DAA_SENSITIVE *sensitive, 
+                BYTE **enc, UINT32 *enc_size)
+{
+  UINT32 len;
+  BYTE *ptr;
+  rc4_ctx_t rc4_ctx;
+  BYTE key[TPM_CONTEXT_KEY_SIZE + iv_size];
+  /* marshal sensitive */
+  *enc_size = len = sizeof_TPM_DAA_SENSITIVE((*sensitive));
+  *enc = ptr = tpm_malloc(len);
+  if (*enc == NULL || tpm_marshal_TPM_DAA_SENSITIVE(&ptr, &len, sensitive)) {
+    tpm_free(*enc);
+    return -1;
+  }
+  /* encrypt sensitive */
+  memcpy(key, tpmData.permanent.data.contextKey, TPM_CONTEXT_KEY_SIZE);
+  memcpy(&key[TPM_CONTEXT_KEY_SIZE], iv, iv_size);
+  rc4_init(&rc4_ctx, key, sizeof(key));
+  rc4_crypt(&rc4_ctx, *enc, *enc, *enc_size);
+  return 0;
+}
+
+int decrypt_daa(BYTE *iv, UINT32 iv_size, BYTE *enc, UINT32 enc_size, 
+                TPM_DAA_SENSITIVE *sensitive, BYTE **buf) 
+{
+  UINT32 len;
+  BYTE *ptr;
+  rc4_ctx_t rc4_ctx;
+  BYTE key[TPM_CONTEXT_KEY_SIZE + iv_size];
+  len = enc_size;
+  *buf = ptr = tpm_malloc(len);
+  if (*buf == NULL) return -1;
+  /* decrypt sensitive */
+  memcpy(key, tpmData.permanent.data.contextKey, TPM_CONTEXT_KEY_SIZE);
+  memcpy(&key[TPM_CONTEXT_KEY_SIZE], iv, iv_size);
+  rc4_init(&rc4_ctx, key, sizeof(key));  
+  rc4_crypt(&rc4_ctx, enc, *buf, enc_size);
+  /* unmarshal sensitive */
+  if (tpm_unmarshal_TPM_DAA_SENSITIVE(&ptr, &len, sensitive)) {
+    tpm_free(*buf);
+    return -1;
+  }
+  return 0;
+}
+
+/* Computation of the HMAC which protects the integrity of the TPM_DAA_BLOB */
+int compute_daa_digest(TPM_DAA_BLOB *daaBlob, TPM_DIGEST *digest)
+{
+  BYTE *buf, *ptr;
+  UINT32 len;
+  hmac_ctx_t hmac_ctx;
+  len = sizeof_TPM_DAA_BLOB((*daaBlob));
+  buf = ptr = tpm_malloc(len);
+  if (buf == NULL
+      || tpm_marshal_TPM_DAA_BLOB(&ptr, &len, daaBlob)) {
+    tpm_free(buf);
+    return -1;
+  }
+  memset(&buf[30], 0, 20);
+  hmac_init(&hmac_ctx, tpmData.permanent.data.tpmProof.nonce, 
+    sizeof(tpmData.permanent.data.tpmProof.nonce));
+  hmac_update(&hmac_ctx, buf, sizeof_TPM_DAA_BLOB((*daaBlob)));
+  hmac_final(&hmac_ctx, digest->digest);
+  tpm_free(buf);
+  return 0;
+}
+
 /*
  * DAA commands ([TPM_Part3], Section 26)
  * Operations that are necessary to setup a TPM for DAA, execute the 
@@ -139,7 +209,7 @@ TPM_RESULT TPM_DAA_Join(
   BYTE scratch[256];
   TPM_DAA_SESSION_DATA *session = NULL;
   
-  info("TPM_DAA_Join(), execute stage = %d", stage);
+  info("TPM_DAA_Join(), handle = %d, execute stage = %d", handle, stage);
   
   /* Initalize internal scratch board */
   memset(scratch, 0, sizeof(scratch));
@@ -1632,7 +1702,102 @@ TPM_RESULT TPM_DAA_Join(
     }
     case 22:
     {
-    
+      mpz_t u2, v0, v10, tmp;
+      UINT32 size;
+      sha1_ctx_t sha1;
+      TPM_DAA_BLOB blob;
+      TPM_DAA_SENSITIVE sensitive;
+      BYTE iv[TPM_CONTEXT_KEY_SIZE];
+      
+      /* Verify that DAA_session->DAA_stage == 22. Return TPM_DAA_STAGE 
+       * and flush handle on mismatch */
+      if (!(session->DAA_session.DAA_stage == 22)) {
+        session->type = TPM_ST_INVALID;
+        return TPM_DAA_STAGE;
+      }
+      /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
+       * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
+       * on mismatch */
+      if (tpm_daa_verify_digestIssuer(session))
+        return TPM_DAA_ISSUER_SETTINGS;
+      /* Verify that DAA_session->DAA_digestContext == 
+       * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
+       * TPM_DAA_TPM_SETTINGS on mismatch */
+      if (tpm_daa_verify_digestContext(session))
+        return TPM_DAA_TPM_SETTINGS;
+      /* Verify inputSize0 == DAA_SIZE_v0 and return error 
+       * TPM_DAA_INPUT_DATA0 on mismatch */
+      if (!(inputSize0 == DAA_SIZE_v0))
+        return TPM_DAA_INPUT_DATA0;
+      /* Set u2 = inputData0 */
+      mpz_init(u2);
+      mpz_import(u2, DAA_SIZE_v0, 1, 1, 0, 0, inputData0);
+      /* Set v0 = u2 + (DAA_joinSession->DAA_join_u0) mod 2^DAA_power1 
+       * (Erase all but the lowest DAA_power1 bits of v0). */
+      mpz_init(v0);
+      mpz_import(v0, sizeof(session->DAA_joinSession.DAA_join_u0), 
+        1, 1, 0, 0, session->DAA_joinSession.DAA_join_u0);
+      mpz_add(v0, u2, v0);
+      mpz_init(tmp);
+      mpz_ui_pow_ui(tmp, 2, DAA_power1);
+      mpz_mod(v0, v0, tmp);
+      /* Set DAA_tpmSpecific->DAA_digest_v0 = SHA-1(v0) */
+      mpz_export(scratch, &size, 1, 1, 0, 0, v0);
+      sha1_init(&sha1);
+      sha1_update(&sha1, (BYTE*) scratch, size);
+      sha1_final(&sha1, session->DAA_tpmSpecific.DAA_digest_v0.digest);
+      /* Set v10 = u2 + (DAA_joinSession->DAA_join_u0) in Z */
+      mpz_init(v10);
+      mpz_import(v10, sizeof(session->DAA_joinSession.DAA_join_u0), 
+        1, 1, 0, 0, session->DAA_joinSession.DAA_join_u0);
+      mpz_add(v10, u2, v10);
+      /* Shift v10 right by DAA_power1 bits (erase the lowest DAA_power1 
+       * bits). */
+      mpz_fdiv_q_2exp(v10, v10, DAA_power1);
+      /* Set DAA_session->DAA_scratch = v10 */
+      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, v10);
+      /* Set outputData */
+        /* Fill in TPM_DAA_BLOB with a type of TPM_RT_DAA_V0 and encrypt 
+         * the v0 parameters */
+        blob.tag = TPM_TAG_DAA_BLOB;
+        blob.resourceType = TPM_RT_DAA_V0;
+        memcpy(blob.label, "v0", 2);
+        memset(&blob.blobIntegrity, 0, sizeof(TPM_DIGEST));
+        blob.additionalSize = TPM_CONTEXT_KEY_SIZE;
+        blob.additionalData = iv;
+        tpm_get_random_bytes(blob.additionalData, blob.additionalSize);
+        mpz_export(scratch, &size, 1, 1, 0, 0, v0);
+        sensitive.tag = TPM_TAG_DAA_SENSITIVE;
+        sensitive.internalSize = size;
+        sensitive.internalData = scratch;
+        if (encrypt_daa(blob.additionalData, blob.additionalSize,
+          &sensitive, &blob.sensitiveData, &blob.sensitiveSize))
+            return TPM_ENCRYPT_ERROR;
+        if (compute_daa_digest(&blob, &blob.blobIntegrity))
+          return TPM_FAIL;
+        /* Set outputData to the encrypted TPM_DAA_BLOB */
+        *outputSize = sizeof_TPM_DAA_BLOB(blob);
+        size = *outputSize;
+        if ((*outputData = tpm_malloc(*outputSize)) != NULL) {
+          if (tpm_marshal_TPM_DAA_BLOB(outputData, &size, &blob)) {
+            tpm_free(*outputData);
+            return TPM_FAIL;
+          }
+        }
+        else
+          return TPM_NOSPACE;
+      /* Increment DAA_session->DAA_stage by 1 */
+      session->DAA_session.DAA_stage++;
+      /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific || 
+       * DAA_joinSession) */
+      sha1_init(&sha1);
+      sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific, 
+        sizeof(TPM_DAA_TPM));
+      sha1_update(&sha1, (BYTE*) &session->DAA_joinSession,
+        sizeof(TPM_DAA_JOINDATA));
+      sha1_final(&sha1, session->DAA_session.DAA_digestContext.digest);
+      /* Return TPM_SUCCESS */
+      return TPM_SUCCESS;
     }
     case 23:
       break;

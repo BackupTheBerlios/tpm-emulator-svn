@@ -202,7 +202,7 @@ TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
   /* encrypt sensitive data */
   if (encrypt_context(contextBlob->additionalData, contextBlob->additionalSize,
       &context, &contextBlob->sensitiveData, 
-      &contextBlob->sensitiveSize)) return TPM_DECRYPT_ERROR;
+      &contextBlob->sensitiveSize)) return TPM_ENCRYPT_ERROR;
   if (compute_context_digest(contextBlob, &contextBlob->blobIntegrity)) {
     tpm_free(contextBlob->additionalData);
     tpm_free(contextBlob->sensitiveData);

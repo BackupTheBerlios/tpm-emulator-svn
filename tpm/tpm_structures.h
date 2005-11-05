@@ -1750,6 +1750,9 @@ typedef struct tdTPM_DAA_BLOB {
   UINT32 sensitiveSize;
   BYTE* sensitiveData;
 } TPM_DAA_BLOB;
+#define sizeof_TPM_DAA_BLOB(s) (sizeof(TPM_STRUCTURE_TAG) + \
+  sizeof(TPM_RESOURCE_TYPE) + sizeof(s.label) + sizeof(TPM_DIGEST) + \
+  2*sizeof(UINT32) + s.additionalSize + s.sensitiveSize)
 
 /*
  * TPM_DAA_SENSITIVE ([TPM_Part2], Section 22.13)
@@ -1761,6 +1764,8 @@ typedef struct tdTPM_DAA_SENSITIVE {
   UINT32 internalSize;
   BYTE* internalData;
 } TPM_DAA_SENSITIVE;
+#define sizeof_TPM_DAA_SENSITIVE(s) (sizeof(TPM_STRUCTURE_TAG) + \
+  sizeof(UINT32) + s.internalSize)
 
 /*
  * GPIO structures
@@ -2030,8 +2035,9 @@ typedef struct tdTPM_DAA_SESSION_DATA {
   TPM_DAA_JOINDATA DAA_joinSession;
   TPM_HANDLE handle;
 } TPM_DAA_SESSION_DATA;
-#define sizeof_TPM_DAA_SESSION_DATA(s) (1 + sizeof(TPM_DAA_ISSUER) + \
-  sizeof(TPM_DAA_TPM) + sizeof(TPM_DAA_CONTEXT) + sizeof(TPM_DAA_JOINDATA) + 4)
+#define sizeof_TPM_DAA_SESSION_DATA(s) (sizeof(BYTE) + \
+  sizeof(TPM_DAA_ISSUER) + sizeof(TPM_DAA_TPM) + sizeof(TPM_DAA_CONTEXT) + \
+  sizeof(TPM_DAA_JOINDATA) + sizeof(TPM_HANDLE))
 
 /*
  * TPM_STANY_DATA ([TPM_Part2], Section 7.6)

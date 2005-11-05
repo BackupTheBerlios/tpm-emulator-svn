@@ -672,7 +672,53 @@ int tpm_unmarshal_TPM_CONTEXT_SENSITIVE(BYTE **ptr, UINT32 *length, TPM_CONTEXT_
       || (v->resourceType != TPM_RT_KEY
           && tpm_unmarshal_TPM_SESSION_DATA(ptr, length, &v->internalData.session))) return -1;       
   return 0;
-}  
+}
+
+int tpm_marshal_TPM_DAA_BLOB(BYTE **ptr, UINT32 *length, TPM_DAA_BLOB *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_RESOURCE_TYPE(ptr, length, v->resourceType)
+      || tpm_marshal_BYTE_ARRAY(ptr, length, v->label, sizeof(v->label))
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->blobIntegrity)
+      || tpm_marshal_UINT32(ptr, length, v->additionalSize)
+      || tpm_marshal_BLOB(ptr, length, v->additionalData, v->additionalSize)
+      || tpm_marshal_UINT32(ptr, length, v->sensitiveSize)
+      || tpm_marshal_BLOB(ptr, length, v->sensitiveData, v->sensitiveSize))
+        return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DAA_BLOB(BYTE **ptr, UINT32 *length, TPM_DAA_BLOB *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_RESOURCE_TYPE(ptr, length, &v->resourceType)
+      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->label, sizeof(v->label))
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->blobIntegrity)
+      || tpm_unmarshal_UINT32(ptr, length, &v->additionalSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->additionalData, v->additionalSize)
+      || tpm_unmarshal_UINT32(ptr, length, &v->sensitiveSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->sensitiveData, v->sensitiveSize))
+        return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_DAA_SENSITIVE(BYTE **ptr, UINT32 *length, TPM_DAA_SENSITIVE *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_UINT32(ptr, length, v->internalSize)
+      || tpm_marshal_BYTE_ARRAY(ptr, length, v->internalData, v->internalSize))
+        return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DAA_SENSITIVE(BYTE **ptr, UINT32 *length, TPM_DAA_SENSITIVE *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_UINT32(ptr, length, &v->internalSize)
+      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->internalData, v->internalSize))
+        return -1;
+  return 0;
+}
 
 int tpm_marshal_TPM_NV_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_NV_ATTRIBUTES *v)
 {
