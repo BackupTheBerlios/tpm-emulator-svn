@@ -3481,6 +3481,8 @@ TPM_RESULT TPM_DAA_Sign(
       }
       /* WATCH: Increment DAA_session->DAA_stage by 1 */
       session->DAA_session.DAA_stage++;
+      /* WATCH: flush handle and release session */
+      memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
       /* Return TPM_SUCCESS */
       return TPM_SUCCESS;
     }
