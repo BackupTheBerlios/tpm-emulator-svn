@@ -72,6 +72,22 @@ void tpm_daa_update_digestContext(
   sha1_final(&sha1, session->DAA_session.DAA_digestContext.digest);
 }
 
+/* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) and 
+ * return error on mismatch */
+TPM_RESULT tpm_daa_verify_digestContext_sign(  
+  TPM_DAA_SESSION_DATA *session
+)
+{
+  sha1_ctx_t sha1;
+  TPM_DIGEST dgt;
+  
+  sha1_init(&sha1);
+  sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific, sizeof(TPM_DAA_TPM));
+  sha1_final(&sha1, dgt.digest);
+  return memcmp(dgt.digest, session->DAA_session.DAA_digestContext.digest, 
+    sizeof(TPM_DIGEST));
+}
+
 /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
  * SHA-1(DAA_issuerSettings) and return error on mismatch */
 TPM_RESULT tpm_daa_verify_digestIssuer(  
@@ -143,7 +159,7 @@ int encrypt_daa(BYTE *iv, UINT32 iv_size, TPM_DAA_SENSITIVE *sensitive,
 }
 
 int decrypt_daa(BYTE *iv, UINT32 iv_size, BYTE *enc, UINT32 enc_size, 
-                TPM_DAA_SENSITIVE *sensitive, BYTE **buf) 
+                TPM_DAA_SENSITIVE *sensitive, BYTE **buf)
 {
   UINT32 len;
   BYTE *ptr;
@@ -1958,6 +1974,7 @@ TPM_RESULT TPM_DAA_Join(
             return TPM_ENCRYPT_ERROR;
         }
         if (compute_daa_digest(&blob, &blob.blobIntegrity)) {
+          tpm_free(blob.sensitiveData);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_FAIL;
         }
@@ -1966,15 +1983,18 @@ TPM_RESULT TPM_DAA_Join(
         size = *outputSize;
         if ((*outputData = tpm_malloc(*outputSize)) != NULL) {
           if (tpm_marshal_TPM_DAA_BLOB(outputData, &size, &blob)) {
+            tpm_free(blob.sensitiveData);
             tpm_free(*outputData);
             memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
             return TPM_FAIL;
           }
         }
         else {
+          tpm_free(blob.sensitiveData);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_NOSPACE;
         }
+        tpm_free(blob.sensitiveData);
       /* Increment DAA_session->DAA_stage by 1 */
       session->DAA_session.DAA_stage++;
       /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific || 
@@ -2061,6 +2081,7 @@ TPM_RESULT TPM_DAA_Join(
             return TPM_ENCRYPT_ERROR;
         }
         if (compute_daa_digest(&blob, &blob.blobIntegrity)) {
+          tpm_free(blob.sensitiveData);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_FAIL;
         }
@@ -2069,15 +2090,18 @@ TPM_RESULT TPM_DAA_Join(
         size = *outputSize;
         if ((*outputData = tpm_malloc(*outputSize)) != NULL) {
           if (tpm_marshal_TPM_DAA_BLOB(outputData, &size, &blob)) {
+            tpm_free(blob.sensitiveData);
             tpm_free(*outputData);
             memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
             return TPM_FAIL;
           }
         }
         else {
+          tpm_free(blob.sensitiveData);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_NOSPACE;
         }
+        tpm_free(blob.sensitiveData);
       /* Set DAA_session->DAA_scratch = NULL */
       memset(session->DAA_session.DAA_scratch, 0, 
         sizeof(session->DAA_session.DAA_scratch));
@@ -2138,6 +2162,7 @@ TPM_RESULT TPM_DAA_Join(
           return TPM_ENCRYPT_ERROR;
       }
       if (compute_daa_digest(&blob, &blob.blobIntegrity)) {
+        tpm_free(blob.sensitiveData);
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_FAIL;
       }
@@ -2145,15 +2170,18 @@ TPM_RESULT TPM_DAA_Join(
       size = *outputSize;
       if ((*outputData = tpm_malloc(*outputSize)) != NULL) {
         if (tpm_marshal_TPM_DAA_BLOB(outputData, &size, &blob)) {
+          tpm_free(blob.sensitiveData);
           tpm_free(*outputData);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_FAIL;
         }
       }
       else {
+        tpm_free(blob.sensitiveData);
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_NOSPACE;
       }
+      tpm_free(blob.sensitiveData);
       /* WATCH: flush handle and release session */
       memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
       /* Return TPM_SUCCESS */
@@ -2238,6 +2266,12 @@ TPM_RESULT TPM_DAA_Sign(
     }
     case 1:
     {
+      BYTE *ptr, *buf;
+      UINT32 len;
+      sha1_ctx_t sha1;
+      TPM_DAA_BLOB blob;
+      TPM_DAA_SENSITIVE sensitive;
+      TPM_DIGEST digest;
       
       /* Verify that DAA_session->DAA_stage == 1. Return TPM_DAA_STAGE and 
        * flush handle on mismatch */
@@ -2246,8 +2280,58 @@ TPM_RESULT TPM_DAA_Sign(
         return TPM_DAA_STAGE;
       }
       /* Set DAA_tpmSpecific = unwrap(inputData0) */
-//TODO
+      ptr = inputData0;
+      len = inputSize0;
+      if (tpm_unmarshal_TPM_DAA_BLOB(&ptr, &len, &blob) || 
+        len != 0) {
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
+      }
+      if (decrypt_daa(blob.additionalData, blob.additionalSize, 
+        blob.sensitiveData, blob.sensitiveSize, 
+        &sensitive, &buf)) {
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DECRYPT_ERROR;
+      }
+      if (compute_daa_digest(&blob, &digest) || 
+        memcmp(&digest, &blob.blobIntegrity, sizeof(TPM_DIGEST))) {
+          tpm_free(buf);
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
+      }
+      if ((blob.resourceType != TPM_RT_DAA_TPM) || 
+        (sensitive.tag != TPM_TAG_DAA_SENSITIVE || 
+        (sensitive.internalSize != sizeof(session->DAA_tpmSpecific)))) {
+          tpm_free(buf);
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
+      }
+      memcpy(&session->DAA_tpmSpecific, sensitive.internalData, 
+        sensitive.internalSize);
+      tpm_free(buf);
       
+      /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
+       * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
+       * on mismatch */
+      if (tpm_daa_verify_digestIssuer(session)) {
+        memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+        return TPM_DAA_ISSUER_SETTINGS;
+      }
+      /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific) */
+      sha1_init(&sha1);
+      sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific, 
+        sizeof(TPM_DAA_TPM));
+      sha1_final(&sha1, session->DAA_session.DAA_digestContext.digest);
+      /* Obtain random data from the RNG and store it as 
+       * DAA_session->DAA_contextSeed */
+      tpm_get_random_bytes(session->DAA_session.DAA_contextSeed.digest, 
+        sizeof(session->DAA_session.DAA_contextSeed.digest));
+      /* Set outputData = NULL */
+      *outputSize = 0, *outputData = NULL;
+      /* Set DAA_session->DAA_stage = 2 */
+      session->DAA_session.DAA_stage = 2;
+      /* Return TPM_SUCCESS */
+      return TPM_SUCCESS;
     }
     case 2:
     {
