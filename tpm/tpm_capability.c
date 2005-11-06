@@ -174,8 +174,12 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_DAA_INTERRUPT:
       debug("[TPM_CAP_PROP_DAA_INTERRUPT]");
-      /* TPM_CAP_PROP_DAA_INTERRUPT */
-      return TPM_FAIL;
+      /* A value of TRUE indicates that the TPM will accept ANY command 
+       * while executing a DAA Join or Sign. A value of FALSE indicates 
+       * that the TPM will invalidate the DAA Join or Sign upon the 
+       * receipt of any command other than the next join/sign in the 
+       * session or a TPM_SaveContext. */
+      return return_BOOL(respSize, resp, TRUE);
 
     case TPM_CAP_GPIO_CHANNEL:
       debug("[TPM_CAP_GPIO_CHANNEL]");
