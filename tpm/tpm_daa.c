@@ -33,6 +33,7 @@ UINT32 tpm_get_free_daa_session(void)
   for (i = 0; i < TPM_MAX_SESSIONS_DAA; i++) {
     if (tpmData.stany.data.sessionsDAA[i].type == TPM_ST_INVALID) {
       tpmData.stany.data.sessionsDAA[i].type = TPM_ST_DAA;
+      tpmData.stany.data.sessionsDAA[i].handle = INDEX_TO_DAA_HANDLE(i);
       return INDEX_TO_DAA_HANDLE(i);
     }
   }
@@ -225,7 +226,7 @@ TPM_RESULT TPM_DAA_Join(
   BYTE scratch[256];
   TPM_DAA_SESSION_DATA *session = NULL;
   
-  info("TPM_DAA_Join(), handle = %d, execute stage = %d", handle, stage);
+  info("TPM_DAA_Join(), handle = %.8x, execute stage = %d", handle, stage);
   
   /* Initalize internal scratch pad */
   memset(scratch, 0, sizeof(scratch));
@@ -294,6 +295,7 @@ TPM_RESULT TPM_DAA_Join(
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_NOSPACE;
       }
+info("given handle = %x", handle);
       /* Return TPM_SUCCESS */
       return TPM_SUCCESS;
     }
@@ -2195,7 +2197,7 @@ TPM_RESULT TPM_DAA_Sign(
   BYTE scratch[256];
   TPM_DAA_SESSION_DATA *session = NULL;
   
-  info("TPM_DAA_Sign(), handle = %d, execute stage = %d", handle, stage);
+  info("TPM_DAA_Sign(), handle = %.8x, execute stage = %d", handle, stage);
   
   /* Initalize internal scratch pad */
   memset(scratch, 0, sizeof(scratch));
