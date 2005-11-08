@@ -720,6 +720,34 @@ int tpm_unmarshal_TPM_DAA_SENSITIVE(BYTE **ptr, UINT32 *length, TPM_DAA_SENSITIV
   return 0;
 }
 
+int tpm_marshal_TPM_DAA_ISSUER(BYTE **ptr, UINT32 *length, TPM_DAA_ISSUER *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digest_R0)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digest_R1)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digest_S0)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digest_S1)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digest_n)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digest_gamma)
+      || tpm_marshal_BYTE_ARRAY(ptr, length, v->DAA_generic_q, 26))
+        return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DAA_ISSUER(BYTE **ptr, UINT32 *length, TPM_DAA_ISSUER *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digest_R0)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digest_R1)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digest_S0)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digest_S1)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digest_n)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digest_gamma)
+      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->DAA_generic_q, 26))
+        return -1;
+  return 0;
+}
+
 int tpm_marshal_TPM_NV_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_NV_ATTRIBUTES *v)
 {
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)

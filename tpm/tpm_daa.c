@@ -226,7 +226,7 @@ TPM_RESULT TPM_DAA_Join(
   BYTE scratch[256];
   TPM_DAA_SESSION_DATA *session = NULL;
   
-  info("TPM_DAA_Join(), handle = %.8x, execute stage = %d", handle, stage);
+  info("TPM_DAA_Join(), handle = %.8x, stage = %d", handle, stage);
   
   /* Initalize internal scratch pad */
   memset(scratch, 0, sizeof(scratch));
@@ -273,11 +273,16 @@ TPM_RESULT TPM_DAA_Join(
       }
       /* Verify that inputData0 > 0, and return TPM_DAA_INPUT_DATA0 on
        * mismatch */
-      memcpy(&cnt, inputData0, inputSize0);
+      if (tpm_unmarshal_UINT32(&inputData0, &inputSize0, &cnt) ||
+        (inputSize0 != 0)) {
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
+      }
       if (!(cnt > 0)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_INPUT_DATA0;
       }
+info("cnt = %d", cnt);
       /* Set DAA_tpmSpecific->DAA_count = inputData0 */
       session->DAA_tpmSpecific.DAA_count = cnt;
       /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific ||
@@ -375,9 +380,10 @@ info("given handle = %x", handle);
       }
       /* Decrement DAA_tpmSpecific->DAA_count by 1 (unity) */
       session->DAA_tpmSpecific.DAA_count--;
+info("DAA_count = %d", session->DAA_tpmSpecific.DAA_count);
       /* If DAA_tpmSpecific->DAA_count == 0: */
       if (session->DAA_tpmSpecific.DAA_count == 0) {
-        /* Increment DAA_Session->DAA_Stage by 1 */
+        /* Increment DAA_Session->DAA_stage by 1 */
         session->DAA_session.DAA_stage++;
       }
       /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific || 
@@ -391,7 +397,8 @@ info("given handle = %x", handle);
     case 2:
     {
       rsa_public_key_t key;
-      BYTE *signedData, *signatureValue;
+      BYTE *signedData, *signatureValue, *ptr;
+      UINT32 len;
       
       /* Verify that DAA_session->DAA_stage == 2. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
@@ -415,12 +422,14 @@ info("given handle = %x", handle);
       /* Set DAA_issuerSettings = inputData0. Verify that all fields in 
        * DAA_issuerSettings are present and return error
        * TPM_DAA_INPUT_DATA0 if not. */
-      memcpy(&session->DAA_issuerSettings, inputData0, 
-        sizeof(TPM_DAA_ISSUER));
-      if (!(session->DAA_issuerSettings.tag == TPM_TAG_DAA_ISSUER)) {
-        memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-        return TPM_DAA_INPUT_DATA0;
+      ptr = inputData0, len = inputSize0;
+      if (tpm_unmarshal_TPM_DAA_ISSUER(&ptr, &len, 
+        &session->DAA_issuerSettings) || (len != 0) || 
+        !(session->DAA_issuerSettings.tag == TPM_TAG_DAA_ISSUER)) {
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
+info("here!!!");
       /* Verify that sizeOf(inputData1) == DAA_SIZE_issuerModulus and 
        * return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (!(inputSize1 == DAA_SIZE_issuerModulus)) {
@@ -2197,7 +2206,7 @@ TPM_RESULT TPM_DAA_Sign(
   BYTE scratch[256];
   TPM_DAA_SESSION_DATA *session = NULL;
   
-  info("TPM_DAA_Sign(), handle = %.8x, execute stage = %d", handle, stage);
+  info("TPM_DAA_Sign(), handle = %.8x, stage = %d", handle, stage);
   
   /* Initalize internal scratch pad */
   memset(scratch, 0, sizeof(scratch));

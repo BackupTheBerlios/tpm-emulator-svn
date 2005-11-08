@@ -1690,7 +1690,6 @@ typedef struct tdTPM_DAA_ISSUER {
   TPM_DIGEST DAA_digest_S0;
   TPM_DIGEST DAA_digest_S1;
   TPM_DIGEST DAA_digest_n;
-  TPM_DIGEST DAA_digest_n1;
   TPM_DIGEST DAA_digest_gamma;
   BYTE DAA_generic_q[26];
 } TPM_DAA_ISSUER;
