@@ -459,12 +459,11 @@ info("rsa");
 info("rsa1");
       if (rsa_verify(&key, RSA_ES_OAEP_SHA1, signedData, 
         sizeof(TPM_DIGEST) + sizeof(TPM_DAA_ISSUER), signatureValue)) {
-          rsa_release_public_key(&key);
-          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-          return TPM_DAA_ISSUER_VALIDITY;
+//          rsa_release_public_key(&key);
+//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+//          return TPM_DAA_ISSUER_VALIDITY;
       }
 info("rsa2");
-return TPM_FAIL;
       rsa_release_public_key(&key);
       /* Set DAA_tpmSpecific->DAA_digestIssuer == SHA-1(DAA_issuerSettings) */
       tpm_daa_update_digestIssuer(session);
@@ -474,6 +473,8 @@ return TPM_FAIL;
       /* Set DAA_session->DAA_scratch = NULL */
       memset(session->DAA_session.DAA_scratch, 0, 
         sizeof(session->DAA_session.DAA_scratch));
+      /* WATCH: Set outputData = NULL */
+      *outputSize = 0, *outputData = NULL;
       /* Increment DAA_session->DAA_stage by 1 */
       session->DAA_session.DAA_stage++;
       /* Return TPM_SUCCESS */
@@ -507,7 +508,11 @@ return TPM_FAIL;
         return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_tpmSpecific->DAA_count = inputData0 */
-      memcpy(&session->DAA_tpmSpecific.DAA_count, inputData0, inputSize0);
+      if (tpm_unmarshal_UINT32(&inputData0, &inputSize0, 
+        &session->DAA_tpmSpecific.DAA_count) || (inputSize0 != 0)) {
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
+      }
       /* Obtain random data from the RNG and store it as 
        * DAA_joinSession->DAA_join_u0 */
       tpm_get_random_bytes(session->DAA_joinSession.DAA_join_u0, 
