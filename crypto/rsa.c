@@ -374,7 +374,7 @@ static int encode_message(int type, uint8_t *data, size_t data_len,
     case RSA_ES_OAEP_SHA1:
       /* DB = SHA-1("TCPA")||0x00-pad||0x01||data
          seed = random value of size SHA1_DIGEST_LENGTH
-         mkased-seed = seed xor MFG(seed, seed_len)
+         masked-seed = seed xor MFG(seed, seed_len)
          masked-DB = DB xor MFG(seed, DB_len)
          EM = 0x00||masked-seed||masked-DB */
       if (msg_len < data_len + 2 * SHA1_DIGEST_LENGTH + 2) return -1;
@@ -419,7 +419,7 @@ static int decode_message(int type, uint8_t *msg, size_t msg_len,
     case RSA_ES_OAEP_SHA1:
       /* DB = SHA-1("TCPA")||0x00-pad||0x01||data
          seed = random value of size SHA1_DIGEST_LENGTH
-         mkased-seed = seed xor MFG(seed, seed_len)
+         masked-seed = seed xor MFG(seed, seed_len)
          masked-DB = DB xor MFG(seed, DB_len)
          EM = 0x00||masked-seed||masked-DB */
       if (msg_len < 2 + 2 * SHA1_DIGEST_LENGTH) return -1;
