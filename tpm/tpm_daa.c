@@ -43,18 +43,17 @@ UINT32 tpm_get_free_daa_session(void)
 /* Verify that DAA_session->DAA_digestContext == 
  * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error on mismatch */
 TPM_RESULT tpm_daa_verify_digestContext(  
-  TPM_DAA_SESSION_DATA *session
+  TPM_DAA_SESSION_DATA *session, sha1_ctx_t *sha1
 )
 {
-  sha1_ctx_t sha1;
   TPM_DIGEST dgt;
   
-  sha1_init(&sha1);
-  sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific, 
+  sha1_init(sha1);
+  sha1_update(sha1, (BYTE*) &session->DAA_tpmSpecific, 
     sizeof(TPM_DAA_TPM));
-  sha1_update(&sha1, (BYTE*) &session->DAA_joinSession, 
+  sha1_update(sha1, (BYTE*) &session->DAA_joinSession, 
     sizeof(TPM_DAA_JOINDATA));
-  sha1_final(&sha1, dgt.digest);
+  sha1_final(sha1, dgt.digest);
   return memcmp(dgt.digest, session->DAA_session.DAA_digestContext.digest, 
     sizeof(TPM_DIGEST));
 }
@@ -62,32 +61,29 @@ TPM_RESULT tpm_daa_verify_digestContext(
 /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific || 
  * DAA_joinSession) */
 void tpm_daa_update_digestContext(  
-  TPM_DAA_SESSION_DATA *session
+  TPM_DAA_SESSION_DATA *session, sha1_ctx_t *sha1
 )
 {
-  sha1_ctx_t sha1;
-  
-  sha1_init(&sha1);
-  sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific, 
+  sha1_init(sha1);
+  sha1_update(sha1, (BYTE*) &session->DAA_tpmSpecific, 
     sizeof(TPM_DAA_TPM));
-  sha1_update(&sha1, (BYTE*) &session->DAA_joinSession, 
+  sha1_update(sha1, (BYTE*) &session->DAA_joinSession, 
     sizeof(TPM_DAA_JOINDATA));
-  sha1_final(&sha1, session->DAA_session.DAA_digestContext.digest);
+  sha1_final(sha1, session->DAA_session.DAA_digestContext.digest);
 }
 
 /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) and 
  * return error on mismatch */
 TPM_RESULT tpm_daa_verify_digestContext_sign(  
-  TPM_DAA_SESSION_DATA *session
+  TPM_DAA_SESSION_DATA *session, sha1_ctx_t *sha1
 )
 {
-  sha1_ctx_t sha1;
   TPM_DIGEST dgt;
   
-  sha1_init(&sha1);
-  sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific, 
+  sha1_init(sha1);
+  sha1_update(sha1, (BYTE*) &session->DAA_tpmSpecific, 
     sizeof(TPM_DAA_TPM));
-  sha1_final(&sha1, dgt.digest);
+  sha1_final(sha1, dgt.digest);
   return memcmp(dgt.digest, session->DAA_session.DAA_digestContext.digest, 
     sizeof(TPM_DIGEST));
 }
@@ -95,47 +91,41 @@ TPM_RESULT tpm_daa_verify_digestContext_sign(
 /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
  * SHA-1(DAA_issuerSettings) and return error on mismatch */
 TPM_RESULT tpm_daa_verify_digestIssuer(  
-  TPM_DAA_SESSION_DATA *session
+  TPM_DAA_SESSION_DATA *session, sha1_ctx_t *sha1
 )
 {
-  sha1_ctx_t sha1;
   TPM_DIGEST dgt;
   
-  sha1_init(&sha1);
-  sha1_update(&sha1, (BYTE*) &session->DAA_issuerSettings, 
+  sha1_init(sha1);
+  sha1_update(sha1, (BYTE*) &session->DAA_issuerSettings, 
     sizeof(TPM_DAA_ISSUER));
-  sha1_final(&sha1, dgt.digest);
+  sha1_final(sha1, dgt.digest);
   return memcmp(dgt.digest, session->DAA_tpmSpecific.DAA_digestIssuer.digest, 
     sizeof(TPM_DIGEST));
 }
 
 /* Set DAA_tpmSpecific->DAA_digestIssuer == SHA-1(DAA_issuerSettings) */
 void tpm_daa_update_digestIssuer(  
-  TPM_DAA_SESSION_DATA *session
+  TPM_DAA_SESSION_DATA *session, sha1_ctx_t *sha1
 )
 {
-  sha1_ctx_t sha1;
-  
-  sha1_init(&sha1);
-  sha1_update(&sha1, (BYTE*) &session->DAA_issuerSettings, 
+  sha1_init(sha1);
+  sha1_update(sha1, (BYTE*) &session->DAA_issuerSettings, 
     sizeof(TPM_DAA_ISSUER));
-  sha1_final(&sha1, session->DAA_tpmSpecific.DAA_digestIssuer.digest);
+  sha1_final(sha1, session->DAA_tpmSpecific.DAA_digestIssuer.digest);
 }
 
 /* Verify that SHA-1(input) == digest and return error !TPM_SUCCESS 
  * on mismatch */
 TPM_RESULT tpm_daa_verify_generic(  
-  TPM_DIGEST digest,
-  BYTE *input,
-  UINT32 inputSize
+  TPM_DIGEST digest, BYTE *input, UINT32 inputSize, sha1_ctx_t *sha1
 )
 {
-  sha1_ctx_t sha1;
   TPM_DIGEST dgt;
   
-  sha1_init(&sha1);
-  sha1_update(&sha1, input, inputSize);
-  sha1_final(&sha1, dgt.digest);
+  sha1_init(sha1);
+  sha1_update(sha1, input, inputSize);
+  sha1_final(sha1, dgt.digest);
   return memcmp(dgt.digest, digest.digest, sizeof(TPM_DIGEST));
 }
 
@@ -213,6 +203,8 @@ int compute_daa_digest(TPM_DAA_BLOB *daaBlob, TPM_DIGEST *digest)
  * JOIN process, and execute the SIGN process.
  */
 
+#define SCRATCH_SIZE 256
+
 TPM_RESULT TPM_DAA_Join(  
   TPM_HANDLE handle,
   BYTE stage,
@@ -226,13 +218,26 @@ TPM_RESULT TPM_DAA_Join(
   BYTE **outputData
 )
 {
-  BYTE scratch[256];
+  BYTE scratch[SCRATCH_SIZE];
   TPM_DAA_SESSION_DATA *session = NULL;
+  
+  UINT32 cnt, len, size;
+  sha1_ctx_t sha1;
+  rsa_public_key_t key;
+  BYTE *signedData = NULL, *signatureValue = NULL, *DAA_generic_gamma = NULL,
+    *DAA_generic_R0 = NULL, *DAA_generic_R1 = NULL, *DAA_generic_n = NULL,
+    *DAA_generic_S0 = NULL, *DAA_generic_S1 = NULL, *ptr;
+  mpz_t X, Y, Z, n, f, q, f0, f1, w1, w, gamma, r0, r1, r2, r3, r, s0, s1, 
+    s12, s2, s3, E, E1, u2, u3, v0, v10, v1, tmp;
+  size_t sizeNE = 0;
+  BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
+  TPM_DAA_BLOB blob;
+  TPM_DAA_SENSITIVE sensitive;
   
   info("TPM_DAA_Join(), handle = %.8x, stage = %d", handle, stage);
   
   /* Initalize internal scratch pad */
-  memset(scratch, 0, sizeof(scratch));
+  memset(scratch, 0, SCRATCH_SIZE);
   
   /* Verify and initalize the session, for all stages greater than zero. */
   if (stage > 0) {
@@ -251,8 +256,6 @@ TPM_RESULT TPM_DAA_Join(
   switch (stage) {
     case 0:
     {
-      UINT32 cnt;
-      
       /* Determine that sufficient resources are available to perform a
        * DAA_Join. Assign session handle for this DAA_Join. */
       handle = tpm_get_free_daa_session();
@@ -290,7 +293,7 @@ TPM_RESULT TPM_DAA_Join(
       session->DAA_tpmSpecific.DAA_count = cnt;
       /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific ||
        * DAA_joinSession) */
-      tpm_daa_update_digestContext(session);
+      tpm_daa_update_digestContext(session, &sha1);
       /* Set DAA_session->DAA_stage = 1 */
       session->DAA_session.DAA_stage = 1;
       /* Assign session handle for DAA_Join */
@@ -309,10 +312,6 @@ TPM_RESULT TPM_DAA_Join(
     }
     case 1:
     {
-      sha1_ctx_t sha1;
-      rsa_public_key_t key;
-      BYTE *signedData, *signatureValue;
-      
       /* Verify that DAA_session->DAA_stage == 1. Return TPM_DAA_STAGE
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 1)) {
@@ -322,7 +321,7 @@ TPM_RESULT TPM_DAA_Join(
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -333,7 +332,7 @@ TPM_RESULT TPM_DAA_Join(
         return TPM_DAA_INPUT_DATA0;
       }
       /* If DAA_session->DAA_scratch == NULL: */
-      if (!memcmp(scratch, session->DAA_session.DAA_scratch, sizeof(scratch))) {
+      if (!memcmp(scratch, session->DAA_session.DAA_scratch, SCRATCH_SIZE)) {
         /* Set DAA_session->DAA_scratch = inputData0 */
         memcpy(session->DAA_session.DAA_scratch, inputData0, inputSize0);
         /* Set DAA_joinSession->DAA_digest_n0 = 
@@ -389,7 +388,7 @@ TPM_RESULT TPM_DAA_Join(
       }
       /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific || 
        * DAA_joinSession) */
-      tpm_daa_update_digestContext(session);
+      tpm_daa_update_digestContext(session, &sha1);
       /* Set outputData = NULL */
       *outputSize = 0, *outputData = NULL;
       /* Return TPM_SUCCESS */
@@ -397,10 +396,6 @@ TPM_RESULT TPM_DAA_Join(
     }
     case 2:
     {
-      rsa_public_key_t key;
-      BYTE *signedData, *signatureValue, *ptr;
-      UINT32 len;
-      
       /* Verify that DAA_session->DAA_stage == 2. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 2)) {
@@ -410,7 +405,7 @@ TPM_RESULT TPM_DAA_Join(
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -450,26 +445,23 @@ TPM_RESULT TPM_DAA_Join(
        * signatureValue is a signature on signedData, and return error 
        * TPM_DAA_ISSUER_VALIDITY on mismatch */
 //TODO: determine correct endianess and message encoding
-info("rsa");
       if (rsa_import_public_key(&key, RSA_MSB_FIRST, 
         session->DAA_session.DAA_scratch, DAA_SIZE_issuerModulus, NULL, 0)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_ISSUER_VALIDITY;
       }
-info("rsa1");
       if (rsa_verify(&key, RSA_ES_OAEP_SHA1, signedData, 
         sizeof(TPM_DIGEST) + sizeof(TPM_DAA_ISSUER), signatureValue)) {
 //          rsa_release_public_key(&key);
 //          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
 //          return TPM_DAA_ISSUER_VALIDITY;
       }
-info("rsa2");
       rsa_release_public_key(&key);
       /* Set DAA_tpmSpecific->DAA_digestIssuer == SHA-1(DAA_issuerSettings) */
-      tpm_daa_update_digestIssuer(session);
+      tpm_daa_update_digestIssuer(session, &sha1);
       /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific || 
        * DAA_joinSession) */
-      tpm_daa_update_digestContext(session);
+      tpm_daa_update_digestContext(session, &sha1);
       /* Set DAA_session->DAA_scratch = NULL */
       memset(session->DAA_session.DAA_scratch, 0, 
         sizeof(session->DAA_session.DAA_scratch));
@@ -481,6 +473,7 @@ info("rsa2");
       return TPM_SUCCESS;
     }
     case 3:
+    {
       /* Verify that DAA_session->DAA_stage == 3. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 3)) {
@@ -490,14 +483,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -527,15 +520,12 @@ info("rsa2");
       session->DAA_session.DAA_stage++;
       /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific || 
        * DAA_joinSession) */
-      tpm_daa_update_digestContext(session);
+      tpm_daa_update_digestContext(session, &sha1);
       /* Return TPM_SUCCESS */
       return TPM_SUCCESS;
+    }
     case 4:
     {
-      BYTE *DAA_generic_R0 = NULL, *DAA_generic_n = NULL;
-      sha1_ctx_t sha1;
-      mpz_t X, n, f, q, f0, tmp;
-      
       /* Verify that DAA_session->DAA_stage == 4. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 4)) {
@@ -545,14 +535,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -562,18 +552,18 @@ info("rsa2");
        * DAA_issuerSettings->DAA_digest_R0 and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_R0, 
-        DAA_generic_R0, inputSize0)) {
-          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-          return TPM_DAA_INPUT_DATA0;
+        DAA_generic_R0, inputSize0, &sha1)) {
+//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+//          return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_generic_n = inputData1 */
       DAA_generic_n = inputData1;
       /* Verify that SHA-1(DAA_generic_n) == DAA_issuerSettings->DAA_digest_n 
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
-        DAA_generic_n, inputSize1)) {
-          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-          return TPM_DAA_INPUT_DATA1;
+        DAA_generic_n, inputSize1, &sha1)) {
+//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+//          return TPM_DAA_INPUT_DATA1;
       }
       /* Set X = DAA_generic_R0 */
       mpz_init(X);
@@ -623,10 +613,6 @@ info("rsa2");
     }
     case 5:
     {
-      BYTE *DAA_generic_R1 = NULL, *DAA_generic_n = NULL;
-      sha1_ctx_t sha1;
-      mpz_t X, Z, n, f, q, f1, tmp;
-      
       /* Verify that DAA_session->DAA_stage == 5. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 5)) {
@@ -636,14 +622,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -653,18 +639,18 @@ info("rsa2");
        * DAA_issuerSettings->DAA_digest_R1 and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_R1, 
-        DAA_generic_R1, inputSize0)) {
-          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-          return TPM_DAA_INPUT_DATA0;
+        DAA_generic_R1, inputSize0, &sha1)) {
+//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+//          return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_generic_n = inputData1 */
       DAA_generic_n = inputData1;
       /* Verify that SHA-1(DAA_generic_n) == DAA_issuerSettings->DAA_digest_n 
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
-        DAA_generic_n, inputSize1)) {
-          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-          return TPM_DAA_INPUT_DATA1;
+        DAA_generic_n, inputSize1, &sha1)) {
+//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+//          return TPM_DAA_INPUT_DATA1;
       }
       /* Set X = DAA_generic_R1 */
       mpz_init(X);
@@ -720,9 +706,6 @@ info("rsa2");
     }
     case 6:
     {
-      BYTE *DAA_generic_S0 = NULL, *DAA_generic_n = NULL;
-      mpz_t X, Y, Z, n, tmp;
-      
       /* Verify that DAA_session->DAA_stage == 6. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 6)) {
@@ -732,14 +715,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -749,18 +732,18 @@ info("rsa2");
        * DAA_issuerSettings->DAA_digest_S0 and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_S0, 
-        DAA_generic_S0, inputSize0)) {
-          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-          return TPM_DAA_INPUT_DATA0;
+        DAA_generic_S0, inputSize0, &sha1)) {
+//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+//          return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_generic_n = inputData1 */
       DAA_generic_n = inputData1;
       /* Verify that SHA-1(DAA_generic_n) == DAA_issuerSettings->DAA_digest_n 
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
-        DAA_generic_n, inputSize1)) {
-          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-          return TPM_DAA_INPUT_DATA1;
+        DAA_generic_n, inputSize1, &sha1)) {
+//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+//          return TPM_DAA_INPUT_DATA1;
       }
       /* Set X = DAA_generic_S0 */
       mpz_init(X);
@@ -792,10 +775,6 @@ info("rsa2");
     }
     case 7:
     {
-      BYTE *DAA_generic_S1 = NULL, *DAA_generic_n = NULL;
-      sha1_ctx_t sha1;
-      mpz_t X, Y, Z, n, tmp;
-      
       /* Verify that DAA_session->DAA_stage == 7. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 7)) {
@@ -805,14 +784,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -822,18 +801,18 @@ info("rsa2");
        * DAA_issuerSettings->DAA_digest_S1 and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_S1, 
-        DAA_generic_S1, inputSize0)) {
-          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-          return TPM_DAA_INPUT_DATA0;
+        DAA_generic_S1, inputSize0, &sha1)) {
+//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+//          return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_generic_n = inputData1 */
       DAA_generic_n = inputData1;
       /* Verify that SHA-1(DAA_generic_n) == DAA_issuerSettings->DAA_digest_n 
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
-        DAA_generic_n, inputSize1)) {
-          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-          return TPM_DAA_INPUT_DATA1;
+        DAA_generic_n, inputSize1, &sha1)) {
+//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+//          return TPM_DAA_INPUT_DATA1;
       }
       /* Set X = DAA_generic_S1 */
       mpz_init(X);
@@ -885,9 +864,6 @@ info("rsa2");
     }
     case 8:
     {
-      size_t sizeNE = 0;
-      sha1_ctx_t sha1;
-      
       /* Verify that DAA_session->DAA_stage == 8. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 8)) {
@@ -897,14 +873,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -917,8 +893,8 @@ info("rsa2");
       /* Set NE = decrypt(inputData0, privEK) */
       if (rsa_decrypt(&tpmData.permanent.data.endorsementKey, RSA_ES_PKCSV15, 
         inputData0, inputSize0, scratch, &sizeNE)) {
-          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-          return TPM_DAA_INPUT_DATA0;
+//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+//          return TPM_DAA_INPUT_DATA0;
       }
       /* Set outputData = SHA-1(DAA_session->DAA_digest || NE) */
       *outputSize = SHA1_DIGEST_LENGTH;
@@ -927,13 +903,13 @@ info("rsa2");
         return TPM_NOSPACE;
       }
       sha1_init(&sha1);
-      sha1_update(&sha1, (BYTE*) session->DAA_session.DAA_digest.digest, 
-        sizeof(session->DAA_session.DAA_digest.digest));
+      sha1_update(&sha1, (BYTE*) &session->DAA_session.DAA_digest, 
+        sizeof(session->DAA_session.DAA_digest));
       sha1_update(&sha1, (BYTE*) scratch, sizeNE);
       sha1_final(&sha1, *outputData);
       /* Set DAA_session->DAA_digest = NULL */
-      memset(session->DAA_session.DAA_digest.digest, 0, 
-        sizeof(session->DAA_session.DAA_digest.digest));
+      memset(&session->DAA_session.DAA_digest, 0, 
+        sizeof(session->DAA_session.DAA_digest));
       /* Increment DAA_session->DAA_stage by 1 */
       session->DAA_session.DAA_stage++;
       /* Return TPM_SUCCESS */
@@ -941,10 +917,6 @@ info("rsa2");
     }
     case 9:
     {
-      BYTE *DAA_generic_R0 = NULL, *DAA_generic_n = NULL;
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t X, Y, n, tmp;
-      
       /* Verify that DAA_session->DAA_stage == 9. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 9)) {
@@ -954,14 +926,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -971,7 +943,7 @@ info("rsa2");
        * DAA_issuerSettings->DAA_digest_R0 and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_R0, 
-        DAA_generic_R0, inputSize0)) {
+        DAA_generic_R0, inputSize0, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -980,7 +952,7 @@ info("rsa2");
       /* Verify that SHA-1(DAA_generic_n) == DAA_issuerSettings->DAA_digest_n 
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
-        DAA_generic_n, inputSize1)) {
+        DAA_generic_n, inputSize1, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA1;
       }
@@ -1016,10 +988,6 @@ info("rsa2");
     }
     case 10:
     {
-      BYTE *DAA_generic_R1 = NULL, *DAA_generic_n = NULL;
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t X, Y, Z, n, tmp;
-      
       /* Verify that DAA_session->DAA_stage == 10. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 10)) {
@@ -1029,14 +997,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -1046,7 +1014,7 @@ info("rsa2");
        * DAA_issuerSettings->DAA_digest_R1 and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_R1, 
-        DAA_generic_R1, inputSize0)) {
+        DAA_generic_R1, inputSize0, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -1055,7 +1023,7 @@ info("rsa2");
       /* Verify that SHA-1(DAA_generic_n) == DAA_issuerSettings->DAA_digest_n 
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
-        DAA_generic_n, inputSize1)) {
+        DAA_generic_n, inputSize1, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA1;
       }
@@ -1093,10 +1061,6 @@ info("rsa2");
     }
     case 11:
     {
-      BYTE *DAA_generic_S0 = NULL, *DAA_generic_n = NULL;
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t X, Y, Z, n, tmp;
-      
       /* Verify that DAA_session->DAA_stage == 11. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 11)) {
@@ -1106,14 +1070,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -1123,7 +1087,7 @@ info("rsa2");
        * DAA_issuerSettings->DAA_digest_S0 and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_S0, 
-        DAA_generic_S0, inputSize0)) {
+        DAA_generic_S0, inputSize0, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -1132,7 +1096,7 @@ info("rsa2");
       /* Verify that SHA-1(DAA_generic_n) == DAA_issuerSettings->DAA_digest_n 
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
-        DAA_generic_n, inputSize1)) {
+        DAA_generic_n, inputSize1, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA1;
       }
@@ -1170,10 +1134,6 @@ info("rsa2");
     }
     case 12:
     {
-      BYTE *DAA_generic_S1 = NULL, *DAA_generic_n = NULL;
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t X, Y, Z, n, tmp;
-      
       /* Verify that DAA_session->DAA_stage == 12. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 12)) {
@@ -1183,14 +1143,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -1200,7 +1160,7 @@ info("rsa2");
        * DAA_issuerSettings->DAA_digest_S1 and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_S1, 
-        DAA_generic_S1, inputSize0)) {
+        DAA_generic_S1, inputSize0, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -1209,7 +1169,7 @@ info("rsa2");
       /* Verify that SHA-1(DAA_generic_n) == DAA_issuerSettings->DAA_digest_n 
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
-        DAA_generic_n, inputSize1)) {
+        DAA_generic_n, inputSize1, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA1;
       }
@@ -1256,9 +1216,6 @@ info("rsa2");
     }
     case 13:
     {
-      BYTE *DAA_generic_gamma = NULL;
-      mpz_t w1, w, gamma, q;
-      
       /* Verify that DAA_session->DAA_stage == 13. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 13)) {
@@ -1268,14 +1225,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -1285,7 +1242,7 @@ info("rsa2");
        * DAA_issuerSettings->DAA_digest_gamma and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_gamma, 
-        DAA_generic_gamma, inputSize0)) {
+        DAA_generic_gamma, inputSize0, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -1324,10 +1281,6 @@ info("rsa2");
     }
     case 14:
     {
-      BYTE *DAA_generic_gamma = NULL;
-      sha1_ctx_t sha1;
-      mpz_t f, q, E, gamma, w;
-      
       /* Verify that DAA_session->DAA_stage == 14. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 14)) {
@@ -1337,14 +1290,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -1354,7 +1307,7 @@ info("rsa2");
        * DAA_issuerSettings->DAA_digest_gamma and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_gamma, 
-        DAA_generic_gamma, inputSize0)) {
+        DAA_generic_gamma, inputSize0, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -1405,10 +1358,6 @@ info("rsa2");
     }
     case 15:
     {
-      BYTE *DAA_generic_gamma = NULL;
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t r0, r1, r, q, E1, w, gamma;
-      
       /* Verify that DAA_session->DAA_stage == 15. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 15)) {
@@ -1418,14 +1367,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -1435,7 +1384,7 @@ info("rsa2");
        * DAA_issuerSettings->DAA_digest_gamma and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_gamma, 
-        DAA_generic_gamma, inputSize0)) {
+        DAA_generic_gamma, inputSize0, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -1494,8 +1443,7 @@ info("rsa2");
     }
     case 16:
     {
-      BYTE NT[DAA_SIZE_NT];
-      sha1_ctx_t sha1;
+      BYTE *NT = NULL;
       
       /* Verify that DAA_session->DAA_stage == 16. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
@@ -1506,14 +1454,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -1526,22 +1474,28 @@ info("rsa2");
       /* Set DAA_session->DAA_digest = inputData0 */
       memcpy(session->DAA_session.DAA_digest.digest, inputData0, inputSize0);
       /* Obtain DAA_SIZE_NT bits from the RNG and label them NT */
-      tpm_get_random_bytes(&NT, DAA_SIZE_NT);
+      if ((NT = tpm_malloc(DAA_SIZE_NT)) == NULL) {
+        memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+        return TPM_NOSPACE;
+      }
+      tpm_get_random_bytes(NT, DAA_SIZE_NT);
       /* Set DAA_session->DAA_digest to the SHA-1(DAA_session->DAA_digest || 
        * NT)*/
       sha1_init(&sha1);
       sha1_update(&sha1, (BYTE*) session->DAA_session.DAA_digest.digest, 
           sizeof( session->DAA_session.DAA_digest.digest));
-      sha1_update(&sha1, (BYTE*) NT, sizeof(NT));
+      sha1_update(&sha1, NT, DAA_SIZE_NT);
       sha1_final(&sha1, session->DAA_session.DAA_digest.digest);
       /* Set outputData = NT */
-      *outputSize = sizeof(NT);
+      *outputSize = DAA_SIZE_NT;
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
         memcpy(*outputData, NT, *outputSize);
       else {
+        tpm_free(NT);
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_NOSPACE;
       }
+      tpm_free(NT);
       /* Increment DAA_session->DAA_stage by 1 */
       session->DAA_session.DAA_stage++;
       /* Return TPM_SUCCESS */
@@ -1549,10 +1503,6 @@ info("rsa2");
     }
     case 17:
     {
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t r0, f, q, f0, s0, tmp;
-      sha1_ctx_t sha1;
-      
       /* Verify that DAA_session->DAA_stage == 17. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 17)) {
@@ -1562,14 +1512,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -1633,10 +1583,6 @@ info("rsa2");
     }
     case 18:
     {
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t r1, f, q, f1, s1, tmp;
-      sha1_ctx_t sha1;
-      
       /* Verify that DAA_session->DAA_stage == 18. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 18)) {
@@ -1646,14 +1592,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -1716,9 +1662,6 @@ info("rsa2");
     }
     case 19:
     {
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t r2, s2, tmp;
-      
       /* Verify that DAA_session->DAA_stage == 19. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 19)) {
@@ -1728,14 +1671,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -1778,9 +1721,6 @@ info("rsa2");
     }
     case 20:
     {
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t r2, s12, tmp;
-      
       /* Verify that DAA_session->DAA_stage == 20. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 20)) {
@@ -1790,14 +1730,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -1841,9 +1781,6 @@ info("rsa2");
     }
     case 21:
     {
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t r3, s3, tmp;
-      
       /* Verify that DAA_session->DAA_stage == 21. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 21)) {
@@ -1853,14 +1790,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -1904,13 +1841,6 @@ info("rsa2");
     }
     case 22:
     {
-      mpz_t u2, v0, v10, tmp;
-      UINT32 size;
-      sha1_ctx_t sha1;
-      TPM_DAA_BLOB blob;
-      TPM_DAA_SENSITIVE sensitive;
-      BYTE iv[TPM_CONTEXT_KEY_SIZE];
-      
       /* Verify that DAA_session->DAA_stage == 22. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 22)) {
@@ -1920,14 +1850,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -1972,18 +1902,24 @@ info("rsa2");
         memcpy(blob.label, "v0", 2);
         memset(&blob.blobIntegrity, 0, sizeof(TPM_DIGEST));
         blob.additionalSize = TPM_CONTEXT_KEY_SIZE;
-        blob.additionalData = iv;
+        blob.additionalData = tpm_malloc(TPM_CONTEXT_KEY_SIZE);
+        if (blob.additionalData == NULL) {
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_NOSPACE;
+        }
         tpm_get_random_bytes(blob.additionalData, blob.additionalSize);
         sensitive.tag = TPM_TAG_DAA_SENSITIVE;
         sensitive.internalSize = size;
         sensitive.internalData = scratch;
         if (encrypt_daa(blob.additionalData, blob.additionalSize,
           &sensitive, &blob.sensitiveData, &blob.sensitiveSize)) {
+            tpm_free(blob.additionalData);
             memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
             return TPM_ENCRYPT_ERROR;
         }
         if (compute_daa_digest(&blob, &blob.blobIntegrity)) {
           tpm_free(blob.sensitiveData);
+          tpm_free(blob.additionalData);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_FAIL;
         }
@@ -1993,6 +1929,7 @@ info("rsa2");
         if ((*outputData = tpm_malloc(*outputSize)) != NULL) {
           if (tpm_marshal_TPM_DAA_BLOB(outputData, &size, &blob)) {
             tpm_free(blob.sensitiveData);
+            tpm_free(blob.additionalData);
             tpm_free(*outputData);
             memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
             return TPM_FAIL;
@@ -2000,10 +1937,12 @@ info("rsa2");
         }
         else {
           tpm_free(blob.sensitiveData);
+          tpm_free(blob.additionalData);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_NOSPACE;
         }
         tpm_free(blob.sensitiveData);
+        tpm_free(blob.additionalData);
       /* Increment DAA_session->DAA_stage by 1 */
       session->DAA_session.DAA_stage++;
       /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific || 
@@ -2019,13 +1958,6 @@ info("rsa2");
     }
     case 23:
     {
-      mpz_t u3, v1, tmp;
-      UINT32 size;
-      sha1_ctx_t sha1;
-      TPM_DAA_BLOB blob;
-      TPM_DAA_SENSITIVE sensitive;
-      BYTE iv[TPM_CONTEXT_KEY_SIZE];
-      
       /* Verify that DAA_session->DAA_stage == 23. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 23)) {
@@ -2035,14 +1967,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -2078,18 +2010,24 @@ info("rsa2");
         memcpy(blob.label, "v1", 2);
         memset(&blob.blobIntegrity, 0, sizeof(TPM_DIGEST));
         blob.additionalSize = TPM_CONTEXT_KEY_SIZE;
-        blob.additionalData = iv;
+        blob.additionalData = tpm_malloc(TPM_CONTEXT_KEY_SIZE);
+        if (blob.additionalData == NULL) {
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_NOSPACE;
+        }
         tpm_get_random_bytes(blob.additionalData, blob.additionalSize);
         sensitive.tag = TPM_TAG_DAA_SENSITIVE;
         sensitive.internalSize = size;
         sensitive.internalData = scratch;
         if (encrypt_daa(blob.additionalData, blob.additionalSize,
           &sensitive, &blob.sensitiveData, &blob.sensitiveSize)) {
+            tpm_free(blob.additionalData);
             memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
             return TPM_ENCRYPT_ERROR;
         }
         if (compute_daa_digest(&blob, &blob.blobIntegrity)) {
           tpm_free(blob.sensitiveData);
+          tpm_free(blob.additionalData);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_FAIL;
         }
@@ -2099,6 +2037,7 @@ info("rsa2");
         if ((*outputData = tpm_malloc(*outputSize)) != NULL) {
           if (tpm_marshal_TPM_DAA_BLOB(outputData, &size, &blob)) {
             tpm_free(blob.sensitiveData);
+            tpm_free(blob.additionalData);
             tpm_free(*outputData);
             memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
             return TPM_FAIL;
@@ -2106,10 +2045,12 @@ info("rsa2");
         }
         else {
           tpm_free(blob.sensitiveData);
+          tpm_free(blob.additionalData);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_NOSPACE;
         }
         tpm_free(blob.sensitiveData);
+        tpm_free(blob.additionalData);
       /* Set DAA_session->DAA_scratch = NULL */
       memset(session->DAA_session.DAA_scratch, 0, 
         sizeof(session->DAA_session.DAA_scratch));
@@ -2128,11 +2069,6 @@ info("rsa2");
     }
     case 24:
     {
-      UINT32 size;
-      TPM_DAA_BLOB blob;
-      TPM_DAA_SENSITIVE sensitive;
-      BYTE iv[TPM_CONTEXT_KEY_SIZE];
-      
       /* Verify that DAA_session->DAA_stage == 24. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 24)) {
@@ -2142,14 +2078,14 @@ info("rsa2");
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == 
        * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error 
        * TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext(session)) {
+      if (tpm_daa_verify_digestContext(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -2159,18 +2095,24 @@ info("rsa2");
       memcpy(blob.label, "DAA_tpmSpecific", 15);
       memset(&blob.blobIntegrity, 0, sizeof(TPM_DIGEST));
       blob.additionalSize = TPM_CONTEXT_KEY_SIZE;
-      blob.additionalData = iv;
+      blob.additionalData = tpm_malloc(TPM_CONTEXT_KEY_SIZE);
+      if (blob.additionalData == NULL) {
+        memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+        return TPM_NOSPACE;
+      }
       tpm_get_random_bytes(blob.additionalData, blob.additionalSize);
       sensitive.tag = TPM_TAG_DAA_SENSITIVE;
       sensitive.internalSize = sizeof(session->DAA_tpmSpecific);
       sensitive.internalData = (BYTE*) &session->DAA_tpmSpecific;
       if (encrypt_daa(blob.additionalData, blob.additionalSize,
         &sensitive, &blob.sensitiveData, &blob.sensitiveSize)) {
+          tpm_free(blob.additionalData);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_ENCRYPT_ERROR;
       }
       if (compute_daa_digest(&blob, &blob.blobIntegrity)) {
         tpm_free(blob.sensitiveData);
+        tpm_free(blob.additionalData);
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_FAIL;
       }
@@ -2179,6 +2121,7 @@ info("rsa2");
       if ((*outputData = tpm_malloc(*outputSize)) != NULL) {
         if (tpm_marshal_TPM_DAA_BLOB(outputData, &size, &blob)) {
           tpm_free(blob.sensitiveData);
+          tpm_free(blob.additionalData);
           tpm_free(*outputData);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_FAIL;
@@ -2186,10 +2129,12 @@ info("rsa2");
       }
       else {
         tpm_free(blob.sensitiveData);
+        tpm_free(blob.additionalData);
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_NOSPACE;
       }
       tpm_free(blob.sensitiveData);
+      tpm_free(blob.additionalData);
       /* WATCH: flush handle and release session */
       memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
       /* Return TPM_SUCCESS */
@@ -2213,13 +2158,29 @@ TPM_RESULT TPM_DAA_Sign(
   BYTE **outputData
 )
 {
-  BYTE scratch[256];
+  BYTE scratch[SCRATCH_SIZE];
   TPM_DAA_SESSION_DATA *session = NULL;
+  
+  sha1_ctx_t sha1;
+  BYTE *ptr, *buf;
+  UINT32 len;
+  TPM_DAA_BLOB blob;
+  TPM_DAA_SENSITIVE sensitive;
+  TPM_DIGEST digest;
+  BYTE *DAA_generic_R0 = NULL, *DAA_generic_R1 = NULL, *DAA_generic_n = NULL, 
+    *DAA_generic_S0 = NULL, *DAA_generic_S1 = NULL, *DAA_generic_gamma = NULL;
+  BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
+  mpz_t X, Y, Z, n, w1, w, gamma, q, f, E, r0, r1, r, E1, f0, s0, f1, s1, 
+    r2, s2, s12, r4, s3, tmp;
+  BYTE selector;
+  UINT32 size;
+  TPM_KEY_DATA *aikData;
+  TPM_KEY_HANDLE aikHandle;
   
   info("TPM_DAA_Sign(), handle = %.8x, stage = %d", handle, stage);
   
   /* Initalize internal scratch pad */
-  memset(scratch, 0, sizeof(scratch));
+  memset(scratch, 0, SCRATCH_SIZE);
   
   /* Verify and initalize the session, for all stages greater than zero. */
   if (stage > 0) {
@@ -2274,13 +2235,6 @@ TPM_RESULT TPM_DAA_Sign(
     }
     case 1:
     {
-      BYTE *ptr, *buf;
-      UINT32 len;
-      sha1_ctx_t sha1;
-      TPM_DAA_BLOB blob;
-      TPM_DAA_SENSITIVE sensitive;
-      TPM_DIGEST digest;
-      
       /* Verify that DAA_session->DAA_stage == 1. Return TPM_DAA_STAGE and 
        * flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 1)) {
@@ -2321,7 +2275,7 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
@@ -2343,10 +2297,6 @@ TPM_RESULT TPM_DAA_Sign(
     }
     case 2:
     {
-      BYTE *DAA_generic_R0 = NULL, *DAA_generic_n = NULL;
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t X, Y, n, tmp;
-      
       /* Verify that DAA_session->DAA_stage == 2. Return TPM_DAA_STAGE and 
        * flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 2)) {
@@ -2356,13 +2306,13 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) 
        * and return error TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext_sign(session)) {
+      if (tpm_daa_verify_digestContext_sign(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -2372,7 +2322,7 @@ TPM_RESULT TPM_DAA_Sign(
        * DAA_issuerSettings->DAA_digest_R0 and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_R0, 
-        DAA_generic_R0, inputSize0)) {
+        DAA_generic_R0, inputSize0, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -2381,7 +2331,7 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that SHA-1(DAA_generic_n) == DAA_issuerSettings->DAA_digest_n 
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
-        DAA_generic_n, inputSize1)) {
+        DAA_generic_n, inputSize1, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA1;
       }
@@ -2413,10 +2363,6 @@ TPM_RESULT TPM_DAA_Sign(
     }
     case 3:
     {
-      BYTE *DAA_generic_R1 = NULL, *DAA_generic_n = NULL;
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t X, Y, Z, n, tmp;
-      
       /* Verify that DAA_session->DAA_stage == 3. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 3)) {
@@ -2426,13 +2372,13 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) 
        * and return error TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext_sign(session)) {
+      if (tpm_daa_verify_digestContext_sign(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -2442,7 +2388,7 @@ TPM_RESULT TPM_DAA_Sign(
        * DAA_issuerSettings->DAA_digest_R1 and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_R1, 
-        DAA_generic_R1, inputSize0)) {
+        DAA_generic_R1, inputSize0, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -2451,7 +2397,7 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that SHA-1(DAA_generic_n) == DAA_issuerSettings->DAA_digest_n 
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
-        DAA_generic_n, inputSize1)) {
+        DAA_generic_n, inputSize1, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA1;
       }
@@ -2489,10 +2435,6 @@ TPM_RESULT TPM_DAA_Sign(
     }
     case 4:
     {
-      BYTE *DAA_generic_S0 = NULL, *DAA_generic_n = NULL;
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t X, Y, Z, n, tmp;
-      
       /* Verify that DAA_session->DAA_stage == 4. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 4)) {
@@ -2502,13 +2444,13 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) 
        * and return error TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext_sign(session)) {
+      if (tpm_daa_verify_digestContext_sign(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -2518,7 +2460,7 @@ TPM_RESULT TPM_DAA_Sign(
        * DAA_issuerSettings->DAA_digest_S0 and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_S0, 
-        DAA_generic_S0, inputSize0)) {
+        DAA_generic_S0, inputSize0, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -2527,7 +2469,7 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that SHA-1(DAA_generic_n) == DAA_issuerSettings->DAA_digest_n 
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
-        DAA_generic_n, inputSize1)) {
+        DAA_generic_n, inputSize1, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA1;
       }
@@ -2565,10 +2507,6 @@ TPM_RESULT TPM_DAA_Sign(
     }
     case 5:
     {
-      BYTE *DAA_generic_S1 = NULL, *DAA_generic_n = NULL;
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t X, Y, Z, n, tmp;
-      
       /* Verify that DAA_session->DAA_stage == 5. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 5)) {
@@ -2578,13 +2516,13 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) 
        * and return error TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext_sign(session)) {
+      if (tpm_daa_verify_digestContext_sign(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -2594,7 +2532,7 @@ TPM_RESULT TPM_DAA_Sign(
        * DAA_issuerSettings->DAA_digest_S1 and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_S1, 
-        DAA_generic_S1, inputSize0)) {
+        DAA_generic_S1, inputSize0, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -2603,7 +2541,7 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that SHA-1(DAA_generic_n) == DAA_issuerSettings->DAA_digest_n 
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
-        DAA_generic_n, inputSize1)) {
+        DAA_generic_n, inputSize1, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA1;
       }
@@ -2650,9 +2588,6 @@ TPM_RESULT TPM_DAA_Sign(
     }
     case 6:
     {
-      BYTE *DAA_generic_gamma = NULL;
-      mpz_t w1, w, gamma, q;
-      
       /* Verify that DAA_session->DAA_stage == 6. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 6)) {
@@ -2662,13 +2597,13 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) 
        * and return error TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext_sign(session)) {
+      if (tpm_daa_verify_digestContext_sign(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -2678,7 +2613,7 @@ TPM_RESULT TPM_DAA_Sign(
        * DAA_issuerSettings->DAA_digest_gamma and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_gamma, 
-        DAA_generic_gamma, inputSize0)) {
+        DAA_generic_gamma, inputSize0, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -2717,10 +2652,6 @@ TPM_RESULT TPM_DAA_Sign(
     }
     case 7:
     {
-      BYTE *DAA_generic_gamma = NULL;
-      sha1_ctx_t sha1;
-      mpz_t f, q, E, gamma, w;
-      
       /* Verify that DAA_session->DAA_stage == 7. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 7)) {
@@ -2730,13 +2661,13 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) 
        * and return error TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext_sign(session)) {
+      if (tpm_daa_verify_digestContext_sign(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -2746,7 +2677,7 @@ TPM_RESULT TPM_DAA_Sign(
        * DAA_issuerSettings->DAA_digest_gamma and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_gamma, 
-        DAA_generic_gamma, inputSize0)) {
+        DAA_generic_gamma, inputSize0, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -2797,10 +2728,6 @@ TPM_RESULT TPM_DAA_Sign(
     }
     case 8:
     {
-      BYTE *DAA_generic_gamma = NULL;
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t r0, r1, r, q, E1, w, gamma;
-      
       /* Verify that DAA_session->DAA_stage == 8. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 8)) {
@@ -2810,13 +2737,13 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) 
        * and return error TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext_sign(session)) {
+      if (tpm_daa_verify_digestContext_sign(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -2826,7 +2753,7 @@ TPM_RESULT TPM_DAA_Sign(
        * DAA_issuerSettings->DAA_digest_gamma and return error 
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_gamma, 
-        DAA_generic_gamma, inputSize0)) {
+        DAA_generic_gamma, inputSize0, &sha1)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -2885,8 +2812,7 @@ TPM_RESULT TPM_DAA_Sign(
     }
     case 9:
     {
-      BYTE NT[DAA_SIZE_NT];
-      sha1_ctx_t sha1;
+      BYTE *NT = NULL;
       
       /* Verify that DAA_session->DAA_stage == 9. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
@@ -2897,13 +2823,13 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) 
        * and return error TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext_sign(session)) {
+      if (tpm_daa_verify_digestContext_sign(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -2914,24 +2840,30 @@ TPM_RESULT TPM_DAA_Sign(
         return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_session->DAA_digest = inputData0 */
-      memcpy(session->DAA_session.DAA_digest.digest, inputData0, inputSize0);
-      /* Obtain DAA_SIZE_NT bits from the RNG and label them NT */
-      tpm_get_random_bytes(&NT, DAA_SIZE_NT);
-      /* Set DAA_session->DAA_digest to the SHA-1(DAA_session->DAA_digest || 
-       * NT)*/
-      sha1_init(&sha1);
-      sha1_update(&sha1, (BYTE*) session->DAA_session.DAA_digest.digest, 
-          sizeof( session->DAA_session.DAA_digest.digest));
-      sha1_update(&sha1, (BYTE*) NT, sizeof(NT));
-      sha1_final(&sha1, session->DAA_session.DAA_digest.digest);
-      /* Set outputData = NT */
-      *outputSize = sizeof(NT);
-      if ((*outputData = tpm_malloc(*outputSize)) != NULL)
-        memcpy(*outputData, NT, *outputSize);
-      else {
+      memcpy(&session->DAA_session.DAA_digest, inputData0, inputSize0);
+      /* Obtain DAA_SIZE_NT bytes from the RNG and label them NT */
+      if ((NT = tpm_malloc(DAA_SIZE_NT)) == NULL) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_NOSPACE;
       }
+      tpm_get_random_bytes(NT, DAA_SIZE_NT);
+      /* Set DAA_session->DAA_digest to the SHA-1(DAA_session->DAA_digest || 
+       * NT)*/
+      sha1_init(&sha1);
+      sha1_update(&sha1, (BYTE*) &session->DAA_session.DAA_digest, 
+          sizeof(session->DAA_session.DAA_digest));
+      sha1_update(&sha1, NT, DAA_SIZE_NT);
+      sha1_final(&sha1, session->DAA_session.DAA_digest.digest);
+      /* Set outputData = NT */
+      *outputSize = DAA_SIZE_NT;
+      if ((*outputData = tpm_malloc(*outputSize)) != NULL)
+        memcpy(*outputData, NT, *outputSize);
+      else {
+        tpm_free(NT);
+        memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+        return TPM_NOSPACE;
+      }
+      tpm_free(NT);
       /* Increment DAA_session->DAA_stage by 1 */
       session->DAA_session.DAA_stage++;
       /* Return TPM_SUCCESS */
@@ -2939,12 +2871,6 @@ TPM_RESULT TPM_DAA_Sign(
     }
     case 10:
     {
-      BYTE selector;
-      UINT32 size;
-      TPM_KEY_DATA *aikData;
-      TPM_KEY_HANDLE aikHandle;
-      sha1_ctx_t sha1;
-      
       /* Verify that DAA_session->DAA_stage == 10. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 10)) {
@@ -2954,13 +2880,13 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) 
        * and return error TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext_sign(session)) {
+      if (tpm_daa_verify_digestContext_sign(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -3033,10 +2959,6 @@ TPM_RESULT TPM_DAA_Sign(
     }
     case 11:
     {
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t r0, f, q, f0, s0, tmp;
-      sha1_ctx_t sha1;
-      
       /* Verify that DAA_session->DAA_stage == 11. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 11)) {
@@ -3046,13 +2968,13 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) 
        * and return error TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext_sign(session)) {
+      if (tpm_daa_verify_digestContext_sign(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -3116,10 +3038,6 @@ TPM_RESULT TPM_DAA_Sign(
     }
     case 12:
     {
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t r1, f, q, f1, s1, tmp;
-      sha1_ctx_t sha1;
-      
       /* Verify that DAA_session->DAA_stage == 12. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
       if (!(session->DAA_session.DAA_stage == 12)) {
@@ -3129,13 +3047,13 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) 
        * and return error TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext_sign(session)) {
+      if (tpm_daa_verify_digestContext_sign(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -3198,15 +3116,7 @@ TPM_RESULT TPM_DAA_Sign(
     }
     case 13:
     {
-      BYTE DAA_private_v0[DAA_SIZE_v0];
-      BYTE *ptr, *buf;
-      UINT32 len;
-      sha1_ctx_t sha1;
-      TPM_DAA_BLOB blob;
-      TPM_DAA_SENSITIVE sensitive;
-      TPM_DIGEST digest;
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t r2, s2, tmp;
+      BYTE *DAA_private_v0 = NULL;
       
       /* Verify that DAA_session->DAA_stage == 13. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
@@ -3217,13 +3127,13 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) 
        * and return error TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext_sign(session)) {
+      if (tpm_daa_verify_digestContext_sign(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -3253,15 +3163,21 @@ TPM_RESULT TPM_DAA_Sign(
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
+      if ((DAA_private_v0 = tpm_malloc(DAA_SIZE_v0)) == NULL) {
+        tpm_free(buf);
+        memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+        return TPM_NOSPACE;
+      }
       memcpy(DAA_private_v0, sensitive.internalData, sensitive.internalSize);
       tpm_free(buf);
       /* Verify that SHA-1(DAA_private_v0) == DAA_tpmSpecific->DAA_digest_v0 
        * and return error TPM_DAA_INPUT_DATA0 on mismatch */
       sha1_init(&sha1);
-      sha1_update(&sha1, (BYTE*) scratch, sensitive.internalSize);
+      sha1_update(&sha1, DAA_private_v0, DAA_SIZE_v0);
       sha1_final(&sha1, (BYTE*) &digest);
       if (memcmp(&digest, &session->DAA_tpmSpecific.DAA_digest_v0, 
         sizeof(TPM_DIGEST))) {
+          tpm_free(DAA_private_v0);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -3277,7 +3193,8 @@ TPM_RESULT TPM_DAA_Sign(
        * (DAA_private_v0) mod 2^DAA_power1 
        * (Erase all but the lowest DAA_power1 bits of s2) */
       mpz_init(s2);
-      mpz_import(s2, sizeof(DAA_private_v0), 1, 1, 0, 0, DAA_private_v0);
+      mpz_import(s2, DAA_SIZE_v0, 1, 1, 0, 0, DAA_private_v0);
+      tpm_free(DAA_private_v0);
       mpz_init(tmp);
       mpz_import(tmp, sizeof(session->DAA_session.DAA_digest.digest), 
         1, 1, 0, 0, session->DAA_session.DAA_digest.digest);
@@ -3303,15 +3220,7 @@ TPM_RESULT TPM_DAA_Sign(
     }
     case 14:
     {
-      BYTE DAA_private_v0[DAA_SIZE_v0];
-      BYTE *ptr, *buf;
-      UINT32 len;
-      sha1_ctx_t sha1;
-      TPM_DAA_BLOB blob;
-      TPM_DAA_SENSITIVE sensitive;
-      TPM_DIGEST digest;
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t r2, s12, tmp;
+      BYTE *DAA_private_v0 = NULL;
       
       /* Verify that DAA_session->DAA_stage == 14. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
@@ -3322,13 +3231,13 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) 
        * and return error TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext_sign(session)) {
+      if (tpm_daa_verify_digestContext_sign(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -3358,15 +3267,21 @@ TPM_RESULT TPM_DAA_Sign(
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
+      if ((DAA_private_v0 = tpm_malloc(DAA_SIZE_v0)) == NULL) {
+        tpm_free(buf);
+        memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+        return TPM_NOSPACE;
+      }
       memcpy(DAA_private_v0, sensitive.internalData, sensitive.internalSize);
       tpm_free(buf);
       /* Verify that SHA-1(DAA_private_v0) == DAA_tpmSpecific->DAA_digest_v0 
        * and return error TPM_DAA_INPUT_DATA0 on mismatch */
       sha1_init(&sha1);
-      sha1_update(&sha1, (BYTE*) scratch, sensitive.internalSize);
+      sha1_update(&sha1, DAA_private_v0, DAA_SIZE_v0);
       sha1_final(&sha1, (BYTE*) &digest);
       if (memcmp(&digest, &session->DAA_tpmSpecific.DAA_digest_v0, 
         sizeof(TPM_DIGEST))) {
+          tpm_free(DAA_private_v0);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -3381,6 +3296,7 @@ TPM_RESULT TPM_DAA_Sign(
       /* Set s12 = r2 + (DAA_session->DAA_digest) * (DAA_private_v0). */
       mpz_init(s12);
       mpz_import(s12, sizeof(DAA_private_v0), 1, 1, 0, 0, DAA_private_v0);
+      tpm_free(DAA_private_v0);
       mpz_init(tmp);
       mpz_import(tmp, sizeof(session->DAA_session.DAA_digest.digest), 
         1, 1, 0, 0, session->DAA_session.DAA_digest.digest);
@@ -3401,15 +3317,7 @@ TPM_RESULT TPM_DAA_Sign(
     }
     case 15:
     {
-      BYTE DAA_private_v1[DAA_SIZE_v1];
-      BYTE *ptr, *buf;
-      UINT32 len;
-      sha1_ctx_t sha1;
-      TPM_DAA_BLOB blob;
-      TPM_DAA_SENSITIVE sensitive;
-      TPM_DIGEST digest;
-      BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
-      mpz_t r4, s3, tmp;
+      BYTE *DAA_private_v1 = NULL;
       
       /* Verify that DAA_session->DAA_stage == 15. Return TPM_DAA_STAGE 
        * and flush handle on mismatch */
@@ -3420,13 +3328,13 @@ TPM_RESULT TPM_DAA_Sign(
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
        * SHA-1(DAA_issuerSettings) and return error TPM_DAA_ISSUER_SETTINGS 
        * on mismatch */
-      if (tpm_daa_verify_digestIssuer(session)) {
+      if (tpm_daa_verify_digestIssuer(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) 
        * and return error TPM_DAA_TPM_SETTINGS on mismatch */
-      if (tpm_daa_verify_digestContext_sign(session)) {
+      if (tpm_daa_verify_digestContext_sign(session, &sha1)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_TPM_SETTINGS;
       }
@@ -3456,15 +3364,21 @@ TPM_RESULT TPM_DAA_Sign(
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
+      if ((DAA_private_v1 = tpm_malloc(DAA_SIZE_v1)) == NULL) {
+        tpm_free(buf);
+        memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+        return TPM_NOSPACE;
+      }
       memcpy(DAA_private_v1, sensitive.internalData, sensitive.internalSize);
       tpm_free(buf);
       /* Verify that SHA-1(DAA_private_v1) == DAA_tpmSpecific->DAA_digest_v1 
        * and return error TPM_DAA_INPUT_DATA0 on mismatch */
       sha1_init(&sha1);
-      sha1_update(&sha1, (BYTE*) scratch, sensitive.internalSize);
+      sha1_update(&sha1, DAA_private_v1, DAA_SIZE_v1);
       sha1_final(&sha1, (BYTE*) &digest);
       if (memcmp(&digest, &session->DAA_tpmSpecific.DAA_digest_v1, 
         sizeof(TPM_DIGEST))) {
+          tpm_free(DAA_private_v1);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -3480,6 +3394,7 @@ TPM_RESULT TPM_DAA_Sign(
        * (DAA_session->DAA_scratch). */
       mpz_init(s3);
       mpz_import(s3, sizeof(DAA_private_v1), 1, 1, 0, 0, DAA_private_v1);
+      tpm_free(DAA_private_v1);
       mpz_init(tmp);
       mpz_import(tmp, sizeof(session->DAA_session.DAA_digest.digest), 
         1, 1, 0, 0, session->DAA_session.DAA_digest.digest);

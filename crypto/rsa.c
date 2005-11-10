@@ -94,7 +94,7 @@ static int rsa_private(rsa_private_key_t *key,
 
 static int rsa_test_key(rsa_private_key_t *key)
 {
-  mpz_t a, b, t; 
+  mpz_t a, b, t;
   int res = 0;
   
   mpz_init2(a, key->size + GMP_NUMB_BITS);

@@ -22,7 +22,7 @@
 
 typedef struct {
     uint8_t state[256];
-    uint8_t x, y;    
+    uint8_t x, y;
 } rc4_ctx_t;
 
 void rc4_init(rc4_ctx_t *s, uint8_t *key, size_t key_len);
