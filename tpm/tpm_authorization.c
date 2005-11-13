@@ -134,19 +134,21 @@ TPM_RESULT TPM_ChangeAuthOwner(TPM_PROTOCOL_ID protocolID,
   /* change authorization data */
   if (entityType == TPM_ET_OWNER) {
     memcpy(tpmData.permanent.data.ownerAuth, plainAuth, sizeof(TPM_SECRET));  
-    /* invalidate all associated sessions */
+    /* invalidate all associated sessions but the current one */
     for (i = 0; i < TPM_MAX_SESSIONS; i++) {
-      if (tpmData.stany.data.sessions[i].handle == TPM_KH_OWNER) {
-          memset(session, 0, sizeof(*session));   
+      if (tpmData.stany.data.sessions[i].handle == TPM_KH_OWNER
+          && &tpmData.stany.data.sessions[i] != session) {
+          memset(&tpmData.stany.data.sessions[i], 0, sizeof(TPM_SESSION_DATA));
       }           
     }
   } else if (entityType == TPM_ET_SRK) {
     memcpy(tpmData.permanent.data.srk.usageAuth, plainAuth, sizeof(TPM_SECRET));
     tpmData.permanent.data.srk.authDataUsage = TPM_AUTH_ALWAYS; /* right? */  
-    /* invalidate all associated sessions */
+    /* invalidate all associated sessions but the current one */
     for (i = 0; i < TPM_MAX_SESSIONS; i++) {
-      if (tpmData.stany.data.sessions[i].handle == TPM_KH_SRK) {
-          memset(session, 0, sizeof(*session));   
+      if (tpmData.stany.data.sessions[i].handle == TPM_KH_SRK
+          && &tpmData.stany.data.sessions[i] != session) {
+          memset(&tpmData.stany.data.sessions[i], 0, sizeof(TPM_SESSION_DATA));   
       }           
     }
   } else {
