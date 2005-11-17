@@ -1669,7 +1669,7 @@ typedef struct tdTPM_DELEGATE_KEY_BLOB {
 #define DAA_SIZE_r4             219
 #define DAA_SIZE_NT             20
 #define DAA_SIZE_v0             128
-#define DAA_SIZE_v1             190
+#define DAA_SIZE_v1             192
 #define DAA_SIZE_NE             256
 #define DAA_SIZE_w              256
 #define DAA_SIZE_issuerModulus  256
