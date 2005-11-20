@@ -297,13 +297,18 @@ TPM_RESULT TPM_DAA_Join(
       /* Set DAA_session->DAA_stage = 1 */
       session->DAA_session.DAA_stage = 1;
       /* Assign session handle for DAA_Join */
-      /* WATCH: this step is already done at the top */
+      /* WATCH: this step has been already done at the top */
       info("TPM_DAA_Join() -- set handle := %.8x", handle);
       /* Set outputData = new session handle */
       *outputSize = sizeof(TPM_HANDLE);
-      if ((*outputData = tpm_malloc(*outputSize)) != NULL)
-        memcpy(*outputData, &handle, *outputSize);
-      else {
+      if ((*outputData = tpm_malloc(*outputSize)) != NULL) {
+        ptr = *outputData;
+        len = *outputSize;
+        if (tpm_marshal_TPM_HANDLE(&ptr, &len, handle)) {
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_FAIL;
+        }
+      } else {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_NOSPACE;
       }
@@ -2209,12 +2214,17 @@ TPM_RESULT TPM_DAA_Sign(
       /* Set all fields in DAA_session = NULL */
       memset(&session->DAA_session, 0, sizeof(TPM_DAA_CONTEXT));
       /* Assign new handle for session */
-      /* WATCH: this step is already done at the top */
+      /* WATCH: this step has been already done at the top */
       /* Set outputData to new handle */
       *outputSize = sizeof(TPM_HANDLE);
-      if ((*outputData = tpm_malloc(*outputSize)) != NULL)
-        memcpy(*outputData, &handle, *outputSize);
-      else {
+      if ((*outputData = tpm_malloc(*outputSize)) != NULL) {
+        ptr = *outputData;
+        len = *outputSize;
+        if (tpm_marshal_TPM_HANDLE(&ptr, &len, handle)) {
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_FAIL;
+        }
+      } else {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_NOSPACE;
       }
