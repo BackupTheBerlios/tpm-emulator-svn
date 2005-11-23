@@ -2201,20 +2201,27 @@ TPM_RESULT TPM_DAA_Sign(
         return TPM_RESOURCES;
       session = &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)];
 //TODO: check resources
-      /* Set DAA_issuerSettings = inputData0 */
-      memcpy(&session->DAA_issuerSettings, inputData0, 
-        sizeof(TPM_DAA_ISSUER));
-      /* Verify that all fields in DAA_issuerSettings are present and 
-       * return error TPM_DAA_INPUT_DATA0 if not. */
-      if (!(session->DAA_issuerSettings.tag == TPM_TAG_DAA_ISSUER))
-      {
+      /* WATCH: Verify that sizeOf(inputData0) == sizeOf(TPM_DAA_ISSUER) 
+       * and return error TPM_DAA_INPUT_DATA0 on mismatch */
+      if (!(inputSize0 == sizeof(TPM_DAA_ISSUER))) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_DAA_INPUT_DATA0;
+      }
+      /* Set DAA_issuerSettings = inputData0. */
+      /* Verify that all fields in DAA_issuerSettings are present and 
+       * return error TPM_DAA_INPUT_DATA0 if not. */
+      ptr = inputData0, len = inputSize0;
+      if (tpm_unmarshal_TPM_DAA_ISSUER(&ptr, &len, 
+        &session->DAA_issuerSettings) || (len != 0) || 
+        !(session->DAA_issuerSettings.tag == TPM_TAG_DAA_ISSUER)) {
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Set all fields in DAA_session = NULL */
       memset(&session->DAA_session, 0, sizeof(TPM_DAA_CONTEXT));
       /* Assign new handle for session */
       /* WATCH: this step has been already done at the top */
+      info("TPM_DAA_Sign() -- set handle := %.8x", handle);
       /* Set outputData to new handle */
       *outputSize = sizeof(TPM_HANDLE);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL) {
