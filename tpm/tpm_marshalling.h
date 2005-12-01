@@ -358,6 +358,18 @@ int tpm_unmarshal_TPM_DAA_SENSITIVE(BYTE **ptr, UINT32 *length, TPM_DAA_SENSITIV
 int tpm_marshal_TPM_DAA_ISSUER(BYTE **ptr, UINT32 *length, TPM_DAA_ISSUER *v);
 int tpm_unmarshal_TPM_DAA_ISSUER(BYTE **ptr, UINT32 *length, TPM_DAA_ISSUER *v);
 
+int tpm_marshal_TPM_DAA_TPM(BYTE **ptr, UINT32 *length, TPM_DAA_TPM *v);
+int tpm_unmarshal_TPM_DAA_TPM(BYTE **ptr, UINT32 *length, TPM_DAA_TPM *v);
+
+int tpm_marshal_TPM_DAA_CONTEXT(BYTE **ptr, UINT32 *length, TPM_DAA_CONTEXT *v);
+int tpm_unmarshal_TPM_DAA_CONTEXT(BYTE **ptr, UINT32 *length, TPM_DAA_CONTEXT *v);
+
+int tpm_marshal_TPM_DAA_JOINDATA(BYTE **ptr, UINT32 *length, TPM_DAA_JOINDATA *v);
+int tpm_unmarshal_TPM_DAA_JOINDATA(BYTE **ptr, UINT32 *length, TPM_DAA_JOINDATA *v);
+
+int tpm_marshal_TPM_DAA_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_DAA_SESSION_DATA *v);
+int tpm_unmarshal_TPM_DAA_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_DAA_SESSION_DATA *v);
+
 int tpm_marshal_TPM_NV_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_NV_ATTRIBUTES *v);
 int tpm_unmarshal_TPM_NV_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_NV_ATTRIBUTES *v);
 

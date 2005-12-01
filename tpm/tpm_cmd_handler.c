@@ -2228,6 +2228,7 @@ static TPM_RESULT execute_TPM_LoadContext(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   /* unmarshal input */
   ptr = req->param;
   len = req->paramSize;
+//FIXME: the order of the following two arguments has been changed in rev85
   if (tpm_unmarshal_BOOL(&ptr, &len, &keepHandle)
       || tpm_unmarshal_TPM_HANDLE(&ptr, &len, &hintHandle)
       || tpm_unmarshal_UINT32(&ptr, &len, &contextSize)

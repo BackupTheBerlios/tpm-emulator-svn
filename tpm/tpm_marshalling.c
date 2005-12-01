@@ -1,6 +1,7 @@
 /* Software-Based Trusted Platform Module (TPM) Emulator for Linux
  * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+ *                    Swiss Federal Institute of Technology (ETH) Zurich,
+ *               2005 Heiko Stamer <stamer@gaos.org>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -653,24 +654,52 @@ int tpm_marshal_TPM_CONTEXT_SENSITIVE(BYTE **ptr, UINT32 *length, TPM_CONTEXT_SE
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
       || tpm_marshal_TPM_NONCE(ptr, length, &v->contextNonce)
       || tpm_marshal_UINT32(ptr, length, v->internalSize)
-      || tpm_marshal_TPM_RESOURCE_TYPE(ptr, length, v->resourceType)
-      || (v->resourceType == TPM_RT_KEY 
-          && tpm_marshal_TPM_KEY_DATA(ptr, length, &v->internalData.key))
-      || (v->resourceType != TPM_RT_KEY
-          && tpm_marshal_TPM_SESSION_DATA(ptr, length, &v->internalData.session))) return -1; 
-  return 0;     
-}  
+      || tpm_marshal_TPM_RESOURCE_TYPE(ptr, length, v->resourceType))
+        return -1;
+  switch (v->resourceType) {
+    case TPM_RT_KEY:
+      if (tpm_marshal_TPM_KEY_DATA(ptr, length, &v->internalData.key))
+        return -1;
+      break;
+    case TPM_RT_AUTH:
+    case TPM_RT_TRANS:
+      if (tpm_marshal_TPM_SESSION_DATA(ptr, length, &v->internalData.session))
+        return -1;
+      break;
+    case TPM_RT_DAA_TPM:
+      if (tpm_marshal_TPM_DAA_SESSION_DATA(ptr, length, &v->internalData.sessionDAA))
+        return -1;
+      break;
+    default:
+      return -1;
+  }
+  return 0;
+}
 
 int tpm_unmarshal_TPM_CONTEXT_SENSITIVE(BYTE **ptr, UINT32 *length, TPM_CONTEXT_SENSITIVE *v)
 {
   if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
       || tpm_unmarshal_TPM_NONCE(ptr, length, &v->contextNonce)
       || tpm_unmarshal_UINT32(ptr, length, &v->internalSize)
-      || tpm_unmarshal_TPM_RESOURCE_TYPE(ptr, length, &v->resourceType)
-      || (v->resourceType == TPM_RT_KEY 
-          && tpm_unmarshal_TPM_KEY_DATA(ptr, length, &v->internalData.key))
-      || (v->resourceType != TPM_RT_KEY
-          && tpm_unmarshal_TPM_SESSION_DATA(ptr, length, &v->internalData.session))) return -1;       
+      || tpm_unmarshal_TPM_RESOURCE_TYPE(ptr, length, &v->resourceType))
+        return -1;
+  switch (v->resourceType) {
+    case TPM_RT_KEY:
+      if (tpm_unmarshal_TPM_KEY_DATA(ptr, length, &v->internalData.key))
+        return -1;
+      break;
+    case TPM_RT_AUTH:
+    case TPM_RT_TRANS:
+      if (tpm_unmarshal_TPM_SESSION_DATA(ptr, length, &v->internalData.session))
+        return -1;
+      break;
+    case TPM_RT_DAA_TPM:
+      if (tpm_unmarshal_TPM_DAA_SESSION_DATA(ptr, length, &v->internalData.sessionDAA))
+        return -1;
+      break;
+    default:
+      return -1;
+  }
   return 0;
 }
 
@@ -729,7 +758,7 @@ int tpm_marshal_TPM_DAA_ISSUER(BYTE **ptr, UINT32 *length, TPM_DAA_ISSUER *v)
       || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digest_S1)
       || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digest_n)
       || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digest_gamma)
-      || tpm_marshal_BYTE_ARRAY(ptr, length, v->DAA_generic_q, 26))
+      || tpm_marshal_BYTE_ARRAY(ptr, length, v->DAA_generic_q, sizeof(v->DAA_generic_q)))
         return -1;
   return 0;
 }
@@ -743,8 +772,96 @@ int tpm_unmarshal_TPM_DAA_ISSUER(BYTE **ptr, UINT32 *length, TPM_DAA_ISSUER *v)
       || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digest_S1)
       || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digest_n)
       || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digest_gamma)
-      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->DAA_generic_q, 26))
+      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->DAA_generic_q, sizeof(v->DAA_generic_q)))
         return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_DAA_TPM(BYTE **ptr, UINT32 *length, TPM_DAA_TPM *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digestIssuer)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digest_v0)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digest_v1)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_rekey)
+      || tpm_marshal_UINT32(ptr, length, v->DAA_count))
+        return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DAA_TPM(BYTE **ptr, UINT32 *length, TPM_DAA_TPM *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digestIssuer)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digest_v0)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digest_v1)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_rekey)
+      || tpm_unmarshal_UINT32(ptr, length, &v->DAA_count))
+        return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_DAA_CONTEXT(BYTE **ptr, UINT32 *length, TPM_DAA_CONTEXT *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digestContext)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digest)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_contextSeed)
+      || tpm_marshal_BYTE_ARRAY(ptr, length, v->DAA_scratch, sizeof(v->DAA_scratch))
+      || tpm_marshal_BYTE(ptr, length, v->DAA_stage))
+        return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DAA_CONTEXT(BYTE **ptr, UINT32 *length, TPM_DAA_CONTEXT *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digestContext)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digest)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_contextSeed)
+      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->DAA_scratch, sizeof(v->DAA_scratch))
+      || tpm_unmarshal_BYTE(ptr, length, &v->DAA_stage))
+        return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_DAA_JOINDATA(BYTE **ptr, UINT32 *length, TPM_DAA_JOINDATA *v)
+{
+  if (tpm_marshal_BYTE_ARRAY(ptr, length, v->DAA_join_u0, sizeof(v->DAA_join_u0))
+      || tpm_marshal_BYTE_ARRAY(ptr, length, v->DAA_join_u1, sizeof(v->DAA_join_u1))
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digest_n0))
+        return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DAA_JOINDATA(BYTE **ptr, UINT32 *length, TPM_DAA_JOINDATA *v)
+{
+  if (tpm_unmarshal_BYTE_ARRAY(ptr, length, v->DAA_join_u0, sizeof(v->DAA_join_u0))
+      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->DAA_join_u1, sizeof(v->DAA_join_u1))
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digest_n0))
+        return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_DAA_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_DAA_SESSION_DATA *v)
+{
+  if (tpm_marshal_BYTE(ptr, length, v->type)
+      || tpm_marshal_TPM_DAA_ISSUER(ptr, length, &v->DAA_issuerSettings)
+      || tpm_marshal_TPM_DAA_TPM(ptr, length, &v->DAA_tpmSpecific)
+      || tpm_marshal_TPM_DAA_CONTEXT(ptr, length, &v->DAA_session)
+      || tpm_marshal_TPM_DAA_JOINDATA(ptr, length, &v->DAA_joinSession)
+      || tpm_marshal_TPM_HANDLE(ptr, length, v->handle)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DAA_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_DAA_SESSION_DATA *v)
+{
+  if (tpm_unmarshal_BYTE(ptr, length, &v->type)
+      || tpm_unmarshal_TPM_DAA_ISSUER(ptr, length, &v->DAA_issuerSettings)
+      || tpm_unmarshal_TPM_DAA_TPM(ptr, length, &v->DAA_tpmSpecific)
+      || tpm_unmarshal_TPM_DAA_CONTEXT(ptr, length, &v->DAA_session)
+      || tpm_unmarshal_TPM_DAA_JOINDATA(ptr, length, &v->DAA_joinSession)
+      || tpm_unmarshal_TPM_HANDLE(ptr, length, &v->handle)) return -1;
   return 0;
 }
 
@@ -1163,7 +1280,6 @@ int tpm_marshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DAT
   for (i = 0; i < TPM_MAX_KEYS; i++) {
     if (tpm_marshal_TPM_KEY_DATA(ptr, length, &v->keys[i])) return -1;
   }
-	
   return 0;
 }
 
@@ -1206,9 +1322,9 @@ int tpm_marshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA *v
       || tpm_marshal_TPM_NONCE(ptr, length, &v->nonceEven)
       || tpm_marshal_TPM_NONCE(ptr, length, &v->lastNonceEven)
       || tpm_marshal_TPM_SECRET(ptr, length, &v->sharedSecret)
-      || tpm_marshal_TPM_HANDLE(ptr, length, v->handle)) return -1;  
+      || tpm_marshal_TPM_HANDLE(ptr, length, v->handle)) return -1;
   return 0;
-} 
+}
 
 int tpm_unmarshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA *v)
 {
@@ -1216,9 +1332,9 @@ int tpm_unmarshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA 
       || tpm_unmarshal_TPM_NONCE(ptr, length, &v->nonceEven)
       || tpm_unmarshal_TPM_NONCE(ptr, length, &v->lastNonceEven)
       || tpm_unmarshal_TPM_SECRET(ptr, length, &v->sharedSecret)
-      || tpm_unmarshal_TPM_HANDLE(ptr, length, &v->handle)) return -1;  
+      || tpm_unmarshal_TPM_HANDLE(ptr, length, &v->handle)) return -1;
   return 0;
-} 
+}
 
 int tpm_marshal_TPM_RESPONSE(BYTE **ptr, UINT32 *length, TPM_RESPONSE *v)
 {

@@ -2034,9 +2034,6 @@ typedef struct tdTPM_DAA_SESSION_DATA {
   TPM_DAA_JOINDATA DAA_joinSession;
   TPM_HANDLE handle;
 } TPM_DAA_SESSION_DATA;
-#define sizeof_TPM_DAA_SESSION_DATA(s) (sizeof(BYTE) + \
-  sizeof(TPM_DAA_ISSUER) + sizeof(TPM_DAA_TPM) + sizeof(TPM_DAA_CONTEXT) + \
-  sizeof(TPM_DAA_JOINDATA) + sizeof(TPM_HANDLE))
 
 /*
  * TPM_STANY_DATA ([TPM_Part2], Section 7.6)

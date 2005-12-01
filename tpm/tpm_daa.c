@@ -47,13 +47,37 @@ TPM_RESULT tpm_daa_verify_digestContext(
 )
 {
   TPM_DIGEST dgt;
+  UINT32 size, len;
+  BYTE *buf, *ptr;
   
   sha1_init(sha1);
-  sha1_update(sha1, (BYTE*) &session->DAA_tpmSpecific, 
-    sizeof(TPM_DAA_TPM));
-  sha1_update(sha1, (BYTE*) &session->DAA_joinSession, 
-    sizeof(TPM_DAA_JOINDATA));
+  
+  size = len = sizeof(TPM_DAA_TPM);
+  buf = ptr = tpm_malloc(size);
+  if (buf == NULL)
+    return -1;
+  memset(buf, 0, size);
+  if (tpm_marshal_TPM_DAA_TPM(&ptr, &len, &session->DAA_tpmSpecific)) {
+    tpm_free(buf);
+    return -1;
+  }
+  sha1_update(sha1, buf, size);
+  tpm_free(buf);
+  
+  size = len = sizeof(TPM_DAA_JOINDATA);
+  buf = ptr = tpm_malloc(size);
+  if (buf == NULL)
+    return -1;
+  memset(buf, 0, size);
+  if (tpm_marshal_TPM_DAA_JOINDATA(&ptr, &len, &session->DAA_joinSession)) {
+    tpm_free(buf);
+    return -1;
+  }
+  sha1_update(sha1, buf, size);
+  tpm_free(buf);
+  
   sha1_final(sha1, dgt.digest);
+  
   return memcmp(dgt.digest, session->DAA_session.DAA_digestContext.digest, 
     sizeof(TPM_DIGEST));
 }
@@ -64,11 +88,35 @@ void tpm_daa_update_digestContext(
   TPM_DAA_SESSION_DATA *session, sha1_ctx_t *sha1
 )
 {
+  UINT32 size, len;
+  BYTE *buf, *ptr;
+  
   sha1_init(sha1);
-  sha1_update(sha1, (BYTE*) &session->DAA_tpmSpecific, 
-    sizeof(TPM_DAA_TPM));
-  sha1_update(sha1, (BYTE*) &session->DAA_joinSession, 
-    sizeof(TPM_DAA_JOINDATA));
+  
+  size = len = sizeof(TPM_DAA_TPM);
+  buf = ptr = tpm_malloc(size);
+  if (buf == NULL)
+    return;
+  memset(buf, 0, size);
+  if (tpm_marshal_TPM_DAA_TPM(&ptr, &len, &session->DAA_tpmSpecific)) {
+    tpm_free(buf);
+    return;
+  }
+  sha1_update(sha1, buf, size);
+  tpm_free(buf);
+  
+  size = len = sizeof(TPM_DAA_JOINDATA);
+  buf = ptr = tpm_malloc(size);
+  if (buf == NULL)
+    return;
+  memset(buf, 0, size);
+  if (tpm_marshal_TPM_DAA_JOINDATA(&ptr, &len, &session->DAA_joinSession)) {
+    tpm_free(buf);
+    return;
+  }
+  sha1_update(sha1, buf, size);
+  tpm_free(buf);
+  
   sha1_final(sha1, session->DAA_session.DAA_digestContext.digest);
 }
 
@@ -79,13 +127,52 @@ TPM_RESULT tpm_daa_verify_digestContext_sign(
 )
 {
   TPM_DIGEST dgt;
+  UINT32 size, len;
+  BYTE *buf, *ptr;
   
   sha1_init(sha1);
-  sha1_update(sha1, (BYTE*) &session->DAA_tpmSpecific, 
-    sizeof(TPM_DAA_TPM));
+  
+  size = len = sizeof(TPM_DAA_TPM);
+  buf = ptr = tpm_malloc(size);
+  if (buf == NULL)
+    return -1;
+  memset(buf, 0, size);
+  if (tpm_marshal_TPM_DAA_TPM(&ptr, &len, &session->DAA_tpmSpecific)) {
+    tpm_free(buf);
+    return -1;
+  }
+  sha1_update(sha1, buf, size);
+  tpm_free(buf);
+  
   sha1_final(sha1, dgt.digest);
+  
   return memcmp(dgt.digest, session->DAA_session.DAA_digestContext.digest, 
     sizeof(TPM_DIGEST));
+}
+
+/* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific) */
+void tpm_daa_update_digestContext_sign(  
+  TPM_DAA_SESSION_DATA *session, sha1_ctx_t *sha1
+)
+{
+  UINT32 size, len;
+  BYTE *buf, *ptr;
+  
+  sha1_init(sha1);
+  
+  size = len = sizeof(TPM_DAA_TPM);
+  buf = ptr = tpm_malloc(size);
+  if (buf == NULL)
+    return;
+  memset(buf, 0, size);
+  if (tpm_marshal_TPM_DAA_TPM(&ptr, &len, &session->DAA_tpmSpecific)) {
+    tpm_free(buf);
+    return;
+  }
+  sha1_update(sha1, buf, size);
+  tpm_free(buf);
+  
+  sha1_final(sha1, session->DAA_session.DAA_digestContext.digest);
 }
 
 /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
@@ -95,11 +182,25 @@ TPM_RESULT tpm_daa_verify_digestIssuer(
 )
 {
   TPM_DIGEST dgt;
+  UINT32 size, len;
+  BYTE *buf, *ptr;
   
   sha1_init(sha1);
-  sha1_update(sha1, (BYTE*) &session->DAA_issuerSettings, 
-    sizeof(TPM_DAA_ISSUER));
+  
+  size = len = sizeof(TPM_DAA_ISSUER);
+  buf = ptr = tpm_malloc(size);
+  if (buf == NULL)
+    return -1;
+  memset(buf, 0, size);
+  if (tpm_marshal_TPM_DAA_ISSUER(&ptr, &len, &session->DAA_issuerSettings)) {
+    tpm_free(buf);
+    return -1;
+  }
+  sha1_update(sha1, buf, size);
+  tpm_free(buf);
+  
   sha1_final(sha1, dgt.digest);
+  
   return memcmp(dgt.digest, session->DAA_tpmSpecific.DAA_digestIssuer.digest, 
     sizeof(TPM_DIGEST));
 }
@@ -109,9 +210,23 @@ void tpm_daa_update_digestIssuer(
   TPM_DAA_SESSION_DATA *session, sha1_ctx_t *sha1
 )
 {
+  UINT32 size, len;
+  BYTE *buf, *ptr;
+  
   sha1_init(sha1);
-  sha1_update(sha1, (BYTE*) &session->DAA_issuerSettings, 
-    sizeof(TPM_DAA_ISSUER));
+  
+  size = len = sizeof(TPM_DAA_ISSUER);
+  buf = ptr = tpm_malloc(size);
+  if (buf == NULL)
+    return;
+  memset(buf, 0, size);
+  if (tpm_marshal_TPM_DAA_ISSUER(&ptr, &len, &session->DAA_issuerSettings)) {
+    tpm_free(buf);
+    return;
+  }
+  sha1_update(sha1, buf, size);
+  tpm_free(buf);
+  
   sha1_final(sha1, session->DAA_tpmSpecific.DAA_digestIssuer.digest);
 }
 
@@ -140,7 +255,9 @@ int encrypt_daa(BYTE *iv, UINT32 iv_size, TPM_DAA_SENSITIVE *sensitive,
   /* marshal sensitive */
   *enc_size = len = sizeof_TPM_DAA_SENSITIVE((*sensitive));
   *enc = ptr = tpm_malloc(len);
-  if ((*enc == NULL) || tpm_marshal_TPM_DAA_SENSITIVE(&ptr, &len, sensitive)) {
+  if (*enc == NULL)
+    return -1;
+  if (tpm_marshal_TPM_DAA_SENSITIVE(&ptr, &len, sensitive)) {
     tpm_free(*enc);
     return -1;
   }
@@ -184,12 +301,13 @@ int compute_daa_digest(TPM_DAA_BLOB *daaBlob, TPM_DIGEST *digest)
   hmac_ctx_t hmac_ctx;
   len = sizeof_TPM_DAA_BLOB((*daaBlob));
   buf = ptr = tpm_malloc(len);
-  if ((buf == NULL)
-      || tpm_marshal_TPM_DAA_BLOB(&ptr, &len, daaBlob)) {
+  if (buf == NULL)
+    return -1;
+  if (tpm_marshal_TPM_DAA_BLOB(&ptr, &len, daaBlob)) {
     tpm_free(buf);
     return -1;
   }
-  memset(&buf[22], 0, 20);
+  memset(&buf[22], 0, sizeof(TPM_DIGEST));
   hmac_init(&hmac_ctx, tpmData.permanent.data.tpmProof.nonce, 
     sizeof(tpmData.permanent.data.tpmProof.nonce));
   hmac_update(&hmac_ctx, buf, sizeof_TPM_DAA_BLOB((*daaBlob)));
@@ -266,10 +384,13 @@ TPM_RESULT TPM_DAA_Join(
 //TODO: check resources
       /* Set all fields in DAA_issuerSettings = NULL */
       memset(&session->DAA_issuerSettings, 0, sizeof(TPM_DAA_ISSUER));
+      session->DAA_issuerSettings.tag = TPM_TAG_DAA_ISSUER;
       /* Set all fields in DAA_tpmSpecific = NULL */
       memset(&session->DAA_tpmSpecific, 0, sizeof(TPM_DAA_TPM));
+      session->DAA_tpmSpecific.tag = TPM_TAG_DAA_TPM;
       /* Set all fields in DAA_session = NULL */
       memset(&session->DAA_session, 0, sizeof(TPM_DAA_CONTEXT));
+      session->DAA_session.tag = TPM_TAG_DAA_CONTEXT;
       /* Set all fields in DAA_joinSession = NULL */
       memset(&session->DAA_joinSession, 0, sizeof(TPM_DAA_JOINDATA));
       /* Verify that sizeOf(inputData0) == sizeOf(DAA_tpmSpecific->DAA_count)
@@ -459,9 +580,9 @@ TPM_RESULT TPM_DAA_Join(
       }
       if (rsa_verify(&key, RSA_ES_OAEP_SHA1, signedData, 
         sizeof(TPM_DIGEST) + sizeof(TPM_DAA_ISSUER), signatureValue)) {
-//          rsa_release_public_key(&key);
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_ISSUER_VALIDITY;
+          rsa_release_public_key(&key);
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_ISSUER_VALIDITY;
       }
       rsa_release_public_key(&key);
       /* Set DAA_tpmSpecific->DAA_digestIssuer == SHA-1(DAA_issuerSettings) */
@@ -560,8 +681,8 @@ TPM_RESULT TPM_DAA_Join(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_R0, 
         DAA_generic_R0, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_generic_n = inputData1 */
       DAA_generic_n = inputData1;
@@ -569,8 +690,8 @@ TPM_RESULT TPM_DAA_Join(
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
         DAA_generic_n, inputSize1, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA1;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA1;
       }
       /* Set X = DAA_generic_R0 */
       mpz_init(X);
@@ -647,8 +768,8 @@ TPM_RESULT TPM_DAA_Join(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_R1, 
         DAA_generic_R1, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_generic_n = inputData1 */
       DAA_generic_n = inputData1;
@@ -656,8 +777,8 @@ TPM_RESULT TPM_DAA_Join(
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
         DAA_generic_n, inputSize1, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA1;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA1;
       }
       /* Set X = DAA_generic_R1 */
       mpz_init(X);
@@ -740,8 +861,8 @@ TPM_RESULT TPM_DAA_Join(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_S0, 
         DAA_generic_S0, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_generic_n = inputData1 */
       DAA_generic_n = inputData1;
@@ -749,8 +870,8 @@ TPM_RESULT TPM_DAA_Join(
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
         DAA_generic_n, inputSize1, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA1;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA1;
       }
       /* Set X = DAA_generic_S0 */
       mpz_init(X);
@@ -809,8 +930,8 @@ TPM_RESULT TPM_DAA_Join(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_S1, 
         DAA_generic_S1, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_generic_n = inputData1 */
       DAA_generic_n = inputData1;
@@ -818,8 +939,8 @@ TPM_RESULT TPM_DAA_Join(
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
         DAA_generic_n, inputSize1, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA1;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA1;
       }
       /* Set X = DAA_generic_S1 */
       mpz_init(X);
@@ -900,8 +1021,8 @@ TPM_RESULT TPM_DAA_Join(
       /* Set NE = decrypt(inputData0, privEK) */
       if (rsa_decrypt(&tpmData.permanent.data.endorsementKey, RSA_ES_PKCSV15, 
         inputData0, inputSize0, scratch, &sizeNE)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Set outputData = SHA-1(DAA_session->DAA_digest || NE) */
       *outputSize = SHA1_DIGEST_LENGTH;
@@ -951,8 +1072,8 @@ TPM_RESULT TPM_DAA_Join(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_R0, 
         DAA_generic_R0, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_generic_n = inputData1 */
       DAA_generic_n = inputData1;
@@ -960,8 +1081,8 @@ TPM_RESULT TPM_DAA_Join(
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
         DAA_generic_n, inputSize1, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA1;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA1;
       }
       /* Obtain random data from the RNG and store it as 
        * DAA_session->DAA_contextSeed */
@@ -1022,8 +1143,8 @@ TPM_RESULT TPM_DAA_Join(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_R1, 
         DAA_generic_R1, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_generic_n = inputData1 */
       DAA_generic_n = inputData1;
@@ -1031,8 +1152,8 @@ TPM_RESULT TPM_DAA_Join(
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
         DAA_generic_n, inputSize1, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA1;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA1;
       }
       /* Obtain DAA_SIZE_r1 bits from MGF1("r1", 
        * DAA_session->DAA_contextSeed), and label them Y */
@@ -1095,8 +1216,8 @@ TPM_RESULT TPM_DAA_Join(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_S0, 
         DAA_generic_S0, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_generic_n = inputData1 */
       DAA_generic_n = inputData1;
@@ -1104,8 +1225,8 @@ TPM_RESULT TPM_DAA_Join(
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
         DAA_generic_n, inputSize1, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA1;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA1;
       }
       /* Obtain DAA_SIZE_r2 bits from MGF1("r2", 
        * DAA_session->DAA_contextSeed), and label them Y */
@@ -1168,8 +1289,8 @@ TPM_RESULT TPM_DAA_Join(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_S1, 
         DAA_generic_S1, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_generic_n = inputData1 */
       DAA_generic_n = inputData1;
@@ -1177,8 +1298,8 @@ TPM_RESULT TPM_DAA_Join(
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
         DAA_generic_n, inputSize1, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA1;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA1;
       }
       /* Obtain DAA_SIZE_r3 bits from MGF1("r3", 
        * DAA_session->DAA_contextSeed), and label them Y */
@@ -1250,8 +1371,8 @@ TPM_RESULT TPM_DAA_Join(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_gamma, 
         DAA_generic_gamma, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Verify that inputSize1 == DAA_SIZE_w and return error 
        * TPM_DAA_INPUT_DATA1 on mismatch */
@@ -1315,8 +1436,8 @@ TPM_RESULT TPM_DAA_Join(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_gamma, 
         DAA_generic_gamma, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Set f = SHA-1(DAA_tpmSpecific->DAA_rekey || 
        * DAA_tpmSpecific->DAA_count || 0) || SHA-1(DAA_tpmSpecific->DAA_rekey 
@@ -1392,8 +1513,8 @@ TPM_RESULT TPM_DAA_Join(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_gamma, 
         DAA_generic_gamma, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Obtain DAA_SIZE_r0 bits from MGF1("r0", 
        * DAA_session->DAA_contextSeed), and label them r0 */
@@ -2290,10 +2411,7 @@ TPM_RESULT TPM_DAA_Sign(
         return TPM_DAA_ISSUER_SETTINGS;
       }
       /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific) */
-      sha1_init(&sha1);
-      sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific, 
-        sizeof(TPM_DAA_TPM));
-      sha1_final(&sha1, session->DAA_session.DAA_digestContext.digest);
+      tpm_daa_update_digestContext_sign(session, &sha1);
       /* Obtain random data from the RNG and store it as 
        * DAA_session->DAA_contextSeed */
       tpm_get_random_bytes(session->DAA_session.DAA_contextSeed.digest, 
@@ -2333,8 +2451,8 @@ TPM_RESULT TPM_DAA_Sign(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_R0, 
         DAA_generic_R0, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_generic_n = inputData1 */
       DAA_generic_n = inputData1;
@@ -2342,8 +2460,8 @@ TPM_RESULT TPM_DAA_Sign(
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
         DAA_generic_n, inputSize1, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA1;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA1;
       }
       /* Obtain DAA_SIZE_r0 bits from MGF1("r0", 
        * DAA_session->DAA_contextSeed), and label them Y */
@@ -2399,8 +2517,8 @@ TPM_RESULT TPM_DAA_Sign(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_R1, 
         DAA_generic_R1, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_generic_n = inputData1 */
       DAA_generic_n = inputData1;
@@ -2408,8 +2526,8 @@ TPM_RESULT TPM_DAA_Sign(
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
         DAA_generic_n, inputSize1, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA1;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA1;
       }
       /* Obtain DAA_SIZE_r1 bits from MGF1("r1", 
        * DAA_session->DAA_contextSeed), and label them Y */
@@ -2471,8 +2589,8 @@ TPM_RESULT TPM_DAA_Sign(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_S0, 
         DAA_generic_S0, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_generic_n = inputData1 */
       DAA_generic_n = inputData1;
@@ -2480,8 +2598,8 @@ TPM_RESULT TPM_DAA_Sign(
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
         DAA_generic_n, inputSize1, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA1;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA1;
       }
       /* Obtain DAA_SIZE_r2 bits from MGF1("r2", 
        * DAA_session->DAA_contextSeed), and label them Y */
@@ -2543,8 +2661,8 @@ TPM_RESULT TPM_DAA_Sign(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_S1, 
         DAA_generic_S1, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_generic_n = inputData1 */
       DAA_generic_n = inputData1;
@@ -2552,8 +2670,8 @@ TPM_RESULT TPM_DAA_Sign(
        * and return error TPM_DAA_INPUT_DATA1 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_n, 
         DAA_generic_n, inputSize1, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA1;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA1;
       }
       /* Obtain DAA_SIZE_r4 bits from MGF1("r4", 
        * DAA_session->DAA_contextSeed), and label them Y */
@@ -2624,8 +2742,8 @@ TPM_RESULT TPM_DAA_Sign(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_gamma, 
         DAA_generic_gamma, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Verify that inputSize1 == DAA_SIZE_w and return error 
        * TPM_DAA_INPUT_DATA1 on mismatch */
@@ -2688,8 +2806,8 @@ TPM_RESULT TPM_DAA_Sign(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_gamma, 
         DAA_generic_gamma, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Set f = SHA-1(DAA_tpmSpecific->DAA_rekey || 
        * DAA_tpmSpecific->DAA_count || 0) || SHA-1(DAA_tpmSpecific->DAA_rekey 
@@ -2764,8 +2882,8 @@ TPM_RESULT TPM_DAA_Sign(
        * TPM_DAA_INPUT_DATA0 on mismatch */
       if (tpm_daa_verify_generic(session->DAA_issuerSettings.DAA_digest_gamma, 
         DAA_generic_gamma, inputSize0, &sha1)) {
-//          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
-//          return TPM_DAA_INPUT_DATA0;
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
       }
       /* Obtain DAA_SIZE_r0 bits from MGF1("r0", 
        * DAA_session->DAA_contextSeed), and label them r0 */
@@ -3432,8 +3550,6 @@ TPM_RESULT TPM_DAA_Sign(
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_NOSPACE;
       }
-      /* WATCH: Increment DAA_session->DAA_stage by 1 */
-      session->DAA_session.DAA_stage++;
       /* WATCH: flush handle and release session */
       memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
       /* Return TPM_SUCCESS */

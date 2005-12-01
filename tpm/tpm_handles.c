@@ -97,8 +97,11 @@ TPM_COUNTER_VALUE *tpm_get_counter(TPM_COUNT_ID handle)
 
 TPM_DAA_SESSION_DATA *tpm_get_daa(TPM_DAAHANDLE handle)
 {
-  if (handle == TPM_INVALID_HANDLE
-      || (handle >> 24) != TPM_RT_DAA_TPM
-      || (handle & 0x00ffffff) >= TPM_MAX_SESSIONS_DAA) return NULL;
+  if ((handle == TPM_INVALID_HANDLE)
+      || ((handle >> 24) != TPM_RT_DAA_TPM)
+      || ((handle & 0x00ffffff) >= TPM_MAX_SESSIONS_DAA))
+        return NULL;
+  if (tpmData.stany.data.sessionsDAA[handle & 0x00ffffff].type != TPM_ST_DAA)
+    return NULL;
   return &tpmData.stany.data.sessionsDAA[handle & 0x00ffffff];
 }
