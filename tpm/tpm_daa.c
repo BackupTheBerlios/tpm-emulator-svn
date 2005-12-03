@@ -30,6 +30,7 @@
 UINT32 tpm_get_free_daa_session(void)
 {
   UINT32 i;
+  
   for (i = 0; i < TPM_MAX_SESSIONS_DAA; i++) {
     if (tpmData.stany.data.sessionsDAA[i].type == TPM_ST_INVALID) {
       tpmData.stany.data.sessionsDAA[i].type = TPM_ST_DAA;
@@ -276,6 +277,7 @@ int decrypt_daa(BYTE *iv, UINT32 iv_size, BYTE *enc, UINT32 enc_size,
   BYTE *ptr;
   rc4_ctx_t rc4_ctx;
   BYTE key[TPM_CONTEXT_KEY_SIZE + iv_size];
+  
   len = enc_size;
   *buf = ptr = tpm_malloc(len);
   if (*buf == NULL)
@@ -299,6 +301,7 @@ int compute_daa_digest(TPM_DAA_BLOB *daaBlob, TPM_DIGEST *digest)
   BYTE *buf, *ptr;
   UINT32 len;
   hmac_ctx_t hmac_ctx;
+  
   len = sizeof_TPM_DAA_BLOB((*daaBlob));
   buf = ptr = tpm_malloc(len);
   if (buf == NULL)
@@ -2220,16 +2223,29 @@ TPM_RESULT TPM_DAA_Join(
       }
       tpm_get_random_bytes(blob.additionalData, blob.additionalSize);
       sensitive.tag = TPM_TAG_DAA_SENSITIVE;
-      sensitive.internalSize = sizeof(session->DAA_tpmSpecific);
-      sensitive.internalData = (BYTE*) &session->DAA_tpmSpecific;
+      sensitive.internalSize = len = sizeof(TPM_DAA_TPM);
+      sensitive.internalData = ptr = tpm_malloc(sensitive.internalSize);
+      if (sensitive.internalData == NULL) {
+        tpm_free(blob.additionalData);
+        memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+        return TPM_NOSPACE;
+      }
+      if (tpm_marshal_TPM_DAA_TPM(&ptr, &len, &session->DAA_tpmSpecific)) {
+        tpm_free(blob.additionalData);
+        tpm_free(sensitive.internalData);
+        memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+        return TPM_FAIL;
+      }
       if (encrypt_daa(blob.additionalData, blob.additionalSize,
         &sensitive, &blob.sensitiveData, &blob.sensitiveSize)) {
           tpm_free(blob.additionalData);
+          tpm_free(sensitive.internalData);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_ENCRYPT_ERROR;
       }
       if (compute_daa_digest(&blob, &blob.blobIntegrity)) {
         tpm_free(blob.sensitiveData);
+        tpm_free(sensitive.internalData);
         tpm_free(blob.additionalData);
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_FAIL;
@@ -2237,6 +2253,7 @@ TPM_RESULT TPM_DAA_Join(
       *outputSize = sizeof_TPM_DAA_BLOB(blob);
       if ((*outputData = tpm_malloc(*outputSize)) == NULL) {
         tpm_free(blob.sensitiveData);
+        tpm_free(sensitive.internalData);
         tpm_free(blob.additionalData);
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_NOSPACE;
@@ -2245,6 +2262,7 @@ TPM_RESULT TPM_DAA_Join(
       ptr = *outputData;
       if (tpm_marshal_TPM_DAA_BLOB(&ptr, &len, &blob)) {
         tpm_free(blob.sensitiveData);
+        tpm_free(sensitive.internalData);
         tpm_free(blob.additionalData);
         tpm_free(*outputData);
         *outputSize = 0;
@@ -2252,6 +2270,7 @@ TPM_RESULT TPM_DAA_Join(
         return TPM_FAIL;
       }
       tpm_free(blob.sensitiveData);
+      tpm_free(sensitive.internalData);
       tpm_free(blob.additionalData);
       /* WATCH: flush handle and release session */
       memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
@@ -2394,13 +2413,17 @@ TPM_RESULT TPM_DAA_Sign(
       }
       if ((blob.resourceType != TPM_RT_DAA_TPM) || 
         (sensitive.tag != TPM_TAG_DAA_SENSITIVE || 
-        (sensitive.internalSize != sizeof(session->DAA_tpmSpecific)))) {
+        (sensitive.internalSize != sizeof(TPM_DAA_TPM)))) {
           tpm_free(buf);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
-      memcpy(&session->DAA_tpmSpecific, sensitive.internalData, 
-        sensitive.internalSize);
+      if (tpm_unmarshal_TPM_DAA_TPM(&sensitive.internalData,
+        &sensitive.internalSize, &session->DAA_tpmSpecific)) {
+          tpm_free(buf);
+          memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+          return TPM_DAA_INPUT_DATA0;
+      }
       tpm_free(buf);
       
       /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
