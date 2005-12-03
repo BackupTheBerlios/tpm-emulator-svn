@@ -1,6 +1,7 @@
 /* Software-Based Trusted Platform Module (TPM) Emulator for Linux
  * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+ *                    Swiss Federal Institute of Technology (ETH) Zurich,
+ *               2005 Heiko Stamer <stamer@gaos.org>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -17,6 +18,7 @@
 
 #include "tpm_emulator.h"
 #include "tpm_commands.h"
+#include "tpm_data.h"
 
 /*
  * Identity Creation and Activation ([TPM_Part3], Section 15)
@@ -27,29 +29,34 @@ TPM_RESULT TPM_MakeIdentity(
   TPM_CHOSENID_HASH *labelPrivCADigest,
   TPM_KEY *idKeyParams,
   TPM_AUTH *auth1,
-  TPM_AUTH *auth2,  
+  TPM_AUTH *auth2,
   TPM_KEY *idKey,
   UINT32 *identityBindingSize,
-  BYTE **identityBinding  
+  BYTE **identityBinding
 )
 {
-  info("TPM_MakeIdentity() not implemented yet");
-  /* TODO: implement TPM_MakeIdentity() */
-  return TPM_FAIL;
   
   /* 1. Validate the idKeyParams parameters for the key description */
     /* a. If the algorithm type is RSA the key length MUST be a minimum of 2048.
      * For interoperability the key length SHOULD be 2048 */
-    
     /* b. If the algorithm type is other than RSA the strength provided by the 
      * key MUST be comparable to RSA 2048 */
-    
     /* c. If the TPM is not designed to create a key of the requested type, 
      * return the error code TPM_BAD_KEY_PROPERTY */
-    
+    switch (idKeyParams->algorithmParms.algorithmID) {
+      case TPM_ALG_RSA:
+        if (idKeyParams->algorithmParms.parms.rsa.keyLength != 2048)
+          return TPM_BAD_KEY_PROPERTY;
+        break;
+      default:
+        return TPM_BAD_KEY_PROPERTY;
+    }
     /* d. If TPM_PERMANENT_FLAGS->FIPS is TRUE then */
+    if (tpmData.permanent.flags.FIPS == TRUE) {
       /* i. If authDataUsage specifies TPM_AUTH_NEVER return TPM_NOTFIPS */
-      
+      if (idKeyParams->authDataUsage == TPM_AUTH_NEVER)
+        return TPM_NOTFIPS;
+    }
   /* 2. Use authHandle to verify that the Owner authorized all TPM_MakeIdentity 
    * input parameters. */
   
@@ -115,7 +122,10 @@ TPM_RESULT TPM_MakeIdentity(
   
   /* 18. Sign idContents using tpm_signature_key and 
    * TPM_SS_RSASSAPKCS1v15_SHA1. Store the result in identityBinding. */
-  
+
+info("TPM_MakeIdentity() not implemented yet");
+/* TODO: implement TPM_MakeIdentity() */
+return TPM_FAIL;
 }
 
 TPM_RESULT TPM_ActivateIdentity(  
@@ -123,8 +133,8 @@ TPM_RESULT TPM_ActivateIdentity(
   UINT32 blobSize,
   BYTE *blob,
   TPM_AUTH *auth1,
-  TPM_AUTH *auth2,  
-  TPM_SYMMETRIC_KEY *symmetricKey 
+  TPM_AUTH *auth2,
+  TPM_SYMMETRIC_KEY *symmetricKey
 )
 {
   info("TPM_ActivateIdentity() not implemented yet");
