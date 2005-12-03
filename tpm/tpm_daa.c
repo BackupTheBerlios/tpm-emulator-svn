@@ -343,6 +343,7 @@ TPM_RESULT TPM_DAA_Join(
   BYTE scratch[SCRATCH_SIZE];
   TPM_DAA_SESSION_DATA *session = NULL;
   
+//  TPM_RESULT res;
   UINT32 cnt, len, size;
   sha1_ctx_t sha1;
   rsa_public_key_t key;
@@ -360,6 +361,10 @@ TPM_RESULT TPM_DAA_Join(
   
   /* Initalize internal scratch pad */
   memset(scratch, 0, SCRATCH_SIZE);
+  
+  /* Verify authorization */
+//  res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
+//  if (res != TPM_SUCCESS) return res;
   
   /* Verify and initalize the session, for all stages greater than zero. */
   if (stage > 0) {
@@ -2298,6 +2303,7 @@ TPM_RESULT TPM_DAA_Sign(
   BYTE scratch[SCRATCH_SIZE];
   TPM_DAA_SESSION_DATA *session = NULL;
   
+  TPM_RESULT res;
   sha1_ctx_t sha1;
   BYTE *ptr, *buf;
   UINT32 len;
@@ -2318,6 +2324,10 @@ TPM_RESULT TPM_DAA_Sign(
   
   /* Initalize internal scratch pad */
   memset(scratch, 0, SCRATCH_SIZE);
+  
+  /* Verify authorization */
+//  res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
+//  if (res != TPM_SUCCESS) return res;
   
   /* Verify and initalize the session, for all stages greater than zero. */
   if (stage > 0) {

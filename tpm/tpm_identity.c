@@ -59,24 +59,28 @@ TPM_RESULT TPM_MakeIdentity(
     }
   /* 2. Use authHandle to verify that the Owner authorized all TPM_MakeIdentity 
    * input parameters. */
-  
+//TODO
   /* 3. Use srkAuthHandle to verify that the SRK owner authorized all 
    * TPM_MakeIdentity input parameters. */
-  
+//TODO
   /* 4. Verify that idKeyParams->keyUsage is TPM_KEY_IDENTITY. If it is not, 
    * return TPM_INVALID_KEYUSAGE */
-  
+  if (idKeyParams->keyUsage != TPM_KEY_IDENTITY)
+    return TPM_INVALID_KEYUSAGE;
   /* 5. Verify that idKeyParams->keyFlags->migratable is FALSE. If it is not,
    * return TPM_INVALID_KEYUSAGE */
+  if ((idKeyParams->keyFlags & TPM_KEY_FLAG_MIGRATABLE) == 
+    TPM_KEY_FLAG_MIGRATABLE)
+      return TPM_INVALID_KEYUSAGE;
   
   /* 6. If ownerAuth indicates XOR encryption for the AuthData secrets */
     /* a. Create X1 the SHA-1 of the concatenation of (ownerAuth->sharedSecret 
      * || authLastNonceEven) */
     
-    /* b. Create a1 by XOR X1 and identityAuth */
+    /* b. Create A1 by XOR X1 and identityAuth */
     
   /* 7. Else */
-    /* a. Create a1 by decrypting identityAuth using the algorithm indicated 
+    /* a. Create A1 by decrypting identityAuth using the algorithm indicated 
      * in the OSAP session */
     
     /* b. Key is from ownerAuth->sharedSecret */

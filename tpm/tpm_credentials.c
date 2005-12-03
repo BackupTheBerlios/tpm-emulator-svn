@@ -200,4 +200,3 @@ TPM_RESULT TPM_OwnerReadInternalPub(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
     return TPM_BAD_PARAMETER;
   }
 }
-

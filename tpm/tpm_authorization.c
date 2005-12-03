@@ -293,7 +293,7 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
   hmac_init(&ctx, *auth->secret, sizeof(*auth->secret));
   hmac_update(&ctx, auth->digest, sizeof(auth->digest));
   if (session->type == TPM_ST_OIAP && FALSE) 
-  hmac_update(&ctx, (BYTE*)&auth_handle, 4);
+    hmac_update(&ctx, (BYTE*)&auth_handle, 4);
   hmac_update(&ctx, session->nonceEven.nonce, sizeof(session->nonceEven.nonce));
   hmac_update(&ctx, auth->nonceOdd.nonce, sizeof(auth->nonceOdd.nonce));
   hmac_update(&ctx, &auth->continueAuthSession, 1);
