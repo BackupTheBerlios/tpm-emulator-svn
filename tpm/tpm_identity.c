@@ -115,6 +115,8 @@ TPM_RESULT TPM_MakeIdentity(
   /* 13. Attach identityPubKey and tpm_signature_key to idKey */
   
   /* 14. Set idKey->migrationAuth to TPM_PERMANENT_DATA->tpmProof */
+//  memcpy(idKey->migrationAuth, tpmData.permanent.data.tpmProof,
+//    sizeof(TPM_SECRET));
   
   /* 15. Ensure that all TPM_PAYLOAD_TYPE structures identify this key as 
    * TPM_PT_ASYM */
@@ -197,4 +199,3 @@ TPM_RESULT TPM_ActivateIdentity(
   /* 9. Return K1 */
   
 }
-
