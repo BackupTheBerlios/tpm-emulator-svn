@@ -76,6 +76,9 @@ loaded, startup SHOULD be set to 'clear':
 
 bash# modprobe tpm_emulator startup="clear"
 
+Note that the name as well as the format of the persistent-storage file
+has changed between release 0.2 and 0.3.
+
 
 Description
 --------------------------------------------------------------------------
@@ -87,5 +90,4 @@ Contact
 Any comments, suggestions and bug reports are welcome. Please, mention
 the keyword 'TPM-Emulator' in the subject.
 Mario Strasser <mast@gmx.net>
-
 

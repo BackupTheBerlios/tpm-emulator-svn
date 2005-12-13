@@ -43,9 +43,8 @@ UINT32 tpm_get_free_daa_session(void)
 
 /* Verify that DAA_session->DAA_digestContext == 
  * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error on mismatch */
-TPM_RESULT tpm_daa_verify_digestContext(  
-  TPM_DAA_SESSION_DATA *session, sha1_ctx_t *sha1
-)
+TPM_RESULT tpm_daa_verify_digestContext(TPM_DAA_SESSION_DATA *session, 
+                                        sha1_ctx_t *sha1)
 {
   TPM_DIGEST dgt;
   UINT32 size, len;
@@ -85,9 +84,8 @@ TPM_RESULT tpm_daa_verify_digestContext(
 
 /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific || 
  * DAA_joinSession) */
-void tpm_daa_update_digestContext(  
-  TPM_DAA_SESSION_DATA *session, sha1_ctx_t *sha1
-)
+void tpm_daa_update_digestContext(TPM_DAA_SESSION_DATA *session,
+                                  sha1_ctx_t *sha1)
 {
   UINT32 size, len;
   BYTE *buf, *ptr;
@@ -123,9 +121,8 @@ void tpm_daa_update_digestContext(
 
 /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) and 
  * return error on mismatch */
-TPM_RESULT tpm_daa_verify_digestContext_sign(  
-  TPM_DAA_SESSION_DATA *session, sha1_ctx_t *sha1
-)
+TPM_RESULT tpm_daa_verify_digestContext_sign(TPM_DAA_SESSION_DATA *session,
+                                             sha1_ctx_t *sha1)
 {
   TPM_DIGEST dgt;
   UINT32 size, len;
@@ -152,9 +149,8 @@ TPM_RESULT tpm_daa_verify_digestContext_sign(
 }
 
 /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific) */
-void tpm_daa_update_digestContext_sign(  
-  TPM_DAA_SESSION_DATA *session, sha1_ctx_t *sha1
-)
+void tpm_daa_update_digestContext_sign(TPM_DAA_SESSION_DATA *session,
+                                       sha1_ctx_t *sha1)
 {
   UINT32 size, len;
   BYTE *buf, *ptr;
@@ -178,9 +174,8 @@ void tpm_daa_update_digestContext_sign(
 
 /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
  * SHA-1(DAA_issuerSettings) and return error on mismatch */
-TPM_RESULT tpm_daa_verify_digestIssuer(  
-  TPM_DAA_SESSION_DATA *session, sha1_ctx_t *sha1
-)
+TPM_RESULT tpm_daa_verify_digestIssuer(TPM_DAA_SESSION_DATA *session,
+                                       sha1_ctx_t *sha1)
 {
   TPM_DIGEST dgt;
   UINT32 size, len;
@@ -207,9 +202,8 @@ TPM_RESULT tpm_daa_verify_digestIssuer(
 }
 
 /* Set DAA_tpmSpecific->DAA_digestIssuer == SHA-1(DAA_issuerSettings) */
-void tpm_daa_update_digestIssuer(  
-  TPM_DAA_SESSION_DATA *session, sha1_ctx_t *sha1
-)
+void tpm_daa_update_digestIssuer(TPM_DAA_SESSION_DATA *session,
+                                 sha1_ctx_t *sha1)
 {
   UINT32 size, len;
   BYTE *buf, *ptr;
@@ -233,9 +227,8 @@ void tpm_daa_update_digestIssuer(
 
 /* Verify that SHA-1(input) == digest and return error !TPM_SUCCESS 
  * on mismatch */
-TPM_RESULT tpm_daa_verify_generic(  
-  TPM_DIGEST digest, BYTE *input, UINT32 inputSize, sha1_ctx_t *sha1
-)
+TPM_RESULT tpm_daa_verify_generic(TPM_DIGEST digest, BYTE *input, 
+                                  UINT32 inputSize, sha1_ctx_t *sha1)
 {
   TPM_DIGEST dgt;
   
@@ -327,18 +320,11 @@ int compute_daa_digest(TPM_DAA_BLOB *daaBlob, TPM_DIGEST *digest)
 
 #define SCRATCH_SIZE 256
 
-TPM_RESULT TPM_DAA_Join(  
-  TPM_HANDLE handle,
-  BYTE stage,
-  UINT32 inputSize0,
-  BYTE *inputData0,
-  UINT32 inputSize1,
-  BYTE *inputData1,
-  TPM_AUTH *auth1,
-  TPM_COMMAND_CODE *ordinal,
-  UINT32 *outputSize,
-  BYTE **outputData
-)
+TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
+                        BYTE *inputData0, UINT32 inputSize1,
+                        BYTE *inputData1, TPM_AUTH *auth1,
+                        TPM_COMMAND_CODE *ordinal, UINT32 *outputSize,
+                        BYTE **outputData)
 {
   BYTE scratch[SCRATCH_SIZE];
   TPM_DAA_SESSION_DATA *session = NULL;
@@ -2287,23 +2273,15 @@ TPM_RESULT TPM_DAA_Join(
   }
 }
 
-TPM_RESULT TPM_DAA_Sign(  
-  TPM_HANDLE handle,
-  BYTE stage,
-  UINT32 inputSize0,
-  BYTE *inputData0,
-  UINT32 inputSize1,
-  BYTE *inputData1,
-  TPM_AUTH *auth1,
-  TPM_COMMAND_CODE *ordinal,
-  UINT32 *outputSize,
-  BYTE **outputData
-)
+TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
+                        BYTE *inputData0, UINT32 inputSize1,
+                        BYTE *inputData1, TPM_AUTH *auth1,
+                        TPM_COMMAND_CODE *ordinal, UINT32 *outputSize,
+                        BYTE **outputData)
 {
   BYTE scratch[SCRATCH_SIZE];
   TPM_DAA_SESSION_DATA *session = NULL;
   
-  TPM_RESULT res;
   sha1_ctx_t sha1;
   BYTE *ptr, *buf;
   UINT32 len;

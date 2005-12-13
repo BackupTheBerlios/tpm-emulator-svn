@@ -32,7 +32,7 @@ char *startup = "save";
 module_param(startup, charp, 0444);
 MODULE_PARM_DESC(startup, " Sets the startup mode of the TPM. "
   "Possible values are 'clear', 'save' (default) and 'deactivated.");
-char *storage_file = "/var/tpm/tpm_emulator-1.2.0.1";
+char *storage_file = "/var/tpm/tpm_emulator-1.2.0.2";
 module_param(storage_file, charp, 0644);
 MODULE_PARM_DESC(storage_file, " Sets the persistent-data storage " 
   "file of the TPM.");
@@ -104,9 +104,29 @@ static ssize_t tpm_write(struct file *file, const char *buf, size_t count, loff_
   return count;
 }
 
+#define TPMIOC_CANCEL   _IO('T', 0x00)
+#define TPMIOC_TRANSMIT _IO('T', 0x01)
+
 static int tpm_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
 {
-  debug("%s(%d, %ld)", __FUNCTION__, cmd, arg);
+  debug("%s(%d, %p)", __FUNCTION__, cmd, (char*)arg);
+  if (cmd == TPMIOC_TRANSMIT) {
+    uint32_t count = ntohl(*(uint32_t*)(arg + 2));  
+    down(&tpm_mutex);
+    if (tpm_response.data != NULL) kfree(tpm_response.data);
+    if (tpm_handle_command((char*)arg, count, &tpm_response.data,
+                           &tpm_response.size) == 0) {
+      tpm_response.size -= copy_to_user((char*)arg, tpm_response.data,
+		                        tpm_response.size);
+      kfree(tpm_response.data);
+      tpm_response.data = NULL;      
+    } else {	    
+      tpm_response.size = 0;
+      tpm_response.data = NULL;
+    }  
+    up(&tpm_mutex);
+    return tpm_response.size;
+  }  
   return -1;
 }
 

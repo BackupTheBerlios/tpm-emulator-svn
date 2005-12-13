@@ -1,3 +1,14 @@
+2005-12-16  Mario Strasser <mast@gmx.net>
+	* linux_module.c: ioctl() support added
+	* tpm_capability.c: TPM_GetCapability() adapted to make
+		it work with trousers
+
+
+2005-12-09  Heiko Stamer <hstamer@bat.berlios.de>
+	* tpm_marshalling.c, tpm_daa.c, rsa.c: DAA functionality,
+		that is TPM_DAA_Join and TPM_DAA_Sign added
+
+
 2005-08-15  Mario Strasser <mast@gmx.net>
 	* all: some typos corrected
 	* tpm_integrity.c: bug in TPM_Extend fixed
