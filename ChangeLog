@@ -4,7 +4,7 @@
 		it work with trousers
 
 
-2005-12-09  Heiko Stamer <hstamer@bat.berlios.de>
+2005-12-09  Heiko Stamer <stamer@gaos.org>
 	* tpm_marshalling.c, tpm_daa.c, rsa.c: DAA functionality,
 		that is TPM_DAA_Join and TPM_DAA_Sign added
 
