@@ -492,7 +492,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
             memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
             return TPM_DAA_ISSUER_VALIDITY;
         }
-        if (rsa_verify(&key, RSA_ES_OAEP_SHA1, signedData, inputSize0, 
+        if (rsa_verify(&key, RSA_SSA_PKCS1_SHA1, signedData, inputSize0, 
           signatureValue)) {
             memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
             return TPM_DAA_ISSUER_VALIDITY;
@@ -572,7 +572,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_ISSUER_VALIDITY;
       }
-      if (rsa_verify(&key, RSA_ES_OAEP_SHA1, signedData, 
+      if (rsa_verify(&key, RSA_SSA_PKCS1_SHA1, signedData, 
         sizeof(TPM_DIGEST) + sizeof(TPM_DAA_ISSUER), signatureValue)) {
           rsa_release_public_key(&key);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
@@ -1013,7 +1013,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         return TPM_DAA_INPUT_DATA0;
       }
       /* Set NE = decrypt(inputData0, privEK) */
-      if (rsa_decrypt(&tpmData.permanent.data.endorsementKey, RSA_ES_PKCSV15, 
+      if (rsa_decrypt(&tpmData.permanent.data.endorsementKey, RSA_ES_OAEP_SHA1, 
         inputData0, inputSize0, scratch, &sizeNE)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;

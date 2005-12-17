@@ -35,6 +35,7 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
                              TPM_RESOURCE_TYPE resourceType)
 {
   TPM_SESSION_DATA *session;
+  TPM_DAA_SESSION_DATA *sessionDAA;
   TPM_KEY_DATA *key;
   int i;
  
@@ -50,6 +51,12 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
       session = tpm_get_transport(handle);
       if (session == NULL) return TPM_INVALID_AUTHHANDLE;
       memset(session, 0, sizeof(*session));
+      return TPM_SUCCESS;
+    
+    case TPM_RT_DAA_TPM:
+      sessionDAA = tpm_get_daa(handle);
+      if (sessionDAA == NULL) return TPM_INVALID_RESOURCE;
+      memset(sessionDAA, 0, sizeof(*sessionDAA));
       return TPM_SUCCESS;
   
     case TPM_RT_KEY:
