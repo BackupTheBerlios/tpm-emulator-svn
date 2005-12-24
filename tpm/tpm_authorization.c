@@ -167,7 +167,8 @@ UINT32 tpm_get_free_session(BYTE type)
   for (i = 0; i < TPM_MAX_SESSIONS; i++) {
     if (tpmData.stany.data.sessions[i].type == TPM_ST_INVALID) {
       tpmData.stany.data.sessions[i].type = type;
-      return INDEX_TO_AUTH_HANDLE(i);
+      if (type == TPM_ST_TRANSPORT) return INDEX_TO_TRANS_HANDLE(i);
+      else return INDEX_TO_AUTH_HANDLE(i);
     } 
   }
   return TPM_INVALID_HANDLE;
@@ -273,8 +274,9 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
   UINT32 auth_handle = cpu_to_be32(auth->authHandle);
   
   info("tpm_verify_auth(%08x)", auth->authHandle);
-  /* get dedicated authorization session */
+  /* get dedicated authorization or transport session */
   session = tpm_get_auth(auth->authHandle);
+  if (session == NULL) session = tpm_get_transport(auth->authHandle);
   if (session == NULL) return TPM_INVALID_AUTHHANDLE;
   /* setup authorization */
   if (session->type == TPM_ST_OIAP) {
@@ -285,6 +287,9 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
   } else if (session->type == TPM_ST_OSAP) {
     debug("[TPM_ST_OSAP]");
     if (session->handle != handle) return TPM_AUTHFAIL;
+  } else if (session->type == TPM_ST_TRANSPORT) {
+    debug("[TPM_ST_TRANSPORT]");
+    memcpy(session->sharedSecret, secret, sizeof(TPM_SECRET));
   } else {
     return TPM_INVALID_AUTHHANDLE;
   }

@@ -198,6 +198,8 @@ static inline int tpm_unmarshal_BYTE_ARRAY(BYTE **ptr, UINT32 *ptr_length,
 #define tpm_unmarshal_TPM_KEY_FLAGS            tpm_unmarshal_UINT32
 #define tpm_marshal_TPM_ALGORITHM_ID           tpm_marshal_UINT32
 #define tpm_unmarshal_TPM_ALGORITHM_ID         tpm_unmarshal_UINT32
+#define tpm_marshal_TPM_MODIFIER_INDICATOR     tpm_marshal_UINT32
+#define tpm_unmarshal_TPM_MODIFIER_INDICATOR   tpm_unmarshal_UINT32
 #define tpm_marshal_TPM_ACTUAL_COUNT           tpm_marshal_UINT32
 #define tpm_unmarshal_TPM_ACTUAL_COUNT         tpm_unmarshal_UINT32
 #define tpm_marshal_TPM_TRANSPORT_ATTRIBUTES   tpm_marshal_UINT32

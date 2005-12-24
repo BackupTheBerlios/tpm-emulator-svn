@@ -1992,6 +1992,7 @@ void tpm_update_ticks(void);
  * @secret: [in] The encrypted secret area
  * @auth1: [in, out] Authorization protocol parameters
  * @transHandle: [out] Handle for the transport session
+ * @locality [out] The locality that called this command
  * @currentTicks: [out] The current tick count 
  * @transNonce: [out] The even nonce in use for subsequent execute transport 
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
@@ -2009,6 +2010,7 @@ TPM_RESULT TPM_EstablishTransport(
   BYTE *secret,
   TPM_AUTH *auth1,  
   TPM_TRANSHANDLE *transHandle,
+  TPM_MODIFIER_INDICATOR *locality,
   TPM_CURRENT_TICKS *currentTicks,
   TPM_NONCE *transNonce 
 );
@@ -2018,7 +2020,8 @@ TPM_RESULT TPM_EstablishTransport(
  * @inWrappedCmdSize: [in] Size of the wrapped command 
  * @inWrappedCmd: [in] The wrapped command
  * @auth1: [in, out] Authorization protocol parameters
- * @currentTicks: [out] The current ticks when the command was executed 
+ * @currentTicks: [out] The current ticks when the command was executed
+ * @locality [out] The locality that called this command
  * @outWrappedCmdSize: [out] Size of the wrapped command 
  * @outWrappedCmd: [out] The wrapped command
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
@@ -2031,7 +2034,8 @@ TPM_RESULT TPM_ExecuteTransport(
   UINT32 inWrappedCmdSize,
   BYTE *inWrappedCmd,
   TPM_AUTH *auth1,  
-  UINT64 *currentTicks,
+  TPM_CURRENT_TICKS *currentTicks,
+  TPM_MODIFIER_INDICATOR *locality,
   UINT32 *outWrappedCmdSize,
   BYTE **outWrappedCmd  
 );
@@ -2042,7 +2046,8 @@ TPM_RESULT TPM_ExecuteTransport(
  * @antiReplay: [in] Value provided by caller for anti-replay protection
  * @auth1: [in, out] Authorization protocol parameters
  * @auth2: [in, out] Authorization protocol parameters
- * @currentTicks: [out] The current ticks when the command executed
+ * @locality [out] The locality that called this command
+ * @currentTicks: [out] The current ticks when the command was executed
  * @signSize: [out] The size of the signature area 
  * @signature: [out] The signature of the digest 
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
@@ -2057,7 +2062,8 @@ TPM_RESULT TPM_ReleaseTransportSigned(
   TPM_KEY_HANDLE Key,
   TPM_NONCE *antiReplay,
   TPM_AUTH *auth1,
-  TPM_AUTH *auth2,  
+  TPM_AUTH *auth2,
+  TPM_MODIFIER_INDICATOR *locality,
   TPM_CURRENT_TICKS *currentTicks,
   UINT32 *signSize,
   BYTE **signature  

@@ -22,14 +22,9 @@
 #include "tpm_data.h"
 #include "tpm_handles.h"
 
-static void tpm_compute_in_param_digest(TPM_REQUEST *req)
+UINT32 tpm_get_param_offset(TPM_COMMAND_CODE ordinal)
 {
-  sha1_ctx_t sha1;
-  UINT32 offset;
-  UINT32 ord = cpu_to_be32(req->ordinal);
-
-  /* skip all key-handles at the beginning */
-  switch (req->ordinal) {
+  switch (ordinal) {
     case TPM_ORD_ActivateIdentity:
     case TPM_ORD_CertifySelfTest:
     case TPM_ORD_ChangeAuth:
@@ -57,29 +52,36 @@ static void tpm_compute_in_param_digest(TPM_REQUEST *req)
     case TPM_ORD_TickStampBlob:
     case TPM_ORD_UnBind:
     case TPM_ORD_Unseal:
-      offset = 4;
-      break;
+      return 4;
 
     case TPM_ORD_CertifyKey:
     case TPM_ORD_CertifyKey2:
     case TPM_ORD_ChangeAuthAsymFinish:
-      offset = 8;
-      break;
+      return 8;
 
     default:
-      offset = 0;
+      return 0;
   }
+}
+
+void tpm_compute_in_param_digest(TPM_REQUEST *req)
+{
+  sha1_ctx_t sha1;
+  UINT32 offset = tpm_get_param_offset(req->ordinal);
+  UINT32 ord = cpu_to_be32(req->ordinal);
+
   /* compute SHA1 hash */
   if (offset <= req->paramSize) {
     sha1_init(&sha1);
     sha1_update(&sha1, (BYTE*)&ord, 4);
+    /* skip all handles at the beginning */
     sha1_update(&sha1, req->param + offset, req->paramSize - offset);
     sha1_final(&sha1, req->auth1.digest);
     memcpy(req->auth2.digest, req->auth1.digest, sizeof(req->auth1.digest));
   }
 }
 
-static void tpm_compute_out_param_digest(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
+void tpm_compute_out_param_digest(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
 {
   sha1_ctx_t sha1;
   UINT32 res = cpu_to_be32(rsp->result);
@@ -2345,6 +2347,7 @@ static TPM_RESULT execute_TPM_EstablishTransport(TPM_REQUEST *req, TPM_RESPONSE 
   UINT32 secretSize;
   BYTE *secret;
   TPM_TRANSHANDLE transHandle;
+  TPM_MODIFIER_INDICATOR locality;
   TPM_CURRENT_TICKS currentTicks;
   TPM_NONCE transNonce;
   TPM_RESULT res;
@@ -2360,13 +2363,14 @@ static TPM_RESULT execute_TPM_EstablishTransport(TPM_REQUEST *req, TPM_RESPONSE 
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
   res = TPM_EstablishTransport(encHandle, &transPublic, secretSize, secret, 
-    &req->auth1, &transHandle, &currentTicks, &transNonce);
+    &req->auth1, &transHandle, &locality, &currentTicks, &transNonce);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
-  rsp->paramSize = len = 4 + 36 + 20;
+  rsp->paramSize = len = 4 + 4 + 36 + 20;
   rsp->param = ptr = tpm_malloc(len);
   if (ptr == NULL
       || tpm_marshal_TPM_TRANSHANDLE(&ptr, &len, transHandle)
+      || tpm_marshal_TPM_MODIFIER_INDICATOR(&ptr, &len,  locality)
       || tpm_marshal_TPM_CURRENT_TICKS(&ptr, &len, &currentTicks)
       || tpm_marshal_TPM_NONCE(&ptr, &len, &transNonce)) {
     tpm_free(rsp->param);
@@ -2381,7 +2385,8 @@ static TPM_RESULT execute_TPM_ExecuteTransport(TPM_REQUEST *req, TPM_RESPONSE *r
   UINT32 len;
   UINT32 inWrappedCmdSize;
   BYTE *inWrappedCmd;
-  UINT64 currentTicks;
+  TPM_CURRENT_TICKS currentTicks;
+  TPM_MODIFIER_INDICATOR locality;
   UINT32 outWrappedCmdSize;
   BYTE *outWrappedCmd = NULL;
   TPM_RESULT res;
@@ -2395,13 +2400,14 @@ static TPM_RESULT execute_TPM_ExecuteTransport(TPM_REQUEST *req, TPM_RESPONSE *r
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
   res = TPM_ExecuteTransport(inWrappedCmdSize, inWrappedCmd, &req->auth1, 
-    &currentTicks, &outWrappedCmdSize, &outWrappedCmd);
+    &currentTicks, &locality, &outWrappedCmdSize, &outWrappedCmd);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
-  rsp->paramSize = len = 8 + 4 + outWrappedCmdSize;
+  rsp->paramSize = len = 36 + 4 + 4 + outWrappedCmdSize;
   rsp->param = ptr = tpm_malloc(len);
   if (ptr == NULL
-      || tpm_marshal_UINT64(&ptr, &len, currentTicks)
+      || tpm_marshal_TPM_CURRENT_TICKS(&ptr, &len, &currentTicks)
+      || tpm_marshal_TPM_MODIFIER_INDICATOR(&ptr, &len, locality)
       || tpm_marshal_UINT32(&ptr, &len, outWrappedCmdSize)
       || tpm_marshal_BLOB(&ptr, &len, outWrappedCmd, outWrappedCmdSize)) {
     tpm_free(rsp->param);
@@ -2417,6 +2423,7 @@ static TPM_RESULT execute_TPM_ReleaseTransportSigned(TPM_REQUEST *req, TPM_RESPO
   UINT32 len;
   TPM_KEY_HANDLE key;
   TPM_NONCE antiReplay;
+  TPM_MODIFIER_INDICATOR locality;
   TPM_CURRENT_TICKS currentTicks;
   UINT32 signSize;
   BYTE *signature = NULL;
@@ -2431,12 +2438,13 @@ static TPM_RESULT execute_TPM_ReleaseTransportSigned(TPM_REQUEST *req, TPM_RESPO
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
   res = TPM_ReleaseTransportSigned(key, &antiReplay, &req->auth1, &req->auth2, 
-    &currentTicks, &signSize, &signature);
+    &locality, &currentTicks, &signSize, &signature);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
   rsp->paramSize = len = 36 + 4 + signSize;
   rsp->param = ptr = tpm_malloc(len);
   if (ptr == NULL
+      || tpm_marshal_TPM_MODIFIER_INDICATOR(&ptr, &len, locality)
       || tpm_marshal_TPM_CURRENT_TICKS(&ptr, &len, &currentTicks)
       || tpm_marshal_UINT32(&ptr, &len, signSize)
       || tpm_marshal_BLOB(&ptr, &len, signature, signSize)) {
@@ -3074,7 +3082,8 @@ static void tpm_setup_rsp_auth(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
   hmac_ctx_t hmac;
 
   /* compute parameter digest */
-  tpm_compute_out_param_digest(ordinal, rsp);
+  if (ordinal != TPM_ORD_ExecuteTransport)
+    tpm_compute_out_param_digest(ordinal, rsp);
   /* compute authorization values */
   switch (rsp->tag) {
     case TPM_TAG_RSP_AUTH2_COMMAND:
@@ -3177,7 +3186,7 @@ static TPM_RESULT tpm_check_status_and_mode(TPM_REQUEST *req)
 
 extern const char *tpm_error_to_string(TPM_RESULT res);
 
-static void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
+void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
   TPM_RESULT res;
   
@@ -3816,9 +3825,17 @@ static void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   }
   /* terminate authorization sessions if necessary */
   if (rsp->auth1 != NULL && !rsp->auth1->continueAuthSession) 
-    TPM_FlushSpecific(rsp->auth1->authHandle, TPM_RT_AUTH);
+    TPM_FlushSpecific(rsp->auth1->authHandle, HANDLE_TO_RT(rsp->auth1->authHandle));
   if (rsp->auth2 != NULL && !rsp->auth2->continueAuthSession) 
     TPM_FlushSpecific(rsp->auth2->authHandle, TPM_RT_AUTH);
+  /* if transportExclusive is set, only the execution of TPM_ExecuteTransport
+     and TPM_ReleaseTransportSigned is allowed */
+  if (tpmData.stany.flags.transportExclusive
+      && req->ordinal != TPM_ORD_ExecuteTransport
+      && req->ordinal != TPM_ORD_ReleaseTransportSigned) {
+    TPM_FlushSpecific(tpmData.stany.data.transExclusive, TPM_RT_TRANS);
+    tpmData.stany.flags.transportExclusive = FALSE;
+  }
 }
 
 void tpm_emulator_init(uint32_t startup)

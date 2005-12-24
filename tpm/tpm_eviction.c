@@ -39,7 +39,7 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
   TPM_KEY_DATA *key;
   int i;
  
-  info("TPM_FlushSpecific() not fully implemented yet");
+  info("TPM_FlushSpecific()");
   switch (resourceType) {
     case TPM_RT_AUTH:
       session = tpm_get_auth(handle);
@@ -73,7 +73,7 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
             || (session->type == TPM_ST_TRANSPORT && session->handle == handle))
           memset(session, 0, sizeof(*session));
       }
-      return TPM_SUCCESS;   
+      return TPM_SUCCESS;
   }
   return TPM_INVALID_RESOURCE;
 }

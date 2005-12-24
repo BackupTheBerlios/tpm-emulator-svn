@@ -28,16 +28,21 @@
 /*
  * macros to convert array indices to handles
  */
-#define INDEX_TO_KEY_HANDLE(i)         (i | (TPM_RT_KEY << 24))
-#define INDEX_TO_AUTH_HANDLE(i)        (i | (TPM_RT_AUTH << 24))
-#define INDEX_TO_TRANS_HANDLE(i)       (i | (TPM_RT_TRANS << 24))
-#define INDEX_TO_COUNTER_HANDLE(i)     (i | (TPM_RT_COUNTERS << 24))
-#define INDEX_TO_DAA_HANDLE(i)         (i | (TPM_RT_DAA_TPM << 24))
+#define INDEX_TO_KEY_HANDLE(i)         ((i) | (TPM_RT_KEY << 24))
+#define INDEX_TO_AUTH_HANDLE(i)        ((i) | (TPM_RT_AUTH << 24))
+#define INDEX_TO_TRANS_HANDLE(i)       ((i) | (TPM_RT_TRANS << 24))
+#define INDEX_TO_COUNTER_HANDLE(i)     ((i) | (TPM_RT_COUNTERS << 24))
+#define INDEX_TO_DAA_HANDLE(i)         ((i) | (TPM_RT_DAA_TPM << 24))
 
 /*
  * marco to convert handles to indices
  */
-#define HANDLE_TO_INDEX(h)             (h & 0x00FFFFFF)
+#define HANDLE_TO_INDEX(h)             ((h) & 0x00FFFFFF)
+
+/*
+ * macro to get the ressource type of a handle
+ */
+#define HANDLE_TO_RT(h)                ((h) >> 24)
 
 /*
  * functions to get the dedicated data for a handle

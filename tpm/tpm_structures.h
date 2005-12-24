@@ -1098,6 +1098,10 @@ typedef BYTE TPM_TICKTYPE;
  * Transport Structures
  */
 
+#define TPM_TRANSPORT_ENCRYPT   0x01
+#define TPM_TRANSPORT_LOG       0x02
+#define TPM_TRANSPORT_EXCL_ATTR 0x04
+
 /*
  * TPM _TRANSPORT_PUBLIC ([TPM_Part2], Section 13.1)
  * The public information relative to a transport session.
@@ -1109,6 +1113,7 @@ typedef struct tdTPM_TRANSPORT_PUBLIC {
   TPM_ALGORITHM_ID algID;
   TPM_ENC_SCHEME encScheme;
 } TPM_TRANSPORT_PUBLIC;
+#define sizeof_TPM_TRANSPORT_PUBLIC(s) (2 + 4 + 4 + 2)
 
 /*
  * TPM_TRANSPORT_INTERNAL ([TPM_Part2], Section 13.2)
@@ -1118,24 +1123,26 @@ typedef struct tdTPM_TRANSPORT_PUBLIC {
 typedef struct tdTPM_TRANSPORT_INTERNAL {
   TPM_STRUCTURE_TAG tag;
   TPM_AUTHDATA authData;
-  TPM_TRANSPORT_PUBLIC tranPublic;
+  TPM_TRANSPORT_PUBLIC transPublic;
   TPM_TRANSHANDLE transHandle;
   TPM_NONCE transEven;
   TPM_DIGEST transDigest;
 } TPM_TRANSPORT_INTERNAL;
+#define sizeof_TPM_TRANSPORT_INTERNAL(s) (2 + 20 + 4 + 20 + 20 \
+  + sizeof_TPM_TRANSPORT_PUBLIC(s.tranPublic))
 
 /*
  * TPM_TRANSPORT_LOG_IN structure ([TPM_Part2], Section 13.3)
  * This structure is in use for input log calculations.
  */
-#define TPM_TAG_TRANSPORT_INTERNAL 0x000F
+#define TPM_TAG_TRANSPORT_LOG_IN 0x0010
 typedef struct tdTPM_TRANSPORT_LOG_IN {
   TPM_STRUCTURE_TAG tag;
   TPM_COMMAND_CODE ordinal;
   TPM_DIGEST parameters;
   TPM_DIGEST pubKeyHash;
 } TPM_TRANSPORT_LOG_IN;
-
+#define sizeof_TPM_TRANSPORT_LOG_IN(s) (2 + 4 + 2*20)
 
 /*
  * TPM_TRANSPORT_LOG_OUT structure ([TPM_Part2], Section 13.4)
@@ -1146,7 +1153,10 @@ typedef struct tdTPM_TRANSPORT_LOG_OUT {
   TPM_STRUCTURE_TAG tag;
   TPM_CURRENT_TICKS currentTicks;
   TPM_DIGEST parameters;
+  TPM_MODIFIER_INDICATOR locality;
 } TPM_TRANSPORT_LOG_OUT;
+#define sizeof_TPM_TRANSPORT_LOG_OUT(s) (2 + 20 + 4 \
+  + sizeof_TPM_CURRENT_TICKS(s.currentTicks))
 
 /*
  * TPM_TRANSPORT_AUTH structure ([TPM_Part2], Section 13.5)
@@ -1157,6 +1167,7 @@ typedef struct tdTPM_TRANSPORT_AUTH {
   TPM_STRUCTURE_TAG tag;
   TPM_AUTHDATA authData;
 } TPM_TRANSPORT_AUTH;
+#define sizeof_TPM_TRANSPORT_AUTH(s) (2 + 20)
 
 /*
  * Audit Structures
@@ -2017,8 +2028,11 @@ typedef struct tdTPM_SESSION_DATA {
   TPM_NONCE lastNonceEven;
   TPM_SECRET sharedSecret;
   TPM_HANDLE handle;
+  TPM_TRANSPORT_INTERNAL transInternal;
 } TPM_SESSION_DATA;
-#define sizeof_TPM_SESSION_DATA(s) (1 + 3*20 + 4)
+#define sizeof_TPM_SESSION_DATA(s) (1 + 3*20 + 4 \
+  + ((s.type == TPM_ST_TRANSPORT) ? \
+     sizeof_TPM_TRANSPORT_INTERNAL(s.transInternal) : 0))
 
 /*
  * TPM_DAA_SESSION_DATA
@@ -2058,6 +2072,7 @@ typedef struct tdTPM_STANY_DATA {
    * TPM_STANY_DATA structure.
    */
   TPM_DAA_SESSION_DATA sessionsDAA[TPM_MAX_SESSIONS_DAA];
+  TPM_TRANSHANDLE transExclusive;
 } TPM_STANY_DATA;
 
 /*

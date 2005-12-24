@@ -1,3 +1,7 @@
+2005-12-24  Mario Strasser <mast@gmx.net>
+	* tpm_transport.c, tpm_marshalling.c, tpm_structures.h:
+		Transport session functionality added
+
 2005-12-16  Mario Strasser <mast@gmx.net>
 	* linux_module.c: ioctl() support added
 	* tpm_capability.c: TPM_GetCapability() adapted to make

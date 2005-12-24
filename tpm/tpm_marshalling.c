@@ -619,6 +619,28 @@ int tpm_unmarshal_TPM_TRANSPORT_PUBLIC(BYTE **ptr, UINT32 *length, TPM_TRANSPORT
   return 0;
 }
 
+int tpm_marshal_TPM_TRANSPORT_INTERNAL(BYTE **ptr, UINT32 *length, TPM_TRANSPORT_INTERNAL *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_AUTHDATA(ptr, length, &v->authData)
+      || tpm_marshal_TPM_TRANSPORT_PUBLIC(ptr, length, &v->transPublic)
+      || tpm_marshal_TPM_TRANSHANDLE(ptr, length, v->transHandle)
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->transEven)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->transDigest)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_TRANSPORT_INTERNAL(BYTE **ptr, UINT32 *length, TPM_TRANSPORT_INTERNAL *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_AUTHDATA(ptr, length, &v->authData)
+      || tpm_unmarshal_TPM_TRANSPORT_PUBLIC(ptr, length, &v->transPublic)
+      || tpm_unmarshal_TPM_TRANSHANDLE(ptr, length, &v->transHandle)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->transEven)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->transDigest)) return -1;
+  return 0;
+}
+
 int tpm_marshal_TPM_CONTEXT_BLOB(BYTE **ptr, UINT32 *length, TPM_CONTEXT_BLOB *v)
 {
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
@@ -1322,7 +1344,9 @@ int tpm_marshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA *v
       || tpm_marshal_TPM_NONCE(ptr, length, &v->nonceEven)
       || tpm_marshal_TPM_NONCE(ptr, length, &v->lastNonceEven)
       || tpm_marshal_TPM_SECRET(ptr, length, &v->sharedSecret)
-      || tpm_marshal_TPM_HANDLE(ptr, length, v->handle)) return -1;
+      || tpm_marshal_TPM_HANDLE(ptr, length, v->handle)
+      || (v->type == TPM_ST_TRANSPORT 
+          && tpm_marshal_TPM_TRANSPORT_INTERNAL(ptr, length, &v->transInternal))) return -1;
   return 0;
 }
 
@@ -1332,7 +1356,9 @@ int tpm_unmarshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA 
       || tpm_unmarshal_TPM_NONCE(ptr, length, &v->nonceEven)
       || tpm_unmarshal_TPM_NONCE(ptr, length, &v->lastNonceEven)
       || tpm_unmarshal_TPM_SECRET(ptr, length, &v->sharedSecret)
-      || tpm_unmarshal_TPM_HANDLE(ptr, length, &v->handle)) return -1;
+      || tpm_unmarshal_TPM_HANDLE(ptr, length, &v->handle)
+      || (v->type == TPM_ST_TRANSPORT 
+          && tpm_unmarshal_TPM_TRANSPORT_INTERNAL(ptr, length, &v->transInternal))) return -1;
   return 0;
 }
 
