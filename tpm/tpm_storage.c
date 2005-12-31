@@ -140,7 +140,7 @@ TPM_RESULT TPM_Seal(TPM_KEY_HANDLE keyHandle, TPM_ENCAUTH *encAuth,
   sealedData->encData = NULL;
   sealedData->sealInfoSize = pcrInfoSize;
   if (pcrInfoSize > 0) {
-    sealedData->sealInfoSize = pcrInfoSize;  
+    sealedData->sealInfoSize = pcrInfoSize;
     memcpy(&sealedData->sealInfo, pcrInfo, sizeof(TPM_PCR_INFO));
     res = tpm_compute_pcr_digest(&pcrInfo->creationPCRSelection, 
       &sealedData->sealInfo.digestAtCreation, NULL);
@@ -279,12 +279,12 @@ TPM_RESULT TPM_UnBind(TPM_KEY_HANDLE keyHandle, UINT32 inDataSize,
       return TPM_DECRYPT_ERROR;
     }
     *outDataSize -= 5;
-    memmove(*outData, &(*outData)[5], *outDataSize);   
-  } 
+    memmove(*outData, &(*outData)[5], *outDataSize);
+  }
   return TPM_SUCCESS;
 }
 
-static int compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest)
+int compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest)
 {
   sha1_ctx_t sha1;
   UINT32 len = sizeof_TPM_KEY((*key));
@@ -421,7 +421,7 @@ TPM_RESULT TPM_CreateWrapKey(TPM_KEY_HANDLE parentHandle,
     /* compute PCR digest */
     if (keyInfo->PCRInfoSize > 0) {
       tpm_compute_pcr_digest(&keyInfo->PCRInfo.creationPCRSelection,
-        &keyInfo->PCRInfo.digestAtCreation, NULL); 
+        &keyInfo->PCRInfo.digestAtCreation, NULL);
       keyInfo->PCRInfo.localityAtCreation = 
         tpmData.stany.flags.localityModifier;
     }
@@ -570,7 +570,7 @@ int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms)
   if (parms->parms.rsa.exponent == NULL) return -1;
   rsa_export_exponent(&key->key, parms->parms.rsa.exponent,
     &parms->parms.rsa.exponentSize);
-  parms->parmSize = 12 + parms->parms.rsa.exponentSize;  
+  parms->parmSize = 12 + parms->parms.rsa.exponentSize;
   return 0;
 }
 
@@ -590,7 +590,7 @@ TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
       || (key->authDataUsage != TPM_AUTH_NEVER
           && key->authDataUsage != TPM_AUTH_PRIV_USE_ONLY)) {
     res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
-    if (res != TPM_SUCCESS) return res;    
+    if (res != TPM_SUCCESS) return res;
   }
   if (!(key->keyFlags & TPM_KEY_FLAG_PCR_IGNORE)) {
     res = tpm_compute_pcr_digest(&key->pcrInfo.releasePCRSelection, 
@@ -601,7 +601,7 @@ TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
     if (key->pcrInfo.tag == TPM_TAG_PCR_INFO_LONG
         && !(key->pcrInfo.localityAtRelease
              & (1 << tpmData.stany.flags.localityModifier)))
-       return TPM_BAD_LOCALITY;   
+       return TPM_BAD_LOCALITY;
   }
   /* setup pubKey */
   pubKey->pubKey.keyLength = key->key.size >> 3;
@@ -611,8 +611,8 @@ TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
     &pubKey->pubKey.keyLength);
   if (tpm_setup_key_parms(key, &pubKey->algorithmParms) != 0) {
     tpm_free(pubKey->pubKey.key);
-    return TPM_FAIL;  
-  }  
+    return TPM_FAIL;
+  }
   return TPM_SUCCESS;
 }
 

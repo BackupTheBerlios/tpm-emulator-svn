@@ -1003,6 +1003,8 @@ typedef struct tdTPM_IDENTITY_CONTENTS {
   TPM_CHOSENID_HASH labelPrivCADigest;
   TPM_PUBKEY identityPubKey;
 } TPM_IDENTITY_CONTENTS;
+#define sizeof_TPM_IDENTITY_CONTENTS(s) (4 + 4 + 20 + \
+  sizeof_TPM_PUBKEY(s.identityPubKey))
 
 /*
  * TPM_IDENTITY_REQ ([TPM_Part2], Section 12.6)
@@ -1010,11 +1012,11 @@ typedef struct tdTPM_IDENTITY_CONTENTS {
  * identity credential.
  */
 typedef struct tdTPM_IDENTITY_REQ {
-  UINT32 asymSize; 
-  UINT32 symSize; 
-  TPM_KEY_PARMS asymAlgorithm; 
-  TPM_KEY_PARMS symAlgorithm; 
-  BYTE* asymBlob; 
+  UINT32 asymSize;
+  UINT32 symSize;
+  TPM_KEY_PARMS asymAlgorithm;
+  TPM_KEY_PARMS symAlgorithm;
+  BYTE* asymBlob;
   BYTE* symBlob;
 } TPM_IDENTITY_REQ;
 
@@ -1023,17 +1025,17 @@ typedef struct tdTPM_IDENTITY_REQ {
  * Structure in use during the AIK credential process.
  */
 typedef struct tdTPM_IDENTITY_PROOF {
-  TPM_STRUCT_VER ver; 
-  UINT32 labelSize; 
-  UINT32 identityBindingSize; 
-  UINT32 endorsementSize; 
-  UINT32 platformSize; 
-  UINT32 conformanceSize; 
-  TPM_PUBKEY identityKey; 
-  BYTE* labelArea; 
-  BYTE* identityBinding; 
-  BYTE* endorsementCredential; 
-  BYTE* platformCredential; 
+  TPM_STRUCT_VER ver;
+  UINT32 labelSize;
+  UINT32 identityBindingSize;
+  UINT32 endorsementSize;
+  UINT32 platformSize;
+  UINT32 conformanceSize;
+  TPM_PUBKEY identityKey;
+  BYTE* labelArea;
+  BYTE* identityBinding;
+  BYTE* endorsementCredential;
+  BYTE* platformCredential;
   BYTE* conformanceCredential;
 } TPM_IDENTITY_PROOF;
 
@@ -1052,8 +1054,8 @@ typedef struct tdTPM_ASYM_CA_CONTENTS {
  * identity credential.
  */
 typedef struct tdTPM_SYM_CA_ATTESTATION {
-  UINT32 credSize; 
-  TPM_KEY_PARMS algorithm; 
+  UINT32 credSize;
+  TPM_KEY_PARMS algorithm;
   BYTE* credential;
 } TPM_SYM_CA_ATTESTATION;
 

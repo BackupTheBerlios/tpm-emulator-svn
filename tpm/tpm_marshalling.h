@@ -339,6 +339,9 @@ int tpm_unmarshal_TPM_MIGRATIONKEYAUTH(BYTE **ptr, UINT32 *length, TPM_MIGRATION
 int tpm_marshal_TPM_CERTIFY_INFO(BYTE **ptr, UINT32 *length, TPM_CERTIFY_INFO *v);
 int tpm_unmarshal_TPM_CERTIFY_INFO(BYTE **ptr, UINT32 *length, TPM_CERTIFY_INFO *v);
 
+int tpm_marshal_TPM_IDENTITY_CONTENTS(BYTE **ptr, UINT32 *length, TPM_IDENTITY_CONTENTS *v);
+int tpm_unmarshal_TPM_IDENTITY_CONTENTS(BYTE **ptr, UINT32 *length, TPM_IDENTITY_CONTENTS *v);
+
 int tpm_marshal_TPM_CURRENT_TICKS(BYTE **ptr, UINT32 *length, TPM_CURRENT_TICKS *v);
 int tpm_unmarshal_TPM_CURRENT_TICKS(BYTE **ptr, UINT32 *length, TPM_CURRENT_TICKS *v);
 

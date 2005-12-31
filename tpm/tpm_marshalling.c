@@ -553,7 +553,7 @@ int tpm_marshal_TPM_CERTIFY_INFO(BYTE **ptr, UINT32 *length, TPM_CERTIFY_INFO *v
                               v->migrationAuthoritySize))
       || tpm_marshal_UINT32(ptr, length, v->PCRInfoSize)
       || (v->PCRInfoSize > 0
-          && tpm_marshal_TPM_PCR_INFO(ptr, length, &v->PCRInfo))) return -1;      
+          && tpm_marshal_TPM_PCR_INFO(ptr, length, &v->PCRInfo))) return -1;
   return 0;    
 }
 
@@ -575,7 +575,25 @@ int tpm_unmarshal_TPM_CERTIFY_INFO(BYTE **ptr, UINT32 *length, TPM_CERTIFY_INFO 
                                 v->migrationAuthoritySize))
       || tpm_unmarshal_UINT32(ptr, length, &v->PCRInfoSize)
       || (v->PCRInfoSize > 0
-          && tpm_unmarshal_TPM_PCR_INFO(ptr, length, &v->PCRInfo))) return -1;     
+          && tpm_unmarshal_TPM_PCR_INFO(ptr, length, &v->PCRInfo))) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_IDENTITY_CONTENTS(BYTE **ptr, UINT32 *length, TPM_IDENTITY_CONTENTS *v)
+{
+  if (tpm_marshal_TPM_STRUCT_VER(ptr, length, &v->ver)
+      || tpm_marshal_UINT32(ptr, length, v->ordinal)
+      || tpm_marshal_TPM_CHOSENID_HASH(ptr, length, &v->labelPrivCADigest)
+      || tpm_marshal_TPM_PUBKEY(ptr, length, &v->identityPubKey)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_IDENTITY_CONTENTS(BYTE **ptr, UINT32 *length, TPM_IDENTITY_CONTENTS *v)
+{
+  if (tpm_unmarshal_TPM_STRUCT_VER(ptr, length, &v->ver)
+      || tpm_unmarshal_UINT32(ptr, length, &v->ordinal)
+      || tpm_unmarshal_TPM_CHOSENID_HASH(ptr, length, &v->labelPrivCADigest)
+      || tpm_unmarshal_TPM_PUBKEY(ptr, length, &v->identityPubKey)) return -1;
   return 0;
 }
 

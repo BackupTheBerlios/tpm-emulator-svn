@@ -133,23 +133,23 @@ TPM_RESULT TPM_ChangeAuthOwner(TPM_PROTOCOL_ID protocolID,
                           &session->lastNonceEven, plainAuth);
   /* change authorization data */
   if (entityType == TPM_ET_OWNER) {
-    memcpy(tpmData.permanent.data.ownerAuth, plainAuth, sizeof(TPM_SECRET));  
+    memcpy(tpmData.permanent.data.ownerAuth, plainAuth, sizeof(TPM_SECRET));
     /* invalidate all associated sessions but the current one */
     for (i = 0; i < TPM_MAX_SESSIONS; i++) {
       if (tpmData.stany.data.sessions[i].handle == TPM_KH_OWNER
           && &tpmData.stany.data.sessions[i] != session) {
           memset(&tpmData.stany.data.sessions[i], 0, sizeof(TPM_SESSION_DATA));
-      }           
+      }
     }
   } else if (entityType == TPM_ET_SRK) {
     memcpy(tpmData.permanent.data.srk.usageAuth, plainAuth, sizeof(TPM_SECRET));
-    tpmData.permanent.data.srk.authDataUsage = TPM_AUTH_ALWAYS; /* right? */  
+    tpmData.permanent.data.srk.authDataUsage = TPM_AUTH_ALWAYS; /* right? */
     /* invalidate all associated sessions but the current one */
     for (i = 0; i < TPM_MAX_SESSIONS; i++) {
       if (tpmData.stany.data.sessions[i].handle == TPM_KH_SRK
           && &tpmData.stany.data.sessions[i] != session) {
-          memset(&tpmData.stany.data.sessions[i], 0, sizeof(TPM_SESSION_DATA));   
-      }           
+          memset(&tpmData.stany.data.sessions[i], 0, sizeof(TPM_SESSION_DATA));
+      }
     }
   } else {
     return TPM_WRONG_ENTITYTYPE;
@@ -179,7 +179,7 @@ TPM_RESULT TPM_OIAP(TPM_AUTHHANDLE *authHandle, TPM_NONCE *nonceEven)
   TPM_SESSION_DATA *session;
   info("TPM_OIAP()");
   /* get a free session if any is left */
-  *authHandle = tpm_get_free_session(TPM_ST_OIAP); 
+  *authHandle = tpm_get_free_session(TPM_ST_OIAP);
   session = tpm_get_auth(*authHandle);
   if (session == NULL) return TPM_RESOURCES;
   /* setup session */
@@ -249,10 +249,10 @@ TPM_RESULT TPM_DSAP(
   TPM_KEY_HANDLE KeyHandle,
   UINT32 entityValueSize,
   BYTE *entityValue,
-  TPM_NONCE *nonceOddDSAP,  
+  TPM_NONCE *nonceOddDSAP,
   TPM_AUTHHANDLE *authHandle,
   TPM_NONCE *nonceEven,
-  TPM_NONCE *nonceEvenDSAP 
+  TPM_NONCE *nonceEvenDSAP
 )
 {
   info("TPM_DSAP() not implemented yet");
@@ -323,5 +323,3 @@ void tpm_decrypt_auth_secret(TPM_ENCAUTH encAuth, TPM_SECRET secret,
   for (i = 0; i < sizeof(TPM_SECRET); i++)
     plainAuth[i] ^= encAuth[i];
 }
-
-

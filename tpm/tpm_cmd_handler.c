@@ -3099,7 +3099,7 @@ static void tpm_setup_rsp_auth(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
                   sizeof(rsp->auth2->nonceEven.nonce));
       hmac_update(&hmac, rsp->auth2->nonceOdd.nonce, 
                   sizeof(rsp->auth2->nonceOdd.nonce));
-      hmac_update(&hmac, (BYTE*)&rsp->auth2->continueAuthSession, 1); 
+      hmac_update(&hmac, (BYTE*)&rsp->auth2->continueAuthSession, 1);
       hmac_final(&hmac, rsp->auth2->auth);
     case TPM_TAG_RSP_AUTH1_COMMAND:
       hmac_init(&hmac, *rsp->auth1->secret, sizeof(*rsp->auth1->secret));
@@ -3821,7 +3821,7 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
     if (tpm_store_permanent_data() != 0) {
       error("tpm_store_permanent_data() failed");
     } 
-#endif     
+#endif
   }
   /* terminate authorization sessions if necessary */
   if (rsp->auth1 != NULL && !rsp->auth1->continueAuthSession) 
@@ -3896,4 +3896,3 @@ int tpm_handle_command(const uint8_t *in, uint32_t in_size, uint8_t **out, uint3
   tpm_free(rsp.param);
   return 0;
 }
-
