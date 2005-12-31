@@ -28,7 +28,6 @@
 extern int compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
 extern int encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
   BYTE *enc, UINT32 *enc_size);
-extern int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms);
 
 /*
  * Identity Creation and Activation ([TPM_Part3], Section 15)
