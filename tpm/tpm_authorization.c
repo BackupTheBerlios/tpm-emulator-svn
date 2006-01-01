@@ -169,7 +169,7 @@ UINT32 tpm_get_free_session(BYTE type)
       tpmData.stany.data.sessions[i].type = type;
       if (type == TPM_ST_TRANSPORT) return INDEX_TO_TRANS_HANDLE(i);
       else return INDEX_TO_AUTH_HANDLE(i);
-    } 
+    }
   }
   return TPM_INVALID_HANDLE;
 }
@@ -203,36 +203,44 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
   /* get resource handle and the dedicated secret */
   switch (entityType) {
     case TPM_ET_KEYHANDLE:
+    case TPM_ET_KEYAES:
+    case TPM_ET_KEYXOR:
       session->handle = entityValue;
       if (session->handle == TPM_KH_OPERATOR) return TPM_INVALID_KEYHANDLE;
       if (tpm_get_key(session->handle) != NULL)
         secret = &tpm_get_key(session->handle)->usageAuth;
       break;
-    case TPM_ET_OWNER: 
-      session->handle = TPM_KH_OWNER; 
+    case TPM_ET_OWNER:
+    case TPM_ET_OWNERAES:
+    case TPM_ET_OWNERXOR:
+      session->handle = TPM_KH_OWNER;
       if (tpmData.permanent.flags.owned)
         secret = &tpmData.permanent.data.ownerAuth;
       break;
-    case TPM_ET_SRK: 
-      session->handle = TPM_KH_SRK; 
+    case TPM_ET_SRK:
+      session->handle = TPM_KH_SRK;
       if (tpmData.permanent.data.srk.valid)
         secret = &tpmData.permanent.data.srk.usageAuth;
       break;
-    case TPM_ET_COUNTER: 
+    case TPM_ET_COUNTER:
       session->handle = entityValue;
       if (tpm_get_counter(session->handle) != NULL)
-        secret = &tpm_get_counter(session->handle)->usageAuth; 
+        secret = &tpm_get_counter(session->handle)->usageAuth;
       break;
     case TPM_ET_NV:
       /* TODO: session->handle = entityValue;
       if (tpm_get_nvdata(session->handle) != NULL)
         secret = &tpm_get_nvdata(session->handle)->usageAuth;*/
       break;
+    default:
+      return TPM_BAD_PARAMETER;
   }
   if (secret == NULL) {
     memset(session, 0, sizeof(*session));
     return TPM_BAD_PARAMETER;
   }
+  /* save entity type */
+  session->entityType = entityType;
   /* generate nonces */
   get_random_bytes(nonceEven->nonce, sizeof(nonceEven->nonce));
   memcpy(&session->nonceEven, nonceEven, sizeof(TPM_NONCE));

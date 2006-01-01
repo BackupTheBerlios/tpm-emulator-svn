@@ -119,7 +119,9 @@ typedef UINT32 TPM_GPIO_ATTRIBUTES;
 #define TPM_PT_MAINT                    0x04
 #define TPM_PT_SEAL                     0x05
 #define TPM_PT_MIGRATE_RESTRICTED       0x06
-/* 0x07 - 0x7F Reserved for future use by TPM */
+#define TPM_PT_MIGRATE_EXTERNAL         0x07
+#define TPM_PT_CMK_MIGRATE              0x08
+/* 0x09 - 0x7F Reserved for future use by TPM */
 /* 0x80 - 0xFF Vendor specific payloads */
 
 /*
@@ -132,11 +134,18 @@ typedef UINT32 TPM_GPIO_ATTRIBUTES;
 #define TPM_ET_SRK              0x0004
 #define TPM_ET_KEY              0x0005
 #define TPM_ET_REVOKE           0x0006
-#define TPM_ET_DEL_BLOB         0x0007
+#define TPM_ET_DEL_OWNER_BLOB   0x0007
 #define TPM_ET_DEL_ROW          0x0008
-#define TPM_ET_DEL_KEY          0x0009
+#define TPM_ET_DEL_KEY_BLOB     0x0009
 #define TPM_ET_COUNTER          0x000A
 #define TPM_ET_NV               0x000B
+#define TPM_ET_KEYAES           0x000C
+#define TPM_ET_KEYDES           0x000D
+#define TPM_ET_OWNERAES         0x000E
+#define TPM_ET_OWNERDES         0x000F
+#define TPM_ET_KEYXOR           0x0010
+#define TPM_ET_OWNERXOR         0x0011 // WATCH: does not exist (v1.2 rev 85)
+#define TPM_ET_RESERVED_HANDLE  0x0040
 
 /*
  * Reserved Key Handles ([TPM_Part2], Section 4.4)
@@ -183,6 +192,7 @@ typedef UINT32 TPM_GPIO_ATTRIBUTES;
 #define TPM_PID_ADCP            0x0004
 #define TPM_PID_OWNER           0x0005
 #define TPM_PID_DSAP            0x0006
+#define TPM_PID_TRANSPORT       0x0007
 
 /*
  * TPM_ALGORITHM_ID ([TPM_Part2], Section 4.8)
@@ -197,30 +207,33 @@ typedef UINT32 TPM_GPIO_ATTRIBUTES;
 #define TPM_ALG_MGF1            0x00000007
 #define TPM_ALG_AES192          0x00000008
 #define TPM_ALG_AES256          0x00000009
+#define TPM_ALG_XOR             0x0000000A
 
 /* 
  * TPM_ENC_SCHEME ([TPM_Part1], Section 29)
  * Encryption Schemes 
  */
-#define TPM_ES_NONE                    0x0001 
-#define TPM_ES_RSAESPKCSv15            0x0002 
-#define TPM_ES_RSAESOAEP_SHA1_MGF1     0x0003 
-#define TPM_ES_SYM_CNT                 0x0004 
+#define TPM_ES_NONE                    0x0001
+#define TPM_ES_RSAESPKCSv15            0x0002
+#define TPM_ES_RSAESOAEP_SHA1_MGF1     0x0003
+#define TPM_ES_SYM_CNT                 0x0004
 #define TPM_ES_SYM_OFB                 0x0005
 
 /*
  * TPM_SIG_SCHEME ([TPM_Part1], Section 29)
  * Signature Schemes
  */
-#define TPM_SS_NONE                    0x0001 
-#define TPM_SS_RSASSAPKCS1v15_SHA1     0x0002 
-#define TPM_SS_RSASSAPKCS1v15_DER      0x0003 
+#define TPM_SS_NONE                    0x0001
+#define TPM_SS_RSASSAPKCS1v15_SHA1     0x0002
+#define TPM_SS_RSASSAPKCS1v15_DER      0x0003
 #define TPM_SS_RSASSAPKCS1v15_INFO     0x0004
 
 /*
  * TPM_PHYSICAL_PRESENCE ([TPM_Part2], Section 4.9)
  * Values to setup the Physical Presence
  */
+#define TPM_PHYSICAL_PRESENCE_HW_DISABLE        0x0200
+#define TPM_PHYSICAL_PRESENCE_CMD_DISABLE       0x0100
 #define TPM_PHYSICAL_PRESENCE_LIFETIME_LOCK     0x0080
 #define TPM_PHYSICAL_PRESENCE_HW_ENABLE         0x0040
 #define TPM_PHYSICAL_PRESENCE_CMD_ENABLE        0x0020
@@ -233,12 +246,12 @@ typedef UINT32 TPM_GPIO_ATTRIBUTES;
  * Indicates how the StartMigrate command should handle the
  * migration of the encrypted blob.
  */
-#define TPM_MS_MIGRATE                  0x0001
-#define TPM_MS_REWRAP                   0x0002
-#define TPM_MS_MAINT                    0x0003
-#define TPM_MS_RESTRICT_MIGRATE         0x0004
-#define TPM_MS_RESTRICT_APPROVE         0x0005
-#define TPM_MS_RESTRICT_APPROVE_DOUBLE  0x0006
+#define TPM_MS_MIGRATE                    0x0001
+#define TPM_MS_REWRAP                     0x0002
+#define TPM_MS_MAINT                      0x0003
+#define TPM_MS_RESTRICT_MIGRATE           0x0004
+#define TPM_MS_RESTRICT_APPROVE_DOUBLE    0x0005
+#define TPM_MS_RESTRICT_MIGRATE_EXTERNAL  0x0006
 
 /*
  * TPM_EK_TYPE ([TPM_Part2], Section 4.11)
@@ -2030,9 +2043,10 @@ typedef struct tdTPM_SESSION_DATA {
   TPM_NONCE lastNonceEven;
   TPM_SECRET sharedSecret;
   TPM_HANDLE handle;
+  TPM_ENTITY_TYPE entityType;
   TPM_TRANSPORT_INTERNAL transInternal;
 } TPM_SESSION_DATA;
-#define sizeof_TPM_SESSION_DATA(s) (1 + 3*20 + 4 \
+#define sizeof_TPM_SESSION_DATA(s) (1 + 3*20 + 4 + 2 \
   + ((s.type == TPM_ST_TRANSPORT) ? \
      sizeof_TPM_TRANSPORT_INTERNAL(s.transInternal) : 0))
 

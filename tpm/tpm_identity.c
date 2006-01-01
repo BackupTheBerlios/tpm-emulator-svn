@@ -55,6 +55,9 @@ TPM_RESULT TPM_MakeIdentity(
   BYTE *buf, *ptr;
   
   /* 1. Validate the idKeyParams parameters for the key description */
+    if (idKeyParams->algorithmParms.encScheme != TPM_ES_NONE
+      || idKeyParams->algorithmParms.sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1)
+        return TPM_BAD_KEY_PROPERTY;
     /* a. If the algorithm type is RSA the key length MUST be a minimum of 2048.
      * For interoperability the key length SHOULD be 2048 */
     /* b. If the algorithm type is other than RSA the strength provided by the 
@@ -63,8 +66,7 @@ TPM_RESULT TPM_MakeIdentity(
      * return the error code TPM_BAD_KEY_PROPERTY */
     switch (idKeyParams->algorithmParms.algorithmID) {
       case TPM_ALG_RSA:
-        if (idKeyParams->algorithmParms.encScheme != TPM_ES_NONE
-          || idKeyParams->algorithmParms.parmSize == 0
+        if (idKeyParams->algorithmParms.parmSize == 0
           || idKeyParams->algorithmParms.parms.rsa.keyLength != 2048
           || idKeyParams->algorithmParms.parms.rsa.numPrimes != 2
           || idKeyParams->algorithmParms.parms.rsa.exponentSize != 0)
@@ -99,6 +101,8 @@ TPM_RESULT TPM_MakeIdentity(
   /* 6. If ownerAuth indicates XOR encryption for the AuthData secrets */
   ownerAuth_sessionData = tpm_get_auth(auth2->authHandle);
   if (ownerAuth_sessionData == NULL) return TPM_INVALID_AUTHHANDLE;
+  if (ownerAuth_sessionData->entityType == TPM_ET_OWNER
+    || ownerAuth_sessionData->entityType == TPM_ET_OWNERXOR)
     /* a. Create X1 the SHA-1 of the concatenation of (ownerAuth->sharedSecret 
      * || authLastNonceEven) */
     /* b. Create A1 by XOR X1 and identityAuth */

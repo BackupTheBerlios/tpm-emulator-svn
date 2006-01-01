@@ -38,7 +38,7 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
   TPM_DAA_SESSION_DATA *sessionDAA;
   TPM_KEY_DATA *key;
   int i;
- 
+  
   info("TPM_FlushSpecific()");
   switch (resourceType) {
     case TPM_RT_AUTH:
@@ -58,7 +58,7 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
       if (sessionDAA == NULL) return TPM_INVALID_RESOURCE;
       memset(sessionDAA, 0, sizeof(*sessionDAA));
       return TPM_SUCCESS;
-  
+    
     case TPM_RT_KEY:
       key = tpm_get_key(handle);
       if (key == NULL) return TPM_INVALID_KEYHANDLE;
