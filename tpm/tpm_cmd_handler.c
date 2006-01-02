@@ -42,6 +42,7 @@ UINT32 tpm_get_param_offset(TPM_COMMAND_CODE ordinal)
     case TPM_ORD_GetPubKey:
     case TPM_ORD_KeyControlOwner:
     case TPM_ORD_LoadKey:
+    case TPM_ORD_LoadKey2:
     case TPM_ORD_OwnerReadInternalPub:
     case TPM_ORD_Quote:
     case TPM_ORD_ReleaseTransportSigned:
@@ -643,6 +644,36 @@ static TPM_RESULT execute_TPM_LoadKey(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
   res = TPM_LoadKey(parentHandle, &inKey, &req->auth1, &inkeyHandle);
+  if (res != TPM_SUCCESS) return res;
+  /* marshal output */
+  rsp->paramSize = len = 4;
+  rsp->param = ptr = tpm_malloc(len);
+  if (ptr == NULL
+      || tpm_marshal_TPM_KEY_HANDLE(&ptr, &len, inkeyHandle)) {
+    tpm_free(rsp->param);
+    res = TPM_FAIL;
+  }
+  return res;
+}
+
+static TPM_RESULT execute_TPM_LoadKey2(TPM_REQUEST *req, TPM_RESPONSE *rsp)
+{
+  BYTE *ptr;
+  UINT32 len;
+  TPM_KEY_HANDLE parentHandle;
+  TPM_KEY inKey;
+  TPM_KEY_HANDLE inkeyHandle;
+  TPM_RESULT res;
+  /* compute parameter digest */
+  tpm_compute_in_param_digest(req);
+  /* unmarshal input */
+  ptr = req->param;
+  len = req->paramSize;
+  if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &parentHandle)
+      || tpm_unmarshal_TPM_KEY(&ptr, &len, &inKey)
+      || len != 0) return TPM_BAD_PARAMETER;
+  /* execute command */
+  res = TPM_LoadKey2(parentHandle, &inKey, &req->auth1, &inkeyHandle);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
   rsp->paramSize = len = 4;
@@ -3232,570 +3263,575 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   /* handle command ordinal */
   switch (req->ordinal) {
     case TPM_ORD_Startup:
-      debug("[TPM_ORD_Startup]"); 
+      debug("[TPM_ORD_Startup]");
       res = execute_TPM_Startup(req, rsp);
     break;
 
     case TPM_ORD_SaveState:
-      debug("[TPM_ORD_SaveState]"); 
+      debug("[TPM_ORD_SaveState]");
       res = execute_TPM_SaveState(req, rsp);
     break;
 
     case TPM_ORD_SelfTestFull:
-      debug("[TPM_ORD_SelfTestFull]"); 
+      debug("[TPM_ORD_SelfTestFull]");
       res = execute_TPM_SelfTestFull(req, rsp);
     break;
 
     case TPM_ORD_ContinueSelfTest:
-      debug("[TPM_ORD_ContinueSelfTest]"); 
+      debug("[TPM_ORD_ContinueSelfTest]");
       res = execute_TPM_ContinueSelfTest(req, rsp);
     break;
 
     case TPM_ORD_GetTestResult:
-      debug("[TPM_ORD_GetTestResult]"); 
+      debug("[TPM_ORD_GetTestResult]");
       res = execute_TPM_GetTestResult(req, rsp);
     break;
 
     case TPM_ORD_SetOwnerInstall:
-      debug("[TPM_ORD_SetOwnerInstall]"); 
+      debug("[TPM_ORD_SetOwnerInstall]");
       res = execute_TPM_SetOwnerInstall(req, rsp);
     break;
 
     case TPM_ORD_OwnerSetDisable:
-      debug("[TPM_ORD_OwnerSetDisable]"); 
+      debug("[TPM_ORD_OwnerSetDisable]");
       res = execute_TPM_OwnerSetDisable(req, rsp);
     break;
 
     case TPM_ORD_PhysicalEnable:
-      debug("[TPM_ORD_PhysicalEnable]"); 
+      debug("[TPM_ORD_PhysicalEnable]");
       res = execute_TPM_PhysicalEnable(req, rsp);
     break;
 
     case TPM_ORD_PhysicalDisable:
-      debug("[TPM_ORD_PhysicalDisable]"); 
+      debug("[TPM_ORD_PhysicalDisable]");
       res = execute_TPM_PhysicalDisable(req, rsp);
     break;
 
     case TPM_ORD_PhysicalSetDeactivated:
-      debug("[TPM_ORD_PhysicalSetDeactivated]"); 
+      debug("[TPM_ORD_PhysicalSetDeactivated]");
       res = execute_TPM_PhysicalSetDeactivated(req, rsp);
     break;
 
     case TPM_ORD_SetTempDeactivated:
-      debug("[TPM_ORD_SetTempDeactivated]"); 
+      debug("[TPM_ORD_SetTempDeactivated]");
       res = execute_TPM_SetTempDeactivated(req, rsp);
     break;
 
     case TPM_ORD_SetOperatorAuth:
-      debug("[TPM_ORD_SetOperatorAuth]"); 
+      debug("[TPM_ORD_SetOperatorAuth]");
       res = execute_TPM_SetOperatorAuth(req, rsp);
     break;
 
     case TPM_ORD_TakeOwnership:
-      debug("[TPM_ORD_TakeOwnership]"); 
+      debug("[TPM_ORD_TakeOwnership]");
       res = execute_TPM_TakeOwnership(req, rsp);
     break;
 
     case TPM_ORD_OwnerClear:
-      debug("[TPM_ORD_OwnerClear]"); 
+      debug("[TPM_ORD_OwnerClear]");
       res = execute_TPM_OwnerClear(req, rsp);
     break;
 
     case TPM_ORD_ForceClear:
-      debug("[TPM_ORD_ForceClear]"); 
+      debug("[TPM_ORD_ForceClear]");
       res = execute_TPM_ForceClear(req, rsp);
     break;
 
     case TPM_ORD_DisableOwnerClear:
-      debug("[TPM_ORD_DisableOwnerClear]"); 
+      debug("[TPM_ORD_DisableOwnerClear]");
       res = execute_TPM_DisableOwnerClear(req, rsp);
     break;
 
     case TPM_ORD_DisableForceClear:
-      debug("[TPM_ORD_DisableForceClear]"); 
+      debug("[TPM_ORD_DisableForceClear]");
       res = execute_TPM_DisableForceClear(req, rsp);
     break;
 
-    case TSC_ORD_PhysicalPresence: 
+    case TSC_ORD_PhysicalPresence:
       res = execute_TSC_PhysicalPresence(req, rsp);
     break;
 
-    case TSC_ORD_ResetEstablishmentBit: 
+    case TSC_ORD_ResetEstablishmentBit:
       res = execute_TSC_ResetEstablishmentBit(req, rsp);
     break;
 
     case TPM_ORD_GetCapability:
-      debug("[TPM_ORD_GetCapability]"); 
+      debug("[TPM_ORD_GetCapability]");
       res = execute_TPM_GetCapability(req, rsp);
     break;
 
     case TPM_ORD_GetAuditDigest:
-      debug("[TPM_ORD_GetAuditDigest]"); 
+      debug("[TPM_ORD_GetAuditDigest]");
       res = execute_TPM_GetAuditDigest(req, rsp);
     break;
 
     case TPM_ORD_GetAuditDigestSigned:
-      debug("[TPM_ORD_GetAuditDigestSigned]"); 
+      debug("[TPM_ORD_GetAuditDigestSigned]");
       res = execute_TPM_GetAuditDigestSigned(req, rsp);
     break;
 
     case TPM_ORD_SetOrdinalAuditStatus:
-      debug("[TPM_ORD_SetOrdinalAuditStatus]"); 
+      debug("[TPM_ORD_SetOrdinalAuditStatus]");
       res = execute_TPM_SetOrdinalAuditStatus(req, rsp);
     break;
 
     case TPM_ORD_FieldUpgrade:
-      debug("[TPM_ORD_FieldUpgrade]"); 
+      debug("[TPM_ORD_FieldUpgrade]");
       res = execute_TPM_FieldUpgrade(req, rsp);
     break;
 
     case TPM_ORD_SetRedirection:
-      debug("[TPM_ORD_SetRedirection]"); 
+      debug("[TPM_ORD_SetRedirection]");
       res = execute_TPM_SetRedirection(req, rsp);
     break;
 
     case TPM_ORD_Seal:
-      debug("[TPM_ORD_Seal]"); 
+      debug("[TPM_ORD_Seal]");
       res = execute_TPM_Seal(req, rsp);
     break;
 
     case TPM_ORD_Unseal:
-      debug("[TPM_ORD_Unseal]"); 
+      debug("[TPM_ORD_Unseal]");
       res = execute_TPM_Unseal(req, rsp);
     break;
 
     case TPM_ORD_UnBind:
-      debug("[TPM_ORD_UnBind]"); 
+      debug("[TPM_ORD_UnBind]");
       res = execute_TPM_UnBind(req, rsp);
     break;
 
     case TPM_ORD_CreateWrapKey:
-      debug("[TPM_ORD_CreateWrapKey]"); 
+      debug("[TPM_ORD_CreateWrapKey]");
       res = execute_TPM_CreateWrapKey(req, rsp);
     break;
 
     case TPM_ORD_LoadKey:
-      debug("[TPM_ORD_LoadKey]"); 
+      debug("[TPM_ORD_LoadKey]");
       res = execute_TPM_LoadKey(req, rsp);
     break;
 
+    case TPM_ORD_LoadKey2:
+      debug("[TPM_ORD_LoadKey2]");
+      res = execute_TPM_LoadKey2(req, rsp);
+    break;
+
     case TPM_ORD_GetPubKey:
-      debug("[TPM_ORD_GetPubKey]"); 
+      debug("[TPM_ORD_GetPubKey]");
       res = execute_TPM_GetPubKey(req, rsp);
     break;
 
     case TPM_ORD_CreateMigrationBlob:
-      debug("[TPM_ORD_CreateMigrationBlob]"); 
+      debug("[TPM_ORD_CreateMigrationBlob]");
       res = execute_TPM_CreateMigrationBlob(req, rsp);
     break;
 
     case TPM_ORD_ConvertMigrationBlob:
-      debug("[TPM_ORD_ConvertMigrationBlob]"); 
+      debug("[TPM_ORD_ConvertMigrationBlob]");
       res = execute_TPM_ConvertMigrationBlob(req, rsp);
     break;
 
     case TPM_ORD_AuthorizeMigrationKey:
-      debug("[TPM_ORD_AuthorizeMigrationKey]"); 
+      debug("[TPM_ORD_AuthorizeMigrationKey]");
       res = execute_TPM_AuthorizeMigrationKey(req, rsp);
     break;
 
     case TPM_ORD_CMK_CreateKey:
-      debug("[TPM_ORD_CMK_CreateKey]"); 
+      debug("[TPM_ORD_CMK_CreateKey]");
       res = execute_TPM_CMK_CreateKey(req, rsp);
     break;
 
     case TPM_ORD_CMK_CreateTicket:
-      debug("[TPM_ORD_CMK_CreateTicket]"); 
+      debug("[TPM_ORD_CMK_CreateTicket]");
       res = execute_TPM_CMK_CreateTicket(req, rsp);
     break;
 
     case TPM_ORD_CMK_CreateBlob:
-      debug("[TPM_ORD_CMK_CreateBlob]"); 
+      debug("[TPM_ORD_CMK_CreateBlob]");
       res = execute_TPM_CMK_CreateBlob(req, rsp);
     break;
 
     case TPM_ORD_CMK_SetRestrictions:
-      debug("[TPM_ORD_CMK_SetRestrictions]"); 
+      debug("[TPM_ORD_CMK_SetRestrictions]");
       res = execute_TPM_CMK_SetRestrictions(req, rsp);
     break;
 
     case TPM_ORD_CreateMaintenanceArchive:
-      debug("[TPM_ORD_CreateMaintenanceArchive]"); 
+      debug("[TPM_ORD_CreateMaintenanceArchive]");
       res = execute_TPM_CreateMaintenanceArchive(req, rsp);
     break;
 
     case TPM_ORD_LoadMaintenanceArchive:
-      debug("[TPM_ORD_LoadMaintenanceArchive]"); 
+      debug("[TPM_ORD_LoadMaintenanceArchive]");
       res = execute_TPM_LoadMaintenanceArchive(req, rsp);
     break;
 
     case TPM_ORD_KillMaintenanceFeature:
-      debug("[TPM_ORD_KillMaintenanceFeature]"); 
+      debug("[TPM_ORD_KillMaintenanceFeature]");
       res = execute_TPM_KillMaintenanceFeature(req, rsp);
     break;
 
     case TPM_ORD_LoadManuMaintPub:
-      debug("[TPM_ORD_LoadManuMaintPub]"); 
+      debug("[TPM_ORD_LoadManuMaintPub]");
       res = execute_TPM_LoadManuMaintPub(req, rsp);
     break;
 
     case TPM_ORD_ReadManuMaintPub:
-      debug("[TPM_ORD_ReadManuMaintPub]"); 
+      debug("[TPM_ORD_ReadManuMaintPub]");
       res = execute_TPM_ReadManuMaintPub(req, rsp);
     break;
 
     case TPM_ORD_SHA1Start:
-      debug("[TPM_ORD_SHA1Start]"); 
+      debug("[TPM_ORD_SHA1Start]");
       res = execute_TPM_SHA1Start(req, rsp);
     break;
 
     case TPM_ORD_SHA1Update:
-      debug("[TPM_ORD_SHA1Update]"); 
+      debug("[TPM_ORD_SHA1Update]");
       res = execute_TPM_SHA1Update(req, rsp);
     break;
 
     case TPM_ORD_SHA1Complete:
-      debug("[TPM_ORD_SHA1Complete]"); 
+      debug("[TPM_ORD_SHA1Complete]");
       res = execute_TPM_SHA1Complete(req, rsp);
     break;
 
     case TPM_ORD_SHA1CompleteExtend:
-      debug("[TPM_ORD_SHA1CompleteExtend]"); 
+      debug("[TPM_ORD_SHA1CompleteExtend]");
       res = execute_TPM_SHA1CompleteExtend(req, rsp);
     break;
 
     case TPM_ORD_Sign:
-      debug("[TPM_ORD_Sign]"); 
+      debug("[TPM_ORD_Sign]");
       res = execute_TPM_Sign(req, rsp);
     break;
 
     case TPM_ORD_GetRandom:
-      debug("[TPM_ORD_GetRandom]"); 
+      debug("[TPM_ORD_GetRandom]");
       res = execute_TPM_GetRandom(req, rsp);
     break;
 
     case TPM_ORD_StirRandom:
-      debug("[TPM_ORD_StirRandom]"); 
+      debug("[TPM_ORD_StirRandom]");
       res = execute_TPM_StirRandom(req, rsp);
     break;
 
     case TPM_ORD_CertifyKey:
-      debug("[TPM_ORD_CertifyKey]"); 
+      debug("[TPM_ORD_CertifyKey]");
       res = execute_TPM_CertifyKey(req, rsp);
     break;
 
     case TPM_ORD_CertifyKey2:
-      debug("[TPM_ORD_CertifyKey2]"); 
+      debug("[TPM_ORD_CertifyKey2]");
       res = execute_TPM_CertifyKey2(req, rsp);
     break;
 
     case TPM_ORD_CreateEndorsementKeyPair:
-      debug("[TPM_ORD_CreateEndorsementKeyPair]"); 
+      debug("[TPM_ORD_CreateEndorsementKeyPair]");
       res = execute_TPM_CreateEndorsementKeyPair(req, rsp);
     break;
 
     case TPM_ORD_CreateRevocableEK:
-      debug("[TPM_ORD_CreateRevocableEK]"); 
+      debug("[TPM_ORD_CreateRevocableEK]");
       res = execute_TPM_CreateRevocableEK(req, rsp);
     break;
 
     case TPM_ORD_RevokeTrust:
-      debug("[TPM_ORD_RevokeTrust]"); 
+      debug("[TPM_ORD_RevokeTrust]");
       res = execute_TPM_RevokeTrust(req, rsp);
     break;
 
     case TPM_ORD_ReadPubek:
-      debug("[TPM_ORD_ReadPubek]"); 
+      debug("[TPM_ORD_ReadPubek]");
       res = execute_TPM_ReadPubek(req, rsp);
     break;
 
     case TPM_ORD_DisablePubekRead:
-      debug("[TPM_ORD_DisablePubekRead]"); 
+      debug("[TPM_ORD_DisablePubekRead]");
       res = execute_TPM_DisablePubekRead(req, rsp);
     break;
 
     case TPM_ORD_OwnerReadInternalPub:
-      debug("[TPM_ORD_OwnerReadInternalPub]"); 
+      debug("[TPM_ORD_OwnerReadInternalPub]");
       res = execute_TPM_OwnerReadInternalPub(req, rsp);
     break;
 
     case TPM_ORD_MakeIdentity:
-      debug("[TPM_ORD_MakeIdentity]"); 
+      debug("[TPM_ORD_MakeIdentity]");
       res = execute_TPM_MakeIdentity(req, rsp);
     break;
 
     case TPM_ORD_ActivateIdentity:
-      debug("[TPM_ORD_ActivateIdentity]"); 
+      debug("[TPM_ORD_ActivateIdentity]");
       res = execute_TPM_ActivateIdentity(req, rsp);
     break;
 
     case TPM_ORD_Extend:
-      debug("[TPM_ORD_Extend]"); 
+      debug("[TPM_ORD_Extend]");
       res = execute_TPM_Extend(req, rsp);
     break;
 
     case TPM_ORD_PCRRead:
-      debug("[TPM_ORD_PCRRead]"); 
+      debug("[TPM_ORD_PCRRead]");
       res = execute_TPM_PCRRead(req, rsp);
     break;
 
     case TPM_ORD_Quote:
-      debug("[TPM_ORD_Quote]"); 
+      debug("[TPM_ORD_Quote]");
       res = execute_TPM_Quote(req, rsp);
     break;
 
     case TPM_ORD_PCR_Reset:
-      debug("[TPM_ORD_PCR_Reset]"); 
+      debug("[TPM_ORD_PCR_Reset]");
       res = execute_TPM_PCR_Reset(req, rsp);
     break;
 
     case TPM_ORD_ChangeAuth:
-      debug("[TPM_ORD_ChangeAuth]"); 
+      debug("[TPM_ORD_ChangeAuth]");
       res = execute_TPM_ChangeAuth(req, rsp);
     break;
 
     case TPM_ORD_ChangeAuthOwner:
-      debug("[TPM_ORD_ChangeAuthOwner]"); 
+      debug("[TPM_ORD_ChangeAuthOwner]");
       res = execute_TPM_ChangeAuthOwner(req, rsp);
     break;
 
     case TPM_ORD_OIAP:
-      debug("[TPM_ORD_OIAP]"); 
+      debug("[TPM_ORD_OIAP]");
       res = execute_TPM_OIAP(req, rsp);
     break;
 
     case TPM_ORD_OSAP:
-      debug("[TPM_ORD_OSAP]"); 
+      debug("[TPM_ORD_OSAP]");
       res = execute_TPM_OSAP(req, rsp);
     break;
 
     case TPM_ORD_DSAP:
-      debug("[TPM_ORD_DSAP]"); 
+      debug("[TPM_ORD_DSAP]");
       res = execute_TPM_DSAP(req, rsp);
     break;
 
     case TPM_ORD_SetOwnerPointer:
-      debug("[TPM_ORD_SetOwnerPointer]"); 
+      debug("[TPM_ORD_SetOwnerPointer]");
       res = execute_TPM_SetOwnerPointer(req, rsp);
     break;
 
     case TPM_ORD_Delegate_Manage:
-      debug("[TPM_ORD_Delegate_Manage]"); 
+      debug("[TPM_ORD_Delegate_Manage]");
       res = execute_TPM_Delegate_Manage(req, rsp);
     break;
 
     case TPM_ORD_Delegate_CreateKeyDelegation:
-      debug("[TPM_ORD_Delegate_CreateKeyDelegation]"); 
+      debug("[TPM_ORD_Delegate_CreateKeyDelegation]");
       res = execute_TPM_Delegate_CreateKeyDelegation(req, rsp);
     break;
 
     case TPM_ORD_Delegate_CreateOwnerDelegation:
-      debug("[TPM_ORD_Delegate_CreateOwnerDelegation]"); 
+      debug("[TPM_ORD_Delegate_CreateOwnerDelegation]");
       res = execute_TPM_Delegate_CreateOwnerDelegation(req, rsp);
     break;
 
     case TPM_ORD_Delegate_LoadOwnerDelegation:
-      debug("[TPM_ORD_Delegate_LoadOwnerDelegation]"); 
+      debug("[TPM_ORD_Delegate_LoadOwnerDelegation]");
       res = execute_TPM_Delegate_LoadOwnerDelegation(req, rsp);
     break;
 
     case TPM_ORD_Delegate_ReadTable:
-      debug("[TPM_ORD_Delegate_ReadTable]"); 
+      debug("[TPM_ORD_Delegate_ReadTable]");
       res = execute_TPM_Delegate_ReadTable(req, rsp);
     break;
 
     case TPM_ORD_Delegate_UpdateVerification:
-      debug("[TPM_ORD_Delegate_UpdateVerification]"); 
+      debug("[TPM_ORD_Delegate_UpdateVerification]");
       res = execute_TPM_Delegate_UpdateVerification(req, rsp);
     break;
 
     case TPM_ORD_Delegate_VerifyDelegation:
-      debug("[TPM_ORD_Delegate_VerifyDelegation]"); 
+      debug("[TPM_ORD_Delegate_VerifyDelegation]");
       res = execute_TPM_Delegate_VerifyDelegation(req, rsp);
     break;
 
     case TPM_ORD_NV_DefineSpace:
-      debug("[TPM_ORD_NV_DefineSpace]"); 
+      debug("[TPM_ORD_NV_DefineSpace]");
       res = execute_TPM_NV_DefineSpace(req, rsp);
     break;
 
     case TPM_ORD_NV_WriteValue:
-      debug("[TPM_ORD_NV_WriteValue]"); 
+      debug("[TPM_ORD_NV_WriteValue]");
       res = execute_TPM_NV_WriteValue(req, rsp);
     break;
 
     case TPM_ORD_NV_WriteValueAuth:
-      debug("[TPM_ORD_NV_WriteValueAuth]"); 
+      debug("[TPM_ORD_NV_WriteValueAuth]");
       res = execute_TPM_NV_WriteValueAuth(req, rsp);
     break;
 
     case TPM_ORD_NV_ReadValue:
-      debug("[TPM_ORD_NV_ReadValue]"); 
+      debug("[TPM_ORD_NV_ReadValue]");
       res = execute_TPM_NV_ReadValue(req, rsp);
     break;
 
     case TPM_ORD_NV_ReadValueAuth:
-      debug("[TPM_ORD_NV_ReadValueAuth]"); 
+      debug("[TPM_ORD_NV_ReadValueAuth]");
       res = execute_TPM_NV_ReadValueAuth(req, rsp);
     break;
 
     case TPM_ORD_KeyControlOwner:
-      debug("[TPM_ORD_KeyControlOwner]"); 
+      debug("[TPM_ORD_KeyControlOwner]");
       res = execute_TPM_KeyControlOwner(req, rsp);
     break;
 
     case TPM_ORD_SaveContext:
-      debug("[TPM_ORD_SaveContext]"); 
+      debug("[TPM_ORD_SaveContext]");
       res = execute_TPM_SaveContext(req, rsp);
     break;
 
     case TPM_ORD_LoadContext:
-      debug("[TPM_ORD_LoadContext]"); 
+      debug("[TPM_ORD_LoadContext]");
       res = execute_TPM_LoadContext(req, rsp);
     break;
 
     case TPM_ORD_FlushSpecific:
-      debug("[TPM_ORD_FlushSpecific]"); 
+      debug("[TPM_ORD_FlushSpecific]");
       res = execute_TPM_FlushSpecific(req, rsp);
     break;
 
     case TPM_ORD_SetTickType:
-      debug("[TPM_ORD_SetTickType]"); 
+      debug("[TPM_ORD_SetTickType]");
       res = execute_TPM_SetTickType(req, rsp);
     break;
 
     case TPM_ORD_GetTicks:
-      debug("[TPM_ORD_GetTicks]"); 
+      debug("[TPM_ORD_GetTicks]");
       res = execute_TPM_GetTicks(req, rsp);
     break;
 
     case TPM_ORD_TickStampBlob:
-      debug("[TPM_ORD_TickStampBlob]"); 
+      debug("[TPM_ORD_TickStampBlob]");
       res = execute_TPM_TickStampBlob(req, rsp);
     break;
 
     case TPM_ORD_EstablishTransport:
-      debug("[TPM_ORD_EstablishTransport]"); 
+      debug("[TPM_ORD_EstablishTransport]");
       res = execute_TPM_EstablishTransport(req, rsp);
     break;
 
     case TPM_ORD_ExecuteTransport:
-      debug("[TPM_ORD_ExecuteTransport]"); 
+      debug("[TPM_ORD_ExecuteTransport]");
       res = execute_TPM_ExecuteTransport(req, rsp);
     break;
 
     case TPM_ORD_ReleaseTransportSigned:
-      debug("[TPM_ORD_ReleaseTransportSigned]"); 
+      debug("[TPM_ORD_ReleaseTransportSigned]");
       res = execute_TPM_ReleaseTransportSigned(req, rsp);
     break;
 
     case TPM_ORD_CreateCounter:
-      debug("[TPM_ORD_CreateCounter]"); 
+      debug("[TPM_ORD_CreateCounter]");
       res = execute_TPM_CreateCounter(req, rsp);
     break;
 
     case TPM_ORD_IncrementCounter:
-      debug("[TPM_ORD_IncrementCounter]"); 
+      debug("[TPM_ORD_IncrementCounter]");
       res = execute_TPM_IncrementCounter(req, rsp);
     break;
 
     case TPM_ORD_ReadCounter:
-      debug("[TPM_ORD_ReadCounter]"); 
+      debug("[TPM_ORD_ReadCounter]");
       res = execute_TPM_ReadCounter(req, rsp);
     break;
 
     case TPM_ORD_ReleaseCounter:
-      debug("[TPM_ORD_ReleaseCounter]"); 
+      debug("[TPM_ORD_ReleaseCounter]");
       res = execute_TPM_ReleaseCounter(req, rsp);
     break;
 
     case TPM_ORD_ReleaseCounterOwner:
-      debug("[TPM_ORD_ReleaseCounterOwner]"); 
+      debug("[TPM_ORD_ReleaseCounterOwner]");
       res = execute_TPM_ReleaseCounterOwner(req, rsp);
     break;
 
     case TPM_ORD_DAA_Join:
-      debug("[TPM_ORD_DAA_Join]"); 
+      debug("[TPM_ORD_DAA_Join]");
       res = execute_TPM_DAA_Join(req, rsp);
     break;
 
     case TPM_ORD_DAA_Sign:
-      debug("[TPM_ORD_DAA_Sign]"); 
+      debug("[TPM_ORD_DAA_Sign]");
       res = execute_TPM_DAA_Sign(req, rsp);
     break;
 
     case TPM_ORD_GPIO_AuthChannel:
-      debug("[TPM_ORD_GPIO_AuthChannel]"); 
+      debug("[TPM_ORD_GPIO_AuthChannel]");
       res = execute_TPM_GPIO_AuthChannel(req, rsp);
     break;
 
     case TPM_ORD_GPIO_ReadWrite:
-      debug("[TPM_ORD_GPIO_ReadWrite]"); 
+      debug("[TPM_ORD_GPIO_ReadWrite]");
       res = execute_TPM_GPIO_ReadWrite(req, rsp);
     break;
 
     case TPM_ORD_EvictKey:
-      debug("[TPM_ORD_EvictKey]"); 
+      debug("[TPM_ORD_EvictKey]");
       res = execute_TPM_EvictKey(req, rsp);
     break;
 
     case TPM_ORD_Terminate_Handle:
-      debug("[TPM_ORD_Terminate_Handle]"); 
+      debug("[TPM_ORD_Terminate_Handle]");
       res = execute_TPM_Terminate_Handle(req, rsp);
     break;
 
     case TPM_ORD_SaveKeyContext:
-      debug("[TPM_ORD_SaveKeyContext]"); 
+      debug("[TPM_ORD_SaveKeyContext]");
       res = execute_TPM_SaveKeyContext(req, rsp);
     break;
 
     case TPM_ORD_LoadKeyContext:
-      debug("[TPM_ORD_LoadKeyContext]"); 
+      debug("[TPM_ORD_LoadKeyContext]");
       res = execute_TPM_LoadKeyContext(req, rsp);
     break;
 
     case TPM_ORD_SaveAuthContext:
-      debug("[TPM_ORD_SaveAuthContext]"); 
+      debug("[TPM_ORD_SaveAuthContext]");
       res = execute_TPM_SaveAuthContext(req, rsp);
     break;
 
     case TPM_ORD_LoadAuthContext:
-      debug("[TPM_ORD_LoadAuthContext]"); 
+      debug("[TPM_ORD_LoadAuthContext]");
       res = execute_TPM_LoadAuthContext(req, rsp);
     break;
 
     case TPM_ORD_DirWriteAuth:
-      debug("[TPM_ORD_DirWriteAuth]"); 
+      debug("[TPM_ORD_DirWriteAuth]");
       res = execute_TPM_DirWriteAuth(req, rsp);
     break;
 
     case TPM_ORD_DirRead:
-      debug("[TPM_ORD_DirRead]"); 
+      debug("[TPM_ORD_DirRead]");
       res = execute_TPM_DirRead(req, rsp);
     break;
 
     case TPM_ORD_ChangeAuthAsymStart:
-      debug("[TPM_ORD_ChangeAuthAsymStart]"); 
+      debug("[TPM_ORD_ChangeAuthAsymStart]");
       res = execute_TPM_ChangeAuthAsymStart(req, rsp);
     break;
 
     case TPM_ORD_ChangeAuthAsymFinish:
-      debug("[TPM_ORD_ChangeAuthAsymFinish]"); 
+      debug("[TPM_ORD_ChangeAuthAsymFinish]");
       res = execute_TPM_ChangeAuthAsymFinish(req, rsp);
     break;
 
     case TPM_ORD_Reset:
-      debug("[TPM_ORD_Reset]"); 
+      debug("[TPM_ORD_Reset]");
       res = execute_TPM_Reset(req, rsp);
     break;
 
     case TPM_ORD_CertifySelfTest:
-      debug("[TPM_ORD_CertifySelfTest]"); 
+      debug("[TPM_ORD_CertifySelfTest]");
       res = execute_TPM_CertifySelfTest(req, rsp);
     break;
 
     case TPM_ORD_OwnerReadPubek:
-      debug("[TPM_ORD_OwnerReadPubek]"); 
+      debug("[TPM_ORD_OwnerReadPubek]");
       res = execute_TPM_OwnerReadPubek(req, rsp);
     break;
 

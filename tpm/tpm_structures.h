@@ -515,6 +515,7 @@ typedef UINT32 TPM_CMK_RESTRICTDELEGATE;
 #define TPM_ORD_CertifyKey                      50
 #define TPM_ORD_CertifyKey2                     51
 #define TPM_ORD_Sign                            60
+#define TPM_ORD_LoadKey2                        65
 #define TPM_ORD_GetRandom                       70
 #define TPM_ORD_StirRandom                      71
 #define TPM_ORD_SelfTestFull                    80

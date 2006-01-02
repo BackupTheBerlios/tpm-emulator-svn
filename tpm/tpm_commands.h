@@ -608,6 +608,26 @@ TPM_RESULT TPM_LoadKey(
 );
 
 /**
+ * TPM_LoadKey2 - loads a key into the TPM for further use
+ * @parentHandle: [in] TPM handle of parent key
+ * @inKey: [in] Incoming key structure, both private and public portions
+ * @auth1: [in, out] Authorization protocol parameters
+ * @inkeyHandle: [out] Internal TPM handle where decrypted key was loaded
+ * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
+ * 
+ * Description: ([TPM_Part3], Section 10.5)
+ * Before the TPM can use a key to either wrap, unwrap, bind, unbind, seal, 
+ * unseal, sign or perform any other action, it needs to be present in the 
+ * TPM. The TPM_LoadKey function loads the key into the TPM for further use.
+ */
+TPM_RESULT TPM_LoadKey2(  
+  TPM_KEY_HANDLE parentHandle,
+  TPM_KEY *inKey,
+  TPM_AUTH *auth1,
+  TPM_KEY_HANDLE *inkeyHandle
+);
+
+/**
  * TPM_GetPubKey - provides the public key value from a loaded key
  * @keyHandle: [in] TPM handle of key
  * @auth1: [in, out] Authorization protocol parameters

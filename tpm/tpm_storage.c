@@ -487,7 +487,7 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
   if (auth1->authHandle != TPM_INVALID_HANDLE
       || parent->authDataUsage != TPM_AUTH_NEVER) {
     res = tpm_verify_auth(auth1, parent->usageAuth, parentHandle);
-    if (res != TPM_SUCCESS) return res;    
+    if (res != TPM_SUCCESS) return res;
   }
   if (parent->keyUsage != TPM_KEY_STORAGE) return TPM_INVALID_KEYUSAGE;
   /* verify key properties */
@@ -506,7 +506,7 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
       && (inKey->keyFlags & TPM_KEY_FLAG_MIGRATABLE
           || inKey->algorithmParms.algorithmID != TPM_ALG_RSA
           || inKey->algorithmParms.parms.rsa.keyLength != 2048
-          || inKey->algorithmParms.sigScheme != TPM_SS_NONE)) 
+          || inKey->algorithmParms.encScheme != TPM_ES_NONE)) 
     return TPM_INVALID_KEYUSAGE;
   /* decrypt private key */
   if (decrypt_private_key(parent, inKey->encData, inKey->encDataSize,
@@ -556,6 +556,13 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
   key->parentPCRStatus = parent->parentPCRStatus;
   tpm_free(key_buf);
   return TPM_SUCCESS;
+}
+
+TPM_RESULT TPM_LoadKey2(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
+                        TPM_AUTH *auth1, TPM_KEY_HANDLE *inkeyHandle)
+{
+  info("TPM_LoadKey2() is currently emulated by TPM_LoadKey()");
+  return TPM_LoadKey(parentHandle, inKey, auth1, inkeyHandle);
 }
 
 int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms)
@@ -615,4 +622,3 @@ TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
   }
   return TPM_SUCCESS;
 }
-

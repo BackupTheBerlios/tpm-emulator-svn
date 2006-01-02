@@ -111,22 +111,22 @@ static int tpm_ioctl(struct inode *inode, struct file *file, unsigned int cmd, u
 {
   debug("%s(%d, %p)", __FUNCTION__, cmd, (char*)arg);
   if (cmd == TPMIOC_TRANSMIT) {
-    uint32_t count = ntohl(*(uint32_t*)(arg + 2));  
+    uint32_t count = ntohl(*(uint32_t*)(arg + 2));
     down(&tpm_mutex);
     if (tpm_response.data != NULL) kfree(tpm_response.data);
     if (tpm_handle_command((char*)arg, count, &tpm_response.data,
                            &tpm_response.size) == 0) {
       tpm_response.size -= copy_to_user((char*)arg, tpm_response.data,
-		                        tpm_response.size);
+                            tpm_response.size);
       kfree(tpm_response.data);
-      tpm_response.data = NULL;      
-    } else {	    
+      tpm_response.data = NULL;
+    } else {
       tpm_response.size = 0;
       tpm_response.data = NULL;
-    }  
+    }
     up(&tpm_mutex);
     return tpm_response.size;
-  }  
+  }
   return -1;
 }
 
@@ -159,7 +159,7 @@ int __init init_tpm_module(void)
   /* initialize TPM emulator */
   if (!strcmp(startup, "clear")) {
     tpm_emulator_init(1);
-  } else if (!strcmp(startup, "save")) { 
+  } else if (!strcmp(startup, "save")) {
     tpm_emulator_init(2);
   } else if (!strcmp(startup, "deactivated")) {
     tpm_emulator_init(3);
@@ -184,7 +184,7 @@ module_exit(cleanup_tpm_module);
 
 uint64_t tpm_get_ticks(void)
 {
-  static struct timespec old_time = {0, 0}; 
+  static struct timespec old_time = {0, 0};
   struct timespec new_time = current_kernel_time();
   uint64_t ticks = (uint64_t)(old_time.tv_sec - new_time.tv_sec) * 1000000
                    + (old_time.tv_nsec - new_time.tv_nsec) / 1000;
