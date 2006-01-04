@@ -39,7 +39,7 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
   TPM_KEY_DATA *key;
   int i;
   
-  info("TPM_FlushSpecific()");
+  info("TPM_FlushSpecific() resourceType=%.8x", resourceType);
   switch (resourceType) {
     case TPM_RT_AUTH:
       session = tpm_get_auth(handle);

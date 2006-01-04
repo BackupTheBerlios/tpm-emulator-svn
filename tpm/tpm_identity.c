@@ -160,7 +160,7 @@ info("---9.---");
       info("TPM_MakeIdentity() does not support TPM_KEY v1.1 structure");
       return TPM_FAIL;
     }
-info("---10.---");
+info("---10.--- %d", idKey->PCRInfoSize);
   /* 10. Set the digestAtCreation values for pcrInfo */
   if (idKey->PCRInfoSize > 0) {
     res = tpm_compute_pcr_digest(&idKey->PCRInfo.creationPCRSelection,
@@ -171,7 +171,7 @@ info("---10.---");
         idKey->PCRInfo.localityAtCreation = 
           tpmData.stany.flags.localityModifier;
   }
-info("---11.---");
+info("---11.--- %d", idKeyParams->algorithmParms.parms.rsa.keyLength);
   /* 11. Create an asymmetric key pair (identityPubKey and tpm_signature_key) 
    * using a TPM-protected capability, in accordance with the algorithm 
    * specified in idKeyParams */
@@ -223,7 +223,7 @@ info("---15.---");
     rsa_release_private_key(&tpm_signature_key);
     return TPM_FAIL;
   }
-info("---16.---");
+info("---16.--- %d", idKey->encDataSize);
   /* 16. Encrypt the private portion of idKey using the SRK as the parent key */
   if (encrypt_private_key(&tpmData.permanent.data.srk, &store, idKey->encData, 
     &idKey->encDataSize)) {
@@ -275,6 +275,7 @@ info("---17.b---");
   rsa_export_modulus(&tpm_signature_key, idContents.identityPubKey.pubKey.key, 
     &idContents.identityPubKey.pubKey.keyLength);
   len = sizeof_TPM_IDENTITY_CONTENTS((idContents));
+info("---17.c--- %d", len);
   buf = ptr = tpm_malloc(len);
   if (buf == NULL) {
     tpm_free(idContents.identityPubKey.pubKey.key);

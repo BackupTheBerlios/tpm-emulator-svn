@@ -24,6 +24,8 @@
 
 UINT32 tpm_get_param_offset(TPM_COMMAND_CODE ordinal)
 {
+// some ordinals are commented out in order to be compatible with
+// the behavior of the DAA Test Suite
   switch (ordinal) {
     case TPM_ORD_ActivateIdentity:
     case TPM_ORD_CertifySelfTest:
@@ -43,7 +45,7 @@ UINT32 tpm_get_param_offset(TPM_COMMAND_CODE ordinal)
     case TPM_ORD_KeyControlOwner:
     case TPM_ORD_LoadKey:
     case TPM_ORD_LoadKey2:
-    case TPM_ORD_OwnerReadInternalPub:
+//    case TPM_ORD_OwnerReadInternalPub:
     case TPM_ORD_Quote:
     case TPM_ORD_ReleaseTransportSigned:
     case TPM_ORD_SaveKeyContext:
@@ -1533,8 +1535,8 @@ static TPM_RESULT execute_TPM_MakeIdentity(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       || tpm_unmarshal_TPM_KEY(&ptr, &len, &idKeyParams)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
-  res = TPM_MakeIdentity(&identityAuth, &labelPrivCADigest, &idKeyParams, &req->auth1, 
-    &req->auth2, &idKey, &identityBindingSize, &identityBinding);
+  res = TPM_MakeIdentity(&identityAuth, &labelPrivCADigest, &idKeyParams, 
+    &req->auth1, &req->auth2, &idKey, &identityBindingSize, &identityBinding);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
   rsp->paramSize = len = sizeof_TPM_KEY(idKey) + 4 + identityBindingSize;

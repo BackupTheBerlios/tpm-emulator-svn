@@ -717,7 +717,7 @@ typedef struct tdTPM_STORED_DATA {
   BYTE* encData;
 } TPM_STORED_DATA;
 #define sizeof_TPM_STORED_DATA(s) (2 + 2 + 4 + s.sealInfoSize + 4 + s.encDataSize)
-#define free_TPM_STORED_DATA(s) { tpm_free(s.encData); }
+#define free_TPM_STORED_DATA(s) { if (s.encDataSize > 0) tpm_free(s.encData); }
 
 /*
  * TPM_SEALED_DATA ([TPM_Part2], Section 9.3)
@@ -733,7 +733,7 @@ typedef struct tdTPM_SEALED_DATA {
   BYTE* data;
 } TPM_SEALED_DATA;
 #define sizeof_TPM_SEALED_DATA(s) (1 + 20 + 20 + 20 + 4 + s.dataSize)
-#define free_TPM_SEALED_DATA(s) { tpm_free(s.data); } 
+#define free_TPM_SEALED_DATA(s) { if (s.dataSize > 0) tpm_free(s.data); }
 
 /*
  * TPM_SYMMETRIC_KEY ([TPM_Part2], Section 9.4)
@@ -746,7 +746,7 @@ typedef struct tdTPM_SYMMETRIC_KEY {
   BYTE* data;
 } TPM_SYMMETRIC_KEY;
 #define sizeof_TPM_SYMMETRIC_KEY(s) (4 + 2 + 2 + s.size)
-#define free_TPM_SYMMETRIC_KEY(s) { tpm_free(s.data); }
+#define free_TPM_SYMMETRIC_KEY(s) { if (s.size > 0) tpm_free(s.data); }
 
 /*
  * TPM_BOUND_DATA ([TPM_Part2], Section 9.5)
@@ -769,7 +769,7 @@ typedef struct tdTPM_RSA_KEY_PARMS {
   BYTE* exponent;
 } TPM_RSA_KEY_PARMS;
 #define sizeof_TPM_RSA_KEY_PARMS(s) (4 + 4 + 4 + s.exponentSize)
-#define free_TPM_RSA_KEY_PARMS(s) { tpm_free(s.exponent); }
+#define free_TPM_RSA_KEY_PARMS(s) { if (s.exponentSize > 0) tpm_free(s.exponent); }
 
 /*
  * TPM_SYMMETRIC_KEY_PARMS ([TPM_Part2], Section 10.1.2)
@@ -782,7 +782,7 @@ typedef struct tdTPM_SYMMETRIC_KEY_PARMS {
   BYTE* IV;
 } TPM_SYMMETRIC_KEY_PARMS;
 #define sizeof_TPM_SYMMETRIC_KEY_PARMS(s) (4 + 4 + 4 + s.ivSize)
-#define free_TPM_SYMMETRIC_KEY_PARMS(s) { tpm_free(s.IV); }
+#define free_TPM_SYMMETRIC_KEY_PARMS(s) { if (s.ivSize > 0) tpm_free(s.IV); }
 
 /*
  * TPM_KEY_PARMS ([TPM_Part2], Section 10.1)
@@ -801,12 +801,13 @@ typedef struct tdTPM_KEY_PARMS {
   } parms;
 } TPM_KEY_PARMS;
 #define sizeof_TPM_KEY_PARMS(s) (4 + 2 + 2 + 4 + s.parmSize)
-#define free_TPM_KEY_PARMS(s) { switch (s.algorithmID) { \
-  case TPM_ALG_RSA: free_TPM_RSA_KEY_PARMS(s.parms.rsa); break; \
-  case TPM_ALG_DES: case TPM_ALG_3DES: \
-  case TPM_ALG_AES192: case TPM_ALG_AES256: \
-  free_TPM_SYMMETRIC_KEY_PARMS(s.parms.skp); break; \
-  default: tpm_free(s.parms.raw); } }
+#define free_TPM_KEY_PARMS(s) { if (s.parmSize > 0) { \
+  switch (s.algorithmID) { \
+    case TPM_ALG_RSA: free_TPM_RSA_KEY_PARMS(s.parms.rsa); break; \
+    case TPM_ALG_DES: case TPM_ALG_3DES: \
+    case TPM_ALG_AES192: case TPM_ALG_AES256: \
+    free_TPM_SYMMETRIC_KEY_PARMS(s.parms.skp); break; \
+    default: tpm_free(s.parms.raw); } } }
 
 /*
  * TPM_STORE_PUBKEY ([TPM_Part2], Section 10.4)
@@ -818,7 +819,7 @@ typedef struct tdTPM_STORE_PUBKEY {
   BYTE* key;
 } TPM_STORE_PUBKEY;
 #define sizeof_TPM_STORE_PUBKEY(s) (4 + s.keyLength)
-#define free_TPM_STORE_PUBKEY(s) { tpm_free(s.key); }
+#define free_TPM_STORE_PUBKEY(s) { if (s.keyLength > 0) tpm_free(s.key); }
 
 /*
  * TPM_KEY ([TPM_Part2], Section 10.2)
@@ -845,7 +846,7 @@ typedef struct tdTPM_KEY {
 #define sizeof_TPM_KEY(s) (4 + 2 + 4 + 1 + sizeof_TPM_KEY_PARMS(s.algorithmParms) \
   + 4 + s.PCRInfoSize + sizeof_TPM_STORE_PUBKEY(s.pubKey) \
   + 4 + s.encDataSize)
-#define free_TPM_KEY(s) { tpm_free(s.encData); \
+#define free_TPM_KEY(s) { if (s.encDataSize > 0) tpm_free(s.encData); \
   free_TPM_KEY_PARMS(s.algorithmParms); free_TPM_STORE_PUBKEY(s.pubKey); }
 
 /*
@@ -871,7 +872,7 @@ typedef struct tdTPM_STORE_PRIVKEY {
   BYTE* key;
 } TPM_STORE_PRIVKEY;
 #define sizeof_TPM_STORE_PRIVKEY(s) (4 + s.keyLength)
-#define free_TPM_STORE_PRIVKEY(s) { tpm_free(key); }
+#define free_TPM_STORE_PRIVKEY(s) { if (s.keyLength > 0) tpm_free(s.key); }
 
 /*
  * TPM_STORE_ASYMKEY ([TPM_Part2], Section 10.6)
@@ -952,7 +953,7 @@ typedef struct tdTPM_CERTIFY_INFO {
   + s.PCRInfoSize + s.migrationAuthoritySize)
 #define free_TPM_CERTIFY_INFO(s) { free_TPM_KEY_PARMS(s.algorithmParms); \
   if (s.migrationAuthoritySize > 0) tpm_free(s.migrationAuthority); }
- 
+
 /*
  * TPM_QUOTE_INFO Structure ([TPM_Part2], Section 11.3)
  * This structure provides the mechanism for the TPM to quote the
@@ -1588,7 +1589,8 @@ typedef struct tdTPM_DELEGATE_OWNER_BLOB {
 #define sizeof_TPM_DELEGATE_OWNER_BLOB(s) (2 + sizeof_TPM_DELEGATE_PUBLIC(s.pub) \
   + 20 + 4 + s.additionalSize + 4 + s.sensitiveSize)
 #define free_TPM_DELEGATE_OWNER_BLOB(s) { free_TPM_DELEGATE_PUBLIC(s.pub); \
-  tpm_free(s.additionalArea); tpm_free(s.sensitiveArea); }
+  if (s.additionalSize > 0) tpm_free(s.additionalArea); \
+  if (s.sensitiveSize > 0) tpm_free(s.sensitiveArea); }
 
 /*
  * TPM_DELEGATE_KEY_BLOB ([TPM_Part2], Section 20.14)
@@ -1609,7 +1611,8 @@ typedef struct tdTPM_DELEGATE_KEY_BLOB {
 #define sizeof_TPM_DELEGATE_KEY_BLOB(s) (2 + sizeof_TPM_DELEGATE_PUBLIC(s.pub) \
   + 20 + 20 + 4 + s.additionalSize + 4 + s.sensitiveSize)
 #define free_TPM_DELEGATE_KEY_BLOB(s) { free_TPM_DELEGATE_PUBLIC(s.pub); \
-  tpm_free(s.additionalArea); tpm_free(s.sensitiveArea); }
+  if (s.additionalSize > 0) tpm_free(s.additionalArea); \
+  if (s.sensitiveSize > 0) tpm_free(s.sensitiveArea); }
 
 /*
  * TPM_FAMILY_OPERATION Values ([TPM_Part2], Section 20.15)
@@ -1839,7 +1842,7 @@ typedef struct tdTPM_GPIO_CHANNEL {
 } TPM_GPIO_CHANNEL;
 #define sizeof_TPM_GPIO_CHANNEL(s) (2 + 2 + 2 + 4 + 4 + 4 + s.sizeOfAddress \
   + 4 + 20 + 4 + sizeof_TPM_PCR_INFO_SHORT(s.pcrInfo))
-#define free_TPM_GPIO_CHANNEL(s) { tpm_free(s.address); }
+#define free_TPM_GPIO_CHANNEL(s) { if (s.sizeOfAddress > 0) tpm_free(s.address); }
 
 /*
  * TPM_GPIO_AUTHORIZE ([TPM_Part2], Section 23.4)
@@ -1859,7 +1862,8 @@ typedef struct tdTPM_GPIO_AUTHORIZE {
 #define sizeof_TPM_GPIO_AUTHORIZE(s) (2 + sizeof_TPM_GPIO_CHANNEL(s.channel) \
   + 20 + 4 + s.additionalSize + 4 + s.sensitiveSize)
 #define free_TPM_GPIO_AUTHORIZE(s) { free_TPM_GPIO_CHANNEL(s.channel); \
-  tpm_free(s.additionalData); tpm_free(s.sensitiveData); }
+  if (s.additionalSize > 0) tpm_free(s.additionalData); \
+  if (s.sensitiveSize > 0) tpm_free(s.sensitiveData); }
 
 /*
  * TPM_GPIO_SENSITIVE  ([TPM_Part2], Section 23.5)
@@ -2135,8 +2139,9 @@ typedef struct tdTPM_CONTEXT_BLOB {
 } TPM_CONTEXT_BLOB;
 #define sizeof_TPM_CONTEXT_BLOB(s) (2 + 4 + 4 + 16 + 4 + 20 + 4 \
  + s.additionalSize + 4 + s.sensitiveSize)
-#define free_TPM_CONTEXT_BLOB(s) { tpm_free(s.additionalData); \
-  tpm_free(s.sensitiveData); }
+#define free_TPM_CONTEXT_BLOB(s) { \
+  if (s.additionalSize > 0) tpm_free(s.additionalData); \
+  if (s.sensitiveSize > 0) tpm_free(s.sensitiveData); }
 
 /*
  * TPM_CONTEXT_SENSITIVE ([TPM_Part2], Section 18.2)
