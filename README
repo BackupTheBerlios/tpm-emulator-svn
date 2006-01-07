@@ -76,8 +76,13 @@ loaded, startup SHOULD be set to 'clear':
 
 bash# modprobe tpm_emulator startup="clear"
 
-Note that the name as well as the format of the persistent-storage file
-has changed between release 0.2 and 0.3.
+
+Notes
+--------------------------------------------------------------------------
+* The name as well as the format of the persistent-storage file has 
+  changed between release 0.2 and 0.3.
+* DAA support is still a work in progress and thus not yet completely
+  functional.
 
 
 Description
