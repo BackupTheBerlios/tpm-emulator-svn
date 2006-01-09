@@ -1422,4 +1422,3 @@ int tpm_unmarshal_TPM_REQUEST(BYTE **ptr, UINT32 *length, TPM_REQUEST *v)
   }
   return 0;
 }
-

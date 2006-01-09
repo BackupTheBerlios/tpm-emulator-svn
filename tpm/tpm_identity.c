@@ -107,17 +107,20 @@ info("---6.---");
   ownerAuth_sessionData = tpm_get_auth(auth2->authHandle);
   if (ownerAuth_sessionData == NULL) return TPM_INVALID_AUTHHANDLE;
   if (ownerAuth_sessionData->entityType == TPM_ET_OWNER
-    || ownerAuth_sessionData->entityType == TPM_ET_OWNERXOR)
+    || ownerAuth_sessionData->entityType == TPM_ET_OWNERXOR) {
     /* a. Create X1 the SHA-1 of the concatenation of (ownerAuth->sharedSecret 
      * || authLastNonceEven) */
     /* b. Create A1 by XOR X1 and identityAuth */
     tpm_decrypt_auth_secret(*identityAuth, ownerAuth_sessionData->sharedSecret, 
       &auth2->nonceEven, A1);
+  } else {
+info("---7.--- %d", ownerAuth_sessionData->entityType);
   /* 7. Else */
     /* a. Create A1 by decrypting identityAuth using the algorithm indicated 
      * in the OSAP session */
     /* b. Key is from ownerAuth->sharedSecret */
     /* c. IV is SHA-1 of (authLastNonceEven || nonceOdd) */
+  }
 info("---8.---");
   /* 8. Set continueAuthSession and continueSRKSession to FALSE. */
   auth2->continueAuthSession = FALSE, auth1->continueAuthSession = FALSE;
@@ -180,7 +183,7 @@ info("---11.--- %d", idKeyParams->algorithmParms.parms.rsa.keyLength);
 info("---12.---");
   /* 12. Ensure that the AuthData information in A1 is properly stored in the 
    * idKey as usageAuth. */
-  memcpy(&store.usageAuth, &A1, sizeof(TPM_SECRET));
+  memcpy(store.usageAuth, A1, sizeof(TPM_SECRET));
 info("---13.---");
   /* 13. Attach identityPubKey and tpm_signature_key to idKey */
   idKey->pubKey.keyLength = key_length >> 3;
@@ -210,7 +213,7 @@ info("---13.---");
     &store.privKey.keyLength);
 info("---14.---");
   /* 14. Set idKey->migrationAuth to TPM_PERMANENT_DATA->tpmProof */
-  memcpy(&store.migrationAuth, &tpmData.permanent.data.tpmProof, 
+  memcpy(store.migrationAuth, tpmData.permanent.data.tpmProof.nonce, 
     sizeof(TPM_SECRET));
 info("---15.---");
   /* 15. Ensure that all TPM_PAYLOAD_TYPE structures identify this key as 

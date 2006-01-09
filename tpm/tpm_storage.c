@@ -532,8 +532,8 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
   }
   /* verify tpmProof */
   if (!(inKey->keyFlags & TPM_KEY_FLAG_MIGRATABLE)) {
-    if (memcmp(&tpmData.permanent.data.tpmProof.nonce,
-               &store.migrationAuth, sizeof(TPM_NONCE))) {
+    if (memcmp(tpmData.permanent.data.tpmProof.nonce,
+               store.migrationAuth, sizeof(TPM_NONCE))) {
       memset(key, 0, sizeof(TPM_KEY_DATA));
       tpm_free(key_buf);
       return TPM_FAIL;
@@ -544,11 +544,11 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
   key->authDataUsage = inKey->authDataUsage;
   key->encScheme = inKey->algorithmParms.encScheme;
   key->sigScheme = inKey->algorithmParms.sigScheme;
-  memcpy(&key->usageAuth, &store.usageAuth, sizeof(TPM_SECRET));
+  memcpy(key->usageAuth, store.usageAuth, sizeof(TPM_SECRET));
   /* setup PCR info */
   if (inKey->PCRInfoSize > 0) {
     memcpy(&key->pcrInfo, &inKey->PCRInfo, sizeof(TPM_PCR_INFO));
-    key->keyFlags |= TPM_KEY_FLAG_HAS_PCR; 
+    key->keyFlags |= TPM_KEY_FLAG_HAS_PCR;
   } else {
     key->keyFlags |= TPM_KEY_FLAG_PCR_IGNORE;
     key->keyFlags &= ~TPM_KEY_FLAG_HAS_PCR;

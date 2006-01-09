@@ -85,4 +85,3 @@ TPM_RESULT TPM_NV_ReadValueAuth(
   /* TODO: implement TPM_NV_ReadValueAuth() */
   return TPM_FAIL;
 }
-

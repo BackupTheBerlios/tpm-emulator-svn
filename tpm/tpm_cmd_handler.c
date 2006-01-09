@@ -55,6 +55,8 @@ UINT32 tpm_get_param_offset(TPM_COMMAND_CODE ordinal)
     case TPM_ORD_TickStampBlob:
     case TPM_ORD_UnBind:
     case TPM_ORD_Unseal:
+    case TPM_ORD_DAA_Join:
+    case TPM_ORD_DAA_Sign:
       return 4;
 
     case TPM_ORD_CertifyKey:
@@ -2637,10 +2639,9 @@ static TPM_RESULT execute_TPM_DAA_Join(TPM_REQUEST *req, TPM_RESPONSE *rsp)
     inputData1, &req->auth1, &ordinal, &outputSize, &outputData);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
-  rsp->paramSize = len = 4 + 4 + outputSize;
+  rsp->paramSize = len = 4 + outputSize;
   rsp->param = ptr = tpm_malloc(len);
   if (ptr == NULL
-      || tpm_marshal_TPM_COMMAND_CODE(&ptr, &len, ordinal)
       || tpm_marshal_UINT32(&ptr, &len, outputSize)
       || tpm_marshal_BLOB(&ptr, &len, outputData, outputSize)) {
     tpm_free(rsp->param);
@@ -2681,10 +2682,9 @@ static TPM_RESULT execute_TPM_DAA_Sign(TPM_REQUEST *req, TPM_RESPONSE *rsp)
     inputData1, &req->auth1, &ordinal, &outputSize, &outputData);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
-  rsp->paramSize = len = 4 + 4 + outputSize;
+  rsp->paramSize = len = 4 + outputSize;
   rsp->param = ptr = tpm_malloc(len);
   if (ptr == NULL
-      || tpm_marshal_TPM_COMMAND_CODE(&ptr, &len, ordinal)
       || tpm_marshal_UINT32(&ptr, &len, outputSize)
       || tpm_marshal_BLOB(&ptr, &len, outputData, outputSize)) {
     tpm_free(rsp->param);
@@ -3109,7 +3109,6 @@ static TPM_RESULT execute_TPM_OwnerReadPubek(TPM_REQUEST *req, TPM_RESPONSE *rsp
   return res;
 }
 
-
 static void tpm_setup_rsp_auth(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp) 
 {
   hmac_ctx_t hmac;
@@ -3150,7 +3149,7 @@ static void tpm_setup_rsp_auth(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
       hmac_update(&hmac, (BYTE*)&rsp->auth1->continueAuthSession, 1);
       hmac_final(&hmac, rsp->auth1->auth);
       break;
-  } 
+  }
 }
 
 static void tpm_setup_error_response(TPM_RESULT res, TPM_RESPONSE *rsp)

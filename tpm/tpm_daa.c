@@ -472,7 +472,6 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         sha1_final(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_rekey);
       /* Else (If DAA_session->DAA_scratch != NULL): */
       } else {
-//TODO: test this code path
         /* Set signedData = inputData0 */
         signedData = inputData0;
         /* Verify that sizeOf(inputData1) == DAA_SIZE_issuerModulus and 
@@ -486,7 +485,6 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         /* Use the RSA key == [DAA_session->DAA_scratch] to verify that 
          * signatureValue is a signature on signedData, and return error 
          * TPM_DAA_ISSUER_VALIDITY on mismatch */
-//TODO: determine correct endianess and message encoding
         if (rsa_import_public_key(&key, RSA_MSB_FIRST, 
           session->DAA_session.DAA_scratch, DAA_SIZE_issuerModulus, NULL, 0)) {
             memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
@@ -566,12 +564,12 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       /* Use the RSA key [DAA_session->DAA_scratch] to verify that 
        * signatureValue is a signature on signedData, and return error 
        * TPM_DAA_ISSUER_VALIDITY on mismatch */
-//TODO: determine correct endianess and message encoding
       if (rsa_import_public_key(&key, RSA_MSB_FIRST, 
         session->DAA_session.DAA_scratch, DAA_SIZE_issuerModulus, NULL, 0)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_ISSUER_VALIDITY;
       }
+info("tested until here");
       if (rsa_verify(&key, RSA_SSA_PKCS1_SHA1, signedData, 
         sizeof(TPM_DIGEST) + sizeof(TPM_DAA_ISSUER), signatureValue)) {
           rsa_release_public_key(&key);

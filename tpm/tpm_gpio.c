@@ -33,6 +33,7 @@ TPM_RESULT TPM_GPIO_AuthChannel(
 )
 {
   info("TPM_GPIO_AuthChannel() not implemented yet");
+  
   /* TODO: implement TPM_GPIO_AuthChannel() */
   return TPM_FAIL;
 }
@@ -49,7 +50,7 @@ TPM_RESULT TPM_GPIO_ReadWrite(
 )
 {
   info("TPM_GPIO_ReadWrite() not implemented yet");
+  
   /* TODO: implement TPM_GPIO_ReadWrite() */
   return TPM_FAIL;
 }
-
