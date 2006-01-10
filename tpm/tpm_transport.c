@@ -15,6 +15,11 @@
  * $Id$
  */
 
+/* 
+ * Thanks go to Edison Su (<sudison@gmail.com>) for providing
+ * the initial Transport Session patch.
+ */
+
 #include "tpm_emulator.h"
 #include "tpm_commands.h"
 #include "tpm_handles.h"
