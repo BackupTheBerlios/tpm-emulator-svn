@@ -1760,7 +1760,7 @@ typedef struct tdTPM_DAA_CONTEXT {
  */
 typedef struct tdTPM_DAA_JOINDATA {
   BYTE DAA_join_u0[128];
-  BYTE DAA_join_u1[138]; /* WATCH: 138 (v1.2 rev 85) */
+  BYTE DAA_join_u1[138];
   TPM_DIGEST DAA_digest_n0;
 } TPM_DAA_JOINDATA;
 

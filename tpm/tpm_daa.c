@@ -455,6 +455,8 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       /* If DAA_session->DAA_scratch == NULL: */
       if (!memcmp(scratch, session->DAA_session.DAA_scratch, SCRATCH_SIZE)) {
         /* Set DAA_session->DAA_scratch = inputData0 */
+        memset(session->DAA_session.DAA_scratch, 0, 
+          sizeof(session->DAA_session.DAA_scratch));
         memcpy(session->DAA_session.DAA_scratch, inputData0, inputSize0);
         /* Set DAA_joinSession->DAA_digest_n0 = 
          * SHA-1(DAA_session->DAA_scratch) */
@@ -497,6 +499,8 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         }
         rsa_release_public_key(&key);
         /* Set DAA_session->DAA_scratch = signedData */
+        memset(session->DAA_session.DAA_scratch, 0, 
+          sizeof(session->DAA_session.DAA_scratch));
         memcpy(session->DAA_session.DAA_scratch, inputData0, inputSize0);
       }
       /* Decrement DAA_tpmSpecific->DAA_count by 1 (unity) */
@@ -555,11 +559,9 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       signatureValue = inputData1;
       /* Set signedData = (DAA_joinSession->DAA_digest_n0 || 
        * DAA_issuerSettings) */
-//WATCH: ??? SHA-1(DAA_joinSession->DAA_digest_n0 || DAA_issuerSettings)
       memcpy(scratch, &session->DAA_joinSession.DAA_digest_n0, 
         sizeof(TPM_DIGEST));
-      memcpy(scratch + sizeof(TPM_DIGEST), &session->DAA_issuerSettings, 
-        sizeof(TPM_DAA_ISSUER));
+      memcpy(scratch + sizeof(TPM_DIGEST), inputData0, inputSize0);
       signedData = scratch;
       /* Use the RSA key [DAA_session->DAA_scratch] to verify that 
        * signatureValue is a signature on signedData, and return error 
@@ -569,9 +571,8 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_ISSUER_VALIDITY;
       }
-info("tested until here");
       if (rsa_verify(&key, RSA_SSA_PKCS1_SHA1, signedData, 
-        sizeof(TPM_DIGEST) + sizeof(TPM_DAA_ISSUER), signatureValue)) {
+        sizeof(TPM_DIGEST) + inputSize0, signatureValue)) {
           rsa_release_public_key(&key);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_ISSUER_VALIDITY;
@@ -720,8 +721,10 @@ info("tested until here");
       mpz_ui_pow_ui(tmp, 2, DAA_power0);
       mpz_mod(f0, f, tmp);
       /* Set DAA_session->DAA_scratch = (X^f0) mod n */
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
       mpz_powm(tmp, X, f0, n);
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, tmp);
+      mpz_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, tmp);
       mpz_clear(f), mpz_clear(q), mpz_clear(f0), mpz_clear(tmp);
       mpz_clear(X), mpz_clear(n);
       /* Set outputData = NULL */
@@ -807,14 +810,16 @@ info("tested until here");
       mpz_fdiv_q_2exp(f1, f, DAA_power0);
       /* Set Z = DAA_session->DAA_scratch */
       mpz_init(Z);
-      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), 1, 1, 0, 0, 
+      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), -1, 1, 0, 0, 
         session->DAA_session.DAA_scratch);
       /* Set DAA_session->DAA_scratch = Z*(X^f1) mod n */
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
       mpz_init(tmp);
       mpz_powm(tmp, X, f1, n);
       mpz_mul(tmp, tmp, Z);
       mpz_mod(tmp, tmp, n);
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, tmp);
+      mpz_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, tmp);
       mpz_clear(f), mpz_clear(q), mpz_clear(f1), mpz_clear(tmp);
       mpz_clear(X), mpz_clear(n), mpz_clear(Z);
       /* Set outputData = NULL */
@@ -873,18 +878,20 @@ info("tested until here");
       mpz_import(n, inputSize1, 1, 1, 0, 0, DAA_generic_n);
       /* Set Z = DAA_session->DAA_scratch */
       mpz_init(Z);
-      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), 1, 1, 0, 0, 
+      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), -1, 1, 0, 0, 
         session->DAA_session.DAA_scratch);
       /* Set Y = DAA_joinSession->DAA_join_u0 */
       mpz_init(Y);
       mpz_import(Y, sizeof(session->DAA_joinSession.DAA_join_u0), 1, 1, 0, 0, 
         session->DAA_joinSession.DAA_join_u0);
       /* Set DAA_session->DAA_scratch = Z*(X^Y) mod n */
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
       mpz_init(tmp);
       mpz_powm(tmp, X, Y, n);
       mpz_mul(tmp, tmp, Z);
       mpz_mod(tmp, tmp, n);
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, tmp);
+      mpz_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, tmp);
       mpz_clear(X), mpz_clear(Y), mpz_clear(Z), mpz_clear(n), mpz_clear(tmp);
       /* Set outputData = NULL */
       *outputSize = 0, *outputData = NULL;
@@ -946,28 +953,34 @@ info("tested until here");
         session->DAA_joinSession.DAA_join_u1);
       /* Set Z = DAA_session->DAA_scratch */
       mpz_init(Z);
-      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), 1, 1, 0, 0, 
+      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), -1, 1, 0, 0, 
         session->DAA_session.DAA_scratch);
       /* Set DAA_session->DAA_scratch = Z*(X^Y) mod n */
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
       mpz_init(tmp);
       mpz_powm(tmp, X, Y, n);
       mpz_mul(tmp, tmp, Z);
       mpz_mod(tmp, tmp, n);
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, tmp);
+      mpz_export(session->DAA_session.DAA_scratch, outputSize, 
+        1, 1, 0, 0, tmp);
       mpz_clear(X), mpz_clear(Y), mpz_clear(Z), mpz_clear(n), mpz_clear(tmp);
       /* Set DAA_session->DAA_digest to the SHA-1(DAA_session->DAA_scratch || 
        * DAA_tpmSpecific->DAA_count || DAA_joinSession->DAA_digest_n0) */
       sha1_init(&sha1);
       sha1_update(&sha1, (BYTE*) session->DAA_session.DAA_scratch, 
-        sizeof(session->DAA_session.DAA_scratch));
-      sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
-        sizeof(session->DAA_tpmSpecific.DAA_count));
+        *outputSize);
+      ptr = scratch, len = sizeof(scratch);
+      if (tpm_marshal_UINT32(&ptr, &len, session->DAA_tpmSpecific.DAA_count)) {
+        memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
+        return TPM_FAIL;
+      }
+      sha1_update(&sha1, scratch, sizeof(UINT32));
       sha1_update(&sha1, 
         (BYTE*) session->DAA_joinSession.DAA_digest_n0.digest, 
         sizeof(session->DAA_joinSession.DAA_digest_n0.digest));
       sha1_final(&sha1, session->DAA_session.DAA_digest.digest);
       /* Set outputData = DAA_session->DAA_scratch */
-      *outputSize = sizeof(session->DAA_session.DAA_scratch);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
         memcpy(*outputData, session->DAA_session.DAA_scratch, *outputSize);
       else {
@@ -1011,8 +1024,8 @@ info("tested until here");
         return TPM_DAA_INPUT_DATA0;
       }
       /* Set NE = decrypt(inputData0, privEK) */
-      if (rsa_decrypt(&tpmData.permanent.data.endorsementKey, RSA_ES_OAEP_SHA1, 
-        inputData0, inputSize0, scratch, &sizeNE)) {
+      if (rsa_decrypt(&tpmData.permanent.data.endorsementKey, 
+        RSA_ES_OAEP_SHA1, inputData0, inputSize0, scratch, &sizeNE)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA0;
       }
@@ -1095,9 +1108,11 @@ info("tested until here");
       mpz_init(n);
       mpz_import(n, inputSize1, 1, 1, 0, 0, DAA_generic_n);
       /* Set DAA_session->DAA_scratch = (X^Y) mod n */
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
       mpz_init(tmp);
       mpz_powm(tmp, X, Y, n);
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, tmp);
+      mpz_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, tmp);
       mpz_clear(X), mpz_clear(Y), mpz_clear(n), mpz_clear(tmp);
       /* Set outputData = NULL */
       *outputSize = 0, *outputData = NULL;
@@ -1163,14 +1178,16 @@ info("tested until here");
       mpz_import(n, inputSize1, 1, 1, 0, 0, DAA_generic_n);
       /* Set Z = DAA_session->DAA_scratch */
       mpz_init(Z);
-      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), 1, 1, 0, 0, 
+      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), -1, 1, 0, 0, 
         session->DAA_session.DAA_scratch);
       /* Set DAA_session->DAA_scratch = Z*(X^Y) mod n */
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
       mpz_init(tmp);
       mpz_powm(tmp, X, Y, n);
       mpz_mul(tmp, tmp, Z);
       mpz_mod(tmp, tmp, n);
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, tmp);
+      mpz_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, tmp);
       mpz_clear(X), mpz_clear(Y), mpz_clear(Z), mpz_clear(n), mpz_clear(tmp);
       /* Set outputData = NULL */
       *outputSize = 0, *outputData = NULL;
@@ -1236,14 +1253,16 @@ info("tested until here");
       mpz_import(n, inputSize1, 1, 1, 0, 0, DAA_generic_n);
       /* Set Z = DAA_session->DAA_scratch */
       mpz_init(Z);
-      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), 1, 1, 0, 0, 
+      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), -1, 1, 0, 0, 
         session->DAA_session.DAA_scratch);
       /* Set DAA_session->DAA_scratch = Z*(X^Y) mod n */
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
       mpz_init(tmp);
       mpz_powm(tmp, X, Y, n);
       mpz_mul(tmp, tmp, Z);
       mpz_mod(tmp, tmp, n);
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, tmp);
+      mpz_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, tmp);
       mpz_clear(X), mpz_clear(Y), mpz_clear(Z), mpz_clear(n), mpz_clear(tmp);
       /* Set outputData = NULL */
       *outputSize = 0, *outputData = NULL;
@@ -1309,17 +1328,19 @@ info("tested until here");
       mpz_import(n, inputSize1, 1, 1, 0, 0, DAA_generic_n);
       /* Set Z = DAA_session->DAA_scratch */
       mpz_init(Z);
-      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), 1, 1, 0, 0, 
+      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), -1, 1, 0, 0, 
         session->DAA_session.DAA_scratch);
       /* Set DAA_session->DAA_scratch = Z*(X^Y) mod n */
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
       mpz_init(tmp);
       mpz_powm(tmp, X, Y, n);
       mpz_mul(tmp, tmp, Z);
       mpz_mod(tmp, tmp, n);
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, tmp);
+      mpz_export(session->DAA_session.DAA_scratch, outputSize, 
+        1, 1, 0, 0, tmp);
       mpz_clear(X), mpz_clear(Y), mpz_clear(Z), mpz_clear(n), mpz_clear(tmp);
       /* Set outputData = DAA_session->DAA_scratch */
-      *outputSize = sizeof(session->DAA_session.DAA_scratch);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
         memcpy(*outputData, session->DAA_session.DAA_scratch, *outputSize);
       else {
@@ -1390,7 +1411,9 @@ info("tested until here");
         return TPM_DAA_WRONG_W;
       }
       /* Set DAA_session->DAA_scratch = w */
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, w);
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
+      mpz_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, w);
       mpz_clear(w), mpz_clear(gamma), mpz_clear(w1), mpz_clear(q);
       /* Set outputData = NULL */
       *outputSize = 0, *outputData = NULL;
@@ -1458,7 +1481,7 @@ info("tested until here");
       mpz_init(gamma);
       mpz_import(gamma, inputSize0, 1, 1, 0, 0, DAA_generic_gamma);
       mpz_init(w);
-      mpz_import(w, sizeof(session->DAA_session.DAA_scratch), 1, 1, 0, 0, 
+      mpz_import(w, sizeof(session->DAA_session.DAA_scratch), -1, 1, 0, 0, 
         session->DAA_session.DAA_scratch);
       mpz_init(E);
       mpz_powm(E, w, f, gamma);
@@ -1539,7 +1562,7 @@ info("tested until here");
       mpz_init(gamma);
       mpz_import(gamma, inputSize0, 1, 1, 0, 0, DAA_generic_gamma);
       mpz_init(w);
-      mpz_import(w, sizeof(session->DAA_session.DAA_scratch), 1, 1, 0, 0, 
+      mpz_import(w, sizeof(session->DAA_session.DAA_scratch), -1, 1, 0, 0, 
         session->DAA_session.DAA_scratch);
       mpz_init(E1);
       mpz_powm(E1, w, r, gamma);
@@ -1603,7 +1626,7 @@ info("tested until here");
        * NT)*/
       sha1_init(&sha1);
       sha1_update(&sha1, (BYTE*) session->DAA_session.DAA_digest.digest, 
-          sizeof( session->DAA_session.DAA_digest.digest));
+          sizeof(session->DAA_session.DAA_digest.digest));
       sha1_update(&sha1, NT, DAA_SIZE_NT);
       sha1_final(&sha1, session->DAA_session.DAA_digest.digest);
       /* Set outputData = NT */
@@ -1824,7 +1847,9 @@ info("tested until here");
       mpz_ui_pow_ui(tmp, 2, DAA_power1);
       mpz_mod(s2, s2, tmp);
       /* Set DAA_session->DAA_scratch = s2 */
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, s2);
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
+      mpz_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, s2);
       /* Set outputData = s2 */
       mpz_export(scratch, outputSize, 1, 1, 0, 0, s2);
       mpz_clear(r2), mpz_clear(s2), mpz_clear(tmp);
@@ -1883,7 +1908,9 @@ info("tested until here");
        * bits). */
       mpz_fdiv_q_2exp(s12, s12, DAA_power1);
       /* Set DAA_session->DAA_scratch = s12 */
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, s12);
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
+      mpz_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, s12);
       mpz_clear(r2), mpz_clear(s12), mpz_clear(tmp);
       /* Set outputData = DAA_session->DAA_digest */
       *outputSize = sizeof(session->DAA_session.DAA_digest.digest);
@@ -1940,7 +1967,7 @@ info("tested until here");
       mpz_mul(s3, tmp, s3);
       mpz_add(s3, r3, s3);
       mpz_import(tmp, sizeof(session->DAA_session.DAA_scratch), 
-        1, 1, 0, 0, session->DAA_session.DAA_scratch);
+        -1, 1, 0, 0, session->DAA_session.DAA_scratch);
       mpz_add(s3, s3, tmp);
       /* Set DAA_session->DAA_scratch = NULL */
       memset(session->DAA_session.DAA_scratch, 0, 
@@ -2013,7 +2040,9 @@ info("tested until here");
        * bits). */
       mpz_fdiv_q_2exp(v10, v10, DAA_power1);
       /* Set DAA_session->DAA_scratch = v10 */
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, v10);
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
+      mpz_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, v10);
       /* Set outputData */
         /* Fill in TPM_DAA_BLOB with a type of TPM_RT_DAA_V0 and encrypt 
          * the v0 parameters */
@@ -2109,7 +2138,7 @@ info("tested until here");
         1, 1, 0, 0, session->DAA_joinSession.DAA_join_u1);
       mpz_init(tmp);
       mpz_import(tmp, sizeof(session->DAA_session.DAA_scratch), 
-        1, 1, 0, 0, session->DAA_session.DAA_scratch);
+        -1, 1, 0, 0, session->DAA_session.DAA_scratch);
       mpz_add(v1, v1, tmp);
       mpz_add(v1, u3, v1);
       /* Set DAA_tpmSpecific->DAA_digest_v1 = SHA-1(v1) */
@@ -2488,9 +2517,11 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       mpz_init(n);
       mpz_import(n, inputSize1, 1, 1, 0, 0, DAA_generic_n);
       /* Set DAA_session->DAA_scratch = (X^Y) mod n */
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
       mpz_init(tmp);
       mpz_powm(tmp, X, Y, n);
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, tmp);
+      mpz_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, tmp);
       mpz_clear(X), mpz_clear(Y), mpz_clear(n), mpz_clear(tmp);
       /* Set outputData = NULL */
       *outputSize = 0, *outputData = NULL;
@@ -2555,14 +2586,16 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       mpz_import(n, inputSize1, 1, 1, 0, 0, DAA_generic_n);
       /* Set Z = DAA_session->DAA_scratch */
       mpz_init(Z);
-      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), 1, 1, 0, 0, 
+      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), -1, 1, 0, 0, 
         session->DAA_session.DAA_scratch);
       /* Set DAA_session->DAA_scratch = Z*(X^Y) mod n */
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
       mpz_init(tmp);
       mpz_powm(tmp, X, Y, n);
       mpz_mul(tmp, tmp, Z);
       mpz_mod(tmp, tmp, n);
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, tmp);
+      mpz_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, tmp);
       mpz_clear(X), mpz_clear(Y), mpz_clear(Z), mpz_clear(n), mpz_clear(tmp);
       /* Set outputData = NULL */
       *outputSize = 0, *outputData = NULL;
@@ -2627,14 +2660,16 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       mpz_import(n, inputSize1, 1, 1, 0, 0, DAA_generic_n);
       /* Set Z = DAA_session->DAA_scratch */
       mpz_init(Z);
-      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), 1, 1, 0, 0, 
+      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), -1, 1, 0, 0, 
         session->DAA_session.DAA_scratch);
       /* Set DAA_session->DAA_scratch = Z*(X^Y) mod n */
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
       mpz_init(tmp);
       mpz_powm(tmp, X, Y, n);
       mpz_mul(tmp, tmp, Z);
       mpz_mod(tmp, tmp, n);
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, tmp);
+      mpz_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, tmp);
       mpz_clear(X), mpz_clear(Y), mpz_clear(Z), mpz_clear(n), mpz_clear(tmp);
       /* Set outputData = NULL */
       *outputSize = 0, *outputData = NULL;
@@ -2699,17 +2734,19 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       mpz_import(n, inputSize1, 1, 1, 0, 0, DAA_generic_n);
       /* Set Z = DAA_session->DAA_scratch */
       mpz_init(Z);
-      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), 1, 1, 0, 0, 
+      mpz_import(Z, sizeof(session->DAA_session.DAA_scratch), -1, 1, 0, 0, 
         session->DAA_session.DAA_scratch);
       /* Set DAA_session->DAA_scratch = Z*(X^Y) mod n */
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
       mpz_init(tmp);
       mpz_powm(tmp, X, Y, n);
       mpz_mul(tmp, tmp, Z);
       mpz_mod(tmp, tmp, n);
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, tmp);
+      mpz_export(session->DAA_session.DAA_scratch, outputSize, 
+        1, 1, 0, 0, tmp);
       mpz_clear(X), mpz_clear(Y), mpz_clear(Z), mpz_clear(n), mpz_clear(tmp);
       /* Set outputData = DAA_session->DAA_scratch */
-      *outputSize = sizeof(session->DAA_session.DAA_scratch);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
         memcpy(*outputData, session->DAA_session.DAA_scratch, *outputSize);
       else {
@@ -2779,7 +2816,9 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         return TPM_DAA_WRONG_W;
       }
       /* Set DAA_session->DAA_scratch = w */
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, w);
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
+      mpz_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, w);
       mpz_clear(w), mpz_clear(gamma), mpz_clear(w1), mpz_clear(q);
       /* Set outputData = NULL */
       *outputSize = 0, *outputData = NULL;
@@ -2846,7 +2885,7 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       mpz_init(gamma);
       mpz_import(gamma, inputSize0, 1, 1, 0, 0, DAA_generic_gamma);
       mpz_init(w);
-      mpz_import(w, sizeof(session->DAA_session.DAA_scratch), 1, 1, 0, 0, 
+      mpz_import(w, sizeof(session->DAA_session.DAA_scratch), -1, 1, 0, 0, 
         session->DAA_session.DAA_scratch);
       mpz_init(E);
       mpz_powm(E, w, f, gamma);
@@ -2926,7 +2965,7 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       mpz_init(gamma);
       mpz_import(gamma, inputSize0, 1, 1, 0, 0, DAA_generic_gamma);
       mpz_init(w);
-      mpz_import(w, sizeof(session->DAA_session.DAA_scratch), 1, 1, 0, 0, 
+      mpz_import(w, sizeof(session->DAA_session.DAA_scratch), -1, 1, 0, 0, 
         session->DAA_session.DAA_scratch);
       mpz_init(E1);
       mpz_powm(E1, w, r, gamma);
@@ -3344,7 +3383,9 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       mpz_ui_pow_ui(tmp, 2, DAA_power1);
       mpz_mod(s2, s2, tmp);
       /* Set DAA_session->DAA_scratch = s2 */
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, s2);
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
+      mpz_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, s2);
       /* Set outputData = s2 */
       mpz_export(scratch, outputSize, 1, 1, 0, 0, s2);
       mpz_clear(r2), mpz_clear(s2), mpz_clear(tmp);
@@ -3449,7 +3490,9 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
        * bits). */
       mpz_fdiv_q_2exp(s12, s12, DAA_power1);
       /* Set DAA_session->DAA_scratch = s12 */
-      mpz_export(session->DAA_session.DAA_scratch, NULL, 1, 1, 0, 0, s12);
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
+      mpz_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, s12);
       mpz_clear(r2), mpz_clear(s12), mpz_clear(tmp);
       /* Set outputData = NULL */
       *outputSize = 0, *outputData = NULL;
@@ -3546,7 +3589,7 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       mpz_mul(s3, tmp, s3);
       mpz_add(s3, r4, s3);
       mpz_import(tmp, sizeof(session->DAA_session.DAA_scratch), 
-        1, 1, 0, 0, session->DAA_session.DAA_scratch);
+        -1, 1, 0, 0, session->DAA_session.DAA_scratch);
       mpz_add(s3, s3, tmp);
       /* Set DAA_session->DAA_scratch = NULL */
       memset(session->DAA_session.DAA_scratch, 0, 
