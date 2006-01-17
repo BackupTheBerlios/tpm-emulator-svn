@@ -134,5 +134,3 @@ void sha1_final(sha1_ctx_t *ctx, uint8_t digest[SHA1_DIGEST_LENGTH])
   memset(ctx, 0, sizeof(*ctx));
   memset(counter, 0, sizeof(counter));
 }
-
-

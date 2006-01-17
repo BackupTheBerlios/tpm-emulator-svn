@@ -310,7 +310,7 @@ void mask_generation(uint8_t *seed, size_t seed_len,
   sha1_ctx_t ctx;
   uint8_t mask[SHA1_DIGEST_LENGTH];
   uint32_t i, len, counter = 0;
-
+  
   while (data_len > 0) {
     sha1_init(&ctx);
     sha1_update(&ctx, seed, seed_len);
