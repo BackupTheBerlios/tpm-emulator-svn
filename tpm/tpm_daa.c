@@ -382,7 +382,6 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       if (handle == TPM_INVALID_HANDLE)
         return TPM_RESOURCES;
       session = &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)];
-//TODO: check resources
       /* Set all fields in DAA_issuerSettings = NULL */
       memset(&session->DAA_issuerSettings, 0, sizeof(TPM_DAA_ISSUER));
       session->DAA_issuerSettings.tag = TPM_TAG_DAA_ISSUER;
@@ -2396,8 +2395,6 @@ info("size(v1) = %d", size);
       tpm_free(blob.sensitiveData);
       tpm_free(sensitive.internalData);
       tpm_free(blob.additionalData);
-//      /* WATCH: flush handle and release session */
-//      memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
       /* Return TPM_SUCCESS */
       return TPM_SUCCESS;
     }
@@ -2471,7 +2468,6 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       if (handle == TPM_INVALID_HANDLE)
         return TPM_RESOURCES;
       session = &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)];
-//TODO: check resources
       /* WATCH: Verify that sizeOf(inputData0) == sizeOf(TPM_DAA_ISSUER) 
        * and return error TPM_DAA_INPUT_DATA0 on mismatch */
       if (!(inputSize0 == sizeof(TPM_DAA_ISSUER))) {
@@ -3791,8 +3787,6 @@ info("s3 = %s", mpz_get_str(NULL, 16, s3));
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_NOSPACE;
       }
-//      /* WATCH: flush handle and release session */
-//      memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
       /* Return TPM_SUCCESS */
       return TPM_SUCCESS;
     }
