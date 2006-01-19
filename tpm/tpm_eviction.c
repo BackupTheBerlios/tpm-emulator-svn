@@ -57,6 +57,8 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
       sessionDAA = tpm_get_daa(handle);
       if (sessionDAA == NULL) return TPM_INVALID_RESOURCE;
       memset(sessionDAA, 0, sizeof(*sessionDAA));
+      if (handle == tpmData.stany.data.currentDAA)
+        tpmData.stany.data.currentDAA = 0;
       return TPM_SUCCESS;
     
     case TPM_RT_KEY:

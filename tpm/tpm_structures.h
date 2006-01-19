@@ -2093,6 +2093,7 @@ typedef struct tdTPM_STANY_DATA {
    * TPM_STANY_DATA structure.
    */
   TPM_DAA_SESSION_DATA sessionsDAA[TPM_MAX_SESSIONS_DAA];
+  TPM_DAAHANDLE currentDAA;
   TPM_TRANSHANDLE transExclusive;
 } TPM_STANY_DATA;
 

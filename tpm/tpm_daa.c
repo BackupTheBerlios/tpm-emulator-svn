@@ -344,6 +344,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
   TPM_DAA_SENSITIVE sensitive;
   
   info("TPM_DAA_Join(), handle = %.8x, stage = %d", handle, stage);
+  info("stany.data.currentDAA = %.8x", tpmData.stany.data.currentDAA);
   
   /* Initalize internal scratch pad */
   memset(scratch, 0, SCRATCH_SIZE);
@@ -354,14 +355,20 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
   
   /* Verify and initalize the session, for all stages greater than zero. */
   if (stage > 0) {
-    if (!(HANDLE_TO_INDEX(handle) < TPM_MAX_SESSIONS_DAA))
-      return TPM_BADHANDLE;
-    if (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].type != 
-      TPM_ST_DAA)
-        return TPM_BADHANDLE;
-    if (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].handle != 
-      handle)
-        return TPM_BADHANDLE;
+    if (!(HANDLE_TO_INDEX(handle) < TPM_MAX_SESSIONS_DAA) ||
+      (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].type != 
+        TPM_ST_DAA) ||
+      (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].handle != 
+      handle)) {
+        /* Probe, whether the handle from stany.data.currentDAA is valid. */
+        handle = tpmData.stany.data.currentDAA;
+        if (!(HANDLE_TO_INDEX(handle) < TPM_MAX_SESSIONS_DAA) ||
+          (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].type != 
+            TPM_ST_DAA) ||
+          (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].handle != 
+            handle))
+              return TPM_BADHANDLE;
+    }
     session = &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)];
   }
   
@@ -413,7 +420,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       /* Set DAA_session->DAA_stage = 1 */
       session->DAA_session.DAA_stage = 1;
       /* Assign session handle for DAA_Join */
-      /* WATCH: this step has been already done at the top */
+      tpmData.stany.data.currentDAA = handle;
       info("TPM_DAA_Join() -- set handle := %.8x", handle);
       /* Set outputData = new session handle */
       *outputSize = sizeof(TPM_HANDLE);
@@ -2426,6 +2433,7 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
   TPM_KEY_HANDLE aikHandle;
   
   info("TPM_DAA_Sign(), handle = %.8x, stage = %d", handle, stage);
+  info("stany.data.currentDAA = %.8x", tpmData.stany.data.currentDAA);
   
   /* Initalize internal scratch pad */
   memset(scratch, 0, SCRATCH_SIZE);
@@ -2436,14 +2444,20 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
   
   /* Verify and initalize the session, for all stages greater than zero. */
   if (stage > 0) {
-    if (!(HANDLE_TO_INDEX(handle) < TPM_MAX_SESSIONS_DAA))
-      return TPM_BADHANDLE;
-    if (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].type != 
-      TPM_ST_DAA)
-        return TPM_BADHANDLE;
-    if (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].handle != 
-      handle)
-        return TPM_BADHANDLE;
+    if (!(HANDLE_TO_INDEX(handle) < TPM_MAX_SESSIONS_DAA) ||
+      (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].type != 
+        TPM_ST_DAA) ||
+      (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].handle != 
+      handle)) {
+        /* Probe, whether the handle from stany.data.currentDAA is valid. */
+        handle = tpmData.stany.data.currentDAA;
+        if (!(HANDLE_TO_INDEX(handle) < TPM_MAX_SESSIONS_DAA) ||
+          (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].type != 
+            TPM_ST_DAA) ||
+          (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].handle != 
+            handle))
+              return TPM_BADHANDLE;
+    }
     session = &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)];
   }
   
@@ -2477,7 +2491,7 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       /* Set all fields in DAA_session = NULL */
       memset(&session->DAA_session, 0, sizeof(TPM_DAA_CONTEXT));
       /* Assign new handle for session */
-      /* WATCH: this step has been already done at the top */
+      tpmData.stany.data.currentDAA = handle;
       info("TPM_DAA_Sign() -- set handle := %.8x", handle);
       /* Set outputData to new handle */
       *outputSize = sizeof(TPM_HANDLE);
@@ -3238,7 +3252,6 @@ info("E1 = %s", mpz_get_str(NULL, 16, E1));
        * identity key (AIK), and */
       if (selector == '\x00') {
         info("selector == 0");
-//TODO: test this code path
         if (tpm_unmarshal_TPM_KEY_HANDLE(&inputData1, &inputSize1, 
           &aikHandle) || (inputSize1 != 0))
         {
@@ -3260,7 +3273,7 @@ info("E1 = %s", mpz_get_str(NULL, 16, E1));
         sha1_init(&sha1);
         sha1_update(&sha1, (BYTE*) &session->DAA_session.DAA_digest, 
           sizeof(session->DAA_session.DAA_digest));
-        sha1_update(&sha1, "\x01", 1);
+        sha1_update(&sha1, "\x00", 1);
         rsa_export_modulus(&aikData->key, scratch, &size);
         sha1_update(&sha1, scratch, size);
         sha1_final(&sha1, (BYTE*) &session->DAA_session.DAA_digest);
