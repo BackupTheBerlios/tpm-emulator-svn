@@ -1143,7 +1143,11 @@ int tpm_marshal_TPM_PERMANENT_FLAGS(BYTE **ptr, UINT32 *length, TPM_PERMANENT_FL
       || tpm_marshal_BOOL(ptr, length, v->TPMpostLock)
       || tpm_marshal_BOOL(ptr, length, v->FIPS)
       || tpm_marshal_BOOL(ptr, length, v->operator)
-      || tpm_marshal_BOOL(ptr, length, v->enableRevokeEK)) return -1;
+      || tpm_marshal_BOOL(ptr, length, v->enableRevokeEK)
+      || tpm_marshal_BOOL(ptr, length, v->nvLocked)
+      || tpm_marshal_BOOL(ptr, length, v->readSRKPub)
+      || tpm_marshal_BOOL(ptr, length, v->tpmEstablished)
+      || tpm_marshal_BOOL(ptr, length, v->maintenanceDone)) return -1;
   return 0;
 }
 
@@ -1164,7 +1168,11 @@ int tpm_unmarshal_TPM_PERMANENT_FLAGS(BYTE **ptr, UINT32 *length, TPM_PERMANENT_
       || tpm_unmarshal_BOOL(ptr, length, &v->TPMpostLock)
       || tpm_unmarshal_BOOL(ptr, length, &v->FIPS)
       || tpm_unmarshal_BOOL(ptr, length, &v->operator)
-      || tpm_unmarshal_BOOL(ptr, length, &v->enableRevokeEK)) return -1;
+      || tpm_unmarshal_BOOL(ptr, length, &v->enableRevokeEK)
+      || tpm_unmarshal_BOOL(ptr, length, &v->nvLocked)
+      || tpm_unmarshal_BOOL(ptr, length, &v->readSRKPub)
+      || tpm_unmarshal_BOOL(ptr, length, &v->tpmEstablished)
+      || tpm_unmarshal_BOOL(ptr, length, &v->maintenanceDone)) return -1;
   return 0;
 }
 

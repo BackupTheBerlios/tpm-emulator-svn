@@ -589,7 +589,8 @@ TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
   TPM_DIGEST digest;
   info("TPM_GetPubKey()");
   /* get key */
-  if (keyHandle == TPM_KH_SRK) return TPM_BAD_PARAMETER;
+  if (keyHandle == TPM_KH_SRK
+      && !tpmData.permanent.flags.readSRKPub) return TPM_INVALID_KEYHANDLE;
   key = tpm_get_key(keyHandle);
   if (key == NULL) return TPM_INVALID_KEYHANDLE;
   /* verify authorization */

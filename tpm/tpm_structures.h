@@ -1914,6 +1914,10 @@ typedef struct tdTPM_PERMANENT_FLAGS {
   BOOL FIPS;
   BOOL operator;
   BOOL enableRevokeEK;
+  BOOL nvLocked;
+  BOOL readSRKPub;
+  BOOL tpmEstablished;
+  BOOL maintenanceDone;
   /* additional, not marshalled flags */
   BOOL selfTestSucceeded;
   BOOL owned;
