@@ -93,7 +93,7 @@ TPM_RESULT TPM_IncrementCounter(TPM_COUNT_ID countID, TPM_AUTH *auth1,
   if (tpm_get_counter(tpmData.stclear.data.countID) != NULL
       && tpmData.stclear.data.countID != countID) return TPM_BAD_COUNTER;
   tpmData.stclear.data.countID = countID;
-  counter->counter++;   
+  counter->counter++;
   return TPM_SUCCESS;
 }
 

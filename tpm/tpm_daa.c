@@ -1052,6 +1052,7 @@ info("tmp = %s", mpz_get_str(NULL, 16, tmp));
         return TPM_DAA_INPUT_DATA0;
       }
       /* Set NE = decrypt(inputData0, privEK) */
+      memset(scratch, 0, sizeof(scratch));
       if (rsa_decrypt(&tpmData.permanent.data.endorsementKey, 
         RSA_ES_OAEP_SHA1, inputData0, inputSize0, scratch, &sizeNE)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
@@ -1064,9 +1065,10 @@ info("tmp = %s", mpz_get_str(NULL, 16, tmp));
         return TPM_NOSPACE;
       }
       sha1_init(&sha1);
-      sha1_update(&sha1, (BYTE*) &session->DAA_session.DAA_digest, 
-        sizeof(session->DAA_session.DAA_digest));
-      sha1_update(&sha1, (BYTE*) scratch, sizeNE);
+      sha1_update(&sha1, session->DAA_session.DAA_digest.digest, 
+        sizeof(session->DAA_session.DAA_digest.digest));
+info("sizeNE = %d", sizeNE);
+      sha1_update(&sha1, scratch, sizeNE);
       sha1_final(&sha1, *outputData);
       /* Set DAA_session->DAA_digest = NULL */
       memset(&session->DAA_session.DAA_digest, 0, 
@@ -1781,6 +1783,7 @@ info("f0 = %s", mpz_get_str(NULL, 16, f0));
       mpz_init(s0);
       mpz_import(tmp, sizeof(session->DAA_session.DAA_digest.digest), 
         1, 1, 0, 0, session->DAA_session.DAA_digest.digest);
+info("tmp(c) = %s", mpz_get_str(NULL, 16, tmp));
       mpz_mul(s0, tmp, f0);
       mpz_add(s0, r0, s0);
 info("s0 = %s", mpz_get_str(NULL, 16, s0));
@@ -1866,6 +1869,7 @@ info("f1 = %s", mpz_get_str(NULL, 16, f1));
       mpz_init(tmp);
       mpz_import(tmp, sizeof(session->DAA_session.DAA_digest.digest), 
         1, 1, 0, 0, session->DAA_session.DAA_digest.digest);
+info("tmp(c) = %s", mpz_get_str(NULL, 16, tmp));
       mpz_mul(s1, tmp, f1);
       mpz_add(s1, r1, s1);
 info("s1 = %s", mpz_get_str(NULL, 16, s1));
