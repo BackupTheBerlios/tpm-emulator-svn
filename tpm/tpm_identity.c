@@ -81,50 +81,45 @@ TPM_RESULT TPM_MakeIdentity(
       if (idKeyParams->authDataUsage == TPM_AUTH_NEVER)
         return TPM_NOTFIPS;
     }
-info("---2.---");
   /* 2. Use authHandle to verify that the Owner authorized all TPM_MakeIdentity 
    * input parameters. */
   res = tpm_verify_auth(auth2, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
   if (res != TPM_SUCCESS) return res;
-info("---3.---");
   /* 3. Use srkAuthHandle to verify that the SRK owner authorized all 
    * TPM_MakeIdentity input parameters. */
   res = tpm_verify_auth(auth1, tpmData.permanent.data.srk.usageAuth, TPM_KH_SRK);
   if (res != TPM_SUCCESS) return res;
-info("---4.---");
   /* 4. Verify that idKeyParams->keyUsage is TPM_KEY_IDENTITY. If it is not, 
    * return TPM_INVALID_KEYUSAGE */
   if (idKeyParams->keyUsage != TPM_KEY_IDENTITY)
     return TPM_INVALID_KEYUSAGE;
-info("---5.---");
   /* 5. Verify that idKeyParams->keyFlags->migratable is FALSE. If it is not,
    * return TPM_INVALID_KEYUSAGE */
   if ((idKeyParams->keyFlags & TPM_KEY_FLAG_MIGRATABLE) == 
     TPM_KEY_FLAG_MIGRATABLE)
       return TPM_INVALID_KEYUSAGE;
-info("---6.---");
   /* 6. If ownerAuth indicates XOR encryption for the AuthData secrets */
   ownerAuth_sessionData = tpm_get_auth(auth2->authHandle);
   if (ownerAuth_sessionData == NULL) return TPM_INVALID_AUTHHANDLE;
-  if (ownerAuth_sessionData->entityType == TPM_ET_OWNER
-    || ownerAuth_sessionData->entityType == TPM_ET_OWNERXOR) {
+  if ((ownerAuth_sessionData->entityType == TPM_ET_OWNER)
+    || (ownerAuth_sessionData->entityType == TPM_ET_OWNERXOR)) {
     /* a. Create X1 the SHA-1 of the concatenation of (ownerAuth->sharedSecret 
      * || authLastNonceEven) */
     /* b. Create A1 by XOR X1 and identityAuth */
     tpm_decrypt_auth_secret(*identityAuth, ownerAuth_sessionData->sharedSecret, 
-      &auth2->nonceEven, A1);
+      &ownerAuth_sessionData->lastNonceEven, A1);
   } else {
-info("---7.--- %d", ownerAuth_sessionData->entityType);
   /* 7. Else */
     /* a. Create A1 by decrypting identityAuth using the algorithm indicated 
      * in the OSAP session */
     /* b. Key is from ownerAuth->sharedSecret */
     /* c. IV is SHA-1 of (authLastNonceEven || nonceOdd) */
+    info("TPM_MakeIdentity() does not support this encryption(%.8x) yet.", 
+      ownerAuth_sessionData->entityType);
+    return TPM_FAIL;
   }
-info("---8.---");
   /* 8. Set continueAuthSession and continueSRKSession to FALSE. */
   auth2->continueAuthSession = FALSE, auth1->continueAuthSession = FALSE;
-info("---9.---");
   /* 9. Determine the structure version */
     /* a. If idKeyParms->tag is TPM_TAG_KEY12 */
     if (idKeyParams->tag == TPM_TAG_KEY12) {
@@ -160,10 +155,9 @@ info("---9.---");
       /* i. Set V1 to 1 */
       /* ii. Create idKey a TPM_KEY structure using idKeyParams as the 
        * default values for the structure */
-      info("TPM_MakeIdentity() does not support TPM_KEY v1.1 structure");
+      info("TPM_MakeIdentity() does not support TPM_KEY v1.1 structures.");
       return TPM_FAIL;
     }
-info("---10.--- %d", idKey->PCRInfoSize);
   /* 10. Set the digestAtCreation values for pcrInfo */
   if (idKey->PCRInfoSize > 0) {
     res = tpm_compute_pcr_digest(&idKey->PCRInfo.creationPCRSelection,
@@ -174,17 +168,17 @@ info("---10.--- %d", idKey->PCRInfoSize);
         idKey->PCRInfo.localityAtCreation = 
           tpmData.stany.flags.localityModifier;
   }
-info("---11.--- %d", idKeyParams->algorithmParms.parms.rsa.keyLength);
   /* 11. Create an asymmetric key pair (identityPubKey and tpm_signature_key) 
    * using a TPM-protected capability, in accordance with the algorithm 
    * specified in idKeyParams */
   key_length = idKeyParams->algorithmParms.parms.rsa.keyLength;
-  if (rsa_generate_key(&tpm_signature_key, key_length)) return TPM_FAIL;
-info("---12.---");
+  if (rsa_generate_key(&tpm_signature_key, key_length)) {
+    info("TPM_MakeIdentity: rsa_generate_key() failed.");
+    return TPM_FAIL;
+  }
   /* 12. Ensure that the AuthData information in A1 is properly stored in the 
    * idKey as usageAuth. */
   memcpy(store.usageAuth, A1, sizeof(TPM_SECRET));
-info("---13.---");
   /* 13. Attach identityPubKey and tpm_signature_key to idKey */
   idKey->pubKey.keyLength = key_length >> 3;
   idKey->pubKey.key = tpm_malloc(idKey->pubKey.keyLength);
@@ -211,32 +205,29 @@ info("---13.---");
     &idKey->pubKey.keyLength);
   rsa_export_prime1(&tpm_signature_key, store.privKey.key, 
     &store.privKey.keyLength);
-info("---14.---");
   /* 14. Set idKey->migrationAuth to TPM_PERMANENT_DATA->tpmProof */
   memcpy(store.migrationAuth, tpmData.permanent.data.tpmProof.nonce, 
     sizeof(TPM_SECRET));
-info("---15.---");
   /* 15. Ensure that all TPM_PAYLOAD_TYPE structures identify this key as 
    * TPM_PT_ASYM */
   store.payload = TPM_PT_ASYM;
   if (compute_key_digest(idKey, &store.pubDataDigest)) {
+    info("TPM_MakeIdentity: compute_key_digest() failed.");
     tpm_free(idKey->encData);
     tpm_free(store.privKey.key);
     tpm_free(idKey->pubKey.key);
     rsa_release_private_key(&tpm_signature_key);
     return TPM_FAIL;
   }
-info("---16.--- %d", idKey->encDataSize);
   /* 16. Encrypt the private portion of idKey using the SRK as the parent key */
   if (encrypt_private_key(&tpmData.permanent.data.srk, &store, idKey->encData, 
     &idKey->encDataSize)) {
-    tpm_free(idKey->encData);
-    tpm_free(store.privKey.key);
-    tpm_free(idKey->pubKey.key);
-    rsa_release_private_key(&tpm_signature_key);
-    return TPM_ENCRYPT_ERROR;
+      tpm_free(idKey->encData);
+      tpm_free(store.privKey.key);
+      tpm_free(idKey->pubKey.key);
+      rsa_release_private_key(&tpm_signature_key);
+      return TPM_ENCRYPT_ERROR;
   }
-info("---17.---");
   /* 17. Create a TPM_IDENTITY_CONTENTS structure named idContents using 
    * labelPrivCADigest and the information from idKey */
   idContents.ver.major = 1, idContents.ver.minor = 1;
@@ -264,7 +255,6 @@ info("---17.---");
     default:
       return TPM_BAD_KEY_PROPERTY;
   }
-info("---17.b---");
   idContents.identityPubKey.pubKey.keyLength = key_length >> 3;
   idContents.identityPubKey.pubKey.key = 
     tpm_malloc(idContents.identityPubKey.pubKey.keyLength);
@@ -278,7 +268,6 @@ info("---17.b---");
   rsa_export_modulus(&tpm_signature_key, idContents.identityPubKey.pubKey.key, 
     &idContents.identityPubKey.pubKey.keyLength);
   len = sizeof_TPM_IDENTITY_CONTENTS((idContents));
-info("---17.c--- %d", len);
   buf = ptr = tpm_malloc(len);
   if (buf == NULL) {
     tpm_free(idContents.identityPubKey.pubKey.key);
@@ -289,6 +278,7 @@ info("---17.c--- %d", len);
     return TPM_NOSPACE;
   }
   if (tpm_marshal_TPM_IDENTITY_CONTENTS(&ptr, &len, &idContents)) {
+    info("TPM_MakeIdentity: tpm_marshal_TPM_IDENTITY_CONTENTS() failed.");
     tpm_free(buf);
     tpm_free(idContents.identityPubKey.pubKey.key);
     tpm_free(idKey->encData);
@@ -297,7 +287,6 @@ info("---17.c--- %d", len);
     rsa_release_private_key(&tpm_signature_key);
     return TPM_FAIL;
   }
-info("---18.---");
   /* 18. Sign idContents using tpm_signature_key and 
    * TPM_SS_RSASSAPKCS1v15_SHA1. Store the result in identityBinding. */
   *identityBindingSize = tpm_signature_key.size >> 3;
@@ -313,7 +302,7 @@ info("---18.---");
   }
   if (rsa_sign(&tpm_signature_key, RSA_SSA_PKCS1_SHA1, buf, len, 
     *identityBinding)) {
-info("---18.a---");
+      info("TPM_MakeIdentity: rsa_sign() failed.");
       tpm_free(*identityBinding);
       tpm_free(buf);
       tpm_free(idContents.identityPubKey.pubKey.key);
@@ -323,15 +312,10 @@ info("---18.a---");
       rsa_release_private_key(&tpm_signature_key);
       return TPM_FAIL;
   }
-info("---18.b---");
   tpm_free(buf);
-info("---18.c---");
   tpm_free(idContents.identityPubKey.pubKey.key);
-info("---18.d---");
   tpm_free(store.privKey.key);
-info("---18.e---");
   rsa_release_private_key(&tpm_signature_key);
-info("---18.f---");
   
   return TPM_SUCCESS;
 }
