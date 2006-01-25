@@ -1,7 +1,7 @@
 /* Software-Based Trusted Platform Module (TPM) Emulator for Linux
  * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
  *                    Swiss Federal Institute of Technology (ETH) Zurich,
- *               2005 Heiko Stamer <stamer@gaos.org>
+ *         2005, 2006 Heiko Stamer <stamer@gaos.org>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -114,7 +114,7 @@ TPM_RESULT TPM_MakeIdentity(
      * in the OSAP session */
     /* b. Key is from ownerAuth->sharedSecret */
     /* c. IV is SHA-1 of (authLastNonceEven || nonceOdd) */
-    info("TPM_MakeIdentity() does not support this encryption(%.8x) yet.", 
+    info("TPM_MakeIdentity() does not support entityType=%.8x yet.", 
       ownerAuth_sessionData->entityType);
     return TPM_FAIL;
   }
@@ -173,7 +173,7 @@ TPM_RESULT TPM_MakeIdentity(
    * specified in idKeyParams */
   key_length = idKeyParams->algorithmParms.parms.rsa.keyLength;
   if (rsa_generate_key(&tpm_signature_key, key_length)) {
-    info("TPM_MakeIdentity: rsa_generate_key() failed.");
+    info("TPM_MakeIdentity(): rsa_generate_key() failed.");
     return TPM_FAIL;
   }
   /* 12. Ensure that the AuthData information in A1 is properly stored in the 
@@ -212,7 +212,7 @@ TPM_RESULT TPM_MakeIdentity(
    * TPM_PT_ASYM */
   store.payload = TPM_PT_ASYM;
   if (compute_key_digest(idKey, &store.pubDataDigest)) {
-    info("TPM_MakeIdentity: compute_key_digest() failed.");
+    info("TPM_MakeIdentity(): compute_key_digest() failed.");
     tpm_free(idKey->encData);
     tpm_free(store.privKey.key);
     tpm_free(idKey->pubKey.key);
@@ -278,7 +278,7 @@ TPM_RESULT TPM_MakeIdentity(
     return TPM_NOSPACE;
   }
   if (tpm_marshal_TPM_IDENTITY_CONTENTS(&ptr, &len, &idContents)) {
-    info("TPM_MakeIdentity: tpm_marshal_TPM_IDENTITY_CONTENTS() failed.");
+    info("TPM_MakeIdentity(): tpm_marshal_TPM_IDENTITY_CONTENTS() failed.");
     tpm_free(buf);
     tpm_free(idContents.identityPubKey.pubKey.key);
     tpm_free(idKey->encData);
@@ -302,7 +302,7 @@ TPM_RESULT TPM_MakeIdentity(
   }
   if (rsa_sign(&tpm_signature_key, RSA_SSA_PKCS1_SHA1, buf, len, 
     *identityBinding)) {
-      info("TPM_MakeIdentity: rsa_sign() failed.");
+      info("TPM_MakeIdentity(): rsa_sign() failed.");
       tpm_free(*identityBinding);
       tpm_free(buf);
       tpm_free(idContents.identityPubKey.pubKey.key);
