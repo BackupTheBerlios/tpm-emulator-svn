@@ -977,6 +977,11 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       mpz_mod(tmp, tmp, n);
       mpz_export(session->DAA_session.DAA_scratch, outputSize, 
         1, 1, 0, 0, tmp);
+      memset(session->DAA_session.DAA_scratch, 0, 
+        sizeof(session->DAA_session.DAA_scratch));
+      mpz_export(session->DAA_session.DAA_scratch + 
+        (sizeof(session->DAA_session.DAA_scratch) - *outputSize),
+        outputSize, 1, 1, 0, 0, tmp);
       mpz_clear(X), mpz_clear(Y), mpz_clear(Z), mpz_clear(n), mpz_clear(tmp);
       /* Set DAA_session->DAA_digest to the SHA-1(DAA_session->DAA_scratch || 
        * DAA_tpmSpecific->DAA_count || DAA_joinSession->DAA_digest_n0) */
@@ -993,9 +998,10 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         sizeof(session->DAA_joinSession.DAA_digest_n0.digest));
       sha1_final(&sha1, session->DAA_session.DAA_digest.digest);
       /* Set outputData = DAA_session->DAA_scratch */
-      if ((*outputData = tpm_malloc(*outputSize)) != NULL)
+      *outputSize = sizeof(session->DAA_session.DAA_scratch);
+      if ((*outputData = tpm_malloc(*outputSize)) != NULL) {
         memcpy(*outputData, session->DAA_session.DAA_scratch, *outputSize);
-      else {
+      } else {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_NOSPACE;
       }
