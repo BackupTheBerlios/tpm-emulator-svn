@@ -279,7 +279,7 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
 {
   hmac_ctx_t ctx;
   TPM_SESSION_DATA *session;
-  UINT32 auth_handle = cpu_to_be32(auth->authHandle);
+  UINT32 auth_handle = CPU_TO_BE32(auth->authHandle);
   
   info("tpm_verify_auth(%08x)", auth->authHandle);
   /* get dedicated authorization or transport session */

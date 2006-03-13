@@ -406,7 +406,7 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
 
     case TPM_CAP_KEY_HANDLE:
       debug("[TPM_CAP_KEY_HANDLE]");
-      subCapSize = cpu_to_be32(TPM_RT_KEY);
+      subCapSize = CPU_TO_BE32(TPM_RT_KEY);
       return cap_handle(4, (BYTE*)&subCapSize, respSize, resp);
 
     case TPM_CAP_CHECK_LOADED:

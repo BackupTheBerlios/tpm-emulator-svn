@@ -75,7 +75,7 @@ TPM_RESULT TPM_TickStampBlob(TPM_KEY_HANDLE keyHandle, TPM_NONCE *antiReplay,
   }
   memcpy(&info[0], "\x05\x00TSTP", 6);
   memcpy(&info[6], antiReplay->nonce, 20);
-  *(UINT32*)&info[26] = cpu_to_be32(20
+  *(UINT32*)&info[26] = CPU_TO_BE32(20
                         + sizeof_TPM_CURRENT_TICKS(currentTicks));
   memcpy(&info[30], digestToStamp->digest, sizeof(TPM_DIGEST));
   p = &info[30 + sizeof(TPM_DIGEST)]; 

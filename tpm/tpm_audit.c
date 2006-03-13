@@ -45,14 +45,14 @@ void tpm_audit_request(TPM_COMMAND_CODE ordinal, TPM_REQUEST *req)
       tpmData.permanent.data.auditMonotonicCounter++;
     }
     /* update audit digest */
-    *((UINT16*)&buf[0])  = cpu_to_be16(TPM_TAG_AUDIT_EVENT_IN);
-    *((UINT32*)&buf[2]) = cpu_to_be32(ordinal);
+    *((UINT16*)&buf[0])  = CPU_TO_BE16(TPM_TAG_AUDIT_EVENT_IN);
+    *((UINT32*)&buf[2]) = CPU_TO_BE32(ordinal);
     sha1_init(&sha1_ctx);
     sha1_update(&sha1_ctx, req->param, req->paramSize);
     sha1_final(&sha1_ctx, &buf[6]);
-    *((UINT16*)&buf[26])  = cpu_to_be16(TPM_TAG_COUNTER_VALUE);
+    *((UINT16*)&buf[26])  = CPU_TO_BE16(TPM_TAG_COUNTER_VALUE);
     memset(&buf[30], 0, 4);
-    *((UINT32*)&buf[34]) = cpu_to_be32(tpmData.permanent.data.auditMonotonicCounter);
+    *((UINT32*)&buf[34]) = CPU_TO_BE32(tpmData.permanent.data.auditMonotonicCounter);
     sha1_init(&sha1_ctx);
     sha1_update(&sha1_ctx, tpmData.stany.data.auditDigest.digest, 
       sizeof(TPM_DIGEST));
@@ -70,15 +70,15 @@ void tpm_audit_response(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
       && (AUDIT_STATUS[ord / 8] & (1 << (ord & 0x07)))) {
     info("tpm_audit_response()");
     /* update audit digest */
-    *((UINT16*)&buf[0])  = cpu_to_be16(TPM_TAG_AUDIT_EVENT_OUT);
-    *((UINT32*)&buf[2]) = cpu_to_be32(ordinal);
+    *((UINT16*)&buf[0])  = CPU_TO_BE16(TPM_TAG_AUDIT_EVENT_OUT);
+    *((UINT32*)&buf[2]) = CPU_TO_BE32(ordinal);
     sha1_init(&sha1_ctx);
     sha1_update(&sha1_ctx, rsp->param, rsp->paramSize);
     sha1_final(&sha1_ctx, &buf[6]);
-    *((UINT16*)&buf[26])  = cpu_to_be16(TPM_TAG_COUNTER_VALUE);
+    *((UINT16*)&buf[26])  = CPU_TO_BE16(TPM_TAG_COUNTER_VALUE);
     memset(&buf[30], 0, 4);
-    *((UINT32*)&buf[34]) = cpu_to_be32(tpmData.permanent.data.auditMonotonicCounter);
-    *((UINT32*)&buf[34]) = cpu_to_be32(rsp->result);
+    *((UINT32*)&buf[34]) = CPU_TO_BE32(tpmData.permanent.data.auditMonotonicCounter);
+    *((UINT32*)&buf[34]) = CPU_TO_BE32(rsp->result);
     sha1_init(&sha1_ctx);
     sha1_update(&sha1_ctx, tpmData.stany.data.auditDigest.digest, 
       sizeof(TPM_DIGEST));
@@ -158,7 +158,7 @@ TPM_RESULT TPM_GetAuditDigestSigned(TPM_KEY_HANDLE keyHandle,
   }
   memcpy(&buf[0], "\x05\x00ADIG", 6);
   memcpy(&buf[6], antiReplay->nonce, 20);
-  *(UINT32*)&buf[26] = cpu_to_be32(buf_size - 30);
+  *(UINT32*)&buf[26] = CPU_TO_BE32(buf_size - 30);
   memcpy(&buf[30], auditDigest->digest, 20);
   ptr = &buf[50];
   len = buf_size - 50;

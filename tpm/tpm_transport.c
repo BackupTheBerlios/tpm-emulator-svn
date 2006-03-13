@@ -59,7 +59,7 @@ static int decrypt_transport_auth(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
 static void transport_log_in(TPM_COMMAND_CODE ordinal, BYTE parameters[20],
                              BYTE pubKeyHash[20], TPM_DIGEST *transDigest)
 {
-  UINT32 tag = cpu_to_be32(TPM_TAG_TRANSPORT_LOG_IN);
+  UINT32 tag = CPU_TO_BE32(TPM_TAG_TRANSPORT_LOG_IN);
   BYTE *ptr, buf[sizeof_TPM_TRANSPORT_LOG_IN(x)];
   UINT32 len = sizeof(buf);
   sha1_ctx_t sha1;
@@ -76,7 +76,7 @@ static void transport_log_in(TPM_COMMAND_CODE ordinal, BYTE parameters[20],
 static void transport_log_out(TPM_CURRENT_TICKS *currentTicks, BYTE parameters[20],
                               TPM_MODIFIER_INDICATOR locality, TPM_DIGEST *transDigest)
 {
-  UINT32 tag = cpu_to_be32(TPM_TAG_TRANSPORT_LOG_OUT);
+  UINT32 tag = CPU_TO_BE32(TPM_TAG_TRANSPORT_LOG_OUT);
   BYTE *ptr, buf[sizeof_TPM_TRANSPORT_LOG_OUT(x)];
   UINT32 len = sizeof(buf);
   sha1_ctx_t sha1;
@@ -191,7 +191,7 @@ static void decrypt_wrapped_command(BYTE *buf, UINT32 buf_len,
     sha1_update(&sha1, auth->nonceOdd.nonce, sizeof(auth->nonceOdd.nonce));
     sha1_update(&sha1, "in", 2);
     sha1_update(&sha1, secret, sizeof(TPM_SECRET));
-    j = cpu_to_be32(i);
+    j = CPU_TO_BE32(i);
     sha1_update(&sha1, (BYTE*)&j, 4);
     sha1_final(&sha1, mask);
     for (j = 0; j < sizeof(mask) && buf_len > 0; j++) { 
@@ -213,7 +213,7 @@ static void encrypt_wrapped_command(BYTE *buf, UINT32 buf_len,
     sha1_update(&sha1, auth->nonceOdd.nonce, sizeof(auth->nonceOdd.nonce));
     sha1_update(&sha1, "out", 3);
     sha1_update(&sha1, secret, sizeof(TPM_SECRET));
-    j = cpu_to_be32(i);
+    j = CPU_TO_BE32(i);
     sha1_update(&sha1, (BYTE*)&j, 4);
     sha1_final(&sha1, mask);
     for (j = 0; j < sizeof(mask) && buf_len > 0; j++) { 
@@ -253,9 +253,9 @@ TPM_RESULT TPM_ExecuteTransport(UINT32 inWrappedCmdSize, BYTE *inWrappedCmd,
   /* verify authorization */
   tpm_compute_in_param_digest(&req);
   sha1_init(&sha1);
-  res = cpu_to_be32(TPM_ORD_ExecuteTransport);
+  res = CPU_TO_BE32(TPM_ORD_ExecuteTransport);
   sha1_update(&sha1, (BYTE*)&res, 4);
-  res = cpu_to_be32(inWrappedCmdSize);
+  res = CPU_TO_BE32(inWrappedCmdSize);
   sha1_update(&sha1, (BYTE*)&res, 4);
   sha1_update(&sha1, req.auth1.digest, sizeof(req.auth1.digest));
   sha1_final(&sha1, auth1->digest);
@@ -357,7 +357,7 @@ TPM_RESULT TPM_ReleaseTransportSigned(TPM_KEY_HANDLE keyHandle,
   /* setup a TPM_SIGN_INFO structure */
   memcpy(&buf[0], "\x05\x00TRAN", 6);
   memcpy(&buf[6], antiReplay->nonce, 20);
-  *(UINT32*)&buf[26] = cpu_to_be32(20);
+  *(UINT32*)&buf[26] = CPU_TO_BE32(20);
   memcpy(&buf[30], session->transInternal.transDigest.digest, 20);
   /* sign info structure */ 
   res = tpm_sign(key, auth1, TRUE, buf, sizeof(buf), signature, signSize);

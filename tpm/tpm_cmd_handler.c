@@ -73,7 +73,7 @@ void tpm_compute_in_param_digest(TPM_REQUEST *req)
 {
   sha1_ctx_t sha1;
   UINT32 offset = tpm_get_param_offset(req->ordinal);
-  UINT32 ord = cpu_to_be32(req->ordinal);
+  UINT32 ord = CPU_TO_BE32(req->ordinal);
 
   /* compute SHA1 hash */
   if (offset <= req->paramSize) {
@@ -89,8 +89,8 @@ void tpm_compute_in_param_digest(TPM_REQUEST *req)
 void tpm_compute_out_param_digest(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
 {
   sha1_ctx_t sha1;
-  UINT32 res = cpu_to_be32(rsp->result);
-  UINT32 ord = cpu_to_be32(ordinal);
+  UINT32 res = CPU_TO_BE32(rsp->result);
+  UINT32 ord = CPU_TO_BE32(ordinal);
 
   /* compute SHA1 hash */
   sha1_init(&sha1);
@@ -3123,7 +3123,7 @@ static void tpm_setup_rsp_auth(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
       hmac_update(&hmac, rsp->auth2->digest, sizeof(rsp->auth2->digest));
 #if 0
       if (tpm_get_auth(rsp->auth2->authHandle)->type == TPM_ST_OIAP) {
-        UINT32 handle = cpu_to_be32(rsp->auth2->authHandle);
+        UINT32 handle = CPU_TO_BE32(rsp->auth2->authHandle);
         hmac_update(&hmac, (BYTE*)&handle, 4);
       }
 #endif
@@ -3138,7 +3138,7 @@ static void tpm_setup_rsp_auth(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
       hmac_update(&hmac, rsp->auth1->digest, sizeof(rsp->auth1->digest));
 #if 0
       if (tpm_get_auth(rsp->auth1->authHandle)->type == TPM_ST_OIAP) {
-        UINT32 handle = cpu_to_be32(rsp->auth1->authHandle);
+        UINT32 handle = CPU_TO_BE32(rsp->auth1->authHandle);
         hmac_update(&hmac, (BYTE*)&handle, 4);
       }
 #endif

@@ -49,6 +49,7 @@ static struct {
 /* module state */
 #define STATE_IS_OPEN 0
 static uint32_t module_state;
+static struct timespec old_time;
 
 static int tpm_open(struct inode *inode, struct file *file)
 {
@@ -155,7 +156,8 @@ int __init init_tpm_module(void)
   /* initialize variables */
   sema_init(&tpm_mutex, 1);
   module_state = 0;
-  tpm_response.data = NULL;    
+  tpm_response.data = NULL;
+  old_time = current_kernel_time();
   /* initialize TPM emulator */
   if (!strcmp(startup, "clear")) {
     tpm_emulator_init(1);
@@ -184,10 +186,9 @@ module_exit(cleanup_tpm_module);
 
 uint64_t tpm_get_ticks(void)
 {
-  static struct timespec old_time = {0, 0};
   struct timespec new_time = current_kernel_time();
-  uint64_t ticks = (uint64_t)(old_time.tv_sec - new_time.tv_sec) * 1000000
-                   + (old_time.tv_nsec - new_time.tv_nsec) / 1000;
+  uint64_t ticks = (uint64_t)(new_time.tv_sec - old_time.tv_sec) * 1000000
+                   + (new_time.tv_nsec - old_time.tv_nsec) / 1000;
   old_time = new_time;
   return (ticks > 0) ? ticks : 1;
 }
