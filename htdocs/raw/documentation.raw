@@ -307,14 +307,14 @@ id=folder12 src="closed.gif" border=0> CREDENTIAL HANDLING <span class="done">+<
 <!--
 1.0.13 Identity Creation and Activation
 File: tpm_credentials.c
-TPM_MakeIdentity -
+TPM_MakeIdentity +/-
 TPM_ActivateIdentity -
 -->
 
 <DIV class=trigger onclick="showBranch('branch13');swapFolder('folder13')"><IMG 
 id=folder13 src="closed.gif" border=0> OWNERSHIP <span class="notdone">-</span>
 </DIV><SPAN class=branch id=branch13>
-<span class="notdone">-</span>TPM_MakeIdentity<BR>
+<span class="part">&#177</span>TPM_MakeIdentity<BR>
 <span class="notdone">-</span>TPM_ActivateIdentity<BR>
 </SPAN>
 
@@ -495,15 +495,15 @@ id=folder22 src="closed.gif" border=0> MONOTONIC COUNTER <span class="done">+</s
 1.0.23 DAA commands
 File: tpm_daa.c
 7
-TPM_DAA_Join -
-TPM_DAA_Sign -
+TPM_DAA_Join +
+TPM_DAA_Sign +
 -->
 
 <DIV class=trigger onclick="showBranch('branch23');swapFolder('folder23')"><IMG 
-id=folder23 src="closed.gif" border=0> DAA COMMANDS <span class="notdone">-</span>
+id=folder23 src="closed.gif" border=0> DAA COMMANDS <span class="done">+</span>
 </DIV><SPAN class=branch id=branch23>
-<span class="notdone">-</span>TPM_DAA_Join<BR>
-<span class="notdone">-</span>TPM_DAA_Sign<BR>
+<span class="done">+</span>TPM_DAA_Join<BR>
+<span class="done">+</span>TPM_DAA_Sign<BR>
 </SPAN>
 
 
