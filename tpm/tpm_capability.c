@@ -132,9 +132,9 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
       /* TODO: TPM_CAP_PROP_FAMILYROWS */
       return TPM_FAIL;
 
-    case TPM_CAP_PROP_TIS:
-      debug("[TPM_CAP_PROP_TIS]");
-      /* TODO: TPM_CAP_PROP_TIS */
+    case TPM_CAP_PROP_TIS_TIMEOUT:
+      debug("[TPM_CAP_PROP_TIS_TIMEOUT]");
+      /* TODO: TPM_CAP_PROP_TIS_TIMEOUT */
       return TPM_FAIL;
 
     case TPM_CAP_PROP_STARTUP_EFFECT:
@@ -142,14 +142,9 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
       /* TODO: TPM_CAP_PROP_STARTUP_EFFECT */
       return TPM_FAIL;
 
-    case TPM_CAP_PROP_DELEGATE_ENTRIES:
-      debug("[TPM_CAP_PROP_DELEGATE_ENTRIES]");
-      /* TODO: TPM_CAP_PROP_DELEGATE_ENTRIES */
-      return TPM_FAIL;
-
-    case TPM_CAP_PROP_NV_MAXBUF:
-      debug("[TPM_CAP_PROP_NV_MAXBUF]");
-      /* TODO: TPM_CAP_PROP_NV_MAXBUF */
+    case TPM_CAP_PROP_DELEGATE_ROW:
+      debug("[TPM_CAP_PROP_DELEGATE_ROW]");
+      /* TODO: TPM_CAP_PROP_DELEGATE_ROW */
       return TPM_FAIL;
 
     case TPM_CAP_PROP_DAA_MAX:
@@ -161,11 +156,6 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
       for (i = 0, j = TPM_MAX_SESSIONS_DAA; i < TPM_MAX_SESSIONS_DAA; i++)
         if (tpmData.stany.data.sessionsDAA[i].type != TPM_ST_INVALID) j--;
       return return_UINT32(respSize, resp, j);
-
-    case TPM_CAP_PROP_GLOBALLOCK:
-      debug("[TPM_CAP_PROP_GLOBALLOCK]");
-      /* TODO: TPM_CAP_PROP_GLOBALLOCK */
-      return TPM_FAIL;
 
     case TPM_CAP_PROP_CONTEXT_DIST:
       debug("[TPM_CAP_PROP_CONTEXT_DIST]");
@@ -180,11 +170,6 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
        * receipt of any command other than the next join/sign in the 
        * session or a TPM_SaveContext. */
       return return_BOOL(respSize, resp, TRUE);
-
-    case TPM_CAP_GPIO_CHANNEL:
-      debug("[TPM_CAP_GPIO_CHANNEL]");
-      /* TODO: TPM_CAP_GPIO_CHANNEL */
-      return TPM_FAIL;
 
     case TPM_CAP_PROP_CMK_RESTRICTION:
       debug("[TPM_CAP_PROP_CMK_RESTRICTION]");
@@ -342,6 +327,7 @@ TPM_RESULT cap_flag(UINT32 subCapSize, BYTE *subCap,
         return TPM_FAIL;
       }
       return TPM_SUCCESS;
+/* deprecated since v1.2 rev 94
     case TPM_CAP_FLAG_STANY:
       debug("[TPM_CAP_FLAG_STANY]");
       *respSize = len = sizeof_TPM_STANY_FLAGS(tpmData.stany.flags);
@@ -350,6 +336,7 @@ TPM_RESULT cap_flag(UINT32 subCapSize, BYTE *subCap,
         tpm_free(*resp);
         return TPM_FAIL;
       }
+*/
       return TPM_SUCCESS;
     default:
       return TPM_BAD_MODE;
@@ -413,19 +400,9 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
       debug("[TPM_CAP_CHECK_LOADED]");
       return cap_loaded(subCapSize, subCap, respSize, resp); 
 
-    case TPM_CAP_BIT_OWNER:
-      debug("[TPM_CAP_BIT_OWNER]");
-      /* TODO: TPM_CAP_BIT_OWNER */
-      return TPM_FAIL;
-
-    case TPM_CAP_BIT_LOCAL:
-      debug("[TPM_CAP_BIT_LOCAL]");
-      /* TODO: TPM_CAP_BIT_LOCAL */  
-      return TPM_FAIL;
-
-    case TPM_CAP_DELEGATIONS:
-      debug("[TPM_CAP_DELEGATIONS]"); 
-      /* TODO: TPM_CAP_DELEGATIONS */
+    case TPM_CAP_SYM_MODE:
+      debug("[TPM_CAP_SYM_MODE]");
+      /* TODO: TPM_CAP_SYM_MODE */
       return TPM_FAIL;
 
     case TPM_CAP_KEY_STATUS:
@@ -436,16 +413,6 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
     case TPM_CAP_NV_LIST:
       debug("[TPM_CAP_NV_LIST]");
       /* TODO: TPM_CAP_NV_LIST */ 
-      return TPM_FAIL;
-
-    case TPM_CAP_TABLE_ADMIN:
-      debug("[TPM_CAP_TABLE_ADMIN]");
-      /* TODO: TPM_CAP_TABLE_ADMIN */ 
-      return TPM_FAIL;
-
-    case TPM_CAP_TABLE_ENABLE:
-      debug("[TPM_CAP_TABLE_ENABLE]");
-      /* TODO: TPM_CAP_TABLE_ENABLE */ 
       return TPM_FAIL;
 
     case TPM_CAP_MFR:
@@ -462,11 +429,6 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
       /* TODO: TPM_CAP_TRANS_ALG */
       return TPM_FAIL;
 
-    case TPM_CAP_GPIO_CHANNEL:
-      debug("[TPM_CAP_GPIO_CHANNEL]"); 
-      /* TODO: TPM_CAP_GPIO_CHANNEL */
-      return TPM_FAIL;
-
     case TPM_CAP_HANDLE:
       debug("[TPM_CAP_HANDLE]"); 
       return cap_handle(subCapSize, subCap, respSize, resp);
@@ -474,6 +436,21 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
     case TPM_CAP_TRANS_ES:
       debug("[TPM_CAP_TRANS_ES]");
       /* TODO: TPM_CAP_TRANS_ES */
+      return TPM_FAIL;
+
+    case TPM_CAP_AUTH_ENCRYPT:
+      debug("[TPM_CAP_AUTH_ENCRYPT]");
+      /* TODO: TPM_CAP_AUTH_ENCRYPT */
+      return TPM_FAIL;
+
+    case TPM_CAP_SELECT_SIZE:
+      debug("[TPM_CAP_SELECT_SIZE]");
+      /* TODO: TPM_CAP_SELECT_SIZE */
+      return TPM_FAIL;
+
+    case TPM_CAP_VERSION_VAL:
+      debug("[TPM_CAP_VERSION_VAL]");
+      /* TODO: TPM_CAP_VERSION_VAL */
       return TPM_FAIL;
 
     default:

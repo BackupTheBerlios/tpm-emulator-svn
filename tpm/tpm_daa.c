@@ -373,7 +373,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
             TPM_ST_DAA) ||
           (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].handle != 
             handle))
-              return TPM_BADHANDLE;
+              return TPM_BAD_HANDLE;
     }
     session = &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)];
   }
@@ -2383,7 +2383,7 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
             TPM_ST_DAA) ||
           (tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)].handle != 
             handle))
-              return TPM_BADHANDLE;
+              return TPM_BAD_HANDLE;
     }
     session = &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)];
   }

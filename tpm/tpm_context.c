@@ -276,7 +276,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
     if (key == NULL || key->valid) {
       if (keepHandle) {
         tpm_free(context_buf);
-        return TPM_BADHANDLE;
+        return TPM_BAD_HANDLE;
       }    
       *handle = tpm_get_free_key();
       if (*handle == TPM_INVALID_HANDLE) {
@@ -311,7 +311,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
     if (sessionDAA == NULL) {
       if (keepHandle) {
         tpm_free(context_buf);
-        return TPM_BADHANDLE;
+        return TPM_BAD_HANDLE;
       }
       *handle = tpm_get_free_daa_session();
       if (*handle == TPM_INVALID_HANDLE) {
@@ -322,7 +322,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
     } else if (sessionDAA->type != TPM_ST_INVALID) {
       if (keepHandle) {
         tpm_free(context_buf);
-        return TPM_BADHANDLE;
+        return TPM_BAD_HANDLE;
       }
       *handle = tpm_get_free_daa_session();
       if (*handle == TPM_INVALID_HANDLE) {
@@ -334,7 +334,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
       if (HANDLE_TO_RT(hintHandle) != TPM_RT_DAA_TPM) {
         if (keepHandle) {
           tpm_free(context_buf);
-          return TPM_BADHANDLE;
+          return TPM_BAD_HANDLE;
         }
         *handle = tpm_get_free_daa_session();
         if (*handle == TPM_INVALID_HANDLE) {
@@ -375,7 +375,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
     if (session == NULL || session->type != TPM_ST_INVALID) {
       if (keepHandle) {
         tpm_free(context_buf);
-        return TPM_BADHANDLE;
+        return TPM_BAD_HANDLE;
       }
       *handle = tpm_get_free_session(context.internalData.session.type);
       if (*handle == TPM_INVALID_HANDLE) {

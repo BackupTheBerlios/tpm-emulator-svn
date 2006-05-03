@@ -200,19 +200,19 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
   *authHandle = tpm_get_free_session(TPM_ST_OSAP);
   session = tpm_get_auth(*authHandle);
   if (session == NULL) return TPM_RESOURCES;
+  /* check whether ADIP encryption scheme is supported */
+  if (((entityType & 0xFF00) != TPM_ET_XOR) 
+    && ((entityType & 0xFF00) != TPM_ET_AES128))
+	return TPM_INAPPROPRIATE_ENC;
   /* get resource handle and the dedicated secret */
-  switch (entityType) {
+  switch (entityType & 0x00FF) {
     case TPM_ET_KEYHANDLE:
-    case TPM_ET_KEYAES:
-    case TPM_ET_KEYXOR:
       session->handle = entityValue;
-      if (session->handle == TPM_KH_OPERATOR) return TPM_INVALID_KEYHANDLE;
+      if (session->handle == TPM_KH_OPERATOR) return TPM_BAD_HANDLE;
       if (tpm_get_key(session->handle) != NULL)
         secret = &tpm_get_key(session->handle)->usageAuth;
       break;
     case TPM_ET_OWNER:
-    case TPM_ET_OWNERAES:
-    case TPM_ET_OWNERXOR:
       session->handle = TPM_KH_OWNER;
       if (tpmData.permanent.flags.owned)
         secret = &tpmData.permanent.data.ownerAuth;

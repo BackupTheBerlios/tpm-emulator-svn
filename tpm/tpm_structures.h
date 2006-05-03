@@ -124,28 +124,33 @@ typedef UINT32 TPM_GPIO_ATTRIBUTES;
 /* 0x09 - 0x7F Reserved for future use by TPM */
 /* 0x80 - 0xFF Vendor specific payloads */
 
-/*
+/* !!! WATCH: Changes from TPM Specification v1.2 rev 94 !!!
+ *
  * TPM_ENTITY_TYPE ([TPM_Part2], Section 4.3)
- * This specifies the types of entity that are supported by the TPM.
+ * This specifies the types of entity and ADIP encryption schemes
+ * that are supported by the TPM.
+ *
+ * The LSB is used to indicate the entity type. The MSB is used to
+ * indicate the ADIP encryption scheme when applicable.
+ * 
+ * For compatibility with TPM 1.1, some values are maintained.
  */
-#define TPM_ET_KEYHANDLE        0x0001
-#define TPM_ET_OWNER            0x0002
-#define TPM_ET_DATA             0x0003
-#define TPM_ET_SRK              0x0004
-#define TPM_ET_KEY              0x0005
-#define TPM_ET_REVOKE           0x0006
-#define TPM_ET_DEL_OWNER_BLOB   0x0007
-#define TPM_ET_DEL_ROW          0x0008
-#define TPM_ET_DEL_KEY_BLOB     0x0009
-#define TPM_ET_COUNTER          0x000A
-#define TPM_ET_NV               0x000B
-#define TPM_ET_KEYAES           0x000C
-#define TPM_ET_KEYDES           0x000D
-#define TPM_ET_OWNERAES         0x000E
-#define TPM_ET_OWNERDES         0x000F
-#define TPM_ET_KEYXOR           0x0010
-#define TPM_ET_OWNERXOR         0x0011 // WATCH: does not exist (v1.2 rev 85)
-#define TPM_ET_RESERVED_HANDLE  0x0040
+/* LSB Values */
+#define TPM_ET_KEYHANDLE        0x01
+#define TPM_ET_OWNER            0x02
+#define TPM_ET_DATA             0x03
+#define TPM_ET_SRK              0x04
+#define TPM_ET_KEY              0x05
+#define TPM_ET_REVOKE           0x06
+#define TPM_ET_DEL_OWNER_BLOB   0x07
+#define TPM_ET_DEL_ROW          0x08
+#define TPM_ET_DEL_KEY_BLOB     0x09
+#define TPM_ET_COUNTER          0x0A
+#define TPM_ET_NV               0x0B
+#define TPM_ET_RESERVED_HANDLE  0x40
+/* MSB Values */
+#define TPM_ET_XOR		0x00
+#define TPM_ET_AES128		0x06
 
 /*
  * Reserved Key Handles ([TPM_Part2], Section 4.4)
@@ -1315,7 +1320,7 @@ typedef struct tdTPM_AUDIT_EVENT_OUT {
 #define TPM_DAA_STAGE                   (TPM_BASE + 85)
 #define TPM_DAA_ISSUER_VALIDITY         (TPM_BASE + 86)
 #define TPM_DAA_WRONG_W                 (TPM_BASE + 87)
-#define TPM_BADHANDLE                   (TPM_BASE + 88)
+#define TPM_BAD_HANDLE                  (TPM_BASE + 88)
 #define TPM_BAD_DELEGATE                (TPM_BASE + 89)
 #define TPM_BADCONTEXT                  (TPM_BASE + 90)
 #define TPM_TOOMANYCONTEXTS             (TPM_BASE + 91)
@@ -1323,9 +1328,9 @@ typedef struct tdTPM_AUDIT_EVENT_OUT {
 #define TPM_MA_DESTINATION              (TPM_BASE + 93)
 #define TPM_MA_SOURCE                   (TPM_BASE + 94)
 #define TPM_MA_AUTHORITY                (TPM_BASE + 95)
-#define TPM_PERMANENTEK                 (TPM_BASE + 97) // WATCH: 97 (v1.2 rev 85)
+#define TPM_PERMANENTEK                 (TPM_BASE + 97)
 #define TPM_BAD_SIGNATURE               (TPM_BASE + 98)
-#define TPM_NOCONTEXTSPACE              (TPM_BASE + 99) // FIXME: does not ex.
+#define TPM_NOCONTEXTSPACE              (TPM_BASE + 99)
 #define TPM_RETRY                       (TPM_BASE + TPM_NON_FATAL)
 #define TPM_NEEDS_SELFTEST              (TPM_BASE + TPM_NON_FATAL + 1)
 #define TPM_DOING_SELFTEST              (TPM_BASE + TPM_NON_FATAL + 2)
@@ -1623,7 +1628,8 @@ typedef struct tdTPM_DELEGATE_KEY_BLOB {
 #define TPM_FAMILY_ADMIN        0x00000003
 #define TPM_FAMILY_INVALIDATE   0x00000004
 
-/*
+/* !!! WATCH: Changes from TPM Specification v1.2 rev 94 !!!
+ *
  * TPM Capability areas ([TPM_Part2], Section 21)
  */
 #define TPM_CAP_ORD                     0x00000001
@@ -1634,19 +1640,31 @@ typedef struct tdTPM_DELEGATE_KEY_BLOB {
 #define TPM_CAP_VERSION                 0x00000006
 #define TPM_CAP_KEY_HANDLE              0x00000007
 #define TPM_CAP_CHECK_LOADED            0x00000008
+#define TPM_CAP_SYM_MODE                0x00000009
+/* deprecated or changed since v1.2 rev 94
 #define TPM_CAP_BIT_OWNER               0x00000009
 #define TPM_CAP_BIT_LOCAL               0x0000000A
 #define TPM_CAP_DELEGATIONS             0x0000000B
+*/
 #define TPM_CAP_KEY_STATUS              0x0000000C
 #define TPM_CAP_NV_LIST                 0x0000000D
+/* deprecated since v1.2 rev 94
 #define TPM_CAP_TABLE_ADMIN             0x0000000E
 #define TPM_CAP_TABLE_ENABLE            0x0000000F
+*/
 #define TPM_CAP_MFR                     0x00000010
 #define TPM_CAP_NV_INDEX                0x00000011
 #define TPM_CAP_TRANS_ALG               0x00000012
+/* deprecated since v1.2 rev 94
 #define TPM_CAP_GPIO_CHANNEL            0x00000013
+*/
 #define TPM_CAP_HANDLE                  0x00000014
 #define TPM_CAP_TRANS_ES                0x00000015
+/* added since v1.2 rev 94 */
+#define TPM_CAP_AUTH_ENCRYPT            0x00000017
+#define TPM_CAP_SELECT_SIZE             0x00000018
+#define TPM_CAP_VERSION_VAL             0x0000001A
+
 /* subCap definitions */
 #define TPM_CAP_PROP_PCR                0x00000101
 #define TPM_CAP_PROP_DIR                0x00000102
@@ -1666,22 +1684,30 @@ typedef struct tdTPM_DELEGATE_KEY_BLOB {
 #define TPM_CAP_PROP_CONTEXT            0x00000112
 #define TPM_CAP_PROP_MAX_CONTEXT        0x00000113
 #define TPM_CAP_PROP_FAMILYROWS         0x00000114
-#define TPM_CAP_PROP_TIS                0x00000115
+#define TPM_CAP_PROP_TIS_TIMEOUT        0x00000115
 #define TPM_CAP_PROP_STARTUP_EFFECT     0x00000116
-#define TPM_CAP_PROP_DELEGATE_ENTRIES   0x00000117
+#define TPM_CAP_PROP_DELEGATE_ROW       0x00000117
+/* deprecated since v1.2 rev 94
 #define TPM_CAP_PROP_NV_MAXBUF          0x00000118
+*/
 #define TPM_CAP_PROP_DAA_MAX            0x00000119
-#define TPM_CAP_PROP_SESSION_DAA        0x0000011A // WATCH: conflict (v1.2 rev 85)
-#define TPM_CAP_PROP_GLOBALLOCK         0x0001011A // FIXME
+#define TPM_CAP_PROP_SESSION_DAA        0x0000011A
+/* deprecated since v1.2 rev 94
+#define TPM_CAP_PROP_GLOBALLOCK         0x0000011A
+*/
 #define TPM_CAP_PROP_CONTEXT_DIST       0x0000011B
 #define TPM_CAP_PROP_DAA_INTERRUPT      0x0000011C
-#define TPM_CAP_PROP_SESSIONS           0x0000011D // WATCH: conflict (v1.2 rev 85)
-#define TPM_CAP_FLAG_STANY              0x0001011D // FIXME
-#define TPM_CAP_PROP_MAX_SESSIONS       0x0000011E // WATCH: conflict (v1.2 rev 85)
-#define TPM_CAP_PROP_GPIO_CHANNEL       0x0001011E // FIXME
+#define TPM_CAP_PROP_SESSIONS           0x0000011D
+/* deprecated since v1.2 rev 94
+#define TPM_CAP_FLAG_STANY              0x0000011D
+*/
+#define TPM_CAP_PROP_MAX_SESSIONS       0x0000011E
+/* deprecated since v1.2 rev 94
+#define TPM_CAP_PROP_GPIO_CHANNEL       0x0000011E
+*/
 #define TPM_CAP_PROP_CMK_RESTRICTION    0x0000011F
 #define TPM_CAP_PROP_DURATION           0x00000120
-#define TPM_CAP_PROP_ACTIVE_COUNTER     0x00000122 // WATCH: 122 (v1.2 rev 85)
+#define TPM_CAP_PROP_ACTIVE_COUNTER     0x00000122
 #define TPM_CAP_PROP_MAX_NV_AVAILABLE   0x00000123
 #define TPM_CAP_PROP_INPUT_BUFFER       0x00000124
 

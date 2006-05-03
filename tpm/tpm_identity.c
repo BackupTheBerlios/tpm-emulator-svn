@@ -101,8 +101,7 @@ TPM_RESULT TPM_MakeIdentity(
   /* 6. If ownerAuth indicates XOR encryption for the AuthData secrets */
   ownerAuth_sessionData = tpm_get_auth(auth2->authHandle);
   if (ownerAuth_sessionData == NULL) return TPM_INVALID_AUTHHANDLE;
-  if ((ownerAuth_sessionData->entityType == TPM_ET_OWNER)
-    || (ownerAuth_sessionData->entityType == TPM_ET_OWNERXOR)) {
+  if ((ownerAuth_sessionData->entityType & 0xFF00) == TPM_ET_XOR) {
     /* a. Create X1 the SHA-1 of the concatenation of (ownerAuth->sharedSecret 
      * || authLastNonceEven) */
     /* b. Create A1 by XOR X1 and identityAuth */
