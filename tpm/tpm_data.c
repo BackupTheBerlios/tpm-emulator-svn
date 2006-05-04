@@ -122,11 +122,11 @@ void tpm_init_data(void)
     RSA_MSB_FIRST, ek_n, 256, ek_e, 3, ek_p, ek_q);
 #endif
 #ifdef TPM_GENERATE_SEED_DAA
-  /* generate the DAA seed (cf. [TPM_Part2], v1.2 rev 85, Section 7.4) */
+  /* generate the DAA seed (cf. [TPM_Part2], v1.2 rev 94, Section 7.4) */
   tpm_get_random_bytes(tpmData.permanent.data.tpmDAASeed.digest, 
     sizeof(tpmData.permanent.data.tpmDAASeed.digest));
 #else
-  /* FIXME: setup DAA seed */
+  /* setup DAA seed */
   memcpy(tpmData.permanent.data.tpmDAASeed.digest, 
     "\x77\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
     "\x00\x00\x00\x77", 20);

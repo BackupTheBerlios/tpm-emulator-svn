@@ -268,6 +268,7 @@ TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
     return TPM_BAD_MODE;
   switch (ord) {
     case TPM_ORD_Startup:
+/* TODO: add other supported ordinals */
       return return_BOOL(respSize, resp, TRUE);
     default:
       return return_BOOL(respSize, resp, FALSE);

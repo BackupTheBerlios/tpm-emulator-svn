@@ -464,7 +464,7 @@ typedef UINT32 TPM_CMK_RESTRICTDELEGATE;
 #define TPM_TAG_RSP_AUTH2_COMMAND       0x00C6
 
 /*
- * Oridinals ([TPM_Part2], Section 17)
+ * Ordinals ([TPM_Part2], Section 17)
  * The command ordinals provide the index value for each command.
  */
 #define TPM_PROTECTED_COMMAND           0x00000000
@@ -600,14 +600,23 @@ typedef UINT32 TPM_CMK_RESTRICTDELEGATE;
 #define TPM_ORD_SetTickType                     240
 #define TPM_ORD_GetTicks                        241
 #define TPM_ORD_TickStampBlob                   242
-#define TSC_ORD_PhysicalPresence                (10 + TPM_CONNECTION_COMMAND)
-#define TSC_ORD_ResetEstablishmentBit           (11 + TPM_CONNECTION_COMMAND)
 #define TPM_ORD_DAA_Join                        41
 #define TPM_ORD_DAA_Sign                        49
 #define TPM_ORD_GPIO_AuthChannel                252 /* TODO: determine TPM_ORD_GPIO_AuthChannel */
 #define TPM_ORD_GPIO_ReadWrite                  253 /* TODO: determine TPM_ORD_GPIO_ReadWrite */
 
 #define TPM_ORD_MAX                             256
+
+/*
+ * TCS Ordinals ([TPM_Part2], Section 17.1)
+ *
+ * The TSC ordinals are optional in the main specification.
+ * They are mandatory in the PC Client specification.
+ *
+ * The connection commands manage the TPM's connection to the TBB.
+ */
+#define TSC_ORD_PhysicalPresence                (10 + TPM_CONNECTION_COMMAND)
+#define TSC_ORD_ResetEstablishmentBit           (11 + TPM_CONNECTION_COMMAND)
 
 /*
  * PCR Structures
@@ -2008,7 +2017,7 @@ typedef struct tdTPM_KEY_DATA {
  * the TPM and not affected by TPM_Startup(any).
  */
 #define TPM_TAG_PERMANENT_DATA          0x0022
-#define TPM_MAX_COUNTERS                4
+#define TPM_MAX_COUNTERS                4           // WATCH: TPM_MIN_COUNTERS
 #define TPM_DELEGATE_KEY                TPM_KEY
 #define TPM_MAX_NV_WRITE_NOOWNER        64
 #define TPM_MAX_KEYS                    10
