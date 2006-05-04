@@ -181,6 +181,7 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
   }
 }
 
+/* TODO: changed since rev 94 */
 static TPM_RESULT cap_version(UINT32 *respSize, BYTE **resp)
 {
   UINT32 len = *respSize = 4;
@@ -381,6 +382,12 @@ TPM_RESULT cap_auth_encrypt(UINT32 subCapSize, BYTE *subCap,
   }
 }
 
+/* TODO: added since rev 94 */
+TPM_RESULT cap_version_val(UINT32 *respSize, BYTE **resp)
+{
+  return TPM_BAD_MODE;
+}
+
 TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize, 
                              BYTE *subCap, UINT32 *respSize, BYTE **resp)
 {
@@ -469,8 +476,7 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
 
     case TPM_CAP_VERSION_VAL:
       debug("[TPM_CAP_VERSION_VAL]");
-      /* TODO: TPM_CAP_VERSION_VAL */
-      return TPM_FAIL;
+      return cap_version_val(respSize, resp);
 
     default:
       return TPM_BAD_MODE;

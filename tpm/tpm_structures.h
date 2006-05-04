@@ -281,7 +281,7 @@ typedef UINT32 TPM_GPIO_ATTRIBUTES;
 
 /*
  * TPM_STRUCT_VER ([TPM_Part2], Section 5.1)
- * This indicates the version of the structure or TPM.
+ * This indicates the version of the structure.
  */
 typedef struct tdTPM_STRUCT_VER {
   BYTE major;
@@ -290,13 +290,22 @@ typedef struct tdTPM_STRUCT_VER {
   BYTE revMinor;
 } TPM_STRUCT_VER;
 
-/*
- * TPM_VERSION ([TPM_Part2], Section 5.2)
+/* !!! WATCH: Added in TPM Specification v1.2 rev 94 !!!
+ *
+ * TPM_VERSION_BYTE ([TPM_Part2], Section 5.2)
+ */
+typedef BYTE   TPM_VERSION_BYTE;
+
+/* !!! WATCH: Changed in TPM Specification v1.2 rev 94 !!!
+ *
+ * TPM_VERSION ([TPM_Part2], Section 5.3)
  * This structure provides information relative the version of the TPM.
+ * This structure should only be in use by TPM_GetCapability to provide
+ * the information relative to the TPM.
  */
 typedef struct tdTPM_VERSION {
-  BYTE major;
-  BYTE minor;
+  TPM_VERSION_BYTE major;
+  TPM_VERSION_BYTE minor;
   BYTE revMajor;
   BYTE revMinor;
 } TPM_VERSION;
