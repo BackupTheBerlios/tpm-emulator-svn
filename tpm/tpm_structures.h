@@ -1,6 +1,7 @@
 /* Software-Based Trusted Platform Module (TPM) Emulator for Linux
  * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
  *                    Swiss Federal Institute of Technology (ETH) Zurich
+ *               2006 Heiko Stamer <stamer@gaos.org>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -33,7 +34,7 @@ typedef uint8_t  BYTE;
 typedef uint16_t UINT16;
 typedef uint32_t UINT32;
 typedef uint64_t UINT64;
-typedef BYTE     BOOL; 
+typedef BYTE     BOOL;
 #define TRUE     0x01
 #define FALSE    0x00
 
@@ -42,6 +43,7 @@ typedef BYTE     BOOL;
  */
 typedef BYTE   TPM_AUTH_DATA_USAGE;
 typedef BYTE   TPM_PAYLOAD_TYPE;
+typedef BYTE   TPM_VERSION_BYTE; /* added since v1.2 rev 94 */
 typedef UINT16 TPM_TAG;
 typedef UINT16 TPM_PROTOCOL_ID;
 typedef UINT16 TPM_STARTUP_TYPE;
@@ -75,13 +77,12 @@ typedef UINT32 TPM_STARTUP_EFFECTS;
 typedef UINT32 TPM_SYM_MODE;
 typedef UINT32 TPM_FAMILY_FLAGS;
 typedef UINT32 TPM_DELEGATE_INDEX;
-typedef UINT32 TPM_CMK_RESTRICT_DELEGATE;
+typedef UINT32 TPM_CMK_DELEGATE; /* name changed since v1.2 rev 94 */
 typedef UINT32 TPM_COUNT_ID;
 typedef UINT32 TPM_REDIT_COMMAND;
 typedef UINT32 TPM_TRANSHANDLE;
 typedef UINT32 TPM_HANDLE;
 typedef UINT32 TPM_FAMILY_OPERATION;
-typedef UINT32 TPM_GPIO_ATTRIBUTES;
 
 /*
  * Vendor Specific ([TPM_Part2], Section 2.2.4)
@@ -90,8 +91,8 @@ typedef UINT32 TPM_GPIO_ATTRIBUTES;
 #define TPM_Vendor_Specific8    0x80
 
 /*
- * Structure Tags ([TPM_Part2], Section 3.1) are defined
- * together with the dedicated structures.
+ * Structure Tags ([TPM_Part2], Section 3.1)
+ * are defined together with the dedicated structures.
  */
 
 /*
@@ -103,7 +104,7 @@ typedef UINT32 TPM_GPIO_ATTRIBUTES;
 #define TPM_RT_HASH             0x00000003
 #define TPM_RT_TRANS            0x00000004
 #define TPM_RT_CONTEXT          0x00000005
-#define TPM_RT_COUNTERS         0x00000006
+#define TPM_RT_COUNTER          0x00000006 /* name changed since v1.2 rev 94 */
 #define TPM_RT_DELEGATE         0x00000007
 #define TPM_RT_DAA_TPM          0x00000008
 #define TPM_RT_DAA_V0           0x00000009
@@ -124,7 +125,7 @@ typedef UINT32 TPM_GPIO_ATTRIBUTES;
 /* 0x09 - 0x7F Reserved for future use by TPM */
 /* 0x80 - 0xFF Vendor specific payloads */
 
-/* !!! WATCH: Changes from TPM Specification v1.2 rev 94 !!!
+/* !!! WATCH: completely changed since v1.2 rev 94 !!!
  *
  * TPM_ENTITY_TYPE ([TPM_Part2], Section 4.3)
  * This specifies the types of entity and ADIP encryption schemes
@@ -149,11 +150,11 @@ typedef UINT32 TPM_GPIO_ATTRIBUTES;
 #define TPM_ET_NV               0x0B
 #define TPM_ET_RESERVED_HANDLE  0x40
 /* MSB Values */
-#define TPM_ET_XOR		0x00
-#define TPM_ET_AES128		0x06
+#define TPM_ET_XOR              0x00
+#define TPM_ET_AES128           0x06
 
 /*
- * Reserved Key Handles ([TPM_Part2], Section 4.4)
+ * Reserved Key Handles ([TPM_Part2], Section 4.4.1)
  * These values specify specific keys or specific actions for the TPM.
  */
 #define TPM_KH_SRK              0x40000000
@@ -172,12 +173,13 @@ typedef UINT32 TPM_GPIO_ATTRIBUTES;
 #define TPM_ST_STATE            0x0002
 #define TPM_ST_DEACTIVATED      0x0003
 
-/*
+/* !!! WATCH: no names given since v1.2 rev 94 !!!
+ *
  * TPM_STARTUP_EFFECTS ([TPM_Part2], Section 4.6)
  * This structure lists for the various resources and sessions on a TPM
  * the affect that TPM_Startup has on the values.
  */
-/* 31-28 reserved and must be 0 */
+/* 31-8 reserved and must be 0 */
 #define TPM_STARTUP_AUDIT_DIGEST_IGNORE        (1 << 7)
 #define TPM_STARTUP_AUDIT_DIGEST_ST_CLEAR      (1 << 6)
 #define TPM_STARTUP_AUDIT_DIGEST_ST_ANY        (1 << 5)
@@ -214,25 +216,6 @@ typedef UINT32 TPM_GPIO_ATTRIBUTES;
 #define TPM_ALG_AES256          0x00000009
 #define TPM_ALG_XOR             0x0000000A
 
-/* 
- * TPM_ENC_SCHEME ([TPM_Part1], Section 29)
- * Encryption Schemes 
- */
-#define TPM_ES_NONE                    0x0001
-#define TPM_ES_RSAESPKCSv15            0x0002
-#define TPM_ES_RSAESOAEP_SHA1_MGF1     0x0003
-#define TPM_ES_SYM_CNT                 0x0004
-#define TPM_ES_SYM_OFB                 0x0005
-
-/*
- * TPM_SIG_SCHEME ([TPM_Part1], Section 29)
- * Signature Schemes
- */
-#define TPM_SS_NONE                    0x0001
-#define TPM_SS_RSASSAPKCS1v15_SHA1     0x0002
-#define TPM_SS_RSASSAPKCS1v15_DER      0x0003
-#define TPM_SS_RSASSAPKCS1v15_INFO     0x0004
-
 /*
  * TPM_PHYSICAL_PRESENCE ([TPM_Part2], Section 4.9)
  * Values to setup the Physical Presence
@@ -256,7 +239,9 @@ typedef UINT32 TPM_GPIO_ATTRIBUTES;
 #define TPM_MS_MAINT                      0x0003
 #define TPM_MS_RESTRICT_MIGRATE           0x0004
 #define TPM_MS_RESTRICT_APPROVE_DOUBLE    0x0005
+/* removed since v1.2 rev 94
 #define TPM_MS_RESTRICT_MIGRATE_EXTERNAL  0x0006
+*/
 
 /*
  * TPM_EK_TYPE ([TPM_Part2], Section 4.11)
@@ -290,13 +275,7 @@ typedef struct tdTPM_STRUCT_VER {
   BYTE revMinor;
 } TPM_STRUCT_VER;
 
-/* !!! WATCH: Added in TPM Specification v1.2 rev 94 !!!
- *
- * TPM_VERSION_BYTE ([TPM_Part2], Section 5.2)
- */
-typedef BYTE   TPM_VERSION_BYTE;
-
-/* !!! WATCH: Changed in TPM Specification v1.2 rev 94 !!!
+/* !!! WATCH: some fields changed since v1.2 rev 94 !!!
  *
  * TPM_VERSION ([TPM_Part2], Section 5.3)
  * This structure provides information relative the version of the TPM.
@@ -311,7 +290,7 @@ typedef struct tdTPM_VERSION {
 } TPM_VERSION;
 
 /*
- * TPM_DIGEST ([TPM_Part2], Section 5.3 and 22.4)
+ * TPM_DIGEST ([TPM_Part2], Section 5.4)
  * The digest value reports the result of a hash operation.
  * In version 1 the hash algorithm is SHA-1 (20 bytes resp. 160 bits).
  */
@@ -329,7 +308,7 @@ typedef TPM_DIGEST TPM_DAA_TPM_SEED;
 typedef TPM_DIGEST TPM_DAA_CONTEXT_SEED;
 
 /*
- * TPM_NONCE ([TPM_Part2], Section 5.4)
+ * TPM_NONCE ([TPM_Part2], Section 5.5)
  * A random value that provides protection from replay and other attacks.
  */
 typedef struct tdTPM_NONCE{
@@ -337,31 +316,16 @@ typedef struct tdTPM_NONCE{
 } TPM_NONCE;
 
 /*
- * TPM_AUTHDATA ([TPM_Part2], Section 5.5)
- * Information that to provide proof of ownership of an entity.
- * For version 1 this area is always 20 bytes.
+ * TPM_AUTHDATA ([TPM_Part2], Section 5.6)
+ * Information that is saved or passed to provide proof of ownership of an
+ * entity. For version 1 this area is always 20 bytes.
  */
 typedef BYTE TPM_AUTHDATA[20];
 typedef TPM_AUTHDATA TPM_SECRET;
 typedef TPM_AUTHDATA TPM_ENCAUTH;
 
 /*
- * TPM_AUTH ([TPM_Part1], Section 11.2)
- * Authorization Protocol Input/Output Parameter
- */
-typedef struct tdTPM_AUTH {
-  TPM_AUTHHANDLE authHandle;
-  TPM_NONCE nonceEven;
-  TPM_NONCE nonceOdd;
-  BOOL continueAuthSession;
-  TPM_AUTHDATA auth;
-  /* additional NOT marshalled parameters */
-  TPM_SECRET *secret;
-  BYTE digest[20];
-} TPM_AUTH;
-
-/*
- * TPM_KEY_HANDLE_LIST ([TPM_Part2], Section 5.6)
+ * TPM_KEY_HANDLE_LIST ([TPM_Part2], Section 5.7)
  * Structure used to describe the handles of all keys currently
  * loaded into a TPM.
  */
@@ -371,7 +335,7 @@ typedef struct tdTPM_KEY_HANDLE_LIST {
 } TPM_KEY_HANDLE_LIST;
 
 /*
- * TPM_KEY_USAGE ([TPM_Part2], Section 5.7)
+ * TPM_KEY_USAGE ([TPM_Part2], Section 5.8)
  * Defines the types of keys that are possible.
  */
 #define TPM_KEY_SIGNING         0x0010
@@ -380,9 +344,27 @@ typedef struct tdTPM_KEY_HANDLE_LIST {
 #define TPM_KEY_AUTHCHANGE      0x0013
 #define TPM_KEY_BIND            0x0014
 #define TPM_KEY_LEGACY          0x0015
+#define TPM_KEY_MIGRATE         0x0016 /* added since v1.2 rev 94 */
+
+/* 
+ * Encryption Schemes ([TPM_Part2], Section 5.8.1)
+ */
+#define TPM_ES_NONE                    0x0001
+#define TPM_ES_RSAESPKCSv15            0x0002
+#define TPM_ES_RSAESOAEP_SHA1_MGF1     0x0003
+#define TPM_ES_SYM_CNT                 0x0004
+#define TPM_ES_SYM_OFB                 0x0005
 
 /*
- * TPM_AUTH_DATA_USAGE ([TPM_Part2], Section 5.8)
+ * Signature Schemes ([TPM_Part2], Section 5.8.1)
+ */
+#define TPM_SS_NONE                    0x0001
+#define TPM_SS_RSASSAPKCS1v15_SHA1     0x0002
+#define TPM_SS_RSASSAPKCS1v15_DER      0x0003
+#define TPM_SS_RSASSAPKCS1v15_INFO     0x0004
+
+/*
+ * TPM_AUTH_DATA_USAGE ([TPM_Part2], Section 5.9)
  * Indication when authorization sessions for an entity are required.
  */
 #define TPM_AUTH_NEVER          0x00
@@ -390,20 +372,21 @@ typedef struct tdTPM_KEY_HANDLE_LIST {
 #define TPM_AUTH_PRIV_USE_ONLY  0x03
 
 /*
- * TPM_KEY_FLAGS ([TPM_Part2], Section 5.9)
+ * TPM_KEY_FLAGS ([TPM_Part2], Section 5.10)
  * This table defines the meanings of the bits in a TPM_KEY_FLAGS structure.
  */
 #define TPM_KEY_FLAG_REDIRECT   0x00000001
 #define TPM_KEY_FLAG_MIGRATABLE 0x00000002
 #define TPM_KEY_FLAG_VOLATILE   0x00000004
 #define TPM_KEY_FLAG_PCR_IGNORE 0x00000008
-#define TPM_KEY_FLAG_AUTHORITY  0x0000000C
+#define TPM_KEY_FLAG_AUTHORITY  0x00000010
+/* !!! WATCH: the following two definitions are not from v1.2 rev 94 !!! */
 #define TPM_KEY_FLAG_HAS_PCR    0x10000000 /* to use with TPM_KEY_DATA only! */
 #define TPM_KEY_FLAG_MASK       0x0fffffff
 
 /*
- * TPM_CHANGEAUTH_VALIDATE ([TPM_Part2], Section 5.10)
- * To store the new authorization data and the challenger s nonce.
+ * TPM_CHANGEAUTH_VALIDATE ([TPM_Part2], Section 5.11)
+ * To store the new authorization data and the challenger's nonce.
  */
 typedef struct tdTPM_CHANGEAUTH_VALIDATE {
   TPM_SECRET newAuthSecret;
@@ -411,7 +394,7 @@ typedef struct tdTPM_CHANGEAUTH_VALIDATE {
 } TPM_CHANGEAUTH_VALIDATE;
 
 /*
- * TPM_COUNTER_VALUE ([TPM_Part2], Section 5.12)
+ * TPM_COUNTER_VALUE ([TPM_Part2], Section 5.13)
  * This structure returns the counter value.
  * For interoperability, the value size should be 4 bytes.
  */
@@ -428,7 +411,7 @@ typedef struct tdTPM_COUNTER_VALUE {
 #define sizeof_TPM_COUNTER_VALUE2(s) (2 + 4 + 4 + 20 + 1)
 
 /*
- * TPM_SIGN_INFO Structure ([TPM_Part2], Section 5.13)
+ * TPM_SIGN_INFO Structure ([TPM_Part2], Section 5.14)
  * To provide the mechanism to quote the current values of a list of PCRs.
  */
 #define TPM_TAG_SIGNINFO 0x0005
@@ -440,8 +423,19 @@ typedef struct tdTPM_SIGN_INFO {
   BYTE* data;
 } TPM_SIGN_INFO;
 
+/* !!! WATCH: added since v1.2 rev 94 !!!
+ *
+ * TPM_MSA_COMPOSITE ([TPM_Part2], Section 5.15)
+ * Contains an arbitrary number of digests of public keys belonging to
+ * Migration Authorities.
+ */
+typedef struct tdTPM_MSA_COMPOSITE {
+  UINT32 MSAlist;
+  TPM_DIGEST *migAuthDigest;
+} TPM_MSA_COMPOSITE;
+
 /*
- * TPM_CMK_AUTH ([TPM_Part2], Section 5.14)
+ * TPM_CMK_AUTH ([TPM_Part2], Section 5.16)
  */
 typedef struct tdTPM_CMK_AUTH {
   TPM_DIGEST migrationAuthorityDigest;
@@ -449,17 +443,64 @@ typedef struct tdTPM_CMK_AUTH {
   TPM_DIGEST sourceKeyDigest;
 } TPM_CMK_AUTH;
 
-/*
- * TPM_CMK_RESTRICTDELEGATE ([TPM_Part2], Section 5.15)
+/* !!! WATCH: completely renamed since v1.2 rev 94 !!!
+ *
+ * TPM_CMK_DELEGATE ([TPM_Part2], Section 5.17)
  * Determine how to respond to delegated requests to manipulate a
  * restricted-migration key.
  */
-typedef UINT32 TPM_CMK_RESTRICTDELEGATE;
-#define TPM_RESTRICT_MIGRATE_SIGNING            (1 << 31)
-#define TPM_RESTRICT_MIGRATE_STORAGE            (1 << 30)
-#define TPM_RESTRICT_MIGRATE_BIND               (1 << 29)
-#define TPM_RESTRICT_MIGRATE_LEGACY             (1 << 28)
-/* 27-0 are reserved and must be 0 */
+#define TPM_CMK_DELEGATE_SIGNING            (1 << 31)
+#define TPM_CMK_DELEGATE_STORAGE            (1 << 30)
+#define TPM_CMK_DELEGATE_BIND               (1 << 29)
+#define TPM_CMK_DELEGATE_LEGACY             (1 << 28)
+#define TPM_CMK_DELEGATE_MIGRATE            (1 << 27)
+/* bits 26-0 are reserved and must be 0 */
+
+/* !!! WATCH: added since v1.2 rev 94 !!!
+ *
+ * TPM_SELECT_SIZE ([TPM_Part2], Section 5.18)
+ * Indication for the version and size of TPM_SELECTION in TPM_GetCapability.
+ */
+typedef struct tdTPM_SELECT_SIZE {
+  BYTE major;
+  BYTE minor;
+  UINT16 reqSize;
+} TPM_SELECT_SIZE;
+
+/* !!! WATCH: added since v1.2 rev 94 !!!
+ *
+ * TPM_CMK_MIGAUTH ([TPM_Part2], Section 5.19)
+ * Structure to keep track of the CMK migration authorization.
+ */
+#define TPM_TAG_CMK_MIGAUTH 0x0033
+typedef struct tdTPM_CMK_MIGAUTH {
+  TPM_STRUCTURE_TAG tag;
+  TPM_DIGEST msaDigest;
+  TPM_DIGEST pubKeyDigest;
+} TPM_CMK_MIGAUTH;
+
+/* !!! WATCH: added since v1.2 rev 94 !!!
+ *
+ * TPM_CMK_SIGTICKET ([TPM_Part2], Section 5.20)
+ * Structure to keep track of the CMK migration authorization.
+ */
+#define TPM_TAG_CMK_SIGTICKET 0x0034
+typedef struct tdTPM_CMK_SIGTICKET {
+  TPM_STRUCTURE_TAG tag;
+  TPM_DIGEST verKeyDigest;
+  TPM_DIGEST signedData;
+} TPM_CMK_SIGTICKET;
+
+/* !!! WATCH: added since v1.2 rev 94 !!!
+ *
+ * TPM_CMK_MA_APPROVAL ([TPM_Part2], Section 5.21)
+ * Structure to keep track of the CMK migration authorization.
+ */
+#define TPM_TAG_CMK_MA_APPROVAL 0x0035
+typedef struct tdTPM_CMK_MA_APPROVAL {
+  TPM_STRUCTURE_TAG tag;
+  TPM_DIGEST migrationAuthorityDigest;
+} TPM_CMK_MA_APPROVAL;
 
 /*
  * Command Tags ([TPM_Part2], Section 6)
@@ -471,6 +512,13 @@ typedef UINT32 TPM_CMK_RESTRICTDELEGATE;
 #define TPM_TAG_RSP_COMMAND             0x00C4
 #define TPM_TAG_RSP_AUTH1_COMMAND       0x00C5
 #define TPM_TAG_RSP_AUTH2_COMMAND       0x00C6
+
+
+
+/* !!!!! TODO: apply changes from v1.2 rev94 to the lines below !!!!! */
+
+
+
 
 /*
  * Ordinals ([TPM_Part2], Section 17)
@@ -611,8 +659,6 @@ typedef UINT32 TPM_CMK_RESTRICTDELEGATE;
 #define TPM_ORD_TickStampBlob                   242
 #define TPM_ORD_DAA_Join                        41
 #define TPM_ORD_DAA_Sign                        49
-#define TPM_ORD_GPIO_AuthChannel                252 /* TODO: determine TPM_ORD_GPIO_AuthChannel */
-#define TPM_ORD_GPIO_ReadWrite                  253 /* TODO: determine TPM_ORD_GPIO_ReadWrite */
 
 #define TPM_ORD_MAX                             256
 
@@ -927,8 +973,9 @@ typedef struct tdTPM_MIGRATE_ASYMKEY {
 } TPM_MIGRATE_ASYMKEY;
 
 /*
- * TPM_MIGRATIONKEYAUTH ([TPM_Part2], Section 5.11)
- * To proof that the associated key has authorization to be a migration key.
+ * TPM_MIGRATIONKEYAUTH ([TPM_Part2], Section 5.12)
+ * Provides the proof that the associated public key has authorization to
+ * be a migration key.
  */
 typedef struct tdTPM_MIGRATIONKEYAUTH {
   TPM_PUBKEY migrationKey;
@@ -948,6 +995,21 @@ typedef struct tdTPM_MIGRATIONKEYAUTH {
 /*
  * Signed Structures
  */
+
+/*
+ * TPM_AUTH ([TPM_Part1], Section 11.2)
+ * Authorization Protocol Input/Output Parameter
+ */
+typedef struct tdTPM_AUTH {
+  TPM_AUTHHANDLE authHandle;
+  TPM_NONCE nonceEven;
+  TPM_NONCE nonceOdd;
+  BOOL continueAuthSession;
+  TPM_AUTHDATA auth;
+  /* additional NOT marshalled parameters */
+  TPM_SECRET *secret;
+  BYTE digest[20];
+} TPM_AUTH;
 
 /*
  * TPM_CERTIFY_INFO Structure ([TPM_Part2], Section 11.1)
@@ -1659,29 +1721,25 @@ typedef struct tdTPM_DELEGATE_KEY_BLOB {
 #define TPM_CAP_KEY_HANDLE              0x00000007
 #define TPM_CAP_CHECK_LOADED            0x00000008
 #define TPM_CAP_SYM_MODE                0x00000009
-/* deprecated or changed since v1.2 rev 94
+/* removed or changed since v1.2 rev 94
 #define TPM_CAP_BIT_OWNER               0x00000009
 #define TPM_CAP_BIT_LOCAL               0x0000000A
 #define TPM_CAP_DELEGATIONS             0x0000000B
 */
 #define TPM_CAP_KEY_STATUS              0x0000000C
 #define TPM_CAP_NV_LIST                 0x0000000D
-/* deprecated since v1.2 rev 94
+/* removed since v1.2 rev 94
 #define TPM_CAP_TABLE_ADMIN             0x0000000E
 #define TPM_CAP_TABLE_ENABLE            0x0000000F
 */
 #define TPM_CAP_MFR                     0x00000010
 #define TPM_CAP_NV_INDEX                0x00000011
 #define TPM_CAP_TRANS_ALG               0x00000012
-/* deprecated since v1.2 rev 94
-#define TPM_CAP_GPIO_CHANNEL            0x00000013
-*/
 #define TPM_CAP_HANDLE                  0x00000014
 #define TPM_CAP_TRANS_ES                0x00000015
-/* added since v1.2 rev 94 */
-#define TPM_CAP_AUTH_ENCRYPT            0x00000017
-#define TPM_CAP_SELECT_SIZE             0x00000018
-#define TPM_CAP_VERSION_VAL             0x0000001A
+#define TPM_CAP_AUTH_ENCRYPT            0x00000017 /* added since v1.2 rev 94 */
+#define TPM_CAP_SELECT_SIZE             0x00000018 /* added since v1.2 rev 94 */
+#define TPM_CAP_VERSION_VAL             0x0000001A /* added since v1.2 rev 94 */
 
 /* subCap definitions */
 #define TPM_CAP_PROP_PCR                0x00000101
@@ -1705,24 +1763,21 @@ typedef struct tdTPM_DELEGATE_KEY_BLOB {
 #define TPM_CAP_PROP_TIS_TIMEOUT        0x00000115
 #define TPM_CAP_PROP_STARTUP_EFFECT     0x00000116
 #define TPM_CAP_PROP_DELEGATE_ROW       0x00000117
-/* deprecated since v1.2 rev 94
+/* removed since v1.2 rev 94
 #define TPM_CAP_PROP_NV_MAXBUF          0x00000118
 */
 #define TPM_CAP_PROP_DAA_MAX            0x00000119
 #define TPM_CAP_PROP_SESSION_DAA        0x0000011A
-/* deprecated since v1.2 rev 94
+/* removed since v1.2 rev 94
 #define TPM_CAP_PROP_GLOBALLOCK         0x0000011A
 */
 #define TPM_CAP_PROP_CONTEXT_DIST       0x0000011B
 #define TPM_CAP_PROP_DAA_INTERRUPT      0x0000011C
 #define TPM_CAP_PROP_SESSIONS           0x0000011D
-/* deprecated since v1.2 rev 94
+/* removed since v1.2 rev 94
 #define TPM_CAP_FLAG_STANY              0x0000011D
 */
 #define TPM_CAP_PROP_MAX_SESSIONS       0x0000011E
-/* deprecated since v1.2 rev 94
-#define TPM_CAP_PROP_GPIO_CHANNEL       0x0000011E
-*/
 #define TPM_CAP_PROP_CMK_RESTRICTION    0x0000011F
 #define TPM_CAP_PROP_DURATION           0x00000120
 #define TPM_CAP_PROP_ACTIVE_COUNTER     0x00000122
@@ -1841,86 +1896,6 @@ typedef struct tdTPM_DAA_SENSITIVE {
   sizeof(UINT32) + s.internalSize)
 
 /*
- * GPIO structures
- */
-
- /*
-  * TPM_GPIO_BUS ([TPM_Part2], Section 23.1)
-  * The type(s) of data transfer channels that are supported by a TPM.
-  */
-typedef UINT32 TPM_GPIO_BUS;
-#define TPM_GPIO_SINGLE         0x00000001
-#define TPM_GPIO_SMBUS          0x00000002
-#define TPM_GPIO_SMBUS_ARP      0x00000003
-
- /*
-  * TPM_GPIO_ATTRIBUTES ([TPM_Part2], Section 23.2)
-  * The attribute flags for the channel.
-  */
-/* 31-6 reserved and must be 0 */
-#define TPM_GPIO_ATTR_REDIR_KEY (1 << 5)
-#define TPM_GPIO_ATTR_REDIR     (1 << 4)
-#define TPM_GPIO_ATTR_WRITE     (1 << 3)
-#define TPM_GPIO_ATTR_READ      (1 << 2)
-#define TPM_GPIO_ATTR_PP        (1 << 1)
-#define TPM_GPIO_ATTR_AUTH      (1 << 0)
-
-/*
- * TPM_GPIO_CHANNEL ([TPM_Part2], Section 23.3)
- * Information about the types of IO permitted on the channel identified
- * by the TPM-assigned logical channel number.
- */
-#define TPM_TAG_GPIO_CHANNEL 0x0035
-typedef struct tdTPM_GPIO_CHANNEL {
-  TPM_STRUCTURE_TAG tag;
-  TPM_PLATFORM_SPECIFIC ps;
-  UINT16 channelNumber;
-  TPM_GPIO_ATTRIBUTES attr;
-  TPM_GPIO_BUS busInfo;
-  UINT32 sizeOfAddress;
-  BYTE* address;
-  UINT32 sizeOfPubKey;
-  TPM_DIGEST pubKey;
-  UINT32 sizeOfPcrInfo;
-  TPM_PCR_INFO_SHORT pcrInfo;
-} TPM_GPIO_CHANNEL;
-#define sizeof_TPM_GPIO_CHANNEL(s) (2 + 2 + 2 + 4 + 4 + 4 + s.sizeOfAddress \
-  + 4 + 20 + 4 + sizeof_TPM_PCR_INFO_SHORT(s.pcrInfo))
-#define free_TPM_GPIO_CHANNEL(s) { if (s.sizeOfAddress > 0) tpm_free(s.address); }
-
-/*
- * TPM_GPIO_AUTHORIZE ([TPM_Part2], Section 23.4)
- * The owner uses TPM_GPIO_AuthChannel command to build structures of this
- * type to authorize later use of the specified IO channel.
- */
-#define TPM_TAG_GPIO_AUTHORIZE 0x0033
-typedef struct tdTPM_GPIO_AUTHORIZE {
-  TPM_STRUCTURE_TAG tag;
-  TPM_GPIO_CHANNEL channel;
-  TPM_DIGEST blobIntegrity;
-  UINT32 additionalSize;
-  BYTE* additionalData;
-  UINT32 sensitiveSize;
-  BYTE* sensitiveData;
-} TPM_GPIO_AUTHORIZE;
-#define sizeof_TPM_GPIO_AUTHORIZE(s) (2 + sizeof_TPM_GPIO_CHANNEL(s.channel) \
-  + 20 + 4 + s.additionalSize + 4 + s.sensitiveSize)
-#define free_TPM_GPIO_AUTHORIZE(s) { free_TPM_GPIO_CHANNEL(s.channel); \
-  if (s.additionalSize > 0) tpm_free(s.additionalData); \
-  if (s.sensitiveSize > 0) tpm_free(s.sensitiveData); }
-
-/*
- * TPM_GPIO_SENSITIVE  ([TPM_Part2], Section 23.5)
- * Secret information necessary to verify the authorization of the IO channel
- * which is encrypted before inclusion in the TPM_GPIO_CHANNEL structure.
- */
-#define TPM_TAG_GPIO_SENSITIVE 0x0034
-typedef struct tdTPM_GPIO_SENSITIVE {
-  TPM_STRUCTURE_TAG tag;
-  TPM_DIGEST authData;
-} TPM_GPIO_SENSITIVE;
-
-/*
  * Redirection
  */
 
@@ -1929,7 +1904,6 @@ typedef struct tdTPM_GPIO_SENSITIVE {
   * The types of redirections.
   */
 typedef UINT32 TPM_REDIR_COMMAND;
-#define TPM_REDIR_GPIO 0x00000001
 
 /*
  * Internal Data Held By TPM
@@ -2059,7 +2033,7 @@ typedef struct tdTPM_PERMANENT_DATA {
   UINT32 noOwnerNVWrite;
   TPM_DIRVALUE DIR;
   TPM_NV_DATA_SENSITIVE *nvStorage;
-  //TPM_CMK_RESTRICTDELEGATE restrictDelegate;
+  //TPM_CMK_DELEGATE restrictDelegate;
   TPM_DAA_TPM_SEED tpmDAASeed;
   TPM_KEY_DATA keys[TPM_MAX_KEYS];
   const char *testResult;

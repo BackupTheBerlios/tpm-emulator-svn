@@ -234,12 +234,8 @@ static inline int tpm_unmarshal_BYTE_ARRAY(BYTE **ptr, UINT32 *ptr_length,
 #define tpm_unmarshal_TPM_HANDLE               tpm_unmarshal_UINT32
 #define tpm_marshal_TPM_FAMILY_OPERATION       tpm_marshal_UINT32
 #define tpm_unmarshal_TPM_FAMILY_OPERATION     tpm_unmarshal_UINT32
-#define tpm_marshal_TPM_GPIO_ATTRIBUTES        tpm_marshal_UINT32
-#define tpm_unmarshal_TPM_GPIO_ATTRIBUTES      tpm_unmarshal_UINT32
-#define tpm_marshal_TPM_CMK_RESTRICTDELEGATE   tpm_marshal_UINT32
-#define tpm_unmarshal_TPM_CMK_RESTRICTDELEGATE tpm_unmarshal_UINT32
-#define tpm_marshal_TPM_GPIO_BUS               tpm_marshal_UINT32
-#define tpm_unmarshal_TPM_GPIO_BUS             tpm_unmarshal_UINT32
+#define tpm_marshal_TPM_CMK_DELEGATE           tpm_marshal_UINT32
+#define tpm_unmarshal_TPM_CMK_DELEGATE         tpm_unmarshal_UINT32
 #define tpm_marshal_TPM_REDIR_COMMAND          tpm_marshal_UINT32
 #define tpm_unmarshal_TPM_REDIR_COMMAND        tpm_unmarshal_UINT32
 
@@ -398,12 +394,6 @@ int tpm_unmarshal_TPM_DELEGATE_OWNER_BLOB(BYTE **ptr, UINT32 *length, TPM_DELEGA
 
 int tpm_marshal_TPM_DELEGATE_KEY_BLOB(BYTE **ptr, UINT32 *length, TPM_DELEGATE_KEY_BLOB *v);
 int tpm_unmarshal_TPM_DELEGATE_KEY_BLOB(BYTE **ptr, UINT32 *length, TPM_DELEGATE_KEY_BLOB *v);
-
-int tpm_marshal_TPM_GPIO_CHANNEL(BYTE **ptr, UINT32 *length, TPM_GPIO_CHANNEL *v);
-int tpm_unmarshal_TPM_GPIO_CHANNEL(BYTE **ptr, UINT32 *length, TPM_GPIO_CHANNEL *v);
-
-int tpm_marshal_TPM_GPIO_AUTHORIZE(BYTE **ptr, UINT32 *length, TPM_GPIO_AUTHORIZE *v);
-int tpm_unmarshal_TPM_GPIO_AUTHORIZE(BYTE **ptr, UINT32 *length, TPM_GPIO_AUTHORIZE *v);
 
 int tpm_marshal_TPM_PERMANENT_FLAGS(BYTE **ptr, UINT32 *length, TPM_PERMANENT_FLAGS *v);
 int tpm_unmarshal_TPM_PERMANENT_FLAGS(BYTE **ptr, UINT32 *length, TPM_PERMANENT_FLAGS *v);

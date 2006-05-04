@@ -18,39 +18,4 @@
 #include "tpm_emulator.h"
 #include "tpm_commands.h"
 
-/*
- * GPIO ([TPM_Part3], Section 27)
- * The GPIO capability allows platform software to send and receive 
- * data from general-purpose IO pins on the TPM device.
- */
-
-TPM_RESULT TPM_GPIO_AuthChannel(  
-  TPM_ENCAUTH *ioAuth,
-  UINT32 sizeChannel,
-  TPM_GPIO_CHANNEL *channel,
-  TPM_AUTH *auth1,  
-  TPM_GPIO_AUTHORIZE *channelAuth 
-)
-{
-  info("TPM_GPIO_AuthChannel() not implemented yet");
-  
-  /* TODO: implement TPM_GPIO_AuthChannel() */
-  return TPM_FAIL;
-}
-
-TPM_RESULT TPM_GPIO_ReadWrite(  
-  UINT32 channelAuthSize,
-  UINT32 readBytes,
-  UINT32 writeBytes,
-  BYTE *writeData,
-  TPM_AUTH *auth1,  
-  TPM_COMMAND_CODE *ordinal,
-  UINT32 *readDataSize,
-  BYTE **readData  
-)
-{
-  info("TPM_GPIO_ReadWrite() not implemented yet");
-  
-  /* TODO: implement TPM_GPIO_ReadWrite() */
-  return TPM_FAIL;
-}
+/* !!! WATCH: removed since v1.2 rev 94 !!! */

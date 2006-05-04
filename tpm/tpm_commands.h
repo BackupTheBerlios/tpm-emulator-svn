@@ -837,7 +837,7 @@ TPM_RESULT TPM_CMK_CreateBlob(
  * Owner authorisation). 
  */
 TPM_RESULT TPM_CMK_SetRestrictions(  
-  TPM_CMK_RESTRICTDELEGATE restriction,
+  TPM_CMK_DELEGATE restriction,
   TPM_AUTH *auth1
 );
 
@@ -2246,63 +2246,6 @@ TPM_RESULT TPM_DAA_Sign(
   TPM_COMMAND_CODE *ordinal,
   UINT32 *outputSize,
   BYTE **outputData  
-);
-
-/*
- * GPIO ([TPM_Part3], Section 27)
- * [tpm_gpio.c]
- * The GPIO capability allows platform software to send and receive 
- * data from general-purpose IO pins on the TPM device.
- */
-
-/**
- * TPM_GPIO_AuthChannel - authorizes later use of an IO channel
- * @ioAuth: [in] The encrypted authorization data for the sealed data
- * @sizeChannel: [in] Size in bytes of channel 
- * @channel: [in] Mode for the command
- * @auth1: [in, out] Authorization protocol parameters
- * @channelAuth: [out] Computed authorization structure for this channel
- * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
- * 
- * Description: ([TPM_Part3], Section 27.1)
- * This command authorizes later use of an IO channel under restricted 
- * conditions. It builds an authorization block that is later loaded into 
- * the TPM for the TPM_GPIO_ReadWrite or TPM_SetRedirection command. 
- */
-TPM_RESULT TPM_GPIO_AuthChannel(  
-  TPM_ENCAUTH *ioAuth,
-  UINT32 sizeChannel,
-  TPM_GPIO_CHANNEL *channel,
-  TPM_AUTH *auth1,  
-  TPM_GPIO_AUTHORIZE *channelAuth 
-);
-
-/**
- * TPM_GPIO_ReadWrite - reads and/or writes to an IO channel
- * @channelAuthSize: [in] Size in bytes of channelAuth
- * @readBytes: [in] Number of bytes to be read
- * @writeBytes: [in] Number of bytes to be wriiten; size of writeData 
- * @writeData: [in] The bytes to be written to the channel
- * @auth1: [in, out] Authorization protocol parameters
- * @ordinal: [out] Command ordinal TPM_ORD_GPIO_ReadWrite
- * @readDataSize: [out] Number of bytes read from the channel; size of readData 
- * @readData: [out] Data returned from the channel
- * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
- * 
- * Description: ([TPM_Part3], Section 27.2)
- * This command reads and/or writes to an IO channel. The authorization to 
- * use this channel is either contained in the PCR state and/or Locality, 
- * or is controlled by an authorization value.
- */
-TPM_RESULT TPM_GPIO_ReadWrite(  
-  UINT32 channelAuthSize,
-  UINT32 readBytes,
-  UINT32 writeBytes,
-  BYTE *writeData,
-  TPM_AUTH *auth1,  
-  TPM_COMMAND_CODE *ordinal,
-  UINT32 *readDataSize,
-  BYTE **readData  
 );
 
 /*

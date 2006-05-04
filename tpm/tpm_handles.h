@@ -31,7 +31,7 @@
 #define INDEX_TO_KEY_HANDLE(i)         ((i) | (TPM_RT_KEY << 24))
 #define INDEX_TO_AUTH_HANDLE(i)        ((i) | (TPM_RT_AUTH << 24))
 #define INDEX_TO_TRANS_HANDLE(i)       ((i) | (TPM_RT_TRANS << 24))
-#define INDEX_TO_COUNTER_HANDLE(i)     ((i) | (TPM_RT_COUNTERS << 24))
+#define INDEX_TO_COUNTER_HANDLE(i)     ((i) | (TPM_RT_COUNTER << 24))
 #define INDEX_TO_DAA_HANDLE(i)         ((i) | (TPM_RT_DAA_TPM << 24))
 
 /*

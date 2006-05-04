@@ -90,7 +90,7 @@ TPM_SESSION_DATA *tpm_get_transport(TPM_TRANSHANDLE handle)
 TPM_COUNTER_VALUE *tpm_get_counter(TPM_COUNT_ID handle)
 {
   if (handle == TPM_INVALID_HANDLE
-      || (handle >> 24) != TPM_RT_COUNTERS
+      || (handle >> 24) != TPM_RT_COUNTER
       || (handle & 0x00ffffff) >= TPM_MAX_COUNTERS) return NULL;
   return &tpmData.permanent.data.counters[handle & 0x00ffffff];
 }

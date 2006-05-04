@@ -966,13 +966,13 @@ static TPM_RESULT execute_TPM_CMK_SetRestrictions(TPM_REQUEST *req, TPM_RESPONSE
 {
   BYTE *ptr;
   UINT32 len;
-  TPM_CMK_RESTRICTDELEGATE restriction;
+  TPM_CMK_DELEGATE restriction;
   /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
   len = req->paramSize;
-  if (tpm_unmarshal_TPM_CMK_RESTRICTDELEGATE(&ptr, &len, &restriction)
+  if (tpm_unmarshal_TPM_CMK_DELEGATE(&ptr, &len, &restriction)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
   return TPM_CMK_SetRestrictions(restriction, &req->auth1);
@@ -2694,79 +2694,6 @@ static TPM_RESULT execute_TPM_DAA_Sign(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   return res;
 }
 
-static TPM_RESULT execute_TPM_GPIO_AuthChannel(TPM_REQUEST *req, TPM_RESPONSE *rsp)
-{
-  BYTE *ptr;
-  UINT32 len;
-  TPM_ENCAUTH ioAuth;
-  UINT32 sizeChannel;
-  TPM_GPIO_CHANNEL channel;
-  TPM_GPIO_AUTHORIZE channelAuth;
-  TPM_RESULT res;
-  /* compute parameter digest */
-  tpm_compute_in_param_digest(req);
-  /* unmarshal input */
-  ptr = req->param;
-  len = req->paramSize;
-  if (tpm_unmarshal_TPM_ENCAUTH(&ptr, &len, &ioAuth)
-      || tpm_unmarshal_UINT32(&ptr, &len, &sizeChannel)
-      || tpm_unmarshal_TPM_GPIO_CHANNEL(&ptr, &len, &channel)
-      || len != 0) return TPM_BAD_PARAMETER;
-  /* execute command */
-  res = TPM_GPIO_AuthChannel(&ioAuth, sizeChannel, &channel, &req->auth1, &channelAuth);
-  if (res != TPM_SUCCESS) return res;
-  /* marshal output */
-  rsp->paramSize = len = sizeof_TPM_GPIO_AUTHORIZE(channelAuth);
-  rsp->param = ptr = tpm_malloc(len);
-  if (ptr == NULL
-      || tpm_marshal_TPM_GPIO_AUTHORIZE(&ptr, &len, &channelAuth)) {
-    tpm_free(rsp->param);
-    res = TPM_FAIL;
-  }
-  free_TPM_GPIO_AUTHORIZE(channelAuth);
-  return res;
-}
-
-static TPM_RESULT execute_TPM_GPIO_ReadWrite(TPM_REQUEST *req, TPM_RESPONSE *rsp)
-{
-  BYTE *ptr;
-  UINT32 len;
-  UINT32 channelAuthSize;
-  UINT32 readBytes;
-  UINT32 writeBytes;
-  BYTE *writeData;
-  TPM_COMMAND_CODE ordinal;
-  UINT32 readDataSize;
-  BYTE *readData = NULL;
-  TPM_RESULT res;
-  /* compute parameter digest */
-  tpm_compute_in_param_digest(req);
-  /* unmarshal input */
-  ptr = req->param;
-  len = req->paramSize;
-  if (tpm_unmarshal_UINT32(&ptr, &len, &channelAuthSize)
-      || tpm_unmarshal_UINT32(&ptr, &len, &readBytes)
-      || tpm_unmarshal_UINT32(&ptr, &len, &writeBytes)
-      || tpm_unmarshal_BLOB(&ptr, &len, &writeData, writeBytes)
-      || len != 0) return TPM_BAD_PARAMETER;
-  /* execute command */
-  res = TPM_GPIO_ReadWrite(channelAuthSize, readBytes, writeBytes, writeData, 
-    &req->auth1, &ordinal, &readDataSize, &readData);
-  if (res != TPM_SUCCESS) return res;
-  /* marshal output */
-  rsp->paramSize = len = 4 + 4 + readDataSize;
-  rsp->param = ptr = tpm_malloc(len);
-  if (ptr == NULL
-      || tpm_marshal_TPM_COMMAND_CODE(&ptr, &len, ordinal)
-      || tpm_marshal_UINT32(&ptr, &len, readDataSize)
-      || tpm_marshal_BLOB(&ptr, &len, readData, readDataSize)) {
-    tpm_free(rsp->param);
-    res = TPM_FAIL;
-  }
-  tpm_free(readData);
-  return res;
-}
-
 static TPM_RESULT execute_TPM_EvictKey(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
   BYTE *ptr;
@@ -3759,16 +3686,6 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
     case TPM_ORD_DAA_Sign:
       debug("[TPM_ORD_DAA_Sign]");
       res = execute_TPM_DAA_Sign(req, rsp);
-    break;
-
-    case TPM_ORD_GPIO_AuthChannel:
-      debug("[TPM_ORD_GPIO_AuthChannel]");
-      res = execute_TPM_GPIO_AuthChannel(req, rsp);
-    break;
-
-    case TPM_ORD_GPIO_ReadWrite:
-      debug("[TPM_ORD_GPIO_ReadWrite]");
-      res = execute_TPM_GPIO_ReadWrite(req, rsp);
     break;
 
     case TPM_ORD_EvictKey:

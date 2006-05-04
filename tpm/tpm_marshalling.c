@@ -1070,62 +1070,6 @@ int tpm_unmarshal_TPM_DELEGATE_KEY_BLOB(BYTE **ptr, UINT32 *length, TPM_DELEGATE
   return 0;
 }
 
-int tpm_marshal_TPM_GPIO_CHANNEL(BYTE **ptr, UINT32 *length, TPM_GPIO_CHANNEL *v)
-{
-  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
-      || tpm_marshal_TPM_PLATFORM_SPECIFIC(ptr, length, v->ps)
-      || tpm_marshal_UINT16(ptr, length, v->channelNumber)
-      || tpm_marshal_TPM_GPIO_ATTRIBUTES(ptr, length, v->attr)
-      || tpm_marshal_TPM_GPIO_BUS(ptr, length, v->busInfo)
-      || tpm_marshal_UINT32(ptr, length, v->sizeOfAddress)
-      || tpm_marshal_BLOB(ptr, length, v->address, v->sizeOfAddress)
-      || tpm_marshal_UINT32(ptr, length, v->sizeOfPubKey)
-      || tpm_marshal_TPM_DIGEST(ptr, length, &v->pubKey)
-      || tpm_marshal_UINT32(ptr, length, v->sizeOfPcrInfo)
-      || tpm_marshal_TPM_PCR_INFO_SHORT(ptr, length, &v->pcrInfo)) return -1;
-  return 0;
-}
-
-int tpm_unmarshal_TPM_GPIO_CHANNEL(BYTE **ptr, UINT32 *length, TPM_GPIO_CHANNEL *v)
-{
-  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
-      || tpm_unmarshal_TPM_PLATFORM_SPECIFIC(ptr, length, &v->ps)
-      || tpm_unmarshal_UINT16(ptr, length, &v->channelNumber)
-      || tpm_unmarshal_TPM_GPIO_ATTRIBUTES(ptr, length, &v->attr)
-      || tpm_unmarshal_TPM_GPIO_BUS(ptr, length, &v->busInfo)
-      || tpm_unmarshal_UINT32(ptr, length, &v->sizeOfAddress)
-      || tpm_unmarshal_BLOB(ptr, length, &v->address, v->sizeOfAddress)
-      || tpm_unmarshal_UINT32(ptr, length, &v->sizeOfPubKey)
-      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->pubKey)
-      || tpm_unmarshal_UINT32(ptr, length, &v->sizeOfPcrInfo)
-      || tpm_unmarshal_TPM_PCR_INFO_SHORT(ptr, length, &v->pcrInfo)) return -1;
-  return 0;
-}
-
-int tpm_marshal_TPM_GPIO_AUTHORIZE(BYTE **ptr, UINT32 *length, TPM_GPIO_AUTHORIZE *v)
-{
-  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
-      || tpm_marshal_TPM_GPIO_CHANNEL(ptr, length, &v->channel)
-      || tpm_marshal_TPM_DIGEST(ptr, length, &v->blobIntegrity)
-      || tpm_marshal_UINT32(ptr, length, v->additionalSize)
-      || tpm_marshal_BLOB(ptr, length, v->additionalData, v->additionalSize)
-      || tpm_marshal_UINT32(ptr, length, v->sensitiveSize)
-      || tpm_marshal_BLOB(ptr, length, v->sensitiveData, v->sensitiveSize)) return -1;
-  return 0;
-}
-
-int tpm_unmarshal_TPM_GPIO_AUTHORIZE(BYTE **ptr, UINT32 *length, TPM_GPIO_AUTHORIZE *v)
-{
-  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
-      || tpm_unmarshal_TPM_GPIO_CHANNEL(ptr, length, &v->channel)
-      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->blobIntegrity)
-      || tpm_unmarshal_UINT32(ptr, length, &v->additionalSize)
-      || tpm_unmarshal_BLOB(ptr, length, &v->additionalData, v->additionalSize)
-      || tpm_unmarshal_UINT32(ptr, length, &v->sensitiveSize)
-      || tpm_unmarshal_BLOB(ptr, length, &v->sensitiveData, v->sensitiveSize)) return -1;
-  return 0;
-}
-
 int tpm_marshal_TPM_PERMANENT_FLAGS(BYTE **ptr, UINT32 *length, TPM_PERMANENT_FLAGS *v)
 {
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)

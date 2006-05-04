@@ -122,7 +122,7 @@ TPM_RESULT TPM_CMK_CreateBlob(
 }
 
 TPM_RESULT TPM_CMK_SetRestrictions(  
-  TPM_CMK_RESTRICTDELEGATE restriction,
+  TPM_CMK_DELEGATE restriction,
   TPM_AUTH *auth1
 )
 {

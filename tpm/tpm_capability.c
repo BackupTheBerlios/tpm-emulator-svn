@@ -334,7 +334,7 @@ TPM_RESULT cap_flag(UINT32 subCapSize, BYTE *subCap,
         return TPM_FAIL;
       }
       return TPM_SUCCESS;
-/* deprecated since v1.2 rev 94
+/* removed since v1.2 rev 94
     case TPM_CAP_FLAG_STANY:
       debug("[TPM_CAP_FLAG_STANY]");
       *respSize = len = sizeof_TPM_STANY_FLAGS(tpmData.stany.flags);
