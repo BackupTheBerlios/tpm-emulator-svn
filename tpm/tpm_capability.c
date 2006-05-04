@@ -55,7 +55,7 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 {
   UINT32 i, j, property;
 
-  if (tpm_unmarshal_UINT32(&subCap, &subCapSize, &property)) 
+  if (tpm_unmarshal_UINT32(&subCap, &subCapSize, &property))
     return TPM_BAD_MODE;
   switch (property) {
     case TPM_CAP_PROP_PCR:
@@ -280,7 +280,12 @@ TPM_RESULT cap_alg(UINT32 subCapSize, BYTE *subCap,
   TPM_ALGORITHM_ID id;
   if (tpm_unmarshal_TPM_ALGORITHM_ID(&subCap, &subCapSize, &id))
     return TPM_BAD_MODE;
-  return return_BOOL(respSize, resp, id == TPM_ALG_RSA);
+  switch (id) {
+    case TPM_ALG_RSA:
+      return return_BOOL(respSize, resp, TRUE);
+    default:
+      return return_BOOL(respSize, resp, FALSE);
+  }
 }
 
 TPM_RESULT cap_pid(UINT32 subCapSize, BYTE *subCap,
@@ -349,7 +354,7 @@ TPM_RESULT cap_loaded(UINT32 subCapSize, BYTE *subCap,
   int i;
   BOOL free_space = FALSE;
   TPM_KEY_PARMS parms;
-  if (tpm_unmarshal_TPM_KEY_PARMS(&subCap, &subCapSize, &parms)) 
+  if (tpm_unmarshal_TPM_KEY_PARMS(&subCap, &subCapSize, &parms))
     return TPM_BAD_MODE;
   for (i = 0; i < TPM_MAX_KEYS; i++) 
     if (!tpmData.permanent.data.keys[i].valid) free_space = TRUE;
@@ -361,6 +366,20 @@ TPM_RESULT cap_loaded(UINT32 subCapSize, BYTE *subCap,
   return return_BOOL(respSize, resp, FALSE);
 }
 
+TPM_RESULT cap_auth_encrypt(UINT32 subCapSize, BYTE *subCap,
+                            UINT32 *respSize, BYTE **resp)
+{
+  TPM_ALGORITHM_ID id;
+  if (tpm_unmarshal_TPM_ALGORITHM_ID(&subCap, &subCapSize, &id))
+    return TPM_BAD_MODE;
+  switch (id) {
+    case TPM_ALG_XOR:
+      return return_BOOL(respSize, resp, TRUE);
+    default:
+      return return_BOOL(respSize, resp, FALSE);
+  }
+}
+
 TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize, 
                              BYTE *subCap, UINT32 *respSize, BYTE **resp)
 {
@@ -368,27 +387,27 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
   switch (capArea) {
 
     case TPM_CAP_ORD:
-      debug("[TPM_CAP_ORD]"); 
+      debug("[TPM_CAP_ORD]");
       return cap_ord(subCapSize, subCap, respSize, resp);
 
     case TPM_CAP_ALG:
-      debug("[TPM_CAP_ALG]"); 
+      debug("[TPM_CAP_ALG]");
       return cap_alg(subCapSize, subCap, respSize, resp);
 
     case TPM_CAP_PID:
-      debug("[TPM_CAP_PID]"); 
+      debug("[TPM_CAP_PID]");
       return cap_pid(subCapSize, subCap, respSize, resp);
 
     case TPM_CAP_FLAG:
       debug("[TPM_CAP_FLAG]");
-      return cap_flag(subCapSize, subCap, respSize, resp); 
+      return cap_flag(subCapSize, subCap, respSize, resp);
 
     case TPM_CAP_PROPERTY:
       debug("[TPM_CAP_PROPERTY]");
       return cap_property(subCapSize, subCap, respSize, resp);
 
     case TPM_CAP_VERSION:
-      debug("[TPM_CAP_VERSION]"); 
+      debug("[TPM_CAP_VERSION]");
       return cap_version(respSize, resp);
 
     case TPM_CAP_KEY_HANDLE:
@@ -398,7 +417,7 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
 
     case TPM_CAP_CHECK_LOADED:
       debug("[TPM_CAP_CHECK_LOADED]");
-      return cap_loaded(subCapSize, subCap, respSize, resp); 
+      return cap_loaded(subCapSize, subCap, respSize, resp);
 
     case TPM_CAP_SYM_MODE:
       debug("[TPM_CAP_SYM_MODE]");
@@ -407,30 +426,30 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
 
     case TPM_CAP_KEY_STATUS:
       debug("[TPM_CAP_KEY_STATUS]");
-      /* TODO: TPM_CAP_KEY_STATUS */   
+      /* TODO: TPM_CAP_KEY_STATUS */
       return TPM_FAIL;
 
     case TPM_CAP_NV_LIST:
       debug("[TPM_CAP_NV_LIST]");
-      /* TODO: TPM_CAP_NV_LIST */ 
+      /* TODO: TPM_CAP_NV_LIST */
       return TPM_FAIL;
 
     case TPM_CAP_MFR:
-      debug("[TPM_CAP_MFR]"); 
+      debug("[TPM_CAP_MFR]");
       return cap_mfr(respSize, resp);
 
     case TPM_CAP_NV_INDEX:
       debug("[TPM_CAP_NV_INDEX]");
-      /* TODO: TPM_CAP_NV_INDEX */  
+      /* TODO: TPM_CAP_NV_INDEX */
       return TPM_FAIL;
 
     case TPM_CAP_TRANS_ALG:
-      debug("[TPM_CAP_TRANS_ALG]"); 
+      debug("[TPM_CAP_TRANS_ALG]");
       /* TODO: TPM_CAP_TRANS_ALG */
       return TPM_FAIL;
 
     case TPM_CAP_HANDLE:
-      debug("[TPM_CAP_HANDLE]"); 
+      debug("[TPM_CAP_HANDLE]");
       return cap_handle(subCapSize, subCap, respSize, resp);
 
     case TPM_CAP_TRANS_ES:
@@ -440,8 +459,7 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
 
     case TPM_CAP_AUTH_ENCRYPT:
       debug("[TPM_CAP_AUTH_ENCRYPT]");
-      /* TODO: TPM_CAP_AUTH_ENCRYPT */
-      return TPM_FAIL;
+      return cap_auth_encrypt(subCapSize, subCap, respSize, resp);
 
     case TPM_CAP_SELECT_SIZE:
       debug("[TPM_CAP_SELECT_SIZE]");

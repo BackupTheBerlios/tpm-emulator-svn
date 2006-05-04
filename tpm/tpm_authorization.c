@@ -201,9 +201,12 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
   session = tpm_get_auth(*authHandle);
   if (session == NULL) return TPM_RESOURCES;
   /* check whether ADIP encryption scheme is supported */
-  if (((entityType & 0xFF00) != TPM_ET_XOR) 
-    && ((entityType & 0xFF00) != TPM_ET_AES128))
-	return TPM_INAPPROPRIATE_ENC;
+  switch (entityType & 0xFF00) {
+    case TPM_ET_XOR:
+      break;
+    default:
+      return TPM_INAPPROPRIATE_ENC;
+  }
   /* get resource handle and the dedicated secret */
   switch (entityType & 0x00FF) {
     case TPM_ET_KEYHANDLE:
