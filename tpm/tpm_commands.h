@@ -335,12 +335,48 @@ TPM_RESULT TSC_ResetEstablishmentBit(void);
  * Description: ([TPM_Part3], Section 7.1)
  * This command provides current information regarding the TPM.
  */
-TPM_RESULT TPM_GetCapability(  
+TPM_RESULT TPM_GetCapability(
   TPM_CAPABILITY_AREA capArea,
   UINT32 subCapSize,
-  BYTE *subCap,  
+  BYTE *subCap,
   UINT32 *respSize,
-  BYTE **resp  
+  BYTE **resp
+);
+
+/**
+ * TPM_SetCapability - sets values in the TPM
+ * @capArea: [in] Partition of capabilities to be set
+ * @subCapSize: [in] Size of subCap parameter
+ * @subCap: [in] Further definition of information
+ * @setValueSize: [in] Size of the value to set
+ * @setValue: [in] Value to set
+ * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
+ * 
+ * Description: ([TPM_Part3], Section 7.2)
+ * This command sets values in the TPM.
+ */
+TPM_RESULT TPM_SetCapability(
+  TPM_CAPABILITY_AREA capArea,
+  UINT32 subCapSize,
+  BYTE *subCap,
+  UINT32 setValueSize,
+  BYTE *setValue
+);
+
+/**
+ * TPM_GetCapabilityOwner - deprecated since v1.2 rev 94
+ * @version: [out] Properly filled out version structure
+ * @non_volatile_flags: [out] Current state of the non-volatile flags
+ * @volatile_flags: [out] Current state of the volatile flags
+ * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
+ * 
+ * Description: ([TPM_Part3], Section 7.3)
+ * This command is deprecated.
+ */
+TPM_RESULT TPM_GetCapabilityOwner(
+  TPM_VERSION *version,
+  UINT32 *non_volatile_flags,
+  UINT32 *volatile_flags
 );
 
 /*
@@ -1952,9 +1988,11 @@ TPM_RESULT TPM_FlushSpecific(
  * This is a one time command that sets the TPM clock type when it is 
  * installed on a platform during platform manufacturing.
  */
+/* removed since v1.2 rev 94
 TPM_RESULT TPM_SetTickType(  
   TPM_TICKTYPE tickType
 );
+*/
 
 /**
  * TPM_GetTicks - provides the current tick count

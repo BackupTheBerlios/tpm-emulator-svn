@@ -112,7 +112,9 @@ void tpm_init_data(void)
     init_pcr_attr(i, TRUE, 0x00, 0x00);
   }
   /* set tick type */
+/* removed since v1.2 rev 94
   tpmData.permanent.data.tickType = TICK_INC;
+*/
 #ifdef TPM_GENERATE_EK
   /* generate a new endorsement key */
   rsa_generate_key(&tpmData.permanent.data.endorsementKey, 2048);

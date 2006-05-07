@@ -513,13 +513,6 @@ typedef struct tdTPM_CMK_MA_APPROVAL {
 #define TPM_TAG_RSP_AUTH1_COMMAND       0x00C5
 #define TPM_TAG_RSP_AUTH2_COMMAND       0x00C6
 
-
-
-/* !!!!! TODO: apply changes from v1.2 rev94 to the lines below !!!!! */
-
-
-
-
 /*
  * Ordinals ([TPM_Part2], Section 17)
  * The command ordinals provide the index value for each command.
@@ -560,13 +553,17 @@ typedef struct tdTPM_CMK_MA_APPROVAL {
 #define TPM_ORD_DirRead                         26
 #define TPM_ORD_CMK_CreateBlob                  27
 #define TPM_ORD_CMK_SetRestrictions             28
+#define TPM_ORD_CMK_ApproveMA                   29 /* added since v1.2 rev 94 */
 #define TPM_ORD_UnBind                          30
 #define TPM_ORD_CreateWrapKey                   31
 #define TPM_ORD_LoadKey                         32
 #define TPM_ORD_GetPubKey                       33
 #define TPM_ORD_EvictKey                        34
 #define TPM_ORD_KeyControlOwner                 35
+#define TPM_ORD_CMK_ConvertMigration            36 /* added since v1.2 rev 94 */
+#define TPM_ORD_MigrateKey                      37 /* added since v1.2 rev 94 */
 #define TPM_ORD_CreateMigrationBlob             40
+#define TPM_ORD_DAA_Join                        41
 #define TPM_ORD_ConvertMigrationBlob            42
 #define TPM_ORD_AuthorizeMigrationKey           43
 #define TPM_ORD_CreateMaintenanceArchive        44
@@ -574,14 +571,21 @@ typedef struct tdTPM_CMK_MA_APPROVAL {
 #define TPM_ORD_KillMaintenanceFeature          46
 #define TPM_ORD_LoadManuMaintPub                47
 #define TPM_ORD_ReadManuMaintPub                48
+#define TPM_ORD_DAA_Sign                        49
 #define TPM_ORD_CertifyKey                      50
 #define TPM_ORD_CertifyKey2                     51
 #define TPM_ORD_Sign                            60
+#define TPM_ORD_Sealx                           61 /* added since v1.2 rev 94 */
+#define TPM_ORD_Quote2                          62 /* added since v1.2 rev 94 */
+#define TPM_ORD_SetCapability                   63 /* added since v1.2 rev 94 */
+#define TPM_ORD_ResetLockValue                  64 /* added since v1.2 rev 94 */
 #define TPM_ORD_LoadKey2                        65
 #define TPM_ORD_GetRandom                       70
 #define TPM_ORD_StirRandom                      71
 #define TPM_ORD_SelfTestFull                    80
+/* removed since v1.2 rev 94
 #define TPM_ORD_CertifySelfTest                 82
+*/
 #define TPM_ORD_ContinueSelfTest                83
 #define TPM_ORD_GetTestResult                   84
 #define TPM_ORD_Reset                           90
@@ -589,7 +593,9 @@ typedef struct tdTPM_CMK_MA_APPROVAL {
 #define TPM_ORD_DisableOwnerClear               92
 #define TPM_ORD_ForceClear                      93
 #define TPM_ORD_DisableForceClear               94
+/* removed since v1.2 rev 94
 #define TPM_ORD_GetCapabilitySigned             100
+*/
 #define TPM_ORD_GetCapability                   101
 #define TPM_ORD_GetCapabilityOwner              102
 #define TPM_ORD_OwnerSetDisable                 110
@@ -609,11 +615,15 @@ typedef struct tdTPM_CMK_MA_APPROVAL {
 #define TPM_ORD_CreateRevocableEK               127
 #define TPM_ORD_RevokeTrust                     128
 #define TPM_ORD_OwnerReadInternalPub            129
+/* removed since v1.2 rev 94
 #define TPM_ORD_GetAuditEvent                   130
 #define TPM_ORD_GetAuditEventSigned             131
+*/
 #define TPM_ORD_GetAuditDigest                  133
 #define TPM_ORD_GetAuditDigestSigned            134
+/* removed since v1.2 rev 94
 #define TPM_ORD_GetOrdinalAuditStatus           140
+*/
 #define TPM_ORD_SetOrdinalAuditStatus           141
 #define TPM_ORD_Terminate_Handle                150
 #define TPM_ORD_Init                            151
@@ -654,12 +664,11 @@ typedef struct tdTPM_CMK_MA_APPROVAL {
 #define TPM_ORD_EstablishTransport              230
 #define TPM_ORD_ExecuteTransport                231
 #define TPM_ORD_ReleaseTransportSigned          232
+/* removed since v1.2 rev 94
 #define TPM_ORD_SetTickType                     240
+*/
 #define TPM_ORD_GetTicks                        241
 #define TPM_ORD_TickStampBlob                   242
-#define TPM_ORD_DAA_Join                        41
-#define TPM_ORD_DAA_Sign                        49
-
 #define TPM_ORD_MAX                             256
 
 /*
@@ -723,9 +732,10 @@ typedef BYTE TPM_LOCALITY_SELECTION;
  * TPM_PCR_INFO ([TPM_Part2], Section 8.3)
  * Contains the information related to the wrapping of a key or the sealing
  * of data, to a set of PCRs.
- * The TPM_PCR_INFO_LONG ([TPM_Part2], Section 8.4) includes information 
- * necessary to properly define the configuration that creates the blob using 
- * the PCR selection.
+ *
+ * TPM_PCR_INFO_LONG ([TPM_Part2], Section 8.4)
+ * This structure includes information necessary to properly define the
+ * configuration that creates the blob using the PCR selection.
  */
 #define TPM_TAG_PCR_INFO_LONG 0x0006
 typedef struct tdTPM_PCR_INFO {
@@ -779,7 +789,7 @@ typedef struct tdTPM_PCR_ATTRIBUTES {
 #define TPM_TAG_STORED_DATA12 0x0016
 typedef struct tdTPM_STORED_DATA {
   TPM_STRUCTURE_TAG tag;
-  UINT16 fill;
+  TPM_ENTITY_TYPE et; /* renamed since v1.2 rev 94 */
   UINT32 sealInfoSize;
   TPM_PCR_INFO sealInfo;
   UINT32 encDataSize;
@@ -895,7 +905,7 @@ typedef struct tdTPM_STORE_PUBKEY {
  * The TPM_KEY structure provides a mechanism to transport the entire
  * asymmetric key pair. The private portion of the key is always encrypted.
  * The TPM_KEY12 ([TPM_Part2], Section 10.3) structure uses the new
- * PCR_INFO_LONG structures and the new structure tagging.
+ * TPM_PCR_INFO_LONG structures and the new structure tagging.
  */
 
 #define TPM_TAG_KEY12 0x0028
@@ -962,7 +972,7 @@ typedef struct tdTPM_STORE_ASYMKEY {
 /*
  * TPM_MIGRATE_ASYMKEY ([TPM_Part2], Section 10.8)
  * The TPM_MIGRATE_ASYMKEY structure provides the area to identify the private
- * key factors of a asymmetric key while the key is migrating between TPM.
+ * key factors of a asymmetric key while the key is migrating between TPM's.
  */
 typedef struct tdTPM_MIGRATE_ASYMKEY {
   TPM_PAYLOAD_TYPE payload;
@@ -1011,7 +1021,7 @@ typedef struct tdTPM_AUTH {
   BYTE digest[20];
 } TPM_AUTH;
 
-/*
+/* !!! WATCH: order changed since v1.2 rev 94 !!!
  * TPM_CERTIFY_INFO Structure ([TPM_Part2], Section 11.1)
  * TPM_CERTIFY_INFO2 Structure ([TPM_Part2], Section 11.2)
  * This structure provides the mechanism to provide a signature with a TPM
@@ -1020,7 +1030,8 @@ typedef struct tdTPM_AUTH {
 #define TPM_TAG_CERTIFY_INFO2 0x0029
 typedef struct tdTPM_CERTIFY_INFO {
   TPM_STRUCTURE_TAG tag;
-  UINT16 fill;
+  BYTE fill; /* changed since v1.2 rev 94 */
+  TPM_PAYLOAD_TYPE payloadType; /* added since v1.2 rev 94 */
   TPM_KEY_USAGE keyUsage;
   TPM_KEY_FLAGS keyFlags;
   TPM_AUTH_DATA_USAGE authDataUsage;
@@ -1028,10 +1039,10 @@ typedef struct tdTPM_CERTIFY_INFO {
   TPM_DIGEST pubkeyDigest;
   TPM_NONCE data;
   BOOL parentPCRStatus;
+  UINT32 PCRInfoSize;
+  TPM_PCR_INFO PCRInfo; /* FIXME: should be TPM_PCR_INFO_SHORT */
   UINT32 migrationAuthoritySize;
   BYTE* migrationAuthority;
-  UINT32 PCRInfoSize;
-  TPM_PCR_INFO PCRInfo;
 } TPM_CERTIFY_INFO;
 #define sizeof_TPM_CERTIFY_INFO(s) (4 + 2 + 4 + 1 + \
   sizeof_TPM_KEY_PARMS(s.algorithmParms) + 20 + 20 + 1 + 4 \
@@ -1050,6 +1061,19 @@ typedef struct tdTPM_QUOTE_INFO {
   TPM_COMPOSITE_HASH digestValue;
   TPM_NONCE externalData;
 } TPM_QUOTE_INFO;
+
+/*
+ * TPM_QUOTE_INFO2 Structure ([TPM_Part2], Section 11.4)
+ * This structure provides the mechanism for the TPM to quote the
+ * current values of a list of PCRs.
+ */
+#define TPM_TAG_QUOTE_INFO2 0x0036
+typedef struct tdTPM_QUOTE_INFO2 {
+  TPM_STRUCTURE_TAG tag;
+  BYTE fixed[4];
+  TPM_NONCE externalData;
+  TPM_PCR_INFO_SHORT infoShort;
+} TPM_QUOTE_INFO2;
 
 /*
  * Identity Structures
@@ -1109,7 +1133,7 @@ typedef struct tdTPM_IDENTITY_CONTENTS {
 /*
  * TPM_IDENTITY_REQ ([TPM_Part2], Section 12.6)
  * This structure is sent by the TSS to the Privacy CA to create the
- * identity credential.
+ * identity credential. This structure is informative only.
  */
 typedef struct tdTPM_IDENTITY_REQ {
   UINT32 asymSize;
@@ -1171,18 +1195,23 @@ typedef struct tdTPM_SYM_CA_ATTESTATION {
 typedef struct tdTPM_CURRENT_TICKS {
   TPM_STRUCTURE_TAG tag;
   UINT64 currentTicks;
+/* removed since v1.2 rev 94
   UINT16 tickType;
+*/
   UINT16 tickRate;
+/* removed since v1.2 rev 94
   UINT16 tickSecurity;
+*/
   TPM_NONCE tickNonce;
 } TPM_CURRENT_TICKS;
-#define sizeof_TPM_CURRENT_TICKS(s) (2 + 8 + 2 + 2 + 2 + 20)
+#define sizeof_TPM_CURRENT_TICKS(s) (2 + 8 + 2 + 20)
 
 /*
  * TPM_TICKTYPE values ([TPM_Part2], Section 15.1.1)
  * These values indicate to challengers of the TPM the mechanism that the
  * TPM and the platform use to maintain the tick values inside of the TPM.
  */
+/* removed since v1.2 rev 94
 typedef BYTE TPM_TICKTYPE;
 #define TICK_INC                0x00
 #define TICK_INC_SAVE           0x01
@@ -1195,17 +1224,14 @@ typedef BYTE TPM_TICKTYPE;
 #define TICK_ALWAYS             0x08
 #define TICK_SEC_NO_CHECK       0x01
 #define TICK_SEC_RATE_CHECK     0x02
+*/
 
 /*
  * Transport Structures
  */
 
-#define TPM_TRANSPORT_ENCRYPT   0x01
-#define TPM_TRANSPORT_LOG       0x02
-#define TPM_TRANSPORT_EXCL_ATTR 0x04
-
 /*
- * TPM _TRANSPORT_PUBLIC ([TPM_Part2], Section 13.1)
+ * TPM_TRANSPORT_PUBLIC ([TPM_Part2], Section 13.1)
  * The public information relative to a transport session.
  */
 #define TPM_TAG_TRANSPORT_PUBLIC 0x001E
@@ -1217,6 +1243,11 @@ typedef struct tdTPM_TRANSPORT_PUBLIC {
 } TPM_TRANSPORT_PUBLIC;
 #define sizeof_TPM_TRANSPORT_PUBLIC(s) (2 + 4 + 4 + 2)
 
+/* TPM_TRANSPORT_ATTRIBUTES Definitions ([TPM_Part2], Section 13.1.1) */
+#define TPM_TRANSPORT_ENCRYPT   0x00000001
+#define TPM_TRANSPORT_LOG       0x00000002
+#define TPM_TRANSPORT_EXCLUSIVE 0x00000004 /* name changed since v1.2 rev 94 */
+
 /*
  * TPM_TRANSPORT_INTERNAL ([TPM_Part2], Section 13.2)
  * The internal information regarding transport session.
@@ -1227,7 +1258,7 @@ typedef struct tdTPM_TRANSPORT_INTERNAL {
   TPM_AUTHDATA authData;
   TPM_TRANSPORT_PUBLIC transPublic;
   TPM_TRANSHANDLE transHandle;
-  TPM_NONCE transEven;
+  TPM_NONCE transNonceEven; /* name changed since v1.2 rev 94 */
   TPM_DIGEST transDigest;
 } TPM_TRANSPORT_INTERNAL;
 #define sizeof_TPM_TRANSPORT_INTERNAL(s) (2 + 20 + 4 + 20 + 20 \
@@ -1240,14 +1271,17 @@ typedef struct tdTPM_TRANSPORT_INTERNAL {
 #define TPM_TAG_TRANSPORT_LOG_IN 0x0010
 typedef struct tdTPM_TRANSPORT_LOG_IN {
   TPM_STRUCTURE_TAG tag;
+/* removed since v1.2 rev 94
   TPM_COMMAND_CODE ordinal;
+*/
   TPM_DIGEST parameters;
   TPM_DIGEST pubKeyHash;
 } TPM_TRANSPORT_LOG_IN;
-#define sizeof_TPM_TRANSPORT_LOG_IN(s) (2 + 4 + 2*20)
+#define sizeof_TPM_TRANSPORT_LOG_IN(s) (2 + 2*20)
 
 /*
  * TPM_TRANSPORT_LOG_OUT structure ([TPM_Part2], Section 13.4)
+ * This structure is in use for output log calculations.
  * This structure is in use for the INPUT logging during releaseTransport.
  */
 #define TPM_TAG_TRANSPORT_LOG_OUT 0x0011
@@ -1283,11 +1317,13 @@ typedef struct tdTPM_TRANSPORT_AUTH {
 #define TPM_TAG_AUDIT_EVENT_IN 0x0012
 typedef struct tdTPM_AUDIT_EVENT_IN {
   TPM_STRUCTURE_TAG tag;
+/* removed since v1.2 rev 94
   TPM_COMMAND_CODE ordinal;
+*/
   TPM_DIGEST inputParms;
   TPM_COUNTER_VALUE auditCount;
 } TPM_AUDIT_EVENT_IN;
-#define sizeof_TPM_AUDIT_EVENT_IN(s) (2 + 4 + 20 \
+#define sizeof_TPM_AUDIT_EVENT_IN(s) (2 + 20 \
   + sizeof_TPM_COUNTER_VALUE(s.auditCount))
 
 /*
@@ -1298,13 +1334,17 @@ typedef struct tdTPM_AUDIT_EVENT_IN {
 #define TPM_TAG_AUDIT_EVENT_OUT 0x0013
 typedef struct tdTPM_AUDIT_EVENT_OUT {
   TPM_STRUCTURE_TAG tag;
+/* removed since v1.2 rev 94
   TPM_COMMAND_CODE ordinal;
+*/
   TPM_DIGEST outputParms;
   TPM_COUNTER_VALUE auditCount;
+/* removed since v1.2 rev 94
   TPM_RESULT returncode;
+*/
 } TPM_AUDIT_EVENT_OUT;
-#define sizeof_TPM_AUDIT_EVENT_OUT(s) (2 + 4 + 20 \
-  + sizeof_TPM_COUNTER_VALUE(s.auditCount) + 4)
+#define sizeof_TPM_AUDIT_EVENT_OUT(s) (2 + 20 \
+  + sizeof_TPM_COUNTER_VALUE(s.auditCount))
 
 /*
  * TPM Return Codes ([TPM_Part2], Section 16)
@@ -1390,7 +1430,7 @@ typedef struct tdTPM_AUDIT_EVENT_OUT {
 #define TPM_DELEGATE_LOCK               (TPM_BASE + 75)
 #define TPM_DELEGATE_FAMILY             (TPM_BASE + 76)
 #define TPM_DELEGATE_ADMIN              (TPM_BASE + 77)
-#define TPM_TRANSPORT_EXCLUSIVE         (TPM_BASE + 78)
+#define TPM_TRANSPORT_NOTEXCLUSIVE      (TPM_BASE + 78)
 #define TPM_OWNER_CONTROL               (TPM_BASE + 79)
 #define TPM_DAA_RESOURCES               (TPM_BASE + 80)
 #define TPM_DAA_INPUT_DATA0             (TPM_BASE + 81)
@@ -1955,7 +1995,9 @@ typedef struct tdTPM_STCLEAR_FLAGS {
   BOOL disableForceClear;
   BOOL physicalPresence;
   BOOL physicalPresenceLock;
+/* removed since v1.2 rev 94
   BOOL tableAdmin[TPM_MAX_FAMILY];
+*/
   BOOL bGlobalLock;
 } TPM_STCLEAR_FLAGS;
 #define sizeof_TPM_STCLEAR_FLAGS(s) (2 + 5 + TPM_MAX_FAMILY)
@@ -1970,6 +2012,7 @@ typedef struct tdTPM_STANY_FLAGS {
   BOOL postInitialise;
   TPM_MODIFIER_INDICATOR localityModifier;
   BOOL transportExclusive;
+  BOOL TOSPresent; /* added since v1.2 rev 94 */
 } TPM_STANY_FLAGS;
 #define sizeof_TPM_STANY_FLAGS(s) (2 + 1 + 4 + 1)
 
@@ -1998,9 +2041,11 @@ typedef struct tdTPM_KEY_DATA {
  * TPM_PERMANENT_DATA ([TPM_Part2], Section 7.4)
  * This structure contains the data fields that are permanently held in
  * the TPM and not affected by TPM_Startup(any).
+ *
+ * This is an informative structure and not normative.
  */
 #define TPM_TAG_PERMANENT_DATA          0x0022
-#define TPM_MAX_COUNTERS                4           // WATCH: TPM_MIN_COUNTERS
+#define TPM_MAX_COUNTERS                4
 #define TPM_DELEGATE_KEY                TPM_KEY
 #define TPM_MAX_NV_WRITE_NOOWNER        64
 #define TPM_MAX_KEYS                    10
@@ -2021,7 +2066,7 @@ typedef struct tdTPM_PERMANENT_DATA {
   //TPM_KEY delegateKey;
   TPM_ACTUAL_COUNT auditMonotonicCounter;
   TPM_COUNTER_VALUE counters[TPM_MAX_COUNTERS];
-  TPM_TICKTYPE tickType;
+  //TPM_TICKTYPE tickType;
   TPM_PCR_ATTRIBUTES pcrAttrib[TPM_NUM_PCR];
   TPM_PCRVALUE pcrValue[TPM_NUM_PCR];
   BYTE ordinalAuditStatus[TPM_ORD_MAX / 8];
@@ -2047,6 +2092,8 @@ typedef struct tdTPM_PERMANENT_DATA {
 /*
  * TPM_STCLEAR_DATA ([TPM_Part2], Section 7.5)
  * Most of the data in this structure resets on TPM_Startup(ST_Clear).
+ *
+ * This is an informative structure and not normative.
  */
 #define TPM_TAG_STCLEAR_DATA 0x0023
 typedef struct tdTPM_STCLEAR_DATA {
@@ -2054,6 +2101,7 @@ typedef struct tdTPM_STCLEAR_DATA {
   TPM_NONCE contextNonceKey;
   TPM_COUNT_ID countID;
   //UINT32 ownerReference;
+  //BOOL disableResetLock;
 } TPM_STCLEAR_DATA;
 
 /*
@@ -2095,6 +2143,8 @@ typedef struct tdTPM_DAA_SESSION_DATA {
 /*
  * TPM_STANY_DATA ([TPM_Part2], Section 7.6)
  * Most of the data in this structure resets on TPM_Startup(ST_State).
+ *
+ * This is an informative structure and not normative.
  */
 #define TPM_TAG_STANY_DATA        0x0024
 #define TPM_MAX_SESSIONS          3

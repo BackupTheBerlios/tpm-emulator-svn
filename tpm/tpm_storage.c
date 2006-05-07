@@ -126,15 +126,15 @@ TPM_RESULT TPM_Seal(TPM_KEY_HANDLE keyHandle, TPM_ENCAUTH *encAuth,
   if (session->type != TPM_ST_OSAP) return TPM_AUTHFAIL;
   /* verify key properties */
   if (key->keyUsage != TPM_KEY_STORAGE
-      || key->keyFlags & TPM_KEY_FLAG_MIGRATABLE) 
+      || key->keyFlags & TPM_KEY_FLAG_MIGRATABLE)
     return TPM_INVALID_KEYUSAGE;
   /* setup store */
   if (pcrInfo->tag == TPM_TAG_PCR_INFO_LONG) {
     sealedData->tag = TPM_TAG_STORED_DATA12;
-    sealedData->fill = 0x0000;
+    sealedData->et = 0x0000;
   } else {
     sealedData->tag = 0x0101;
-    sealedData->fill = 0x0000;
+    sealedData->et = 0x0000;
   }   
   sealedData->encDataSize = 0;
   sealedData->encData = NULL;

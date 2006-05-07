@@ -24,11 +24,11 @@
 
 UINT32 tpm_get_param_offset(TPM_COMMAND_CODE ordinal)
 {
-// some ordinals are commented out in order to be compatible with
-// the behavior of the DAA Test Suite
   switch (ordinal) {
     case TPM_ORD_ActivateIdentity:
+/* removed since v1.2 rev 94
     case TPM_ORD_CertifySelfTest:
+*/
     case TPM_ORD_ChangeAuth:
     case TPM_ORD_ChangeAuthAsymStart:
     case TPM_ORD_CMK_CreateBlob:
@@ -45,7 +45,9 @@ UINT32 tpm_get_param_offset(TPM_COMMAND_CODE ordinal)
     case TPM_ORD_KeyControlOwner:
     case TPM_ORD_LoadKey:
     case TPM_ORD_LoadKey2:
-//    case TPM_ORD_OwnerReadInternalPub:
+/* commented out in order to be compatible with the DAA Test Suite
+    case TPM_ORD_OwnerReadInternalPub:
+*/
     case TPM_ORD_Quote:
     case TPM_ORD_ReleaseTransportSigned:
     case TPM_ORD_SaveKeyContext:
@@ -349,6 +351,51 @@ static TPM_RESULT execute_TPM_GetCapability(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   if (ptr == NULL
       || tpm_marshal_UINT32(&ptr, &len, respSize)
       || tpm_marshal_BLOB(&ptr, &len, resp, respSize)) {
+    tpm_free(rsp->param);
+    res = TPM_FAIL;
+  }
+  tpm_free(resp);
+  return res;
+}
+
+static TPM_RESULT execute_TPM_SetCapability(TPM_REQUEST *req, TPM_RESPONSE *rsp)
+{
+  BYTE *ptr;
+  UINT32 len;
+  TPM_CAPABILITY_AREA capArea;
+  UINT32 subCapSize, setValueSize;
+  BYTE *subCap, *setValue;
+  /* unmarshal input */
+  ptr = req->param;
+  len = req->paramSize;
+  if (tpm_unmarshal_TPM_CAPABILITY_AREA(&ptr, &len, &capArea)
+      || tpm_unmarshal_UINT32(&ptr, &len, &subCapSize)
+      || tpm_unmarshal_BLOB(&ptr, &len, &subCap, subCapSize)
+      || tpm_unmarshal_UINT32(&ptr, &len, &setValueSize)
+      || tpm_unmarshal_BLOB(&ptr, &len, &setValue, setValueSize)
+      || len != 0) return TPM_BAD_PARAMETER;
+  /* execute command */
+  return TPM_SetCapability(capArea, subCapSize, subCap, setValueSize, setValue);
+}
+
+static TPM_RESULT execute_TPM_GetCapabilityOwner(TPM_REQUEST *req, TPM_RESPONSE *rsp)
+{
+  BYTE *ptr;
+  UINT32 len;
+  UINT32 non_volatile_flags, volatile_flags;
+  TPM_VERSION version;
+  BYTE *resp = NULL;
+  TPM_RESULT res;
+  /* execute command */
+  res = TPM_GetCapabilityOwner(&version, &non_volatile_flags, &volatile_flags);
+  if (res != TPM_SUCCESS) return res;
+  /* marshal output */
+  rsp->paramSize = len = 12;
+  rsp->param = ptr = tpm_malloc(len);
+  if (ptr == NULL
+      || tpm_marshal_TPM_VERSION(&ptr, &len, &version)
+      || tpm_marshal_UINT32(&ptr, &len, non_volatile_flags)
+      || tpm_marshal_UINT32(&ptr, &len, volatile_flags)) {
     tpm_free(rsp->param);
     res = TPM_FAIL;
   }
@@ -2301,19 +2348,21 @@ static TPM_RESULT execute_TPM_FlushSpecific(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   return TPM_FlushSpecific(handle, resourceType);
 }
 
+/* removed since v1.2 rev 94
 static TPM_RESULT execute_TPM_SetTickType(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
   BYTE *ptr;
   UINT32 len;
   TPM_TICKTYPE tickType;
-  /* unmarshal input */
+  // unmarshal input
   ptr = req->param;
   len = req->paramSize;
   if (tpm_unmarshal_TPM_TICKTYPE(&ptr, &len, &tickType)
       || len != 0) return TPM_BAD_PARAMETER;
-  /* execute command */
+  // execute command
   return TPM_SetTickType(tickType);
 }
+*/
 
 static TPM_RESULT execute_TPM_GetTicks(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
@@ -2980,6 +3029,7 @@ static TPM_RESULT execute_TPM_Reset(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   return TPM_Reset();
 }
 
+/* removed since v1.2 rev 94
 static TPM_RESULT execute_TPM_CertifySelfTest(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
   BYTE *ptr;
@@ -2989,18 +3039,18 @@ static TPM_RESULT execute_TPM_CertifySelfTest(TPM_REQUEST *req, TPM_RESPONSE *rs
   UINT32 sigSize;
   BYTE *sig = NULL;
   TPM_RESULT res;
-  /* compute parameter digest */
+  // compute parameter digest
   tpm_compute_in_param_digest(req);
-  /* unmarshal input */
+  // unmarshal input
   ptr = req->param;
   len = req->paramSize;
   if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &keyHandle)
       || tpm_unmarshal_TPM_NONCE(&ptr, &len, &antiReplay)
       || len != 0) return TPM_BAD_PARAMETER;
-  /* execute command */
+  // execute command
   res = TPM_CertifySelfTest(keyHandle, &antiReplay, &req->auth1, &sigSize, &sig);
   if (res != TPM_SUCCESS) return res;
-  /* marshal output */
+  // marshal output
   rsp->paramSize = len = 4 + sigSize;
   rsp->param = ptr = tpm_malloc(len);
   if (ptr == NULL
@@ -3012,6 +3062,7 @@ static TPM_RESULT execute_TPM_CertifySelfTest(TPM_REQUEST *req, TPM_RESPONSE *rs
   tpm_free(sig);
   return res;
 }
+*/
 
 static TPM_RESULT execute_TPM_OwnerReadPubek(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
@@ -3105,6 +3156,7 @@ static TPM_RESULT tpm_check_status_and_mode(TPM_REQUEST *req)
       && req->ordinal != TPM_ORD_OIAP
       && req->ordinal != TPM_ORD_OSAP
       && req->ordinal != TPM_ORD_GetCapability
+      && req->ordinal != TPM_ORD_SetCapability
       && req->ordinal != TPM_ORD_TakeOwnership
       && req->ordinal != TPM_ORD_OwnerSetDisable
       && req->ordinal != TPM_ORD_PhysicalDisable
@@ -3129,6 +3181,7 @@ static TPM_RESULT tpm_check_status_and_mode(TPM_REQUEST *req)
       && req->ordinal != TPM_ORD_OIAP
       && req->ordinal != TPM_ORD_OSAP
       && req->ordinal != TPM_ORD_GetCapability
+      && req->ordinal != TPM_ORD_SetCapability
       && req->ordinal != TPM_ORD_Extend
       && req->ordinal != TPM_ORD_OwnerSetDisable
       && req->ordinal != TPM_ORD_PhysicalEnable
@@ -3286,6 +3339,16 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
     case TPM_ORD_GetCapability:
       debug("[TPM_ORD_GetCapability]");
       res = execute_TPM_GetCapability(req, rsp);
+    break;
+
+    case TPM_ORD_SetCapability:
+      debug("[TPM_ORD_SetCapability]");
+      res = execute_TPM_SetCapability(req, rsp);
+    break;
+
+    case TPM_ORD_GetCapabilityOwner:
+      debug("[TPM_ORD_GetCapabilityOwner]");
+      res = execute_TPM_GetCapabilityOwner(req, rsp);
     break;
 
     case TPM_ORD_GetAuditDigest:
@@ -3623,10 +3686,12 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       res = execute_TPM_FlushSpecific(req, rsp);
     break;
 
+/* removed since v1.2 rev 94
     case TPM_ORD_SetTickType:
       debug("[TPM_ORD_SetTickType]");
       res = execute_TPM_SetTickType(req, rsp);
     break;
+*/
 
     case TPM_ORD_GetTicks:
       debug("[TPM_ORD_GetTicks]");
@@ -3743,10 +3808,12 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       res = execute_TPM_Reset(req, rsp);
     break;
 
+/* removed since v1.2 rev 94
     case TPM_ORD_CertifySelfTest:
       debug("[TPM_ORD_CertifySelfTest]");
       res = execute_TPM_CertifySelfTest(req, rsp);
     break;
+*/
 
     case TPM_ORD_OwnerReadPubek:
       debug("[TPM_ORD_OwnerReadPubek]");

@@ -91,6 +91,7 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
     return TPM_BAD_PARAMETER;
   }
   tpmData.stany.flags.postInitialise = FALSE;
+  tpmData.stany.flags.TOSPresent = FALSE;
   return TPM_SUCCESS;
 }
 

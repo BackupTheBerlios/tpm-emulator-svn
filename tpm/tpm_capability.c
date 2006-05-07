@@ -483,3 +483,19 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
   }
 }
 
+TPM_RESULT TPM_SetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize, 
+                             BYTE *subCap, UINT32 setValueSize, BYTE *setValue)
+{
+  info("TPM_SetCapability() not implemented yet");
+  /* TODO: implement TPM_SetCapability() */
+  return TPM_FAIL;
+}
+
+TPM_RESULT TPM_GetCapabilityOwner(TPM_VERSION *version, 
+                                  UINT32 *non_volatile_flags, 
+                                  UINT32 *volatile_flags)
+{
+  info("TPM_GetCapabilityOwner() not implemented yet");
+  /* TODO: implement TPM_GetCapabilityOwner() */
+  return TPM_FAIL;
+}

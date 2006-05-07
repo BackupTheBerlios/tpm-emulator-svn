@@ -145,7 +145,7 @@ TPM_RESULT TPM_EstablishTransport(TPM_KEY_HANDLE encHandle,
   memset(&session->transInternal.transDigest, 0, sizeof(TPM_DIGEST));
   memcpy(&session->transInternal.transPublic, transPublic,
     sizeof_TPM_TRANSPORT_PUBLIC((*transPublic)));
-  memcpy(&session->transInternal.transEven, transNonce, sizeof(TPM_NONCE));
+  memcpy(&session->transInternal.transNonceEven, transNonce, sizeof(TPM_NONCE));
   memcpy(session->transInternal.authData, trans_auth.authData, sizeof(TPM_AUTHDATA));
   *locality = tpmData.stany.flags.localityModifier;
   memcpy(currentTicks, &tpmData.stany.data.currentTicks, sizeof(TPM_CURRENT_TICKS));
@@ -167,7 +167,7 @@ TPM_RESULT TPM_EstablishTransport(TPM_KEY_HANDLE encHandle,
       &session->transInternal.transDigest);
   }
   /* check whether this is a exclusive transport session */
-  if (transPublic->transAttributes & TPM_TRANSPORT_EXCL_ATTR) {
+  if (transPublic->transAttributes & TPM_TRANSPORT_EXCLUSIVE) {
     tpmData.stany.flags.transportExclusive = TRUE;
     tpmData.stany.data.transExclusive = *transHandle;
   }

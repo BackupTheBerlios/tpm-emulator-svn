@@ -197,7 +197,7 @@ const char *tpm_error_to_string(TPM_RESULT res)
       return "Attempt to manage a family other then the delegated family.";
     case TPM_DELEGATE_ADMIN:
       return "Delegation table management not enabled.";
-    case TPM_TRANSPORT_EXCLUSIVE:
+    case TPM_TRANSPORT_NOTEXCLUSIVE:
       return "There was a command executed outside of an exclusive "
 	"transport session.";
     case TPM_OWNER_CONTROL:
