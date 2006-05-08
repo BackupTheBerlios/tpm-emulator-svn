@@ -1461,16 +1461,24 @@ typedef struct tdTPM_AUDIT_EVENT_OUT {
  */
 
 /*
- * TPM_NV_INDEX ([TPM_Part2], Section 19.1)
- * The index provides the handle to identify the area of storage.
+ * Required TPM_NV_INDEX values ([TPM_Part2], Section 19.1.1)
+ * The required index values must be found on each TPM regardless
+ * of platform. These areas are always present and do not require
+ * a TPM_NV_DefineSpace command to allocate.
  */
-#define TPM_NV_INDEX_LOCK               0xFFFFFFFFFFFFFFFF
-#define TPM_NV_INDEX_0                  0x0000000000
-#define TPM_NV_INDEX_DIR                0x0000000001
-#define TPM_NV_INDEX_EKCert             0x000000F000
-#define TPM_NV_INDEX_TPM_CC             0x000000F001
-#define TPM_NV_INDEX_PlatformCert       0x000000F002
-#define TPM_NV_INDEX_Platform_CC        0x000000F003
+#define TPM_NV_INDEX_LOCK               0xFFFFFFFF
+#define TPM_NV_INDEX0                   0x00000000
+#define TPM_NV_INDEX_DIR                0x10000001
+
+/*
+ * Reserved Index values ([TPM_Part2], Section 19.1.2)
+ * The reserved values are defined to avoid index collisions. These
+ * values are not in each and every TPM.
+ */
+#define TPM_NV_INDEX_EKCert             0x0000F000
+#define TPM_NV_INDEX_TPM_CC             0x0000F001
+#define TPM_NV_INDEX_PlatformCert       0x0000F002
+#define TPM_NV_INDEX_Platform_CC        0x0000F003
 
 /*
  * TPM_NV_ATTRIBUTES ([TPM_Part2], Section 19.2)
@@ -1482,6 +1490,20 @@ typedef struct tdTPM_NV_ATTRIBUTES {
   TPM_STRUCTURE_TAG tag;
   UINT32 attributes;
 } TPM_NV_ATTRIBUTES;
+
+#define TPM_NV_PER_READ_STCLEAR             (1 << 31)
+/* bits 30-19 are reserved and must be 0 */
+#define TPM_NV_PER_AUTHREAD                 (1 << 18)
+#define TPM_NV_PER_OWNERREAD                (1 << 17)
+#define TPM_NV_PER_PPREAD                   (1 << 16)
+#define TPM_NV_PER_GLOBALLOCK               (1 << 15)
+#define TPM_NV_PER_WRITE_STCLEAR            (1 << 14)
+#define TPM_NV_PER_WRITEDEFINE              (1 << 13)
+#define TPM_NV_PER_WRITEALL                 (1 << 12)
+/* bits 11-3 are reserved and must be 0 */
+#define TPM_NV_PER_AUTHWRITE                (1 <<  2)
+#define TPM_NV_PER_OWNERWRITE               (1 <<  1)
+#define TPM_NV_PER_PPWRITE                  (1 <<  0)
 
 /*
  * TPM_NV_DATA_PUBLIC ([TPM_Part2], Section 19.3)
@@ -1512,26 +1534,38 @@ typedef struct tdTPM_NV_DATA_PUBLIC {
 typedef struct tdTPM_NV_DATA_SENSITIVE {
   TPM_STRUCTURE_TAG tag;
   TPM_NV_DATA_PUBLIC pubInfo;
-  TPM_SECRET authValue;
+  TPM_AUTHDATA authValue;
   BYTE* data;
   /* next is only internally used to build a linked list */
-  struct tdTPM_NV_DATA_SENSITIVE *next; 
+  struct tdTPM_NV_DATA_SENSITIVE *next;
 } TPM_NV_DATA_SENSITIVE;
 #define sizeof_TPM_NV_DATA_SENSITIVE(s) (2 + 20 + \
   sizeof_TPM_NV_DATA_PUBLIC(s.pubInfo) + s.pubInfo.dataSize)
 #define free_TPM_NV_DATA_SENSITIVE(s) { tpm_free(s.data); }
+
+
+/*
+ * Max NV Size ([TPM_Part2], Section 19.5)
+ * This is a value where the minimum value is set by the platform
+ * specific specification. The TPM vendor can design a TPM with a
+ * size that is larger than the minimum.
+ */
+#define TPM_MAX_NV_SIZE 64
 
 /*
  * Delegate Structures
  */
 
 /*
- * TPM_DELEGATIONS ([TPM_Part2], Section 20.2)
+ * Delegate Definitions ([TPM_Part2], Section 20.2)
  * The delegations are in a 64-bit field. Each bit describes a capability
- * that the TPM Owner can delegate to a trusted process by setting that bit.
+ * that the TPM Owner or an authorized key user can delegate to a trusted
+ * process by setting that bit. Each delegation bit setting is independent
+ * of any other delegation bit setting in a row.
  */
-#define TPM_DEL_OWNER_BITS 0x00000001
-#define TPM_DEL_KEY_BITS 0x00000002
+#define TPM_DEL_OWNER_BITS      0x00000001
+#define TPM_DEL_KEY_BITS        0x00000002
+
 #define TPM_TAG_DELEGATIONS 0x001A
 typedef struct tdTPM_DELEGATIONS {
   TPM_STRUCTURE_TAG tag;
@@ -1546,63 +1580,91 @@ typedef struct tdTPM_DELEGATIONS {
  * Owner Permission Settings ([TPM_Part2], Section 20.2.1)
  * Defines the order of bits in the permission array.
  */
-/* 31-28 reserved and must be 0 */
-#define TPM_DELEGATE_CMD_CreateTicket                   (1 << 26)
-#define TPM_DELEGATE_CMK_CreateKey                      (1 << 25)
-#define TPM_DELEGATE_LoadOwnerDelegation                (1 << 24)
-#define TPM_DELEGATE_DAA_Join                           (1 << 23)
-#define TPM_DELEGATE_AuthorizeMigrationKey              (1 << 22)
-#define TPM_DELEGATE_CreateMaintenanceArchive           (1 << 21)
-#define TPM_DELEGATE_LoadMaintenanceArchive             (1 << 20)
-#define TPM_DELEGATE_KillMaintenanceFeature             (1 << 19)
-#define TPM_DELEGATE_CreateKeyDelegation                (1 << 18)
-#define TPM_DELEGATE_LoadBlobOwner                      (1 << 17)
-#define TPM_DELEGATE_OwnerClear                         (1 << 16)
-#define TPM_DELEGATE_DisableOwnerClear                  (1 << 15)
-#define TPM_DELEGATE_DisableForceClear                  (1 << 14)
-#define TPM_DELEGATE_OwnerSetDisable                    (1 << 13)
-#define TPM_DELEGATE_SetOwnerInstall                    (1 << 12)
-#define TPM_DELEGATE_MakeIdentity                       (1 << 11)
-#define TPM_DELEGATE_ActivateIdentity                   (1 << 10)
-#define TPM_DELEGATE_OwnerReadPubek                     (1 <<  9)
-#define TPM_DELEGATE_DisablePubekRead                   (1 <<  8)
-#define TPM_DELEGATE_SetRedirection                     (1 <<  7)
-#define TPM_DELEGATE_FieldUpgrade                       (1 <<  6)
-#define TPM_DELEGATE_UpdateVerification                 (1 <<  5)
-#define TPM_DELEGATE_CreateCounter                      (1 <<  4)
-#define TPM_DELEGATE_ReleaseCounterOwner                (1 <<  3)
-#define TPM_DELEGATE_Delegate_Manage                    (1 <<  2)
-#define TPM_DELEGATE_Delegate_CreateOwnerDelegation     (1 <<  1)
-#define TPM_DELEGATE_DAA_Sign                           (1 <<  0)
+/* Per1 bits */
+/* 31 reserved and must be 0 */
+#define TPM_DELEGATE_SetOrdinalAuditStatus          (1 << 30) /* added */
+#define TPM_DELEGATE_DirWriteAuth                   (1 << 29) /* added */
+#define TPM_DELEGATE_CMK_ApproveMA                  (1 << 28) /* added */
+#define TPM_DELEGATE_CMD_CreateTicket               (1 << 26)
+/* removed since v1.2 rev 94
+#define TPM_DELEGATE_CMK_CreateKey                  (1 << 25)
+*/
+#define TPM_DELEGATE_Delegate_LoadOwnerDelegation   (1 << 24) /* name changed */
+#define TPM_DELEGATE_DAA_Join                       (1 << 23)
+#define TPM_DELEGATE_AuthorizeMigrationKey          (1 << 22)
+#define TPM_DELEGATE_CreateMaintenanceArchive       (1 << 21)
+#define TPM_DELEGATE_LoadMaintenanceArchive         (1 << 20)
+#define TPM_DELEGATE_KillMaintenanceFeature         (1 << 19)
+#define TPM_DELEGATE_OwnerReadInternalPub           (1 << 18) /* name changed */
+#define TPM_DELEGATE_ResetLockValue                 (1 << 17) /* name changed */
+#define TPM_DELEGATE_OwnerClear                     (1 << 16)
+#define TPM_DELEGATE_DisableOwnerClear              (1 << 15)
+/* removed since v1.2 rev 94
+#define TPM_DELEGATE_DisableForceClear              (1 << 14)
+*/
+#define TPM_DELEGATE_OwnerSetDisable                (1 << 13)
+#define TPM_DELEGATE_SetCapability                  (1 << 12) /* name changed */
+#define TPM_DELEGATE_MakeIdentity                   (1 << 11)
+#define TPM_DELEGATE_ActivateIdentity               (1 << 10)
+#define TPM_DELEGATE_OwnerReadPubek                 (1 <<  9)
+#define TPM_DELEGATE_DisablePubekRead               (1 <<  8)
+#define TPM_DELEGATE_SetRedirection                 (1 <<  7)
+#define TPM_DELEGATE_FieldUpgrade                   (1 <<  6)
+#define TPM_DELEGATE_Delegate_UpdateVerification    (1 <<  5) /* name changed */
+#define TPM_DELEGATE_CreateCounter                  (1 <<  4)
+#define TPM_DELEGATE_ReleaseCounterOwner            (1 <<  3)
+#define TPM_DELEGATE_Delegate_Manage                (1 <<  2)
+#define TPM_DELEGATE_Delegate_CreateOwnerDelegation (1 <<  1)
+#define TPM_DELEGATE_DAA_Sign                       (1 <<  0)
 
 /*
- * Key Permission settings ([TPM_Part2], Section 20.3)
+ * Key Permission settings ([TPM_Part2], Section 20.2.3)
  * Defines the order of bits in the permission array.
  */
-/* 31-11 reserved and must be 0 */
-#define TPM_DELEGATE_CMK_CreateBlob                     (1 << 10)
-#define TPM_DELEGATE_CreateMigrationBlob                (1 <<  9)
-#define TPM_DELEGATE_ConvertMigrationBlob               (1 <<  8)
-#define TPM_DELEGATE_CreateBlob                         (1 <<  7)
-/* 6 reserved and must be 0 */
-#define TPM_DELEGATE_GetPubKey                          (1 <<  5)
-#define TPM_DELEGATE_Unbind                             (1 <<  4)
-#define TPM_DELEGATE_Quote                              (1 <<  3)
-#define TPM_DELEGATE_Unseal                             (1 <<  2)
-#define TPM_DELEGATE_Seal                               (1 <<  1)
-#define TPM_DELEGATE_LoadKey                            (1 <<  0)
+/* Per1 bits */
+/* 31-29 reserved and must be 0 */
+#define TPM_KEY_DELEGATE_CMK_ConvertMigration       (1 << 28) /* added */
+#define TPM_KEY_DELEGATE_TickStampBlob              (1 << 27) /* added */
+#define TPM_KEY_DELEGATE_ChangeAuthAsymStart        (1 << 26) /* added */
+#define TPM_KEY_DELEGATE_ChangeAuthAsymFinish       (1 << 25) /* added */
+#define TPM_KEY_DELEGATE_CMK_CreateKey              (1 << 24) /* added */
+#define TPM_KEY_DELEGATE_MigrateKey                 (1 << 23) /* added */
+#define TPM_KEY_DELEGATE_LoadKey2                   (1 << 22) /* added */
+#define TPM_KEY_DELEGATE_EstablishTransport         (1 << 21) /* added */
+#define TPM_KEY_DELEGATE_ReleaseTransportSigned     (1 << 20) /* added */
+#define TPM_KEY_DELEGATE_Quote2                     (1 << 19) /* added */
+#define TPM_KEY_DELEGATE_Sealx                      (1 << 18) /* added */
+#define TPM_KEY_DELEGATE_MakeIdentity               (1 << 17) /* added */
+#define TPM_KEY_DELEGATE_ActivateIdentity           (1 << 16) /* added */
+#define TPM_KEY_DELEGATE_GetAuditDigestSigned       (1 << 15) /* added */
+#define TPM_KEY_DELEGATE_Sign                       (1 << 14) /* added */
+#define TPM_KEY_DELEGATE_CertifyKey2                (1 << 13) /* added */
+#define TPM_KEY_DELEGATE_CertifyKey                 (1 << 12) /* added */
+#define TPM_KEY_DELEGATE_CreateWrapKey              (1 << 11) /* added */
+#define TPM_KEY_DELEGATE_CMK_CreateBlob             (1 << 10) /* name changed */
+#define TPM_KEY_DELEGATE_CreateMigrationBlob        (1 <<  9) /* name changed */
+#define TPM_KEY_DELEGATE_ConvertMigrationBlob       (1 <<  8) /* name changed */
+#define TPM_KEY_DELEGATE_Delegate_CreateKeyDelegation (1 <<  7) /* name changed */
+#define TPM_KEY_DELEGATE_ChangeAuth                 (1 <<  6) /* added */
+#define TPM_KEY_DELEGATE_GetPubKey                  (1 <<  5) /* name changed */
+#define TPM_KEY_DELEGATE_Unbind                     (1 <<  4) /* name changed */
+#define TPM_KEY_DELEGATE_Quote                      (1 <<  3) /* name changed */
+#define TPM_KEY_DELEGATE_Unseal                     (1 <<  2) /* name changed */
+#define TPM_KEY_DELEGATE_Seal                       (1 <<  1) /* name changed */
+#define TPM_KEY_DELEGATE_LoadKey                    (1 <<  0) /* name changed */
 
 /*
- * TPM_FAMILY_FLAGS ([TPM_Part2], Section 20.4)
- * These flags indicate the operational state of the
- * delegation and family table.
+ * TPM_FAMILY_FLAGS ([TPM_Part2], Section 20.3)
+ * These flags indicate the operational state of the delegation and
+ * family table. These flags are additions to TPM_PERMANENT_FLAGS and
+ * are not standalone values.
  */
 /* 31-2 reserved and must be 0 */
-#define DELEGATE_ADMIN_LOCK     (1 << 1)
-#define TPM_FAMFLAG_ENABLE      (1 << 0)
+#define TPM_DELEGATE_ADMIN_LOCK                     (1 << 1) /* name changed */
+#define TPM_FAMFLAG_ENABLED                         (1 << 0) /* name changed */
 
 /*
- * TPM_FAMILY_LABEL ([TPM_Part2], Section 20.5)
+ * TPM_FAMILY_LABEL ([TPM_Part2], Section 20.4)
  * Used in the family table to hold a one-byte numeric value (sequence number)
  * that software can map to a string of bytes.
  */
@@ -1611,7 +1673,7 @@ typedef struct tdTPM_FAMILY_LABEL {
 } TPM_FAMILY_LABEL;
 
 /*
- * TPM_FAMILY_TABLE_ENTRY ([TPM_Part2], Section 20.6)
+ * TPM_FAMILY_TABLE_ENTRY ([TPM_Part2], Section 20.5)
  * The family table entry is an individual row in the family table.
  */
 #define TPM_TAG_FAMILY_TABLE_ENTRY 0x0025
@@ -1624,19 +1686,20 @@ typedef struct tdTPM_FAMILY_TABLE_ENTRY {
 } TPM_FAMILY_TABLE_ENTRY;
 
 /*
- * TPM_FAMILY_TABLE ([TPM_Part2], Section 20.7)
+ * TPM_FAMILY_TABLE ([TPM_Part2], Section 20.6)
  * The family table is stored in a TPM shielded location. There are no
- * confidential values in the family table.
+ * confidential values in the family table. The family table contains
+ * a minimum of 8 rows.
  */
 #define TPM_NUM_FAMILY_TABLE_ENTRY 16
 typedef struct tdTPM_FAMILY_TABLE {
-  TPM_FAMILY_TABLE_ENTRY FamTableRow[TPM_NUM_FAMILY_TABLE_ENTRY];
+  TPM_FAMILY_TABLE_ENTRY famTableRow[TPM_NUM_FAMILY_TABLE_ENTRY]; /* changed */
 } TPM_FAMILY_TABLE;
 
 /*
- * TPM_DELEGATE_LABEL ([TPM_Part2], Section 20.8)
- * Used in both the delegate table and the family table to hold a string
- * of bytes that can be displayed or used by applications.
+ * TPM_DELEGATE_LABEL ([TPM_Part2], Section 20.7)
+ * Used in the delegate table to hold a byte that can be displayed or
+ * used by applications.
  */
 typedef struct tdTPM_DELEGATE_LABEL {
   BYTE label;
@@ -1645,7 +1708,7 @@ typedef struct tdTPM_DELEGATE_LABEL {
 #define free_TPM_DELEGATE_LABEL(s)
 
 /*
- * TPM_DELEGATE_PUBLIC ([TPM_Part2], Section 20.9)
+ * TPM_DELEGATE_PUBLIC ([TPM_Part2], Section 20.8)
  * The information of a delegate row that is public and does not have any
  * sensitive information.
  */
@@ -1665,7 +1728,7 @@ typedef struct tdTPM_DELEGATE_PUBLIC {
   free_TPM_DELEGATIONS(s.permissions); }
 
 /*
- * TPM_DELEGATE_TABLE_ROW ([TPM_Part2], Section 20.10)
+ * TPM_DELEGATE_TABLE_ROW ([TPM_Part2], Section 20.9)
  * A row of the delegate table.
  */
 #define TPM_TAG_DELEGATE_TABLE_ROW 0x001C
@@ -1676,9 +1739,9 @@ typedef struct tdTPM_DELEGATE_TABLE_ROW {
 } TPM_DELEGATE_TABLE_ROW;
 
 /*
- * TPM_DELEGATE_TABLE ([TPM_Part2], Section 20.11)
- * This is the delegate table. This will be an entry in the
- * TPM_PERSISTENT_DATA structure.
+ * TPM_DELEGATE_TABLE ([TPM_Part2], Section 20.10)
+ * This is the delegate table. The table contains a minimum of 2 rows.
+ * This will be an entry in the TPM_PERSISTENT_DATA structure.
  */
 #define TPM_NUM_DELEGATE_TABLE_ENTRY 4
 typedef struct tdTPM_DELEGATE_TABLE {
@@ -1686,7 +1749,7 @@ typedef struct tdTPM_DELEGATE_TABLE {
 } TPM_DELEGATE_TABLE;
 
 /*
- * TPM_DELEGATE_SENSITIVE ([TPM_Part2], Section 20.12)
+ * TPM_DELEGATE_SENSITIVE ([TPM_Part2], Section 20.11)
  * The TPM_DELEGATE_SENSITIVE structure is the area of a delegate
  * blob that contains sensitive information.
  */
@@ -1697,7 +1760,7 @@ typedef struct tdTPM_DELEGATE_SENSITIVE {
 } TPM_DELEGATE_SENSITIVE;
 
 /*
- * TPM_DELEGATE_OWNER_BLOB ([TPM_Part2], Section 20.13)
+ * TPM_DELEGATE_OWNER_BLOB ([TPM_Part2], Section 20.12)
  * This data structure contains all the information necessary to
  * externally store a set of owner delegation rights.
  */
@@ -1718,7 +1781,7 @@ typedef struct tdTPM_DELEGATE_OWNER_BLOB {
   if (s.sensitiveSize > 0) tpm_free(s.sensitiveArea); }
 
 /*
- * TPM_DELEGATE_KEY_BLOB ([TPM_Part2], Section 20.14)
+ * TPM_DELEGATE_KEY_BLOB ([TPM_Part2], Section 20.13)
  * A structure identical to TPM_DELEGATE_OWNER_BLOB but which stores
  * delegation information for user keys.
  */
@@ -1740,7 +1803,7 @@ typedef struct tdTPM_DELEGATE_KEY_BLOB {
   if (s.sensitiveSize > 0) tpm_free(s.sensitiveArea); }
 
 /*
- * TPM_FAMILY_OPERATION Values ([TPM_Part2], Section 20.15)
+ * TPM_FAMILY_OPERATION Values ([TPM_Part2], Section 20.14)
  * These are the opFlag values used by TPM_Delegate_Manage.
  */
 #define TPM_FAMILY_CREATE       0x00000001
@@ -1750,7 +1813,7 @@ typedef struct tdTPM_DELEGATE_KEY_BLOB {
 
 /* !!! WATCH: Changes from TPM Specification v1.2 rev 94 !!!
  *
- * TPM Capability areas ([TPM_Part2], Section 21)
+ * TPM_CAPABILITY_AREA Values for TPM_GetCapability ([TPM_Part2], Section 21.1)
  */
 #define TPM_CAP_ORD                     0x00000001
 #define TPM_CAP_ALG                     0x00000002
@@ -1786,9 +1849,9 @@ typedef struct tdTPM_DELEGATE_KEY_BLOB {
 #define TPM_CAP_PROP_DIR                0x00000102
 #define TPM_CAP_PROP_MANUFACTURER       0x00000103
 #define TPM_CAP_PROP_KEYS               0x00000104
-#define TPM_CAP_MIN_COUNTER             0x00000107
+#define TPM_CAP_PROP_MIN_COUNTER        0x00000107 /* name changed */
 #define TPM_CAP_FLAG_PERMANENT          0x00000108
-#define TPM_CAP_FLAG_STCLEAR            0x00000109
+#define TPM_CAP_FLAG_VOLATILE           0x00000109 /* name changed */
 #define TPM_CAP_PROP_AUTHSESS           0x0000010A
 #define TPM_CAP_PROP_TRANSESS           0x0000010B
 #define TPM_CAP_PROP_COUNTERS           0x0000010C
@@ -1824,8 +1887,39 @@ typedef struct tdTPM_DELEGATE_KEY_BLOB {
 #define TPM_CAP_PROP_MAX_NV_AVAILABLE   0x00000123
 #define TPM_CAP_PROP_INPUT_BUFFER       0x00000124
 
+/* !!! WATCH: Added since TPM Specification v1.2 rev 94 !!!
+ *
+ * TPM_CAPABILITY_AREA Values for TPM_SetCapability ([TPM_Part2], Section 21.4)
+ */
+#define TPM_SET_PERM_FLAGS              0x00000001
+#define TPM_SET_PERM_DATA               0x00000002
+#define TPM_SET_STCLEAR_FLAGS           0x00000003
+#define TPM_SET_STCLEAR_DATA            0x00000004
+#define TPM_SET_STANY_FLAGS             0x00000005
+#define TPM_SET_STANY_DATA              0x00000006
+#define TPM_SET_VENDOR                  0x00000007
+
 /*
- * DAA Structures
+ * TPM_CAP_VERSION_INFO ([TPM_Part2], Section 21.6)
+ * This structure is an output from a TPM_GetCapability request.
+ * The TPM returns the current version and revision of the TPM.
+ */
+#define TPM_TAG_CAP_VERSION_INFO 0x0030
+typedef struct tdTPM_CAP_VERSION_INFO {
+  TPM_STRUCTURE_TAG tag;
+  TPM_VERSION version;
+  UINT16 specLevel;
+  BYTE errataRev;
+  BYTE tpmVendorID[4];
+  UINT16 vendorSpecificSize;
+  BYTE* vendorSpecific;
+} TPM_CAP_VERSION_INFO;
+#define sizeof_TPM_CAP_VERSION_INFO(s) (sizeof(TPM_STRUCTURE_TAG) + \
+  sizeof(TPM_VERSION) + sizeof(UINT16) + sizeof(BYTE) + 4*sizeof(BYTE) + \
+  sizeof(UINT16) + s.vendorSpecificSize)
+
+/*
+ * DAA Structures ([TPM_Part2], Section 22)
  */
 
 /*
@@ -1847,7 +1941,7 @@ typedef struct tdTPM_DELEGATE_KEY_BLOB {
 #define DAA_power1              1024
 
 /*
- * TPM_DAA_ISSUER ([TPM_Part2], Section 22.7)
+ * TPM_DAA_ISSUER ([TPM_Part2], Section 22.3)
  * This structure is the abstract representation of non-secret
  * settings controlling a DAA context.
  */
@@ -1864,7 +1958,7 @@ typedef struct tdTPM_DAA_ISSUER {
 } TPM_DAA_ISSUER;
 
 /*
- * TPM_DAA_TPM ([TPM_Part2], Section 22.8)
+ * TPM_DAA_TPM ([TPM_Part2], Section 22.4)
  * This structure is the abstract representation of TPM specific
  * parameters used during a DAA context.
  */
@@ -1879,7 +1973,7 @@ typedef struct tdTPM_DAA_TPM {
 } TPM_DAA_TPM;
 
 /*
- * TPM_DAA_CONTEXT ([TPM_Part2], Section 22.9)
+ * TPM_DAA_CONTEXT ([TPM_Part2], Section 22.5)
  * This structure is created and used inside a TPM, and never leaves it.
  */
 #define TPM_TAG_DAA_CONTEXT 0x002D
@@ -1893,7 +1987,7 @@ typedef struct tdTPM_DAA_CONTEXT {
 } TPM_DAA_CONTEXT;
 
 /*
- * TPM_DAA_JOINDATA ([TPM_Part2], Section 22.10)
+ * TPM_DAA_JOINDATA ([TPM_Part2], Section 22.6)
  * This structure is the abstract representation of data that
  * exists only during a specific JOIN session.
  */
@@ -1904,7 +1998,7 @@ typedef struct tdTPM_DAA_JOINDATA {
 } TPM_DAA_JOINDATA;
 
 /*
- * TPM_DAA_BLOB ([TPM_Part2], Section 22.12)
+ * TPM_DAA_BLOB ([TPM_Part2], Section 22.8)
  * The structure passed during the join process.
  */
 #define TPM_TAG_DAA_BLOB 0x002C
@@ -1923,7 +2017,7 @@ typedef struct tdTPM_DAA_BLOB {
   2*sizeof(UINT32) + s.additionalSize + s.sensitiveSize)
 
 /*
- * TPM_DAA_SENSITIVE ([TPM_Part2], Section 22.13)
+ * TPM_DAA_SENSITIVE ([TPM_Part2], Section 22.9)
  * The encrypted area for the DAA parameters.
  */
 #define TPM_TAG_DAA_SENSITIVE 0x0031
@@ -1936,13 +2030,13 @@ typedef struct tdTPM_DAA_SENSITIVE {
   sizeof(UINT32) + s.internalSize)
 
 /*
- * Redirection
+ * Redirection ([TPM_Part2], Section 23)
  */
 
- /*
-  * TPM_REDIR_COMMAND ([TPM_Part2], Section 24.1)
-  * The types of redirections.
-  */
+/*
+ * TPM_REDIR_COMMAND ([TPM_Part2], Section 23.1)
+ * The types of redirections.
+ */
 typedef UINT32 TPM_REDIR_COMMAND;
 
 /*
@@ -2159,11 +2253,6 @@ typedef struct tdTPM_STANY_DATA {
   UINT32 contextCount;
   UINT32 contextList[TPM_MAX_SESSION_LIST];
   TPM_SESSION_DATA sessions[TPM_MAX_SESSIONS];
-  /*
-   * TPM_STANY_DATA ([TPM_Part2], Section 22.11)
-   * This shows that the volatile data areas are added to the
-   * TPM_STANY_DATA structure.
-   */
   TPM_DAA_SESSION_DATA sessionsDAA[TPM_MAX_SESSIONS_DAA];
   TPM_DAAHANDLE currentDAA;
   TPM_TRANSHANDLE transExclusive;
@@ -2204,7 +2293,7 @@ typedef struct tdTPM_CONTEXT_BLOB {
   TPM_HANDLE handle;
   BYTE label[16];
   UINT32 contextCount;
-  TPM_DIGEST blobIntegrity;
+  TPM_DIGEST integrityDigest; /* name changed since v1.2 rev 94 */
   UINT32 additionalSize;
   BYTE* additionalData;
   UINT32 sensitiveSize;

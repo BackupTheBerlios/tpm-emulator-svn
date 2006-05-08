@@ -183,7 +183,7 @@ TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
   contextBlob->tag = TPM_TAG_CONTEXTBLOB;
   contextBlob->resourceType = resourceType;
   contextBlob->handle = handle;
-  memset(&contextBlob->blobIntegrity, 0, sizeof(TPM_DIGEST));
+  memset(&contextBlob->integrityDigest, 0, sizeof(TPM_DIGEST));
   memcpy(contextBlob->label, label, sizeof(contextBlob->label));
   contextBlob->additionalSize = TPM_CONTEXT_KEY_SIZE;
   contextBlob->additionalData = tpm_malloc(contextBlob->additionalSize);
@@ -215,7 +215,7 @@ TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
         tpm_free(contextBlob->additionalData);
         return TPM_ENCRYPT_ERROR;
   }
-  if (compute_context_digest(contextBlob, &contextBlob->blobIntegrity)) {
+  if (compute_context_digest(contextBlob, &contextBlob->integrityDigest)) {
     tpm_free(contextBlob->additionalData);
     tpm_free(contextBlob->sensitiveData);
     return TPM_FAIL;
@@ -257,7 +257,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
       &context, &context_buf)) return TPM_DECRYPT_ERROR;
   /* validate structure */
   if (compute_context_digest(contextBlob, &digest)
-      || memcmp(&digest, &contextBlob->blobIntegrity, sizeof(TPM_DIGEST))) {
+      || memcmp(&digest, &contextBlob->integrityDigest, sizeof(TPM_DIGEST))) {
     tpm_free(context_buf);
     return TPM_BADCONTEXT;
   }

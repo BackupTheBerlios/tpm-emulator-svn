@@ -76,8 +76,8 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
         if (tpmData.permanent.data.keys[i].valid) j--;
       return return_UINT32(respSize, resp, j); 
 
-    case TPM_CAP_MIN_COUNTER:
-      debug("[TPM_CAP_MIN_COUNTER]");
+    case TPM_CAP_PROP_MIN_COUNTER:
+      debug("[TPM_CAP_PROP_MIN_COUNTER]");
       return return_UINT32(respSize, resp, 1);
 
     case TPM_CAP_PROP_AUTHSESS:
@@ -325,8 +325,8 @@ TPM_RESULT cap_flag(UINT32 subCapSize, BYTE *subCap,
         return TPM_FAIL;
       }
       return TPM_SUCCESS;
-    case TPM_CAP_FLAG_STCLEAR:
-      debug("[TPM_CAP_FLAG_STCLEAR]");
+    case TPM_CAP_FLAG_VOLATILE:
+      debug("[TPM_CAP_FLAG_VOLATILE]");
       *respSize = len = sizeof_TPM_STCLEAR_FLAGS(tpmData.stclear.flags);
       *resp = ptr = tpm_malloc(len);
       if (tpm_marshal_TPM_STCLEAR_FLAGS(&ptr, &len, &tpmData.stclear.flags)) {
