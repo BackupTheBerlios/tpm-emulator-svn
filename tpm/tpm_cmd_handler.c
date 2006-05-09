@@ -52,6 +52,7 @@ UINT32 tpm_get_param_offset(TPM_COMMAND_CODE ordinal)
     case TPM_ORD_ReleaseTransportSigned:
     case TPM_ORD_SaveKeyContext:
     case TPM_ORD_Seal:
+    case TPM_ORD_Sealx:
     case TPM_ORD_SetRedirection:
     case TPM_ORD_Sign:
     case TPM_ORD_TickStampBlob:
@@ -533,6 +534,14 @@ static TPM_RESULT execute_TPM_SetRedirection(TPM_REQUEST *req, TPM_RESPONSE *rsp
   return TPM_SetRedirection(keyHandle, redirCmd, inputDataSize, inputData, &req->auth1);
 }
 
+static TPM_RESULT execute_TPM_ResetLockValue(TPM_REQUEST *req, TPM_RESPONSE *rsp)
+{
+  /* compute parameter digest */
+  tpm_compute_in_param_digest(req);
+  /* execute command */
+  return TPM_ResetLockValue(&req->auth1);
+}
+
 static TPM_RESULT execute_TPM_Seal(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
   BYTE *ptr;
@@ -766,6 +775,46 @@ static TPM_RESULT execute_TPM_GetPubKey(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   return res;
 }
 
+static TPM_RESULT execute_TPM_Sealx(TPM_REQUEST *req, TPM_RESPONSE *rsp)
+{
+  BYTE *ptr;
+  UINT32 len;
+  TPM_KEY_HANDLE keyHandle;
+  TPM_ENCAUTH encAuth;
+  UINT32 pcrInfoSize;
+  TPM_PCR_INFO pcrInfo;
+  UINT32 inDataSize;
+  BYTE *inData;
+  TPM_STORED_DATA sealedData;
+  TPM_RESULT res;
+  /* compute parameter digest */
+  tpm_compute_in_param_digest(req);
+  /* unmarshal input */
+  ptr = req->param;
+  len = req->paramSize;
+  if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &keyHandle)
+      || tpm_unmarshal_TPM_ENCAUTH(&ptr, &len, &encAuth)
+      || tpm_unmarshal_UINT32(&ptr, &len, &pcrInfoSize)
+      || tpm_unmarshal_TPM_PCR_INFO(&ptr, &len, &pcrInfo)
+      || tpm_unmarshal_UINT32(&ptr, &len, &inDataSize)
+      || tpm_unmarshal_BLOB(&ptr, &len, &inData, inDataSize)
+      || len != 0) return TPM_BAD_PARAMETER;
+  /* execute command */
+  res = TPM_Sealx(keyHandle, &encAuth, pcrInfoSize, &pcrInfo, inDataSize, inData, 
+    &req->auth1, &sealedData);
+  if (res != TPM_SUCCESS) return res;
+  /* marshal output */
+  rsp->paramSize = len = sizeof_TPM_STORED_DATA(sealedData);
+  rsp->param = ptr = tpm_malloc(len);
+  if (ptr == NULL
+      || tpm_marshal_TPM_STORED_DATA(&ptr, &len, &sealedData)) {
+    tpm_free(rsp->param);
+    res = TPM_FAIL;
+  }
+  free_TPM_STORED_DATA(sealedData);
+  return res;
+}
+
 static TPM_RESULT execute_TPM_CreateMigrationBlob(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
   BYTE *ptr;
@@ -879,6 +928,88 @@ static TPM_RESULT execute_TPM_AuthorizeMigrationKey(TPM_REQUEST *req, TPM_RESPON
     res = TPM_FAIL;
   }
   free_TPM_MIGRATIONKEYAUTH(outData);
+  return res;
+}
+
+static TPM_RESULT execute_TPM_MigrateKey(TPM_REQUEST *req, TPM_RESPONSE *rsp)
+{
+  BYTE *ptr;
+  UINT32 len;
+  TPM_KEY_HANDLE maKeyHandle;
+  TPM_PUBKEY pubKey;
+  UINT32 inDataSize;
+  BYTE *inData;
+  UINT32 outDataSize;
+  BYTE *outData = NULL;
+  TPM_RESULT res;
+  /* compute parameter digest */
+  tpm_compute_in_param_digest(req);
+  /* unmarshal input */
+  ptr = req->param;
+  len = req->paramSize;
+  if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &maKeyHandle)
+      || tpm_unmarshal_TPM_PUBKEY(&ptr, &len, &pubKey)
+      || tpm_unmarshal_UINT32(&ptr, &len, &inDataSize)
+      || tpm_unmarshal_BLOB(&ptr, &len, &inData, inDataSize)
+      || len != 0) return TPM_BAD_PARAMETER;
+  /* execute command */
+  res = TPM_MigrateKey(maKeyHandle, &pubKey, inDataSize, inData, 
+    &req->auth1, &outDataSize, &outData);
+  if (res != TPM_SUCCESS) return res;
+  /* marshal output */
+  rsp->paramSize = len = 4 + outDataSize;
+  rsp->param = ptr = tpm_malloc(len);
+  if (ptr == NULL
+      || tpm_marshal_UINT32(&ptr, &len, outDataSize)
+      || tpm_marshal_BLOB(&ptr, &len, outData, outDataSize)) {
+    tpm_free(rsp->param);
+    res = TPM_FAIL;
+  }
+  tpm_free(outData);
+  return res;
+}
+
+static TPM_RESULT execute_TPM_CMK_SetRestrictions(TPM_REQUEST *req, TPM_RESPONSE *rsp)
+{
+  BYTE *ptr;
+  UINT32 len;
+  TPM_CMK_DELEGATE restriction;
+  /* compute parameter digest */
+  tpm_compute_in_param_digest(req);
+  /* unmarshal input */
+  ptr = req->param;
+  len = req->paramSize;
+  if (tpm_unmarshal_TPM_CMK_DELEGATE(&ptr, &len, &restriction)
+      || len != 0) return TPM_BAD_PARAMETER;
+  /* execute command */
+  return TPM_CMK_SetRestrictions(restriction, &req->auth1);
+}
+
+static TPM_RESULT execute_TPM_CMK_ApproveMA(TPM_REQUEST *req, TPM_RESPONSE *rsp)
+{
+  BYTE *ptr;
+  UINT32 len;
+  TPM_DIGEST migrationAuthorityDigest;
+  TPM_HMAC outData;
+  TPM_RESULT res;
+  /* compute parameter digest */
+  tpm_compute_in_param_digest(req);
+  /* unmarshal input */
+  ptr = req->param;
+  len = req->paramSize;
+  if (tpm_unmarshal_TPM_DIGEST(&ptr, &len, &migrationAuthorityDigest)
+      || len != 0) return TPM_BAD_PARAMETER;
+  /* execute command */
+  res = TPM_CMK_ApproveMA(&migrationAuthorityDigest, &req->auth1, &outData);
+  if (res != TPM_SUCCESS) return res;
+  /* marshal output */
+  rsp->paramSize = len = 20;
+  rsp->param = ptr = tpm_malloc(len);
+  if (ptr == NULL
+      || tpm_marshal_TPM_HMAC(&ptr, &len, &outData)) {
+    tpm_free(rsp->param);
+    res = TPM_FAIL;
+  }
   return res;
 }
 
@@ -1009,20 +1140,52 @@ static TPM_RESULT execute_TPM_CMK_CreateBlob(TPM_REQUEST *req, TPM_RESPONSE *rsp
   return res;
 }
 
-static TPM_RESULT execute_TPM_CMK_SetRestrictions(TPM_REQUEST *req, TPM_RESPONSE *rsp)
+static TPM_RESULT execute_TPM_CMK_ConvertMigration(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
   BYTE *ptr;
   UINT32 len;
-  TPM_CMK_DELEGATE restriction;
+  TPM_KEY_HANDLE parentHandle;
+  TPM_CMK_AUTH restrictTicket;
+  TPM_HMAC sigTicket;
+  TPM_KEY migratedKey;
+  UINT32 msaListSize;
+  TPM_MSA_COMPOSITE msaList;
+  UINT32 randomSize;
+  BYTE *random;
+  UINT32 outDataSize;
+  BYTE *outData = NULL;
+  TPM_RESULT res;
   /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
   len = req->paramSize;
-  if (tpm_unmarshal_TPM_CMK_DELEGATE(&ptr, &len, &restriction)
+  if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &parentHandle)
+      || tpm_unmarshal_TPM_CMK_AUTH(&ptr, &len, &restrictTicket)
+      || tpm_unmarshal_TPM_HMAC(&ptr, &len, &sigTicket)
+      || tpm_unmarshal_TPM_KEY(&ptr, &len, &migratedKey)
+      || tpm_unmarshal_UINT32(&ptr, &len, &msaListSize)
+      || (msaListSize > MAX_MSA_COMPOSITE_ENTRIES)
+      || tpm_unmarshal_TPM_MSA_COMPOSITE(&ptr, &len, &msaList, msaListSize)
+      || tpm_unmarshal_UINT32(&ptr, &len, &randomSize)
+      || tpm_unmarshal_BLOB(&ptr, &len, &random, randomSize)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
-  return TPM_CMK_SetRestrictions(restriction, &req->auth1);
+  res = TPM_CMK_ConvertMigration(parentHandle, &restrictTicket, &sigTicket, 
+    &migratedKey, msaListSize, &msaList, randomSize, random, 
+    &req->auth1, &outDataSize, &outData);
+  if (res != TPM_SUCCESS) return res;
+  /* marshal output */
+  rsp->paramSize = len = 4 + outDataSize;
+  rsp->param = ptr = tpm_malloc(len);
+  if (ptr == NULL
+      || tpm_marshal_UINT32(&ptr, &len, outDataSize)
+      || tpm_marshal_BLOB(&ptr, &len, outData, outDataSize)) {
+    tpm_free(rsp->param);
+    res = TPM_FAIL;
+  }
+  tpm_free(outData);
+  return res;
 }
 
 static TPM_RESULT execute_TPM_CreateMaintenanceArchive(TPM_REQUEST *req, TPM_RESPONSE *rsp)
@@ -1738,6 +1901,52 @@ static TPM_RESULT execute_TPM_PCR_Reset(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
   return TPM_PCR_Reset(&pcrSelection);
+}
+
+static TPM_RESULT execute_TPM_Quote2(TPM_REQUEST *req, TPM_RESPONSE *rsp)
+{
+  BYTE *ptr;
+  UINT32 len;
+  TPM_KEY_HANDLE keyHandle;
+  TPM_NONCE externalData;
+  TPM_PCR_SELECTION targetPCR;
+  BOOL addVersion;
+  TPM_PCR_INFO_SHORT pcrData;
+  UINT32 versionInfoSize;
+  TPM_CAP_VERSION_INFO versionInfo;
+  UINT32 sigSize;
+  BYTE *sig = NULL;
+  TPM_RESULT res;
+  /* compute parameter digest */
+  tpm_compute_in_param_digest(req);
+  /* unmarshal input */
+  ptr = req->param;
+  len = req->paramSize;
+  if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &keyHandle)
+      || tpm_unmarshal_TPM_NONCE(&ptr, &len, &externalData)
+      || tpm_unmarshal_TPM_PCR_SELECTION(&ptr, &len, &targetPCR)
+      || tpm_unmarshal_BOOL(&ptr, &len, &addVersion)
+      || len != 0) return TPM_BAD_PARAMETER;
+  /* execute command */
+  res = TPM_Quote2(keyHandle, &externalData, &targetPCR, addVersion, 
+    &req->auth1, &pcrData, &versionInfoSize, &versionInfo, &sigSize, &sig);
+  if (res != TPM_SUCCESS) return res;
+  /* marshal output */
+  rsp->paramSize = len = sizeof_TPM_PCR_INFO_SHORT(pcrData) + 4 
+    + versionInfoSize + 4 + sigSize;
+  rsp->param = ptr = tpm_malloc(len);
+  if (ptr == NULL
+      || tpm_marshal_TPM_PCR_INFO_SHORT(&ptr, &len, &pcrData)
+      || tpm_marshal_UINT32(&ptr, &len, versionInfoSize)
+      || ((addVersion == TRUE)
+          && tpm_marshal_TPM_CAP_VERSION_INFO(&ptr, &len, &versionInfo))
+      || tpm_marshal_UINT32(&ptr, &len, sigSize)
+      || tpm_marshal_BLOB(&ptr, &len, sig, sigSize)) {
+    tpm_free(rsp->param);
+    res = TPM_FAIL;
+  }
+  tpm_free(sig);
+  return res;
 }
 
 static TPM_RESULT execute_TPM_ChangeAuth(TPM_REQUEST *req, TPM_RESPONSE *rsp)
@@ -3168,7 +3377,7 @@ static TPM_RESULT tpm_check_status_and_mode(TPM_REQUEST *req)
       && req->ordinal != TPM_ORD_FlushSpecific
       && req->ordinal != TPM_ORD_PCRRead
       && req->ordinal != TPM_ORD_NV_ReadValue
-      && req->ordinal != TPM_ORD_NV_WriteValue 
+      && req->ordinal != TPM_ORD_NV_WriteValue
       && req->ordinal != TSC_ORD_PhysicalPresence) return TPM_DEACTIVATED;
   /* if the TPM is disabled only a subset of all commands can be performed */
   if (tpmData.permanent.flags.disable
@@ -3376,6 +3585,11 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       res = execute_TPM_SetRedirection(req, rsp);
     break;
 
+    case TPM_ORD_ResetLockValue:
+      debug("[TPM_ORD_ResetLockValue]");
+      res = execute_TPM_ResetLockValue(req, rsp);
+    break;
+
     case TPM_ORD_Seal:
       debug("[TPM_ORD_Seal]");
       res = execute_TPM_Seal(req, rsp);
@@ -3411,6 +3625,11 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       res = execute_TPM_GetPubKey(req, rsp);
     break;
 
+    case TPM_ORD_Sealx:
+      debug("[TPM_ORD_Sealx]");
+      res = execute_TPM_Sealx(req, rsp);
+    break;
+
     case TPM_ORD_CreateMigrationBlob:
       debug("[TPM_ORD_CreateMigrationBlob]");
       res = execute_TPM_CreateMigrationBlob(req, rsp);
@@ -3424,6 +3643,21 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
     case TPM_ORD_AuthorizeMigrationKey:
       debug("[TPM_ORD_AuthorizeMigrationKey]");
       res = execute_TPM_AuthorizeMigrationKey(req, rsp);
+    break;
+
+    case TPM_ORD_MigrateKey:
+      debug("[TPM_ORD_MigrateKey]");
+      res = execute_TPM_MigrateKey(req, rsp);
+    break;
+
+    case TPM_ORD_CMK_SetRestrictions:
+      debug("[TPM_ORD_CMK_SetRestrictions]");
+      res = execute_TPM_CMK_SetRestrictions(req, rsp);
+    break;
+
+    case TPM_ORD_CMK_ApproveMA:
+      debug("[TPM_ORD_CMK_ApproveMA]");
+      res = execute_TPM_CMK_ApproveMA(req, rsp);
     break;
 
     case TPM_ORD_CMK_CreateKey:
@@ -3441,9 +3675,9 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       res = execute_TPM_CMK_CreateBlob(req, rsp);
     break;
 
-    case TPM_ORD_CMK_SetRestrictions:
-      debug("[TPM_ORD_CMK_SetRestrictions]");
-      res = execute_TPM_CMK_SetRestrictions(req, rsp);
+    case TPM_ORD_CMK_ConvertMigration:
+      debug("[TPM_ORD_CMK_ConvertMigration]");
+      res = execute_TPM_CMK_ConvertMigration(req, rsp);
     break;
 
     case TPM_ORD_CreateMaintenanceArchive:
@@ -3574,6 +3808,11 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
     case TPM_ORD_PCR_Reset:
       debug("[TPM_ORD_PCR_Reset]");
       res = execute_TPM_PCR_Reset(req, rsp);
+    break;
+
+    case TPM_ORD_Quote2:
+      debug("[TPM_ORD_Quote2]");
+      res = execute_TPM_Quote2(req, rsp);
     break;
 
     case TPM_ORD_ChangeAuth:

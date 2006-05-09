@@ -107,7 +107,7 @@ TPM_RESULT TPM_PCR_Reset(TPM_PCR_SELECTION *pcrSelection)
   info("TPM_PCR_Reset()");
   if ((pcrSelection->sizeOfSelect * 8) > TPM_NUM_PCR)
     return TPM_INVALID_PCR_INFO;
-  /* this command must be atomic, thus we first verify that all 
+  /* this command must be atomic, thus we first verify that all
      registers are resetable ... */ 
   for (i = 0; i < pcrSelection->sizeOfSelect * 8; i++) {
     /* is PCR number i selected ? */
@@ -189,9 +189,26 @@ TPM_RESULT tpm_verify_pcr(TPM_KEY_DATA *key, BOOL atrelease, BOOL atcreation)
         sizeof(TPM_DIGEST))) return TPM_WRONGPCRVAL;
     if (key->pcrInfo.tag == TPM_TAG_PCR_INFO_LONG
         && !(key->pcrInfo.localityAtCreation
-             & (1 << tpmData.stany.flags.localityModifier))) 
-      return TPM_BAD_LOCALITY;  
+             & (1 << tpmData.stany.flags.localityModifier)))
+      return TPM_BAD_LOCALITY;
   }
   return TPM_SUCCESS;
 }
 
+TPM_RESULT TPM_Quote2(
+  TPM_KEY_HANDLE keyHandle,
+  TPM_NONCE *externalData,
+  TPM_PCR_SELECTION *targetPCR,
+  BOOL addVersion,
+  TPM_AUTH *auth1,
+  TPM_PCR_INFO_SHORT *pcrData,
+  UINT32 *versionInfoSize,
+  TPM_CAP_VERSION_INFO *versionInfo,
+  UINT32 *sigSize,
+  BYTE **sig
+)
+{
+  info("TPM_Quote2() not implemented yet");
+  /* TODO: implement TPM_Quote2() */
+  return TPM_FAIL;
+}

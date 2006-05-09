@@ -423,6 +423,8 @@ typedef struct tdTPM_SIGN_INFO {
   BYTE* data;
 } TPM_SIGN_INFO;
 
+#define MAX_MSA_COMPOSITE_ENTRIES 16
+
 /* !!! WATCH: added since v1.2 rev 94 !!!
  *
  * TPM_MSA_COMPOSITE ([TPM_Part2], Section 5.15)
@@ -431,7 +433,7 @@ typedef struct tdTPM_SIGN_INFO {
  */
 typedef struct tdTPM_MSA_COMPOSITE {
   UINT32 MSAlist;
-  TPM_DIGEST *migAuthDigest;
+  TPM_DIGEST migAuthDigest[MAX_MSA_COMPOSITE_ENTRIES];
 } TPM_MSA_COMPOSITE;
 
 /*

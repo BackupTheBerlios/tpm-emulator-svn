@@ -29,7 +29,7 @@ TPM_RESULT TPM_FieldUpgrade()
   return TPM_FAIL;
 }
 
-TPM_RESULT TPM_SetRedirection(  
+TPM_RESULT TPM_SetRedirection(
   TPM_KEY_HANDLE keyHandle,
   TPM_REDIR_COMMAND redirCmd,
   UINT32 inputDataSize,
@@ -42,3 +42,11 @@ TPM_RESULT TPM_SetRedirection(
   return TPM_FAIL;
 }
 
+TPM_RESULT TPM_ResetLockValue(
+  TPM_AUTH *auth1
+)
+{
+  info("TPM_ResetLockValue not implemented yet");
+  /* TODO: implement TPM_ResetLockValue() */
+  return TPM_FAIL;
+}

@@ -917,6 +917,80 @@ int tpm_unmarshal_TPM_DAA_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_DAA_SESSI
   return 0;
 }
 
+int tpm_marshal_TPM_MSA_COMPOSITE
+  (BYTE **ptr, UINT32 *length, TPM_MSA_COMPOSITE *v, UINT32 n)
+{
+  UINT32 i;
+  if (tpm_marshal_UINT32(ptr, length, v->MSAlist))
+    return -1;
+  for (i = 0; i < n; i++) {
+    if (tpm_marshal_TPM_DIGEST(ptr, length, &v->migAuthDigest[i])) return -1;
+  }
+  return 0;
+}
+
+int tpm_unmarshal_TPM_MSA_COMPOSITE
+  (BYTE **ptr, UINT32 *length, TPM_MSA_COMPOSITE *v, UINT32 n)
+{
+  UINT32 i;
+  if (tpm_unmarshal_UINT32(ptr, length, &v->MSAlist))
+    return -1;
+  for (i = 0; i < n; i++) {
+    if (tpm_unmarshal_TPM_DIGEST(ptr, length, &v->migAuthDigest[i])) return -1;
+  }
+  return 0;
+}
+
+int tpm_marshal_TPM_CMK_AUTH(BYTE **ptr, UINT32 *length, TPM_CMK_AUTH *v)
+{
+  if (tpm_marshal_TPM_DIGEST(ptr, length, &v->migrationAuthorityDigest)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->destinationKeyDigest)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->sourceKeyDigest))
+        return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_CMK_AUTH(BYTE **ptr, UINT32 *length, TPM_CMK_AUTH *v)
+{
+  if (tpm_unmarshal_TPM_DIGEST(ptr, length, &v->migrationAuthorityDigest)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->destinationKeyDigest)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->sourceKeyDigest))
+        return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_CAP_VERSION_INFO(BYTE **ptr, UINT32 *length, TPM_CAP_VERSION_INFO *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_VERSION(ptr, length, &v->version)
+      || tpm_marshal_UINT16(ptr, length, v->specLevel)
+      || tpm_marshal_BYTE(ptr, length, v->errataRev)
+      || tpm_marshal_BYTE(ptr, length, v->tpmVendorID[0])
+      || tpm_marshal_BYTE(ptr, length, v->tpmVendorID[1])
+      || tpm_marshal_BYTE(ptr, length, v->tpmVendorID[2])
+      || tpm_marshal_BYTE(ptr, length, v->tpmVendorID[3])
+      || tpm_marshal_UINT16(ptr, length, v->vendorSpecificSize)
+      || tpm_marshal_BLOB(ptr, length, v->vendorSpecific, v->vendorSpecificSize))
+        return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_CAP_VERSION_INFO(BYTE **ptr, UINT32 *length, TPM_CAP_VERSION_INFO *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_VERSION(ptr, length, &v->version)
+      || tpm_unmarshal_UINT16(ptr, length, &v->specLevel)
+      || tpm_unmarshal_BYTE(ptr, length, &v->errataRev)
+      || tpm_unmarshal_BYTE(ptr, length, &v->tpmVendorID[0])
+      || tpm_unmarshal_BYTE(ptr, length, &v->tpmVendorID[1])
+      || tpm_unmarshal_BYTE(ptr, length, &v->tpmVendorID[2])
+      || tpm_unmarshal_BYTE(ptr, length, &v->tpmVendorID[3])
+      || tpm_unmarshal_UINT16(ptr, length, &v->vendorSpecificSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->vendorSpecific, v->vendorSpecificSize))
+        return -1;
+  return 0;
+}
+
 int tpm_marshal_TPM_NV_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_NV_ATTRIBUTES *v)
 {
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)

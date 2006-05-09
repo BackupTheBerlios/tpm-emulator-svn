@@ -232,8 +232,8 @@ TPM_RESULT TPM_TakeOwnership(
   UINT32 encSrkAuthSize,
   BYTE *encSrkAuth,
   TPM_KEY *srkParams,
-  TPM_AUTH *auth1,  
-  TPM_KEY *srkPub 
+  TPM_AUTH *auth1,
+  TPM_KEY *srkPub
 );
 
 /**
@@ -494,7 +494,7 @@ TPM_RESULT TPM_SetOrdinalAuditStatus(
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
  * Description: ([TPM_Part3], Section 9.1)
- * This command provides a manufacturer specific method of updating  
+ * This command provides a manufacturer specific method of updating
  * the protected capabilities
  */
 TPM_RESULT TPM_FieldUpgrade(void);
@@ -510,11 +510,22 @@ TPM_RESULT TPM_FieldUpgrade(void);
  * 
  * Description: ([TPM_Part3], Section 9.2)
  */
-TPM_RESULT TPM_SetRedirection(  
+TPM_RESULT TPM_SetRedirection(
   TPM_KEY_HANDLE keyHandle,
   TPM_REDIR_COMMAND redirCmd,
   UINT32 inputDataSize,
   BYTE *inputData,
+  TPM_AUTH *auth1
+);
+
+/**
+ * TPM_ResetLockValue - resets the TPM dictionary attack mitigation values
+ * @auth1: [in, out] Authorization protocol parameters
+ * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
+ * 
+ * Description: ([TPM_Part3], Section 9.3)
+ */
+TPM_RESULT TPM_ResetLockValue(
   TPM_AUTH *auth1
 );
 
@@ -527,27 +538,27 @@ TPM_RESULT TPM_SetRedirection(
  * TPM_Seal - seals the TPM configuration
  * @keyHandle: [in] Handle of a loaded key that can perform seal operations
  * @encAuth: [in] The encrypted authorization data for the sealed data
- * @pcrInfoSize: [in] The size of the pcrInfo parameter 
+ * @pcrInfoSize: [in] The size of the pcrInfo parameter
  * @pcrInfo: [in] The PCR selection information
  * @inDataSize: [in] The size of the inData parameter
  * @inData: [in] The data to be sealed to the platform and any specified PCRs
  * @auth1: [in, out] Authorization protocol parameters
- * @sealedData: [out] Encrypted, integrity-protected data object 
+ * @sealedData: [out] Encrypted, integrity-protected data object
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
  * Description: ([TPM_Part3], Section 10.1)
- * The Seal operation allows software to explicitly state the future trusted 
- * configuration that the platform must be in for the secret to be revealed. 
+ * The Seal operation allows software to explicitly state the future trusted
+ * configuration that the platform must be in for the secret to be revealed.
  */
-TPM_RESULT TPM_Seal(  
+TPM_RESULT TPM_Seal(
   TPM_KEY_HANDLE keyHandle,
   TPM_ENCAUTH *encAuth,
   UINT32 pcrInfoSize,
   TPM_PCR_INFO *pcrInfo,
   UINT32 inDataSize,
   BYTE *inData,
-  TPM_AUTH *auth1,  
-  TPM_STORED_DATA *sealedData 
+  TPM_AUTH *auth1,
+  TPM_STORED_DATA *sealedData
 );
 
 /**
@@ -563,40 +574,40 @@ TPM_RESULT TPM_Seal(
  * Description: ([TPM_Part3], Section 10.2)
  * The Unseal operation will reveal TPM_Sealed data only if it was encrypted 
  * on this platform and the current configuration (as defined by the named PCR 
- * contents) is the one named as qualified to decrypt it. 
+ * contents) is the one named as qualified to decrypt it.
  */
-TPM_RESULT TPM_Unseal(  
+TPM_RESULT TPM_Unseal(
   TPM_KEY_HANDLE parentHandle,
   TPM_STORED_DATA *inData,
   TPM_AUTH *auth1,
-  TPM_AUTH *auth2,  
+  TPM_AUTH *auth2,
   UINT32 *sealedDataSize,
-  BYTE **secret  
+  BYTE **secret
 );
 
 /**
- * TPM_UnBind - decrypts the result of a TSS_Bind command 
+ * TPM_UnBind - decrypts the result of a TSS_Bind command
  * @keyHandle: [in] Handle of a loaded key that can perform UnBind operations
- * @inDataSize: [in] The size of the input blob 
+ * @inDataSize: [in] The size of the input blob
  * @inData: [in] Encrypted blob to be decrypted
  * @auth1: [in, out] Authorization protocol parameters
- * @outDataSize: [out] The length of the returned decrypted data 
+ * @outDataSize: [out] The length of the returned decrypted data
  * @outData: [out] The resulting decrypted data
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
  * Description: ([TPM_Part3], Section 10.3)
- * TPM_UnBind takes the data blob that is the result of a TSS_Bind command and 
- * decrypts it for export to the User. The caller must authorize the use of the 
+ * TPM_UnBind takes the data blob that is the result of a TSS_Bind command and
+ * decrypts it for export to the User. The caller must authorize the use of the
  * key that will decrypt the incoming blob. UnBInd operates on a block-by-block
  * basis, and has no notion of any relation between one block and another.
  */
-TPM_RESULT TPM_UnBind(  
+TPM_RESULT TPM_UnBind(
   TPM_KEY_HANDLE keyHandle,
   UINT32 inDataSize,
   BYTE *inData,
-  TPM_AUTH *auth1,  
+  TPM_AUTH *auth1,
   UINT32 *outDataSize,
-  BYTE **outData  
+  BYTE **outData
 );
 
 /**
@@ -610,17 +621,17 @@ TPM_RESULT TPM_UnBind(
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
  * Description: ([TPM_Part3], Section 10.4)
- * The TPM_CreateWrapKey command both generates and creates a secure storage 
- * bundle for asymmetric keys. The newly created key can be locked to a 
+ * The TPM_CreateWrapKey command both generates and creates a secure storage
+ * bundle for asymmetric keys. The newly created key can be locked to a
  * specific PCR value by specifying a set of PCR registers.
  */
-TPM_RESULT TPM_CreateWrapKey(  
+TPM_RESULT TPM_CreateWrapKey(
   TPM_KEY_HANDLE parentHandle,
   TPM_ENCAUTH *dataUsageAuth,
   TPM_ENCAUTH *dataMigrationAuth,
   TPM_KEY *keyInfo,
-  TPM_AUTH *auth1,  
-  TPM_KEY *wrappedKey 
+  TPM_AUTH *auth1,
+  TPM_KEY *wrappedKey
 );
 
 /**
@@ -632,15 +643,15 @@ TPM_RESULT TPM_CreateWrapKey(
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
  * Description: ([TPM_Part3], Section 10.5)
- * Before the TPM can use a key to either wrap, unwrap, bind, unbind, seal, 
- * unseal, sign or perform any other action, it needs to be present in the 
+ * Before the TPM can use a key to either wrap, unwrap, bind, unbind, seal,
+ * unseal, sign or perform any other action, it needs to be present in the
  * TPM. The TPM_LoadKey function loads the key into the TPM for further use.
  */
-TPM_RESULT TPM_LoadKey(  
+TPM_RESULT TPM_LoadKey(
   TPM_KEY_HANDLE parentHandle,
   TPM_KEY *inKey,
-  TPM_AUTH *auth1,  
-  TPM_KEY_HANDLE *inkeyHandle 
+  TPM_AUTH *auth1,
+  TPM_KEY_HANDLE *inkeyHandle
 );
 
 /**
@@ -652,11 +663,11 @@ TPM_RESULT TPM_LoadKey(
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
  * Description: ([TPM_Part3], Section 10.5)
- * Before the TPM can use a key to either wrap, unwrap, bind, unbind, seal, 
- * unseal, sign or perform any other action, it needs to be present in the 
+ * Before the TPM can use a key to either wrap, unwrap, bind, unbind, seal,
+ * unseal, sign or perform any other action, it needs to be present in the
  * TPM. The TPM_LoadKey function loads the key into the TPM for further use.
  */
-TPM_RESULT TPM_LoadKey2(  
+TPM_RESULT TPM_LoadKey2(
   TPM_KEY_HANDLE parentHandle,
   TPM_KEY *inKey,
   TPM_AUTH *auth1,
@@ -671,14 +682,43 @@ TPM_RESULT TPM_LoadKey2(
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
  * Description: ([TPM_Part3], Section 10.6)
- * The owner of a key may wish to obtain the public key value from a loaded 
- * key. This information may have privacy concerns so the command must have 
+ * The owner of a key may wish to obtain the public key value from a loaded
+ * key. This information may have privacy concerns so the command must have
  * authorization from the key owner.
  */
-TPM_RESULT TPM_GetPubKey(  
+TPM_RESULT TPM_GetPubKey(
   TPM_KEY_HANDLE keyHandle,
-  TPM_AUTH *auth1,  
-  TPM_PUBKEY *pubKey 
+  TPM_AUTH *auth1,
+  TPM_PUBKEY *pubKey
+);
+
+/**
+ * TPM_Sealx - seals encrypted data to a TPM configuration
+ * @keyHandle: [in] Handle of a loaded key that can perform seal operations
+ * @encAuth: [in] The encrypted authorization data for the sealed data
+ * @pcrInfoSize: [in] The size of the pcrInfo parameter
+ * @pcrInfo: [in] The PCR selection information (MUST be TPM_PCR_INFO_LONG)
+ * @inDataSize: [in] The size of the inData parameter
+ * @inData: [in] The data to be sealed to the platform and any specified PCRs
+ * @auth1: [in, out] Authorization protocol parameters
+ * @sealedData: [out] Encrypted, integrity-protected data object
+ * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
+ * 
+ * Description: ([TPM_Part3], Section 10.7)
+ * The SEALX command works exactly like the SEAL command with the additional
+ * requirement of encryption for the inData parameter. This command also
+ * places in the sealed blob the information that the unseal also requires
+ * encryption.
+ */
+TPM_RESULT TPM_Sealx(
+  TPM_KEY_HANDLE keyHandle,
+  TPM_ENCAUTH *encAuth,
+  UINT32 pcrInfoSize,
+  TPM_PCR_INFO *pcrInfo,
+  UINT32 inDataSize,
+  BYTE *inData,
+  TPM_AUTH *auth1,
+  TPM_STORED_DATA *sealedData
 );
 
 /*
@@ -689,62 +729,62 @@ TPM_RESULT TPM_GetPubKey(
 /**
  * TPM_CreateMigrationBlob - creates a migration blob
  * @parentHandle: [in] Handle of the parent key that can decrypt encData
- * @migrationType: [in] The migration type, either MIGRATE or REWRAP 
+ * @migrationType: [in] The migration type, either MIGRATE or REWRAP
  * @migrationKeyAuth: [in] Migration public key and its authorization digest
- * @encDataSize: [in] The size of the encData parameter 
+ * @encDataSize: [in] The size of the encData parameter
  * @encData: [in] The encrypted entity that is to be modified
  * @auth1: [in, out] Authorization protocol parameters
  * @auth2: [in, out] Authorization protocol parameters
- * @randomSize: [out] The used size of the output area for random 
+ * @randomSize: [out] The used size of the output area for random
  * @random: [out] String used for xor encryption 
- * @outDataSize: [out] The used size of the output area for outData 
+ * @outDataSize: [out] The used size of the output area for outData
  * @outData: [out] The modified, encrypted entity
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
  * Description: ([TPM_Part3], Section 11.1)
- * The TPM_CreateMigrationBlob command implements the first step in the 
- * process of moving a migratable key to a new parent or platform. 
+ * The TPM_CreateMigrationBlob command implements the first step in the
+ * process of moving a migratable key to a new parent or platform.
  */
-TPM_RESULT TPM_CreateMigrationBlob(  
+TPM_RESULT TPM_CreateMigrationBlob(
   TPM_KEY_HANDLE parentHandle,
   TPM_MIGRATE_SCHEME migrationType,
   TPM_MIGRATIONKEYAUTH *migrationKeyAuth,
   UINT32 encDataSize,
   BYTE *encData,
   TPM_AUTH *auth1,
-  TPM_AUTH *auth2,  
+  TPM_AUTH *auth2,
   UINT32 *randomSize,
-  BYTE **random ,
+  BYTE **random,
   UINT32 *outDataSize,
-  BYTE **outData  
+  BYTE **outData
 );
 
 /**
  * TPM_ConvertMigrationBlob - converts a migration into a wrapped blob
  * @parentHandle: [in] Handle of a loaded key that can decrypt keys
- * @inDataSize: [in] Size of inData 
- * @inData: [in] The XOR d and encrypted key 
- * @randomSize: [in] Size of random 
+ * @inDataSize: [in] Size of inData
+ * @inData: [in] The XOR d and encrypted key
+ * @randomSize: [in] Size of random
  * @random: [in] Random value used to hide key data
  * @auth1: [in, out] Authorization protocol parameters
- * @outDataSize: [out] The used size of the output area for outData 
- * @outData: [out] The encrypted private key that can be loaded with LoadKey 
+ * @outDataSize: [out] The used size of the output area for outData
+ * @outData: [out] The encrypted private key that can be loaded with LoadKey
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
  * Description: ([TPM_Part3], Section 11.2)
- * This command takes a migration blob and creates a normal wrapped blob. 
- * The migrated blob must be loaded into the TPM using the normal TPM_LoadKey 
- * function. Note that the command migrates private keys, only. 
+ * This command takes a migration blob and creates a normal wrapped blob.
+ * The migrated blob must be loaded into the TPM using the normal TPM_LoadKey
+ * function. Note that the command migrates private keys, only.
  */
-TPM_RESULT TPM_ConvertMigrationBlob(  
+TPM_RESULT TPM_ConvertMigrationBlob(
   TPM_KEY_HANDLE parentHandle,
   UINT32 inDataSize,
   BYTE *inData,
   UINT32 randomSize,
   BYTE *random,
-  TPM_AUTH *auth1,  
+  TPM_AUTH *auth1,
   UINT32 *outDataSize,
-  BYTE **outData  
+  BYTE **outData
 );
 
 /**
@@ -756,15 +796,69 @@ TPM_RESULT TPM_ConvertMigrationBlob(
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
  * Description: ([TPM_Part3], Section 11.3)
- * This command creates an authorization blob, to allow the TPM owner to 
- * specify which migration facility they will use and allow users to migrate 
- * information without further involvement with the TPM owner. 
+ * This command creates an authorization blob, to allow the TPM owner to
+ * specify which migration facility they will use and allow users to migrate
+ * information without further involvement with the TPM owner.
  */
-TPM_RESULT TPM_AuthorizeMigrationKey(  
+TPM_RESULT TPM_AuthorizeMigrationKey(
   TPM_MIGRATE_SCHEME migrateScheme,
   TPM_PUBKEY *migrationKey,
-  TPM_AUTH *auth1,  
-  TPM_MIGRATIONKEYAUTH *outData 
+  TPM_AUTH *auth1,
+  TPM_MIGRATIONKEYAUTH *outData
+);
+
+/**
+ * TPM_MigrateKey - performs the function of a migration authority
+ * @maKeyHandle: [in] Handle of the key to be used to migrate the key
+ * @pubKey: [in] Public key to which the blob is to be migrated
+ * @inDataSize: [in] The size of inData
+ * @inData: [in] The input blob
+ * @auth1: [in, out] Authorization protocol parameters
+ * @outDataSize: [out] The used size of the output area for outData
+ * @outData: [out] The re-encrypted blob
+ * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
+ * 
+ * Description: ([TPM_Part3], Section 11.4)
+ */
+TPM_RESULT TPM_MigrateKey(
+  TPM_KEY_HANDLE maKeyHandle,
+  TPM_PUBKEY *pubKey,
+  UINT32 inDataSize,
+  BYTE *inData,
+  TPM_AUTH *auth1,
+  UINT32 *outDataSize,
+  BYTE **outData
+);
+
+/**
+ * TPM_CMK_SetRestrictions - dictates the usage of a restricted migration key
+ * @restriction: [in] The bit mask of how to set the restrictions on CMK keys
+ * @auth1: [in, out] Authorization protocol parameters
+ * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
+ * 
+ * Description: ([TPM_Part3], Section 11.5)
+ * This command is used by the Owner to dictate the usage of a restricted-
+ * migration key with delegated authorisation (authorisation other than actual
+ * Owner authorisation).
+ */
+TPM_RESULT TPM_CMK_SetRestrictions(
+  TPM_CMK_DELEGATE restriction,
+  TPM_AUTH *auth1
+);
+
+/**
+ * TPM_CMK_ApproveMA - creates an authorization ticket
+ * @migrationAuthorityDigest: [in] A digest of a TPM_MSA_COMPOSITE structure
+ * @auth1: [in, out] Authorization protocol parameters
+ * @outData: [out] HMAC of the migrationAuthorityDigest
+ * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
+ * 
+ * Description: ([TPM_Part3], Section 11.6)
+ */
+TPM_RESULT TPM_CMK_ApproveMA(
+  TPM_DIGEST *migrationAuthorityDigest,
+  TPM_AUTH *auth1,
+  TPM_HMAC *outData
 );
 
 /**
@@ -778,72 +872,72 @@ TPM_RESULT TPM_AuthorizeMigrationKey(
  * @wrappedKey: [out] The public and encrypted private key
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
- * Description: ([TPM_Part3], Section 11.4)
+ * Description: ([TPM_Part3], Section 11.7)
  * The TPM_CreateWrapRestrictedKey command both generates and creates a
- * secure storage bundle for asymmetric keys whose migration is controlled 
- * by a migration authority. 
+ * secure storage bundle for asymmetric keys whose migration is controlled
+ * by a migration authority.
  */
-TPM_RESULT TPM_CMK_CreateKey(  
+TPM_RESULT TPM_CMK_CreateKey(
   TPM_KEY_HANDLE parentHandle,
   TPM_ENCAUTH *dataUsageAuth,
   TPM_KEY *keyInfo,
   TPM_DIGEST *migrationAuthorityDigest,
   TPM_AUTH *auth1,
-  TPM_AUTH *auth2,  
-  TPM_KEY *wrappedKey 
+  TPM_AUTH *auth2,
+  TPM_KEY *wrappedKey
 );
 
 /**
  * TPM_CMK_CreateTicket - creates a ticket for proving a signature verification
- * @verificationKey: [in] The public key to be used to check signatureValue 
- * @signedData: [in] The data proported to be signed 
- * @signatureValueSize: [in] The size of the signatureValue 
+ * @verificationKey: [in] The public key to be used to check signatureValue
+ * @signedData: [in] The data proported to be signed
+ * @signatureValueSize: [in] The size of the signatureValue
  * @signatureValue: [in] The signatureValue to be verified
  * @auth1: [in, out] Authorization protocol parameters
- * @sigTicket: [out] Ticket that proves digest created on this TPM 
+ * @sigTicket: [out] Ticket that proves digest created on this TPM
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
- * Description: ([TPM_Part3], Section 11.5)
- * The TPM_verifySignature command uses a public key to verify the signature 
- * over a digest. TPM_verifySignature provides a ticket that can be used to 
- * prove to the same TPM that signature verification with a particular public 
+ * Description: ([TPM_Part3], Section 11.8)
+ * The TPM_verifySignature command uses a public key to verify the signature
+ * over a digest. TPM_verifySignature provides a ticket that can be used to
+ * prove to the same TPM that signature verification with a particular public
  * key was successful.
  */
-TPM_RESULT TPM_CMK_CreateTicket(  
+TPM_RESULT TPM_CMK_CreateTicket(
   TPM_PUBKEY *verificationKey,
   TPM_DIGEST *signedData,
   UINT32 signatureValueSize,
   BYTE *signatureValue,
-  TPM_AUTH *auth1,  
-  TPM_DIGEST *sigTicket 
+  TPM_AUTH *auth1,
+  TPM_DIGEST *sigTicket
 );
 
 /**
- * TPM_CMK_CreateBlob - creates a migration blob 
+ * TPM_CMK_CreateBlob - creates a migration blob
  * @parentHandle: [in] Handle of the parent key that can decrypt encData
  * @migrationType: [in] The migration type
  * @migrationKeyAuth: [in] Migration public key and its authorization digest
- * @pubSourceKeyDigest: [in] Digest of the entity's public key to be migrated 
- * @restrictTicketSize: [in] The size of the restrictTicket parameter 
+ * @pubSourceKeyDigest: [in] Digest of the entity's public key to be migrated
+ * @restrictTicketSize: [in] The size of the restrictTicket parameter
  * @restrictTicket: [in] The digests of the public keys
- * @sigTicketSize: [in] The size of the sigTicket parameter 
+ * @sigTicketSize: [in] The size of the sigTicket parameter
  * @sigTicket: [in] A signature ticket, generate by the TPM
- * @encDataSize: [in] The size of the encData parameter 
+ * @encDataSize: [in] The size of the encData parameter
  * @encData: [in] The encrypted entity that is to be modified
  * @auth1: [in, out] Authorization protocol parameters
- * @randomSize: [out] The used size of the output area for random 
- * @random: [out] String used for xor encryption 
- * @outDataSize: [out] The used size of the output area for outData 
+ * @randomSize: [out] The used size of the output area for random
+ * @random: [out] String used for xor encryption
+ * @outDataSize: [out] The used size of the output area for outData
  * @outData: [out] The modified, encrypted entity
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
- * Description: ([TPM_Part3], Section 11.6)
- * TPM_CMK_CreateBlob command is very similar to TPM_CreateMigrationBlob, 
- * except that it (1) uses an extra ticket (restrictedKeyAuth) instead 
- * of a migrationAuth authorization session; (2) uses the migration options 
- * TPM_MS_RESTRICT_MIGRATE or TPM_MS_RESTRICT_APPROVE. 
+ * Description: ([TPM_Part3], Section 11.9)
+ * TPM_CMK_CreateBlob command is very similar to TPM_CreateMigrationBlob,
+ * except that it (1) uses an extra ticket (restrictedKeyAuth) instead
+ * of a migrationAuth authorization session; (2) uses the migration options
+ * TPM_MS_RESTRICT_MIGRATE or TPM_MS_RESTRICT_APPROVE.
  */
-TPM_RESULT TPM_CMK_CreateBlob(  
+TPM_RESULT TPM_CMK_CreateBlob(
   TPM_KEY_HANDLE parentHandle,
   TPM_MIGRATE_SCHEME migrationType,
   TPM_MIGRATIONKEYAUTH *migrationKeyAuth,
@@ -854,27 +948,42 @@ TPM_RESULT TPM_CMK_CreateBlob(
   BYTE *sigTicket,
   UINT32 encDataSize,
   BYTE *encData,
-  TPM_AUTH *auth1,  
+  TPM_AUTH *auth1,
   UINT32 *randomSize,
-  BYTE **random ,
+  BYTE **random,
   UINT32 *outDataSize,
-  BYTE **outData  
+  BYTE **outData
 );
 
 /**
- * TPM_CMK_SetRestrictions - dictates the usage of a restricted migration key
- * @restriction: [in] The bit mask of how to set the restrictions on CMK keys
+ * TPM_CMK_ConvertMigration - completes the migration of certified blobs
+ * @parentHandle: [in] Handle of a loaded key that can decrypt keys
+ * @restrictTicket: [in] The digests of the public keys
+ * @sigTicket: [in] A signature ticket, generated by the TPM
+ * @migratedKey: [in] The public key of the key to be migrated
+ * @msaListSize: [in] The size of the msaList parameter
+ * @msaList: [in] One or more digests of public keys belonging to MAs
+ * @randomSize: [in] Size of random
+ * @random: [in] Random value used to hide key data
  * @auth1: [in, out] Authorization protocol parameters
+ * @outDataSize: [out] The used size of the output area for outData
+ * @outData: [out] The encrypted private key that can be loaded
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
- * Description: ([TPM_Part3], Section 11.7)
- * This command is used by the Owner to dictate the usage of a restricted-
- * migration key with delegated authorisation (authorisation other than actual 
- * Owner authorisation). 
+ * Description: ([TPM_Part3], Section 11.10)
  */
-TPM_RESULT TPM_CMK_SetRestrictions(  
-  TPM_CMK_DELEGATE restriction,
-  TPM_AUTH *auth1
+TPM_RESULT TPM_CMK_ConvertMigration(
+  TPM_KEY_HANDLE parentHandle,
+  TPM_CMK_AUTH *restrictTicket,
+  TPM_HMAC *sigTicket,
+  TPM_KEY *migratedKey,
+  UINT32 msaListSize,
+  TPM_MSA_COMPOSITE *msaList,
+  UINT32 randomSize,
+  BYTE *random,
+  TPM_AUTH *auth1,
+  UINT32 *outDataSize,
+  BYTE **outData
 );
 
 /*
@@ -1343,10 +1452,10 @@ TPM_RESULT TPM_ActivateIdentity(
  * Description: ([TPM_Part3], Section 16.1)
  * This adds a new measurement to a Platform Configuration Register (PCR).
  */
-TPM_RESULT TPM_Extend(  
+TPM_RESULT TPM_Extend(
   TPM_PCRINDEX pcrNum,
-  TPM_DIGEST *inDigest,  
-  TPM_PCRVALUE *outDigest 
+  TPM_DIGEST *inDigest,
+  TPM_PCRVALUE *outDigest
 );
 
 /**
@@ -1356,12 +1465,12 @@ TPM_RESULT TPM_Extend(
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
  * Description: ([TPM_Part3], Section 16.2)
- * The TPM_PCRRead operation provides non-cryptographic reporting of the 
+ * The TPM_PCRRead operation provides non-cryptographic reporting of the
  * contents of a named PCR.
  */
-TPM_RESULT TPM_PCRRead(  
-  TPM_PCRINDEX pcrIndex,  
-  TPM_PCRVALUE *outDigest 
+TPM_RESULT TPM_PCRRead(
+  TPM_PCRINDEX pcrIndex,
+  TPM_PCRVALUE *outDigest
 );
 
 /**
@@ -1371,24 +1480,24 @@ TPM_RESULT TPM_PCRRead(
  * @targetPCR: [in] The indices of the PCRs that are to be reported
  * @auth1: [in, out] Authorization protocol parameters
  * @pcrData: [out] The indices and values of the PCRs listed in targetPCR
- * @sigSize: [out] The used size of the output area for the signature 
+ * @sigSize: [out] The used size of the output area for the signature
  * @sig: [out] The signed data blob
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
  * Description: ([TPM_Part3], Section 16.3)
- * The TPM_Quote operation provides cryptographic reporting of PCR values. 
- * A loaded key is required for operation TPM_Quote uses a key to sign a 
- * statement that names the current value of a chosen PCR and externally 
- * supplied data (which may be a nonce supplied by a Challenger). 
+ * The TPM_Quote operation provides cryptographic reporting of PCR values.
+ * A loaded key is required for operation TPM_Quote uses a key to sign a
+ * statement that names the current value of a chosen PCR and externally
+ * supplied data (which may be a nonce supplied by a Challenger).
  */
-TPM_RESULT TPM_Quote(  
+TPM_RESULT TPM_Quote(
   TPM_KEY_HANDLE keyHandle,
   TPM_NONCE *extrnalData,
   TPM_PCR_SELECTION *targetPCR,
-  TPM_AUTH *auth1,  
+  TPM_AUTH *auth1,
   TPM_PCR_COMPOSITE *pcrData,
   UINT32 *sigSize,
-  BYTE **sig  
+  BYTE **sig
 );
 
 /**
@@ -1397,12 +1506,41 @@ TPM_RESULT TPM_Quote(
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
  * Description: ([TPM_Part3], Section 16.4)
- * Resets the indicated PCRs. This command uses the locality modifier. 
- * The modifier for a command to indicate locality is a platform specific 
- * issue. 
+ * Resets the indicated PCRs. This command uses the locality modifier.
+ * The modifier for a command to indicate locality is a platform specific
+ * issue.
  */
-TPM_RESULT TPM_PCR_Reset(  
+TPM_RESULT TPM_PCR_Reset(
   TPM_PCR_SELECTION *pcrSelection
+);
+
+/**
+ * TPM_Quote2 - provides cryptographic reporting of PCR values
+ * @keyHandle: [in] Handle of a loaded key that can sign the PCR values
+ * @extrnalData: [in] 160 bits of externally supplied data (typically a nonce)
+ * @targetPCR: [in] The indices of the PCRs that are to be reported
+ * @addVersion: [in] When TRUE add TPM_CAP_VERSION_INFO to the output
+ * @auth1: [in, out] Authorization protocol parameters
+ * @pcrData: [out] The value created and signed for the quote
+ * @versionInfoSize: [out] Size of the version info
+ * @versionInfo: [out] The version info
+ * @sigSize: [out] The used size of the output area for the signature
+ * @sig: [out] The signed data blob
+ * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
+ * 
+ * Description: ([TPM_Part3], Section 16.5)
+ */
+TPM_RESULT TPM_Quote2(
+  TPM_KEY_HANDLE keyHandle,
+  TPM_NONCE *externalData,
+  TPM_PCR_SELECTION *targetPCR,
+  BOOL addVersion,
+  TPM_AUTH *auth1,
+  TPM_PCR_INFO_SHORT *pcrData,
+  UINT32 *versionInfoSize,
+  TPM_CAP_VERSION_INFO *versionInfo,
+  UINT32 *sigSize,
+  BYTE **sig
 );
 
 /**

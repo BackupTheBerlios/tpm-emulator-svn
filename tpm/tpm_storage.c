@@ -624,3 +624,19 @@ TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
   }
   return TPM_SUCCESS;
 }
+
+TPM_RESULT TPM_Sealx(
+  TPM_KEY_HANDLE keyHandle,
+  TPM_ENCAUTH *encAuth,
+  UINT32 pcrInfoSize,
+  TPM_PCR_INFO *pcrInfo,
+  UINT32 inDataSize,
+  BYTE *inData,
+  TPM_AUTH *auth1,
+  TPM_STORED_DATA *sealedData
+)
+{
+  info("TPM_Sealx() not implemented yet");
+  /* TODO: implement TPM_Sealx() */
+  return TPM_FAIL;
+}
