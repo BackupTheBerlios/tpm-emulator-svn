@@ -387,8 +387,11 @@ static TPM_RESULT execute_TPM_GetCapabilityOwner(TPM_REQUEST *req, TPM_RESPONSE 
   TPM_VERSION version;
   BYTE *resp = NULL;
   TPM_RESULT res;
+  /* compute parameter digest */
+  tpm_compute_in_param_digest(req);
   /* execute command */
-  res = TPM_GetCapabilityOwner(&version, &non_volatile_flags, &volatile_flags);
+  res = TPM_GetCapabilityOwner(&version, &non_volatile_flags, &volatile_flags, 
+    &req->auth1);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
   rsp->paramSize = len = 12;

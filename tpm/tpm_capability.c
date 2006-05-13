@@ -1,6 +1,7 @@
 /* Software-Based Trusted Platform Module (TPM) Emulator for Linux
  * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+ *                    Swiss Federal Institute of Technology (ETH) Zurich,
+ *               2006 Heiko Stamer <stamer@gaos.org>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -84,6 +85,7 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
       debug("[TPM_CAP_PROP_AUTHSESS]");
       for (i = 0, j = TPM_MAX_SESSIONS; i < TPM_MAX_SESSIONS; i++)
         if (tpmData.stany.data.sessions[i].type != TPM_ST_INVALID) j--;
+      return return_UINT32(respSize, resp, j);
 
     case TPM_CAP_PROP_TRANSESS:
       debug("[TPM_CAP_PROP_TRANSESS]");
@@ -171,9 +173,39 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
        * session or a TPM_SaveContext. */
       return return_BOOL(respSize, resp, TRUE);
 
+    case TPM_CAP_PROP_SESSIONS:
+      debug("[TPM_CAP_PROP_SESSIONS]");
+      for (i = 0, j = TPM_MAX_SESSIONS; i < TPM_MAX_SESSIONS; i++)
+        if (tpmData.stany.data.sessions[i].type != TPM_ST_INVALID) j--;
+      return return_UINT32(respSize, resp, j);
+
+    case TPM_CAP_PROP_MAX_SESSIONS:
+      debug("[TPM_CAP_PROP_MAX_SESSIONS]");
+      return return_UINT32(respSize, resp, TPM_MAX_SESSIONS);
+
     case TPM_CAP_PROP_CMK_RESTRICTION:
       debug("[TPM_CAP_PROP_CMK_RESTRICTION]");
       /* TODO: TPM_CAP_PROP_CMK_RESTRICTION */
+      return TPM_FAIL;
+
+    case TPM_CAP_PROP_DURATION:
+      debug("[TPM_CAP_PROP_DURATION]");
+      /* TODO: TPM_CAP_PROP_DURATION */
+      return TPM_FAIL;
+
+    case TPM_CAP_PROP_ACTIVE_COUNTER:
+      debug("[TPM_CAP_PROP_ACTIVE_COUNTER]");
+      /* TODO: TPM_CAP_PROP_ACTIVE_COUNTER */
+      return TPM_FAIL;
+
+    case TPM_CAP_PROP_MAX_NV_AVAILABLE:
+      debug("[TPM_CAP_PROP_MAX_NV_AVAILABLE]");
+      /* TODO: TPM_CAP_PROP_MAX_NV_AVAILABLE */
+      return TPM_FAIL;
+
+    case TPM_CAP_PROP_INPUT_BUFFER:
+      debug("[TPM_CAP_PROP_INPUT_BUFFER]");
+      /* TODO: TPM_CAP_PROP_INPUT_BUFFER */
       return TPM_FAIL;
 
     default:
@@ -195,6 +227,7 @@ static TPM_RESULT cap_version(UINT32 *respSize, BYTE **resp)
   return TPM_SUCCESS;
 }
 
+/* manufacturer specific */
 static TPM_RESULT cap_mfr(UINT32 *respSize, BYTE **resp)
 {
   UINT32 len = *respSize = 4;
@@ -213,7 +246,9 @@ static TPM_RESULT cap_handle(UINT32 subCapSize, BYTE *subCap,
   UINT32 i, len, type;
   BYTE *ptr; 
   /* maximum of { TPM_MAX_KEYS, TPM_MAX_SESSIONS } */
-  UINT32 handles[TPM_MAX_KEYS];
+  UINT32 list_size =
+    (TPM_MAX_KEYS > TPM_MAX_SESSIONS) ? TPM_MAX_KEYS : TPM_MAX_SESSIONS;
+  UINT32 handles[list_size];
   TPM_KEY_HANDLE_LIST list = { 0, handles };
 
   if (tpm_unmarshal_UINT32(&subCap, &subCapSize, &type))
@@ -221,7 +256,7 @@ static TPM_RESULT cap_handle(UINT32 subCapSize, BYTE *subCap,
   switch (type) {
     case TPM_RT_KEY:
       debug("[TPM_RT_KEY]");
-      for (i = 0; i < TPM_MAX_KEYS; i++) 
+      for (i = 0; i < TPM_MAX_KEYS; i++)
         if (tpmData.permanent.data.keys[i].valid) {
           list.loaded++;
           list.handle[i] = INDEX_TO_KEY_HANDLE(i);
@@ -244,10 +279,21 @@ static TPM_RESULT cap_handle(UINT32 subCapSize, BYTE *subCap,
           list.handle[i] = INDEX_TO_TRANS_HANDLE(i);
         }
       break;
+/* removed since v1.2 rev 94
     case TPM_RT_DELEGATE:
       debug("[TPM_RT_DELEGATE]");
-      /* TODO: return all current delegate handles */
       break;
+*/
+    case TPM_RT_COUNTER:
+      debug("[TPM_RT_COUNTER]");
+      for (i = 0; i < TPM_MAX_COUNTERS; i++)
+        if (tpmData.permanent.data.counters[i].valid) {
+          list.loaded++;
+          list.handle[i] = INDEX_TO_COUNTER_HANDLE(i);
+        }
+      break;
+    case TPM_RT_CONTEXT:
+      /* TODO: implement TPM_CAP_HANDLE for TPM_RT_CONTEXT */
     default:
       return TPM_BAD_MODE;
   }
@@ -268,8 +314,143 @@ TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
   if (tpm_unmarshal_TPM_COMMAND_CODE(&subCap, &subCapSize, &ord))
     return TPM_BAD_MODE;
   switch (ord) {
+    case TPM_ORD_Init:
     case TPM_ORD_Startup:
-/* TODO: add other supported ordinals */
+    case TPM_ORD_SaveState:
+    case TPM_ORD_SelfTestFull:
+    case TPM_ORD_ContinueSelfTest:
+    case TPM_ORD_GetTestResult:
+    case TPM_ORD_SetOwnerInstall:
+    case TPM_ORD_OwnerSetDisable:
+    case TPM_ORD_PhysicalEnable:
+    case TPM_ORD_PhysicalDisable:
+    case TPM_ORD_PhysicalSetDeactivated:
+    case TPM_ORD_SetTempDeactivated:
+    case TPM_ORD_SetOperatorAuth:
+    case TPM_ORD_TakeOwnership:
+    case TPM_ORD_OwnerClear:
+    case TPM_ORD_ForceClear:
+    case TPM_ORD_DisableOwnerClear:
+    case TPM_ORD_DisableForceClear:
+    case TSC_ORD_PhysicalPresence:
+    case TSC_ORD_ResetEstablishmentBit:
+    case TPM_ORD_GetCapability:
+/* WATCH: not yet implemented
+    case TPM_ORD_SetCapability:
+*/
+    case TPM_ORD_GetCapabilityOwner:
+    case TPM_ORD_GetAuditDigest:
+    case TPM_ORD_GetAuditDigestSigned:
+    case TPM_ORD_SetOrdinalAuditStatus:
+/* WATCH: not yet implemented
+    case TPM_ORD_FieldUpgrade:
+    case TPM_ORD_SetRedirection:
+    case TPM_ORD_ResetLockValue:
+*/
+    case TPM_ORD_Seal:
+    case TPM_ORD_Unseal:
+    case TPM_ORD_UnBind:
+    case TPM_ORD_CreateWrapKey:
+    case TPM_ORD_LoadKey2:
+    case TPM_ORD_GetPubKey:
+/* WATCH: not yet implemented
+    case TPM_ORD_Sealx:
+    case TPM_ORD_CreateMigrationBlob:
+    case TPM_ORD_ConvertMigrationBlob:
+    case TPM_ORD_AuthorizeMigrationKey:
+    case TPM_ORD_MigrateKey:
+    case TPM_ORD_CMK_SetRestrictions:
+    case TPM_ORD_CMK_ApproveMA:
+    case TPM_ORD_CMK_CreateKey:
+    case TPM_ORD_CMK_CreateTicket:
+    case TPM_ORD_CMK_CreateBlob:
+    case TPM_ORD_CMK_ConvertMigration:
+    case TPM_ORD_CreateMaintenanceArchive:
+    case TPM_ORD_LoadMaintenanceArchive:
+    case TPM_ORD_KillMaintenanceFeature:
+    case TPM_ORD_LoadManuMaintPub:
+    case TPM_ORD_ReadManuMaintPub:
+*/
+    case TPM_ORD_SHA1Start:
+    case TPM_ORD_SHA1Update:
+    case TPM_ORD_SHA1Complete:
+    case TPM_ORD_SHA1CompleteExtend:
+    case TPM_ORD_Sign:
+    case TPM_ORD_GetRandom:
+    case TPM_ORD_StirRandom:
+    case TPM_ORD_CertifyKey:
+    case TPM_ORD_CertifyKey2:
+    case TPM_ORD_CreateEndorsementKeyPair:
+    case TPM_ORD_CreateRevocableEK:
+    case TPM_ORD_RevokeTrust:
+    case TPM_ORD_ReadPubek:
+    case TPM_ORD_OwnerReadInternalPub:
+    case TPM_ORD_MakeIdentity:
+/* WATCH: not yet implemented
+    case TPM_ORD_ActivateIdentity:
+*/
+    case TPM_ORD_Extend:
+    case TPM_ORD_PCRRead:
+    case TPM_ORD_Quote:
+    case TPM_ORD_PCR_Reset:
+/* WATCH: not yet implemented
+    case TPM_ORD_Quote2:
+*/
+    case TPM_ORD_ChangeAuth:
+    case TPM_ORD_ChangeAuthOwner:
+    case TPM_ORD_OIAP:
+    case TPM_ORD_OSAP:
+/* WATCH: not yet implemented
+    case TPM_ORD_DSAP:
+*/
+    case TPM_ORD_SetOwnerPointer:
+/* WATCH: not yet implemented
+    case TPM_ORD_Delegate_Manage:
+    case TPM_ORD_Delegate_CreateKeyDelegation:
+    case TPM_ORD_Delegate_CreateOwnerDelegation:
+    case TPM_ORD_Delegate_LoadOwnerDelegation:
+    case TPM_ORD_Delegate_ReadTable:
+    case TPM_ORD_Delegate_UpdateVerification:
+    case TPM_ORD_Delegate_VerifyDelegation:
+    case TPM_ORD_NV_DefineSpace:
+    case TPM_ORD_NV_WriteValue:
+    case TPM_ORD_NV_WriteValueAuth:
+    case TPM_ORD_NV_ReadValue:
+    case TPM_ORD_NV_ReadValueAuth:
+*/
+    case TPM_ORD_KeyControlOwner:
+    case TPM_ORD_SaveContext:
+    case TPM_ORD_LoadContext:
+    case TPM_ORD_FlushSpecific:
+    case TPM_ORD_GetTicks:
+    case TPM_ORD_TickStampBlob:
+    case TPM_ORD_EstablishTransport:
+    case TPM_ORD_ExecuteTransport:
+    case TPM_ORD_ReleaseTransportSigned:
+    case TPM_ORD_CreateCounter:
+    case TPM_ORD_IncrementCounter:
+    case TPM_ORD_ReadCounter:
+    case TPM_ORD_ReleaseCounter:
+    case TPM_ORD_ReleaseCounterOwner:
+    case TPM_ORD_DAA_Join:
+    case TPM_ORD_DAA_Sign:
+    /* Deprecated but supported are the following commands */
+    case TPM_ORD_EvictKey:
+    case TPM_ORD_Terminate_Handle:
+    case TPM_ORD_SaveKeyContext:
+    case TPM_ORD_LoadKeyContext:
+    case TPM_ORD_SaveAuthContext:
+    case TPM_ORD_LoadAuthContext:
+    case TPM_ORD_DirWriteAuth:
+    case TPM_ORD_DirRead:
+/* WATCH: not yet implemented
+    case TPM_ORD_ChangeAuthAsymStart:
+    case TPM_ORD_ChangeAuthAsymFinish:
+*/
+    case TPM_ORD_Reset:
+    case TPM_ORD_OwnerReadPubek:
+    case TPM_ORD_DisablePubekRead:
+    case TPM_ORD_LoadKey:
       return return_BOOL(respSize, resp, TRUE);
     default:
       return return_BOOL(respSize, resp, FALSE);
@@ -302,7 +483,10 @@ TPM_RESULT cap_pid(UINT32 subCapSize, BYTE *subCap,
     case TPM_PID_ADIP:
     case TPM_PID_ADCP:
     case TPM_PID_OWNER:
+/* WATCH: not yet implemented
     case TPM_PID_DSAP:
+*/
+    case TPM_PID_TRANSPORT:
       return return_BOOL(respSize, resp, TRUE);
     default:
       return return_BOOL(respSize, resp, FALSE);
@@ -385,7 +569,26 @@ TPM_RESULT cap_auth_encrypt(UINT32 subCapSize, BYTE *subCap,
 /* TODO: added since rev 94 */
 TPM_RESULT cap_version_val(UINT32 *respSize, BYTE **resp)
 {
-  return TPM_BAD_MODE;
+  UINT32 len;
+  BYTE *ptr;
+  TPM_CAP_VERSION_INFO version;
+  
+  version.tag = TPM_TAG_CAP_VERSION_INFO;
+  version.version = tpmData.permanent.data.version;
+  version.specLevel = 2;
+  version.errataRev = 94;
+  memset(version.tpmVendorID, 0, sizeof(version.tpmVendorID));
+  version.vendorSpecificSize = 0;
+  version.vendorSpecific = NULL;
+  
+  len = *respSize = sizeof_TPM_CAP_VERSION_INFO(version);
+  ptr = *resp = tpm_malloc(*respSize);
+  
+  if (ptr == NULL || tpm_marshal_TPM_CAP_VERSION_INFO(&ptr, &len, &version)) {
+    tpm_free(*resp);
+    return TPM_FAIL;
+  }
+  return TPM_SUCCESS;
 }
 
 TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize, 
@@ -493,9 +696,72 @@ TPM_RESULT TPM_SetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
 
 TPM_RESULT TPM_GetCapabilityOwner(TPM_VERSION *version, 
                                   UINT32 *non_volatile_flags, 
-                                  UINT32 *volatile_flags)
+                                  UINT32 *volatile_flags, 
+                                  TPM_AUTH *auth1)
 {
-  info("TPM_GetCapabilityOwner() not implemented yet");
-  /* TODO: implement TPM_GetCapabilityOwner() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  
+  info("TPM_GetCapabilityOwner()");
+  
+  /* Verify owner authorization */
+  res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
+  if (res != TPM_SUCCESS) return res;
+  
+  /* initialize */
+  *version = tpmData.permanent.data.version;
+  *non_volatile_flags = *volatile_flags = 0;
+  
+  /* set non-volatile flags */
+  if (tpmData.permanent.flags.disable)
+    *non_volatile_flags |= (1 <<  0);
+  if (tpmData.permanent.flags.ownership)
+    *non_volatile_flags |= (1 <<  1);
+  if (tpmData.permanent.flags.deactivated)
+    *non_volatile_flags |= (1 <<  2);
+  if (tpmData.permanent.flags.readPubek)
+    *non_volatile_flags |= (1 <<  3);
+  if (tpmData.permanent.flags.disableOwnerClear)
+    *non_volatile_flags |= (1 <<  4);
+  if (tpmData.permanent.flags.allowMaintenance)
+    *non_volatile_flags |= (1 <<  5);
+  if (tpmData.permanent.flags.physicalPresenceLifetimeLock)
+    *non_volatile_flags |= (1 <<  6);
+  if (tpmData.permanent.flags.physicalPresenceHWEnable)
+    *non_volatile_flags |= (1 <<  7);
+  if (tpmData.permanent.flags.physicalPresenceCMDEnable)
+    *non_volatile_flags |= (1 <<  8);
+  if (tpmData.permanent.flags.CEKPUsed)
+    *non_volatile_flags |= (1 <<  9);
+  if (tpmData.permanent.flags.TPMpost)
+    *non_volatile_flags |= (1 << 10);
+  if (tpmData.permanent.flags.TPMpostLock)
+    *non_volatile_flags |= (1 << 11);
+  if (tpmData.permanent.flags.FIPS)
+    *non_volatile_flags |= (1 << 12);
+  if (tpmData.permanent.flags.operator)
+    *non_volatile_flags |= (1 << 13);
+  if (tpmData.permanent.flags.enableRevokeEK)
+    *non_volatile_flags |= (1 << 14);
+  if (tpmData.permanent.flags.nvLocked)
+    *non_volatile_flags |= (1 << 15);
+  if (tpmData.permanent.flags.readSRKPub)
+    *non_volatile_flags |= (1 << 16);
+  if (tpmData.permanent.flags.tpmEstablished)
+    *non_volatile_flags |= (1 << 17);
+  if (tpmData.permanent.flags.maintenanceDone)
+    *non_volatile_flags |= (1 << 18);
+  
+  /* set volatile flags */
+  if (tpmData.stclear.flags.deactivated)
+    *volatile_flags |= (1 <<  0);
+  if (tpmData.stclear.flags.disableForceClear)
+    *volatile_flags |= (1 <<  1);
+  if (tpmData.stclear.flags.physicalPresence)
+    *volatile_flags |= (1 <<  2);
+  if (tpmData.stclear.flags.physicalPresenceLock)
+    *volatile_flags |= (1 <<  3);
+  if (tpmData.stclear.flags.bGlobalLock)
+    *volatile_flags |= (1 <<  4);
+  
+  return TPM_SUCCESS;
 }

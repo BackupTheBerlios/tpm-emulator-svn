@@ -89,19 +89,20 @@ TPM_SESSION_DATA *tpm_get_transport(TPM_TRANSHANDLE handle)
 
 TPM_COUNTER_VALUE *tpm_get_counter(TPM_COUNT_ID handle)
 {
-  if (handle == TPM_INVALID_HANDLE
-      || (handle >> 24) != TPM_RT_COUNTER
-      || (handle & 0x00ffffff) >= TPM_MAX_COUNTERS) return NULL;
-  return &tpmData.permanent.data.counters[handle & 0x00ffffff];
+  if ((handle == TPM_INVALID_HANDLE) || ((handle >> 24) != TPM_RT_COUNTER))
+    return NULL;
+  handle &= 0x00ffffff;
+  if ((handle >= TPM_MAX_COUNTERS)
+    || !tpmData.permanent.data.counters[handle].valid) return NULL;
+  return &tpmData.permanent.data.counters[handle];
 }
 
 TPM_DAA_SESSION_DATA *tpm_get_daa(TPM_DAAHANDLE handle)
 {
-  if ((handle == TPM_INVALID_HANDLE)
-      || ((handle >> 24) != TPM_RT_DAA_TPM)
-      || ((handle & 0x00ffffff) >= TPM_MAX_SESSIONS_DAA))
-        return NULL;
-  if (tpmData.stany.data.sessionsDAA[handle & 0x00ffffff].type != TPM_ST_DAA)
+  if ((handle == TPM_INVALID_HANDLE) || ((handle >> 24) != TPM_RT_DAA_TPM))
     return NULL;
-  return &tpmData.stany.data.sessionsDAA[handle & 0x00ffffff];
+  handle &= 0x00ffffff;
+  if ((handle >= TPM_MAX_SESSIONS_DAA)
+    || (tpmData.stany.data.sessionsDAA[handle].type != TPM_ST_DAA)) return NULL;
+  return &tpmData.stany.data.sessionsDAA[handle];
 }

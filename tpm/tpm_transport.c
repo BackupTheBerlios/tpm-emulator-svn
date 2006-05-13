@@ -269,7 +269,7 @@ TPM_RESULT TPM_ExecuteTransport(UINT32 inWrappedCmdSize, BYTE *inWrappedCmd,
       || req.ordinal == TPM_ORD_ExecuteTransport
       || req.ordinal == TPM_ORD_ReleaseTransportSigned) {
     tpm_free(ptr);
-    return TPM_NO_WRAP_TRANSPORT;      
+    return TPM_NO_WRAP_TRANSPORT;
   }
   /* log input parameters */
   if (session->transInternal.transPublic.transAttributes & TPM_TRANSPORT_LOG) {

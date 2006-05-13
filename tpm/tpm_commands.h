@@ -376,7 +376,8 @@ TPM_RESULT TPM_SetCapability(
 TPM_RESULT TPM_GetCapabilityOwner(
   TPM_VERSION *version,
   UINT32 *non_volatile_flags,
-  UINT32 *volatile_flags
+  UINT32 *volatile_flags,
+  TPM_AUTH *auth1
 );
 
 /*

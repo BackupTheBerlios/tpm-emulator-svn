@@ -2076,7 +2076,7 @@ typedef struct tdTPM_PERMANENT_FLAGS {
   BOOL selfTestSucceeded;
   BOOL owned;
 } TPM_PERMANENT_FLAGS;
-#define sizeof_TPM_PERMANENT_FLAGS(s) (2 + 15)
+#define sizeof_TPM_PERMANENT_FLAGS(s) (2 + 19)
 
 /*
  * TPM_STCLEAR_FLAGS ([TPM_Part2], Section 7.2)
@@ -2096,7 +2096,10 @@ typedef struct tdTPM_STCLEAR_FLAGS {
 */
   BOOL bGlobalLock;
 } TPM_STCLEAR_FLAGS;
+#define sizeof_TPM_STCLEAR_FLAGS(s) (2 + 5)
+/* tableAdmin removed since v1.2 rev 94
 #define sizeof_TPM_STCLEAR_FLAGS(s) (2 + 5 + TPM_MAX_FAMILY)
+*/
 
 /*
  * TPM_STANY_FLAGS ([TPM_Part2], Section 7.3)
@@ -2110,7 +2113,7 @@ typedef struct tdTPM_STANY_FLAGS {
   BOOL transportExclusive;
   BOOL TOSPresent; /* added since v1.2 rev 94 */
 } TPM_STANY_FLAGS;
-#define sizeof_TPM_STANY_FLAGS(s) (2 + 1 + 4 + 1)
+#define sizeof_TPM_STANY_FLAGS(s) (2 + 1 + 4 + 1 + 1)
 
 /*
  * TPM_KEY_DATA
