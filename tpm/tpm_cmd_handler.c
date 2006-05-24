@@ -3360,6 +3360,8 @@ static TPM_RESULT tpm_check_status_and_mode(TPM_REQUEST *req)
   /* if the TPM is deactivated only a subset of all commands can be performed */
   if ((tpmData.permanent.flags.deactivated || tpmData.stclear.flags.deactivated)
       && req->ordinal != TPM_ORD_Reset
+      && req->ordinal != TPM_ORD_Init
+      && req->ordinal != TPM_ORD_Startup
       && req->ordinal != TPM_ORD_SaveState
       && req->ordinal != TPM_ORD_SHA1Start
       && req->ordinal != TPM_ORD_SHA1Update
@@ -3367,6 +3369,7 @@ static TPM_RESULT tpm_check_status_and_mode(TPM_REQUEST *req)
       && req->ordinal != TPM_ORD_SHA1CompleteExtend
       && req->ordinal != TPM_ORD_OIAP
       && req->ordinal != TPM_ORD_OSAP
+      && req->ordinal != TPM_ORD_DSAP
       && req->ordinal != TPM_ORD_GetCapability
       && req->ordinal != TPM_ORD_SetCapability
       && req->ordinal != TPM_ORD_TakeOwnership
@@ -3378,13 +3381,23 @@ static TPM_RESULT tpm_check_status_and_mode(TPM_REQUEST *req)
       && req->ordinal != TPM_ORD_SelfTestFull
       && req->ordinal != TPM_ORD_GetTestResult
       && req->ordinal != TPM_ORD_FlushSpecific
+      && req->ordinal != TPM_ORD_Terminate_Handle
+      && req->ordinal != TPM_ORD_Extend
+/* removed since v1.2 rev 94
       && req->ordinal != TPM_ORD_PCRRead
+*/
+      && req->ordinal != TPM_ORD_PCR_Reset
+      && req->ordinal != TPM_ORD_NV_DefineSpace
       && req->ordinal != TPM_ORD_NV_ReadValue
       && req->ordinal != TPM_ORD_NV_WriteValue
-      && req->ordinal != TSC_ORD_PhysicalPresence) return TPM_DEACTIVATED;
+      && req->ordinal != TSC_ORD_PhysicalPresence
+      && req->ordinal != TSC_ORD_ResetEstablishmentBit
+      ) return TPM_DEACTIVATED;
   /* if the TPM is disabled only a subset of all commands can be performed */
   if (tpmData.permanent.flags.disable
       && req->ordinal != TPM_ORD_Reset
+      && req->ordinal != TPM_ORD_Init
+      && req->ordinal != TPM_ORD_Startup
       && req->ordinal != TPM_ORD_SaveState
       && req->ordinal != TPM_ORD_SHA1Start
       && req->ordinal != TPM_ORD_SHA1Update
@@ -3392,19 +3405,27 @@ static TPM_RESULT tpm_check_status_and_mode(TPM_REQUEST *req)
       && req->ordinal != TPM_ORD_SHA1CompleteExtend
       && req->ordinal != TPM_ORD_OIAP
       && req->ordinal != TPM_ORD_OSAP
+      && req->ordinal != TPM_ORD_DSAP
       && req->ordinal != TPM_ORD_GetCapability
       && req->ordinal != TPM_ORD_SetCapability
-      && req->ordinal != TPM_ORD_Extend
       && req->ordinal != TPM_ORD_OwnerSetDisable
       && req->ordinal != TPM_ORD_PhysicalEnable
       && req->ordinal != TPM_ORD_ContinueSelfTest
       && req->ordinal != TPM_ORD_SelfTestFull
       && req->ordinal != TPM_ORD_GetTestResult
       && req->ordinal != TPM_ORD_FlushSpecific
+      && req->ordinal != TPM_ORD_Terminate_Handle
+      && req->ordinal != TPM_ORD_Extend
+/* removed since v1.2 rev 94
       && req->ordinal != TPM_ORD_PCRRead
+*/
+      && req->ordinal != TPM_ORD_PCR_Reset
+      && req->ordinal != TPM_ORD_NV_DefineSpace
       && req->ordinal != TPM_ORD_NV_ReadValue
       && req->ordinal != TPM_ORD_NV_WriteValue
-      && req->ordinal != TSC_ORD_PhysicalPresence) return TPM_DISABLED;
+      && req->ordinal != TSC_ORD_PhysicalPresence
+      && req->ordinal != TSC_ORD_ResetEstablishmentBit
+      ) return TPM_DISABLED;
   return TPM_SUCCESS; 
 }
 
