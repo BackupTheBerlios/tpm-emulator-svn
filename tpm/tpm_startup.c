@@ -53,6 +53,8 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
   SET_TO_RAND(&tpmData.stany.data.contextNonceSession);
   /* set data and flags according to the given startup type */
   if (startupType == TPM_ST_CLEAR) {
+    /* if available, restore permanent data */
+    tpm_restore_permanent_data();
     /* reset PCR values */
     for (i = 0; i < TPM_NUM_PCR; i++) {
       if (tpmData.permanent.data.pcrAttrib[i].pcrReset)
