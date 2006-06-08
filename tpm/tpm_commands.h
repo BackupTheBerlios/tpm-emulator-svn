@@ -1414,11 +1414,11 @@ TPM_RESULT TPM_MakeIdentity(
 
 /**
  * TPM_ActivateIdentity - activates a TPM identity
- * @idKey: [in] Identity key to be activated 
+ * @idKeyHandle: [in] Identity key to be activated 
  * @blobSize: [in] Size of encrypted blob from CA 
  * @blob: [in] The encrypted ASYM_CA_CONTENTS or TPM_EK_BLOB
- * @auth1: [in, out] Authorization protocol parameters
- * @auth2: [in, out] Authorization protocol parameters
+ * @auth1: [in, out] Authorization protocol parameters (usageAuth)
+ * @auth2: [in, out] Authorization protocol parameters (ownerAuth)
  * @symmetricKey: [out] The decrypted symmetric key
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
@@ -1429,7 +1429,7 @@ TPM_RESULT TPM_MakeIdentity(
  * the TPM_IDENTITY_CREDENTIAL. 
  */
 TPM_RESULT TPM_ActivateIdentity(  
-  TPM_KEY_HANDLE idKey,
+  TPM_KEY_HANDLE idKeyHandle,
   UINT32 blobSize,
   BYTE *blob,
   TPM_AUTH *auth1,

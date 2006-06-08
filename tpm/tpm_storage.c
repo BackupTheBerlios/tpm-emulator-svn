@@ -298,7 +298,7 @@ int compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest)
   }
   /* compute SHA1 hash */
   sha1_init(&sha1);
-  sha1_update(&sha1, buf, sizeof_TPM_PUBKEY((*key)) - key->encDataSize - 4);
+  sha1_update(&sha1, buf, sizeof_TPM_KEY((*key)) - key->encDataSize - 4);
   sha1_final(&sha1, digest->digest);
   tpm_free(buf);
   return 0;
@@ -309,6 +309,25 @@ static int verify_key_digest(TPM_KEY *key, TPM_DIGEST *digest)
   TPM_DIGEST key_digest;
   if (compute_key_digest(key, &key_digest)) return -1;
   return memcmp(key_digest.digest, digest->digest, sizeof(key_digest.digest));
+}
+
+int compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest)
+{
+  sha1_ctx_t sha1;
+  UINT32 len = sizeof_TPM_PUBKEY((*key));
+  BYTE *buf, *ptr;
+  buf = ptr = tpm_malloc(len);
+  if (buf == NULL
+      || tpm_marshal_TPM_PUBKEY(&ptr, &len, key)) {
+    tpm_free(buf);
+    return -1;
+  }
+  /* compute SHA1 hash */
+  sha1_init(&sha1);
+  sha1_update(&sha1, buf, sizeof_TPM_PUBKEY((*key)));
+  sha1_final(&sha1, digest->digest);
+  tpm_free(buf);
+  return 0;
 }
 
 int encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,

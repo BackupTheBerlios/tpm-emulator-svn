@@ -26,14 +26,16 @@
 
 /* import functions from tpm_storage.c */
 extern int compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
+extern int compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest);
 extern int encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
   BYTE *enc, UINT32 *enc_size);
+extern int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms);
 
 /*
  * Identity Creation and Activation ([TPM_Part3], Section 15)
  */
 
-TPM_RESULT TPM_MakeIdentity(  
+TPM_RESULT TPM_MakeIdentity(
   TPM_ENCAUTH *identityAuth,
   TPM_CHOSENID_HASH *labelPrivCADigest,
   TPM_KEY *idKeyParams,
@@ -210,6 +212,7 @@ TPM_RESULT TPM_MakeIdentity(
   /* 15. Ensure that all TPM_PAYLOAD_TYPE structures identify this key as 
    * TPM_PT_ASYM */
   store.payload = TPM_PT_ASYM;
+  /* compute the digest on all public data of this key */
   if (compute_key_digest(idKey, &store.pubDataDigest)) {
     info("TPM_MakeIdentity(): compute_key_digest() failed.");
     tpm_free(idKey->encData);
@@ -319,8 +322,8 @@ TPM_RESULT TPM_MakeIdentity(
   return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_ActivateIdentity(  
-  TPM_KEY_HANDLE idKey,
+TPM_RESULT TPM_ActivateIdentity(
+  TPM_KEY_HANDLE idKeyHandle,
   UINT32 blobSize,
   BYTE *blob,
   TPM_AUTH *auth1,
@@ -328,46 +331,111 @@ TPM_RESULT TPM_ActivateIdentity(
   TPM_SYMMETRIC_KEY *symmetricKey
 )
 {
-  info("TPM_ActivateIdentity() not implemented yet");
-  /* TODO: implement TPM_ActivateIdentity() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  TPM_KEY_DATA *idKey = NULL;
+  TPM_PUBKEY pubKey;
+  TPM_DIGEST H1;
+  BYTE *B1 = NULL;
+  size_t sizeB1 = 0;
+  TPM_EK_BLOB *B1__TPM_EK_BLOB = NULL;
+  TPM_ASYM_CA_CONTENTS *B1__TPM_ASYM_CA_CONTENTS = NULL;
+  TPM_SYMMETRIC_KEY *K1 = NULL;
+  TPM_EK_BLOB_ACTIVATE *A1 = NULL;
+  
+  idKey = tpm_get_key(idKeyHandle);
+  if (idKey == NULL)
+    return TPM_BAD_HANDLE; /* TODO: check return value */
   
   /* 1. Using the authHandle field, validate the owner's AuthData to execute 
    * the command and all of the incoming parameters. */
+  res = tpm_verify_auth(auth2, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
+  if (res != TPM_SUCCESS) return res;
   
   /* 2. Using the idKeyAuthHandle, validate the AuthData to execute command 
    * and all of the incoming parameters */
+  res = tpm_verify_auth(auth1, idKey->usageAuth, idKeyHandle);
+  if (res != TPM_SUCCESS) return res;
   
   /* 3. Validate that the idKey is the public key of a valid TPM identity by 
    * checking that idKeyHandle->keyUsage is TPM_KEY_IDENTITY. 
    * Return TPM_BAD_PARAMETER on mismatch */
+  if (idKey->keyUsage != TPM_KEY_IDENTITY)
+    return TPM_BAD_PARAMETER;
   
   /* 4. Create H1 the digest of a TPM_PUBKEY derived from idKey */
+  pubKey.pubKey.keyLength = idKey->key.size >> 3;
+  pubKey.pubKey.key = tpm_malloc(pubKey.pubKey.keyLength);
+  if (pubKey.pubKey.key == NULL) return TPM_NOSPACE;
+  rsa_export_modulus(&idKey->key, pubKey.pubKey.key, 
+    &pubKey.pubKey.keyLength);
+  if (tpm_setup_key_parms(idKey, &pubKey.algorithmParms) != 0) {
+    info("TPM_ActivateIdentity(): tpm_setup_key_parms() failed.");
+    tpm_free(pubKey.pubKey.key);
+    return TPM_FAIL;
+  }
+  if (compute_pubkey_digest(&pubKey, &H1)) {
+    info("TPM_ActivateIdentity(): compute_pubkey_digest() failed.");
+    tpm_free(pubKey.pubKey.key);
+    return TPM_FAIL;
+  }
   
   /* 5. Decrypt blob creating B1 using PRIVEK as the decryption key */
+  B1 = tpm_malloc(blobSize);
+  if (B1 == NULL) {
+    tpm_free(pubKey.pubKey.key);
+    return TPM_NOSPACE;
+  }
+  if (rsa_decrypt(&tpmData.permanent.data.endorsementKey, RSA_ES_OAEP_SHA1, 
+    blob, blobSize, B1, &sizeB1)) {
+      tpm_free(pubKey.pubKey.key);
+      tpm_free(B1);
+      return TPM_DECRYPT_ERROR;
+  }
   
   /* 6. Determine the type and version of B1 */
+  if (BE16_TO_CPU(*(UINT16*)(B1)) == TPM_TAG_EK_BLOB) {
     /* a. If B1->tag is TPM_TAG_EK_BLOB then */
       /* i. B1 is a TPM_EK_BLOB */
-      
+    B1__TPM_EK_BLOB = (TPM_EK_BLOB*)B1;
+  } else {
     /* b. Else */
       /* i. B1 is a TPM_ASYM_CA_CONTENTS. As there is no tag for this 
        * structure it is possible for the TPM to make a mistake here but 
        * other sections of the structure undergo validation */
-      
+    B1__TPM_ASYM_CA_CONTENTS = (TPM_ASYM_CA_CONTENTS*)B1;
+  }
+  
   /* 7. If B1 is a version 1.1 TPM_ASYM_CA_CONTENTS then */
+  if (B1__TPM_ASYM_CA_CONTENTS != NULL) {
     /* a. Compare H1 to B1->idDigest on mismatch return TPM_BAD_PARAMETER */
-    
+    if (memcmp(H1.digest, B1__TPM_ASYM_CA_CONTENTS->idDigest.digest, 
+      sizeof(H1.digest))) {
+        tpm_free(pubKey.pubKey.key);
+        tpm_free(B1);
+        return TPM_BAD_PARAMETER;
+    }
     /* b. Set K1 to B1->sessionKey */
-    
+    K1 = &B1__TPM_ASYM_CA_CONTENTS->sessionKey;
+  }
+  
   /* 8. If B1 is a TPM_EK_BLOB then */
-    /* a. Validate that B1->ekType is TPM_EK_BLOB_ACTIVATE, return 
-     * TPM_BAD_TYPE if not. */
+  if (B1__TPM_EK_BLOB != NULL) {
+    /* a. Validate that B1->ekType is TPM_EK_TYPE_ACTIVATE, 
+     * return TPM_BAD_TYPE if not. */
+    if (B1__TPM_EK_BLOB->ekType != TPM_EK_TYPE_ACTIVATE)
+      return TPM_BAD_TYPE;
     
-    /* b. Assign A1 as a TPM_EK_TYPE_ACTIVATE structure from B1->blob */
+    /* b. Assign A1 as a TPM_EK_BLOB_ACTIVATE structure from B1->blob */
+    A1 = (TPM_EK_BLOB_ACTIVATE*)B1__TPM_EK_BLOB->blob;
     
     /* c. Compare H1 to A1->idDigest on mismatch return TPM_BAD_PARAMETER */
-    
+    if (memcmp(H1.digest, A1->idDigest.digest, sizeof(H1.digest))) {
+        tpm_free(pubKey.pubKey.key);
+        tpm_free(B1);
+        return TPM_BAD_PARAMETER;
+    }
+
+/* TODO (only step d. left) */
     /* d. If A1->pcrSelection is not NULL */
       /* i. Compute a composite hash C1 using the PCR selection 
        * A1->pcrSelection */
@@ -379,8 +447,15 @@ TPM_RESULT TPM_ActivateIdentity(
        * appropriate locality has been asserted, return TPM_BAD_LOCALITY 
        * on error */
       
-    /* e. Set K1 to A1->symmetricKey */
-    
-  /* 9. Return K1 */
+    /* e. Set K1 to A1->sessionKey */
+    K1 = &A1->sessionKey;
+  }
   
+  /* 9. Return K1 */
+  if (K1 != NULL)
+    memcpy(symmetricKey, K1, sizeof_TPM_SYMMETRIC_KEY((*K1)));
+  tpm_free(pubKey.pubKey.key);
+  tpm_free(B1);
+  
+  return TPM_SUCCESS;
 }

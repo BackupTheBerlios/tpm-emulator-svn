@@ -1086,7 +1086,7 @@ typedef struct tdTPM_QUOTE_INFO2 {
  * This structure provides a wrapper to each type of structure that
  * will be in use when the endorsement key is in use.
  */
-#define TPM_TAG_EK_BLOB_ACTIVATE 0x002B
+#define TPM_TAG_EK_BLOB 0x000C
 typedef struct tdTPM_EK_BLOB {
   TPM_STRUCTURE_TAG tag;
   TPM_EK_TYPE ekType;

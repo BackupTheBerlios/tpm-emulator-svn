@@ -1772,7 +1772,7 @@ static TPM_RESULT execute_TPM_ActivateIdentity(TPM_REQUEST *req, TPM_RESPONSE *r
 {
   BYTE *ptr;
   UINT32 len;
-  TPM_KEY_HANDLE idKey;
+  TPM_KEY_HANDLE idKeyHandle;
   UINT32 blobSize;
   BYTE *blob;
   TPM_SYMMETRIC_KEY symmetricKey;
@@ -1782,12 +1782,13 @@ static TPM_RESULT execute_TPM_ActivateIdentity(TPM_REQUEST *req, TPM_RESPONSE *r
   /* unmarshal input */
   ptr = req->param;
   len = req->paramSize;
-  if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &idKey)
+  if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &idKeyHandle)
       || tpm_unmarshal_UINT32(&ptr, &len, &blobSize)
       || tpm_unmarshal_BLOB(&ptr, &len, &blob, blobSize)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
-  res = TPM_ActivateIdentity(idKey, blobSize, blob, &req->auth1, &req->auth2, &symmetricKey);
+  res = TPM_ActivateIdentity(idKeyHandle, blobSize, blob, &req->auth1, 
+    &req->auth2, &symmetricKey);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
   rsp->paramSize = len = sizeof_TPM_SYMMETRIC_KEY(symmetricKey);
