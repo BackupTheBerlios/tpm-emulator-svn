@@ -386,9 +386,7 @@ TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
     case TPM_ORD_ReadPubek:
     case TPM_ORD_OwnerReadInternalPub:
     case TPM_ORD_MakeIdentity:
-/* WATCH: not yet implemented
     case TPM_ORD_ActivateIdentity:
-*/
     case TPM_ORD_Extend:
     case TPM_ORD_PCRRead:
     case TPM_ORD_Quote:
