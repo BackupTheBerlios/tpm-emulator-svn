@@ -183,10 +183,10 @@ TPM_RESULT TPM_Unseal(TPM_KEY_HANDLE parentHandle, TPM_STORED_DATA *inData,
   key = tpm_get_key(parentHandle);
   if (key == NULL) return TPM_INVALID_KEYHANDLE;
   /* verify authorization, if only auth1 is present we use it for the data */
-  if (auth2->authHandle != TPM_INVALID_HANDLE  
+  if (auth2->authHandle != TPM_INVALID_HANDLE 
       || key->authDataUsage != TPM_AUTH_NEVER) {
     res = tpm_verify_auth(auth1, key->usageAuth, parentHandle);
-    if (res != TPM_SUCCESS) return res;    
+    if (res != TPM_SUCCESS) return res;
   }
   /* verify key properties */
   if (key->keyUsage != TPM_KEY_STORAGE
@@ -200,7 +200,7 @@ TPM_RESULT TPM_Unseal(TPM_KEY_HANDLE parentHandle, TPM_STORED_DATA *inData,
       return TPM_WRONGPCRVAL;
     if (inData->sealInfo.tag == TPM_TAG_PCR_INFO_LONG
         && !(inData->sealInfo.localityAtRelease 
-             & (1 << tpmData.stany.flags.localityModifier))) 
+             & (1 << tpmData.stany.flags.localityModifier)))
        return TPM_BAD_LOCALITY;
    
   }
@@ -221,12 +221,12 @@ TPM_RESULT TPM_Unseal(TPM_KEY_HANDLE parentHandle, TPM_STORED_DATA *inData,
     if (res != TPM_SUCCESS) return (res == TPM_AUTHFAIL) ? TPM_AUTH2FAIL : res;
   } else {
     res = tpm_verify_auth(auth1, seal.authData, TPM_INVALID_HANDLE);
-    if (res != TPM_SUCCESS) return res;  
+    if (res != TPM_SUCCESS) return res;
   }
   /* return secret */
   *sealedDataSize = seal.dataSize;
   *secret = tpm_malloc(*sealedDataSize);
-  if (*secret == NULL) { 
+  if (*secret == NULL) {
     tpm_free(seal_buf);
     return TPM_FAIL;
   }
@@ -251,7 +251,7 @@ TPM_RESULT TPM_UnBind(TPM_KEY_HANDLE keyHandle, UINT32 inDataSize,
   if (auth1->authHandle != TPM_INVALID_HANDLE 
       || key->authDataUsage != TPM_AUTH_NEVER) {
     res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
-    if (res != TPM_SUCCESS) return res;    
+    if (res != TPM_SUCCESS) return res;
   }
   /* verify key properties */
   if (key->keyUsage != TPM_KEY_BIND 

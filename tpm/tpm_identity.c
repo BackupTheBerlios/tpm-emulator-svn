@@ -24,6 +24,8 @@
 #include "tpm_handles.h"
 #include "tpm_marshalling.h"
 
+#define LOCALITY       tpmData.stany.flags.localityModifier
+
 /* import functions from tpm_storage.c */
 extern int compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
 extern int compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest);
@@ -166,8 +168,7 @@ TPM_RESULT TPM_MakeIdentity(
     if (res != TPM_SUCCESS) return res;
       /* a. For PCR_INFO_LONG include the locality of the current command */
       if (idKey->PCRInfo.tag == TPM_TAG_PCR_INFO_LONG)
-        idKey->PCRInfo.localityAtCreation = 
-          tpmData.stany.flags.localityModifier;
+        idKey->PCRInfo.localityAtCreation = (1 << LOCALITY);
   }
   /* 11. Create an asymmetric key pair (identityPubKey and tpm_signature_key) 
    * using a TPM-protected capability, in accordance with the algorithm 
@@ -341,6 +342,7 @@ TPM_RESULT TPM_ActivateIdentity(
   TPM_ASYM_CA_CONTENTS *B1__TPM_ASYM_CA_CONTENTS = NULL;
   TPM_SYMMETRIC_KEY *K1 = NULL;
   TPM_EK_BLOB_ACTIVATE *A1 = NULL;
+  TPM_COMPOSITE_HASH C1;
   
   idKey = tpm_get_key(idKeyHandle);
   if (idKey == NULL)
@@ -365,9 +367,9 @@ TPM_RESULT TPM_ActivateIdentity(
   /* 4. Create H1 the digest of a TPM_PUBKEY derived from idKey */
   pubKey.pubKey.keyLength = idKey->key.size >> 3;
   pubKey.pubKey.key = tpm_malloc(pubKey.pubKey.keyLength);
-  if (pubKey.pubKey.key == NULL) return TPM_NOSPACE;
-  rsa_export_modulus(&idKey->key, pubKey.pubKey.key, 
-    &pubKey.pubKey.keyLength);
+  if (pubKey.pubKey.key == NULL)
+    return TPM_NOSPACE;
+  rsa_export_modulus(&idKey->key, pubKey.pubKey.key, &pubKey.pubKey.keyLength);
   if (tpm_setup_key_parms(idKey, &pubKey.algorithmParms) != 0) {
     info("TPM_ActivateIdentity(): tpm_setup_key_parms() failed.");
     tpm_free(pubKey.pubKey.key);
@@ -422,31 +424,50 @@ TPM_RESULT TPM_ActivateIdentity(
   if (B1__TPM_EK_BLOB != NULL) {
     /* a. Validate that B1->ekType is TPM_EK_TYPE_ACTIVATE, 
      * return TPM_BAD_TYPE if not. */
-    if (B1__TPM_EK_BLOB->ekType != TPM_EK_TYPE_ACTIVATE)
+    if (B1__TPM_EK_BLOB->ekType != TPM_EK_TYPE_ACTIVATE) {
+      tpm_free(pubKey.pubKey.key);
+      tpm_free(B1);
       return TPM_BAD_TYPE;
+    }
     
     /* b. Assign A1 as a TPM_EK_BLOB_ACTIVATE structure from B1->blob */
     A1 = (TPM_EK_BLOB_ACTIVATE*)B1__TPM_EK_BLOB->blob;
     
     /* c. Compare H1 to A1->idDigest on mismatch return TPM_BAD_PARAMETER */
     if (memcmp(H1.digest, A1->idDigest.digest, sizeof(H1.digest))) {
-        tpm_free(pubKey.pubKey.key);
-        tpm_free(B1);
-        return TPM_BAD_PARAMETER;
+      tpm_free(pubKey.pubKey.key);
+      tpm_free(B1);
+      return TPM_BAD_PARAMETER;
     }
-
-/* TODO (only step d. left) */
+    
     /* d. If A1->pcrSelection is not NULL */
+    if (A1->pcrInfo.pcrSelection.sizeOfSelect > 0) {
       /* i. Compute a composite hash C1 using the PCR selection 
        * A1->pcrSelection */
-      
+      if (tpm_compute_pcr_digest(&A1->pcrInfo.pcrSelection, &C1, NULL) !=
+        TPM_SUCCESS) {
+          info("TPM_ActivateIdentity(): tpm_compute_pcr_digest() failed.");
+          tpm_free(pubKey.pubKey.key);
+          tpm_free(B1);
+          return TPM_FAIL;
+      }
       /* ii. Compare C1 to A1->pcrInfo->digestAtRelease and return 
        * TPM_WRONGPCRVAL on a mismatch */
-      
+      if (memcmp(&C1, &A1->pcrInfo.digestAtRelease, 
+        sizeof(TPM_COMPOSITE_HASH))) {
+          tpm_free(pubKey.pubKey.key);
+          tpm_free(B1);
+          return TPM_WRONGPCRVAL;
+      }
       /* iii. If A1->pcrInfo specifies a locality ensure that the 
        * appropriate locality has been asserted, return TPM_BAD_LOCALITY 
        * on error */
-      
+      if (!(A1->pcrInfo.localityAtRelease & (1 << LOCALITY))) {
+        tpm_free(pubKey.pubKey.key);
+        tpm_free(B1);
+        return TPM_BAD_LOCALITY;
+      }
+    }
     /* e. Set K1 to A1->sessionKey */
     K1 = &A1->sessionKey;
   }

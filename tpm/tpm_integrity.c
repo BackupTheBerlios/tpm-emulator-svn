@@ -127,7 +127,7 @@ TPM_RESULT TPM_PCR_Reset(TPM_PCR_SELECTION *pcrSelection)
 }
 
 TPM_RESULT tpm_compute_pcr_digest(TPM_PCR_SELECTION *pcrSelection, 
-                                  TPM_COMPOSITE_HASH *digest,
+                                  TPM_COMPOSITE_HASH *digest, 
                                   TPM_PCR_COMPOSITE *composite)
 {
   int i,j;
@@ -160,7 +160,7 @@ TPM_RESULT tpm_compute_pcr_digest(TPM_PCR_SELECTION *pcrSelection,
   sha1_final(&ctx, digest->digest);
   tpm_free(buf);
   /* copy composite if requested */
-  if (composite != NULL) 
+  if (composite != NULL)
     memcpy(composite, &comp, sizeof(TPM_PCR_COMPOSITE));
   return TPM_SUCCESS;
 }
@@ -168,14 +168,14 @@ TPM_RESULT tpm_compute_pcr_digest(TPM_PCR_SELECTION *pcrSelection,
 TPM_RESULT tpm_verify_pcr(TPM_KEY_DATA *key, BOOL atrelease, BOOL atcreation)
 {
   TPM_RESULT res;
-  TPM_DIGEST digest;
+  TPM_COMPOSITE_HASH digest;
   info("tpm_verify_pcr()");
   if (atrelease) {
     res = tpm_compute_pcr_digest(&key->pcrInfo.releasePCRSelection, 
                                  &digest, NULL);
     if (res != TPM_SUCCESS) return res;
     if (memcmp(&digest, &key->pcrInfo.digestAtRelease, 
-        sizeof(TPM_DIGEST))) return TPM_WRONGPCRVAL;
+        sizeof(TPM_COMPOSITE_HASH))) return TPM_WRONGPCRVAL;
     if (key->pcrInfo.tag == TPM_TAG_PCR_INFO_LONG
         && !(key->pcrInfo.localityAtRelease
              & (1 << tpmData.stany.flags.localityModifier)))
@@ -186,7 +186,7 @@ TPM_RESULT tpm_verify_pcr(TPM_KEY_DATA *key, BOOL atrelease, BOOL atcreation)
                                  &digest, NULL);
     if (res != TPM_SUCCESS) return res;
     if (memcmp(&digest, &key->pcrInfo.digestAtCreation, 
-        sizeof(TPM_DIGEST))) return TPM_WRONGPCRVAL;
+        sizeof(TPM_COMPOSITE_HASH))) return TPM_WRONGPCRVAL;
     if (key->pcrInfo.tag == TPM_TAG_PCR_INFO_LONG
         && !(key->pcrInfo.localityAtCreation
              & (1 << tpmData.stany.flags.localityModifier)))
