@@ -130,7 +130,7 @@ TPM_RESULT TPM_MakeIdentity(
       /* ii. Create idKey a TPM_KEY12 structure using idKeyParams as the 
        * default values for the structure */
       idKey->tag = TPM_TAG_KEY12;
-      idKey->fill = 0;
+      idKey->fill = 0x0000;
       idKey->keyUsage = TPM_KEY_IDENTITY;
       idKey->keyFlags = idKeyParams->keyFlags;
       idKey->authDataUsage = idKeyParams->authDataUsage;
@@ -152,13 +152,56 @@ TPM_RESULT TPM_MakeIdentity(
           return TPM_BAD_KEY_PROPERTY;
       }
       idKey->PCRInfoSize = idKeyParams->PCRInfoSize;
-      memcpy(&idKey->PCRInfo, &idKeyParams->PCRInfo, idKey->PCRInfoSize);
-    } else {
+      idKey->PCRInfo.tag = TPM_TAG_PCR_INFO_LONG;
+      idKey->PCRInfo.localityAtCreation = 
+        idKeyParams->PCRInfo.localityAtCreation;
+      idKey->PCRInfo.localityAtRelease = 
+        idKeyParams->PCRInfo.localityAtRelease;
+      idKey->PCRInfo.creationPCRSelection = 
+        idKeyParams->PCRInfo.creationPCRSelection;
+      idKey->PCRInfo.releasePCRSelection = 
+        idKeyParams->PCRInfo.releasePCRSelection;
+      idKey->PCRInfo.digestAtCreation = 
+        idKeyParams->PCRInfo.digestAtCreation;
+      idKey->PCRInfo.digestAtRelease = 
+        idKeyParams->PCRInfo.digestAtRelease;
+    } else if (idKeyParams->tag == 0x0101) {
     /* b. If idKeyParms->ver is 1.1 */
       /* i. Set V1 to 1 */
       /* ii. Create idKey a TPM_KEY structure using idKeyParams as the 
        * default values for the structure */
-      info("TPM_MakeIdentity() does not support TPM_KEY v1.1 structures.");
+      idKey->tag = 0x0101;
+      idKey->fill = 0x0000;
+      idKey->keyUsage = TPM_KEY_IDENTITY;
+      idKey->keyFlags = idKeyParams->keyFlags;
+      idKey->authDataUsage = idKeyParams->authDataUsage;
+      idKey->algorithmParms.algorithmID = 
+        idKeyParams->algorithmParms.algorithmID;
+      idKey->algorithmParms.encScheme = idKeyParams->algorithmParms.encScheme;
+      idKey->algorithmParms.sigScheme = idKeyParams->algorithmParms.sigScheme;
+      idKey->algorithmParms.parmSize = idKeyParams->algorithmParms.parmSize;
+      switch (idKeyParams->algorithmParms.algorithmID) {
+        case TPM_ALG_RSA:
+          idKey->algorithmParms.parms.rsa.keyLength =
+            idKeyParams->algorithmParms.parms.rsa.keyLength;
+          idKey->algorithmParms.parms.rsa.numPrimes =
+            idKeyParams->algorithmParms.parms.rsa.numPrimes;
+          idKey->algorithmParms.parms.rsa.exponentSize =
+            idKeyParams->algorithmParms.parms.rsa.exponentSize;
+          break;
+        default:
+          return TPM_BAD_KEY_PROPERTY;
+      }
+      idKey->PCRInfoSize = idKeyParams->PCRInfoSize;
+      idKey->PCRInfo.tag = 0x0000;
+      idKey->PCRInfo.creationPCRSelection = 
+        idKeyParams->PCRInfo.creationPCRSelection;
+      idKey->PCRInfo.digestAtRelease = 
+        idKeyParams->PCRInfo.digestAtRelease;
+      idKey->PCRInfo.digestAtCreation = 
+        idKeyParams->PCRInfo.digestAtCreation;
+    } else {
+      info("TPM_MakeIdentity() does not support this TPM_KEY structure.");
       return TPM_FAIL;
     }
   /* 10. Set the digestAtCreation values for pcrInfo */
