@@ -205,7 +205,7 @@ void tpm_owner_clear()
   tpmData.permanent.flags.owned = FALSE;
   tpmData.permanent.flags.operator = FALSE;
   tpmData.permanent.flags.disableOwnerClear = FALSE;
-  tpmData.permanent.flags.ownership = FALSE;
+  tpmData.permanent.flags.ownership = TRUE;
   tpmData.permanent.flags.disable = FALSE;
   tpmData.permanent.flags.deactivated = FALSE;
   tpmData.permanent.flags.readPubek = TRUE;

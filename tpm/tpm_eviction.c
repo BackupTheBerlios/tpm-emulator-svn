@@ -31,6 +31,20 @@
  * generic command that will evict all resource types.
  */
 
+/* invalidate all associated authorization and transport sessions */
+void invalidate_sessions(TPM_HANDLE handle)
+{
+  TPM_SESSION_DATA *session;
+  int i;
+  
+  for (i = 0; i < TPM_MAX_SESSIONS; i++) {
+    session = &tpmData.stany.data.sessions[i];
+    if ((session->type == TPM_ST_OSAP && session->handle == handle)
+        || (session->type == TPM_ST_TRANSPORT && session->handle == handle))
+      memset(session, 0, sizeof(*session));
+  }
+}
+
 TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle, 
                              TPM_RESOURCE_TYPE resourceType)
 {
@@ -39,44 +53,57 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
   TPM_KEY_DATA *key;
   int i;
   
-  info("TPM_FlushSpecific() resourceType=%.8x", resourceType);
+  info("TPM_FlushSpecific()");
+  info("[ handle=%.8x resourceType=%.8x ]", handle, resourceType);
   switch (resourceType) {
-    case TPM_RT_AUTH:
-      session = tpm_get_auth(handle);
-      if (session == NULL) return TPM_INVALID_AUTHHANDLE;
-      memset(session, 0, sizeof(*session));
-      return TPM_SUCCESS;
-    
-    case TPM_RT_TRANS:
-      session = tpm_get_transport(handle);
-      if (session == NULL) return TPM_INVALID_AUTHHANDLE;
-      memset(session, 0, sizeof(*session));
-      return TPM_SUCCESS;
-    
-    case TPM_RT_DAA_TPM:
-      sessionDAA = tpm_get_daa(handle);
-      if (sessionDAA == NULL) return TPM_INVALID_RESOURCE;
-      memset(sessionDAA, 0, sizeof(*sessionDAA));
-      if (handle == tpmData.stany.data.currentDAA)
-        tpmData.stany.data.currentDAA = 0;
+    case TPM_RT_CONTEXT:
+      for (i = 0; i < TPM_MAX_SESSION_LIST; i++)
+        if (tpmData.stany.data.contextList[i] == handle) break;
+      if (i == TPM_MAX_SESSION_LIST)
+        return TPM_BAD_PARAMETER;
+      
+/* TODO: evict all data of entry i */
+      tpmData.stany.data.contextList[i] = 0;
       return TPM_SUCCESS;
     
     case TPM_RT_KEY:
       key = tpm_get_key(handle);
       if (key == NULL) return TPM_INVALID_KEYHANDLE;
-      if (key->keyControl & TPM_KEY_CONTROL_OWNER_EVICT) 
+      if (key->keyControl & TPM_KEY_CONTROL_OWNER_EVICT)
         return TPM_KEY_OWNER_CONTROL;
       rsa_release_private_key(&key->key);
       memset(key, 0, sizeof(*key));
-      /* invalidate all associated authorization and transport sessions */
-      for (i = 0; i < TPM_MAX_SESSIONS; i++) {
-        session = &tpmData.stany.data.sessions[i];
-        if ((session->type == TPM_ST_OSAP && session->handle == handle)
-            || (session->type == TPM_ST_TRANSPORT && session->handle == handle))
-          memset(session, 0, sizeof(*session));
-      }
+      invalidate_sessions(handle);
+      return TPM_SUCCESS;
+    
+    case TPM_RT_HASH:
+    case TPM_RT_COUNTER:
+    case TPM_RT_DELEGATE:
+      return TPM_INVALID_RESOURCE;
+    
+    case TPM_RT_AUTH:
+      session = tpm_get_auth(handle);
+      /* WATCH: temporarily removed due to TSS test suite
+      if (session == NULL) return TPM_BAD_PARAMETER;
+      */
+      if (session != NULL)
+        memset(session, 0, sizeof(*session));
+      return TPM_SUCCESS;
+    
+    case TPM_RT_TRANS:
+      session = tpm_get_transport(handle);
+      if (session == NULL) return TPM_BAD_PARAMETER;
+      memset(session, 0, sizeof(*session));
+      return TPM_SUCCESS;
+    
+    case TPM_RT_DAA_TPM:
+      sessionDAA = tpm_get_daa(handle);
+      if (sessionDAA == NULL) return TPM_BAD_PARAMETER;
+      memset(sessionDAA, 0, sizeof(*sessionDAA));
+      if (handle == tpmData.stany.data.currentDAA)
+        tpmData.stany.data.currentDAA = 0;
+      invalidate_sessions(handle);
       return TPM_SUCCESS;
   }
   return TPM_INVALID_RESOURCE;
 }
-
