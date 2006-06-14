@@ -213,14 +213,15 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
   }
 }
 
-/* TODO: changed since rev 94 */
+/* changed since rev 94: returned version MUST BE 1.1.0.0 */
 static TPM_RESULT cap_version(UINT32 *respSize, BYTE **resp)
 {
   UINT32 len = *respSize = 4;
   BYTE *ptr = *resp = tpm_malloc(*respSize);
-  TPM_VERSION version = tpmData.permanent.data.version;
+  TPM_STRUCT_VER version;
+  version.major = version.minor = 1;
   version.revMajor = version.revMinor = 0;
-  if (ptr == NULL || tpm_marshal_TPM_VERSION(&ptr, &len, &version)) {
+  if (ptr == NULL || tpm_marshal_TPM_STRUCT_VER(&ptr, &len, &version)) {
     tpm_free(*resp);
     return TPM_FAIL;
   }

@@ -83,7 +83,7 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
       error("restoring permanent data failed");
       tpmData.permanent.data.testResult = "tpm_restore_permanent_data() failed";
       tpmData.permanent.flags.selfTestSucceeded = FALSE;
-      return TPM_FAIL;  
+      return TPM_FAIL;
     }
   } else if (startupType == TPM_ST_DEACTIVATED) {
     tpmData.stclear.flags.deactivated = TRUE;
@@ -102,4 +102,3 @@ TPM_RESULT TPM_SaveState()
   info("TPM_SaveState()");
   return (tpm_store_permanent_data()) ? TPM_FAIL : TPM_SUCCESS;
 }
-

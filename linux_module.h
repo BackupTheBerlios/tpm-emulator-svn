@@ -32,9 +32,9 @@
 #define __STR__(s) #s
 #include "tpm_version.h"
 
-#define TPM_DEVICE_MINOR	224
-#define TPM_DEVICE_NAME         "tpm"
-#define TPM_MODULE_NAME 	"tpm_emulator"
+#define TPM_DEVICE_MINOR  224
+#define TPM_DEVICE_NAME   "tpm"
+#define TPM_MODULE_NAME   "tpm_emulator"
 
 /* debug and log output functions */
 

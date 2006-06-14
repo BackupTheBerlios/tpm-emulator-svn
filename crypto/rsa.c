@@ -470,7 +470,7 @@ int rsa_verify(rsa_public_key_t *key, int type,
   if (rsa_public(key, sig, sig_len, msg_b) != 0) return -1;
   /* compare messages */
   return (memcmp(msg_a, msg_b, sig_len) == 0) ? 0 : 1;
-} 
+}
 
 int rsa_decrypt(rsa_private_key_t *key, int type,
                 uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len)

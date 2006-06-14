@@ -58,6 +58,7 @@ TPM_RESULT TPM_MakeIdentity(
   UINT32 len;
   BYTE *buf, *ptr;
   
+  info("TPM_MakeIdentity()");
   /* 1. Validate the idKeyParams parameters for the key description */
     if (idKeyParams->algorithmParms.encScheme != TPM_ES_NONE
       || idKeyParams->algorithmParms.sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1)
@@ -274,9 +275,10 @@ TPM_RESULT TPM_MakeIdentity(
       rsa_release_private_key(&tpm_signature_key);
       return TPM_ENCRYPT_ERROR;
   }
+  tpm_free(store.privKey.key);
   /* 17. Create a TPM_IDENTITY_CONTENTS structure named idContents using 
    * labelPrivCADigest and the information from idKey */
-  idContents.ver.major = 1, idContents.ver.minor = 1;
+  idContents.ver.major = 1, idContents.ver.minor = 1; /* MUST BE 1.1, (Spec) */
   idContents.ver.revMajor = 0, idContents.ver.revMinor = 0;
   idContents.ordinal = TPM_ORD_MakeIdentity;
   memcpy(&idContents.labelPrivCADigest, labelPrivCADigest, 
@@ -299,6 +301,9 @@ TPM_RESULT TPM_MakeIdentity(
         idKey->algorithmParms.parms.rsa.exponentSize;
       break;
     default:
+      tpm_free(idKey->encData);
+      tpm_free(idKey->pubKey.key);
+      rsa_release_private_key(&tpm_signature_key);
       return TPM_BAD_KEY_PROPERTY;
   }
   idContents.identityPubKey.pubKey.keyLength = key_length >> 3;
@@ -306,7 +311,6 @@ TPM_RESULT TPM_MakeIdentity(
     tpm_malloc(idContents.identityPubKey.pubKey.keyLength);
   if (idContents.identityPubKey.pubKey.key == NULL) {
     tpm_free(idKey->encData);
-    tpm_free(store.privKey.key);
     tpm_free(idKey->pubKey.key);
     rsa_release_private_key(&tpm_signature_key);
     return TPM_NOSPACE;
@@ -318,7 +322,6 @@ TPM_RESULT TPM_MakeIdentity(
   if (buf == NULL) {
     tpm_free(idContents.identityPubKey.pubKey.key);
     tpm_free(idKey->encData);
-    tpm_free(store.privKey.key);
     tpm_free(idKey->pubKey.key);
     rsa_release_private_key(&tpm_signature_key);
     return TPM_NOSPACE;
@@ -328,7 +331,6 @@ TPM_RESULT TPM_MakeIdentity(
     tpm_free(buf);
     tpm_free(idContents.identityPubKey.pubKey.key);
     tpm_free(idKey->encData);
-    tpm_free(store.privKey.key);
     tpm_free(idKey->pubKey.key);
     rsa_release_private_key(&tpm_signature_key);
     return TPM_FAIL;
@@ -341,26 +343,23 @@ TPM_RESULT TPM_MakeIdentity(
     tpm_free(buf);
     tpm_free(idContents.identityPubKey.pubKey.key);
     tpm_free(idKey->encData);
-    tpm_free(store.privKey.key);
     tpm_free(idKey->pubKey.key);
     rsa_release_private_key(&tpm_signature_key);
     return TPM_NOSPACE;
   }
-  if (rsa_sign(&tpm_signature_key, RSA_SSA_PKCS1_SHA1, buf, len, 
-    *identityBinding)) {
+  if (rsa_sign(&tpm_signature_key, RSA_SSA_PKCS1_SHA1, buf, 
+    sizeof_TPM_IDENTITY_CONTENTS((idContents)), *identityBinding)) {
       info("TPM_MakeIdentity(): rsa_sign() failed.");
       tpm_free(*identityBinding);
       tpm_free(buf);
       tpm_free(idContents.identityPubKey.pubKey.key);
       tpm_free(idKey->encData);
-      tpm_free(store.privKey.key);
       tpm_free(idKey->pubKey.key);
       rsa_release_private_key(&tpm_signature_key);
       return TPM_FAIL;
   }
   tpm_free(buf);
   tpm_free(idContents.identityPubKey.pubKey.key);
-  tpm_free(store.privKey.key);
   rsa_release_private_key(&tpm_signature_key);
   
   return TPM_SUCCESS;
@@ -387,9 +386,7 @@ TPM_RESULT TPM_ActivateIdentity(
   TPM_EK_BLOB_ACTIVATE *A1 = NULL;
   TPM_COMPOSITE_HASH C1;
   
-  idKey = tpm_get_key(idKeyHandle);
-  if (idKey == NULL)
-    return TPM_BAD_HANDLE; /* TODO: check return value */
+  info("TPM_ActivateIdentity()");
   
   /* 1. Using the authHandle field, validate the owner's AuthData to execute 
    * the command and all of the incoming parameters. */
@@ -398,6 +395,9 @@ TPM_RESULT TPM_ActivateIdentity(
   
   /* 2. Using the idKeyAuthHandle, validate the AuthData to execute command 
    * and all of the incoming parameters */
+  idKey = tpm_get_key(idKeyHandle);
+  if (idKey == NULL)
+    return TPM_BAD_HANDLE; /* TODO: check return value */
   res = tpm_verify_auth(auth1, idKey->usageAuth, idKeyHandle);
   if (res != TPM_SUCCESS) return res;
   
@@ -406,7 +406,7 @@ TPM_RESULT TPM_ActivateIdentity(
    * Return TPM_BAD_PARAMETER on mismatch */
   if (idKey->keyUsage != TPM_KEY_IDENTITY)
     return TPM_BAD_PARAMETER;
-  
+debug("(4.)");
   /* 4. Create H1 the digest of a TPM_PUBKEY derived from idKey */
   pubKey.pubKey.keyLength = idKey->key.size >> 3;
   pubKey.pubKey.key = tpm_malloc(pubKey.pubKey.keyLength);
@@ -418,12 +418,15 @@ TPM_RESULT TPM_ActivateIdentity(
     tpm_free(pubKey.pubKey.key);
     return TPM_FAIL;
   }
+  tpm_free(pubKey.algorithmParms.parms.rsa.exponent);
+  pubKey.algorithmParms.parms.rsa.exponentSize = 0;
+  pubKey.algorithmParms.parmSize = 12;
   if (compute_pubkey_digest(&pubKey, &H1)) {
     info("TPM_ActivateIdentity(): compute_pubkey_digest() failed.");
     tpm_free(pubKey.pubKey.key);
     return TPM_FAIL;
   }
-  
+debug("(5.)");
   /* 5. Decrypt blob creating B1 using PRIVEK as the decryption key */
   B1 = tpm_malloc(blobSize);
   if (B1 == NULL) {
@@ -436,7 +439,7 @@ TPM_RESULT TPM_ActivateIdentity(
       tpm_free(B1);
       return TPM_DECRYPT_ERROR;
   }
-  
+debug("(6.)");
   /* 6. Determine the type and version of B1 */
   if (BE16_TO_CPU(*(UINT16*)(B1)) == TPM_TAG_EK_BLOB) {
     /* a. If B1->tag is TPM_TAG_EK_BLOB then */
@@ -449,10 +452,12 @@ TPM_RESULT TPM_ActivateIdentity(
        * other sections of the structure undergo validation */
     B1__TPM_ASYM_CA_CONTENTS = (TPM_ASYM_CA_CONTENTS*)B1;
   }
-  
+debug("(7.)");
   /* 7. If B1 is a version 1.1 TPM_ASYM_CA_CONTENTS then */
   if (B1__TPM_ASYM_CA_CONTENTS != NULL) {
     /* a. Compare H1 to B1->idDigest on mismatch return TPM_BAD_PARAMETER */
+debug("H1.digest %.2X %.2X %.2X %.2X", H1.digest[0], H1.digest[1], H1.digest[2], H1.digest[3]);
+debug("idDigest %.2X %.2X %.2X %.2X", B1__TPM_ASYM_CA_CONTENTS->idDigest.digest[0], B1__TPM_ASYM_CA_CONTENTS->idDigest.digest[1], B1__TPM_ASYM_CA_CONTENTS->idDigest.digest[2], B1__TPM_ASYM_CA_CONTENTS->idDigest.digest[3]);
     if (memcmp(H1.digest, B1__TPM_ASYM_CA_CONTENTS->idDigest.digest, 
       sizeof(H1.digest))) {
         tpm_free(pubKey.pubKey.key);
@@ -462,7 +467,7 @@ TPM_RESULT TPM_ActivateIdentity(
     /* b. Set K1 to B1->sessionKey */
     K1 = &B1__TPM_ASYM_CA_CONTENTS->sessionKey;
   }
-  
+debug("(8.)");
   /* 8. If B1 is a TPM_EK_BLOB then */
   if (B1__TPM_EK_BLOB != NULL) {
     /* a. Validate that B1->ekType is TPM_EK_TYPE_ACTIVATE, 

@@ -83,9 +83,9 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
     
     case TPM_RT_AUTH:
       session = tpm_get_auth(handle);
-      /* WATCH: temporarily removed due to TSS test suite
+/* WATCH: temporarily removed due to TSS test suite
       if (session == NULL) return TPM_BAD_PARAMETER;
-      */
+*/
       if (session != NULL)
         memset(session, 0, sizeof(*session));
       return TPM_SUCCESS;

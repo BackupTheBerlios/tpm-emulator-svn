@@ -284,8 +284,7 @@ TPM_RESULT TSC_ResetEstablishmentBit()
   info("TSC_ResetEstablishmentBit()");
   /* locality must be three or four */
   if (tpmData.stany.flags.localityModifier != 3
-      && tpmData.stany.flags.localityModifier != 4) return TPM_BAD_LOCALITY;  
+      && tpmData.stany.flags.localityModifier != 4) return TPM_BAD_LOCALITY;
   /* as we do not have such a bit we do nothing and just return true */
   return TPM_SUCCESS;
 }
-
