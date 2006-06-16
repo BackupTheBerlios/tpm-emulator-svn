@@ -152,15 +152,18 @@ TPM_RESULT TPM_Seal(TPM_KEY_HANDLE keyHandle, TPM_ENCAUTH *encAuth,
   seal.payload = TPM_PT_SEAL;
   memcpy(&seal.tpmProof, &tpmData.permanent.data.tpmProof, 
     sizeof(TPM_NONCE));
-  if (compute_store_digest(sealedData, &seal.storedDigest)) return TPM_FAIL;
+  if (compute_store_digest(sealedData, &seal.storedDigest)) {
+    error("TPM_Seal(): compute_store_digest() failed.");
+    return TPM_FAIL;
+  }
   tpm_decrypt_auth_secret(*encAuth, session->sharedSecret,
     &session->lastNonceEven, seal.authData);
   seal.dataSize = inDataSize; 
   seal.data = inData;
   /* encrypt sealed data */
   sealedData->encDataSize = key->key.size >> 3;
-  sealedData->encData = tpm_malloc(sealedData->encDataSize); 
-  if (sealedData->encData == NULL) return TPM_FAIL;
+  sealedData->encData = tpm_malloc(sealedData->encDataSize);
+  if (sealedData->encData == NULL) return TPM_NOSPACE;
   if (encrypt_sealed_data(key, &seal, sealedData->encData, 
                           &sealedData->encDataSize)) {
     tpm_free(sealedData->encData);
@@ -228,7 +231,7 @@ TPM_RESULT TPM_Unseal(TPM_KEY_HANDLE parentHandle, TPM_STORED_DATA *inData,
   *secret = tpm_malloc(*sealedDataSize);
   if (*secret == NULL) {
     tpm_free(seal_buf);
-    return TPM_FAIL;
+    return TPM_NOSPACE;
   }
   memcpy(*secret, seal.data, seal.dataSize);
   tpm_free(seal_buf);
@@ -261,7 +264,7 @@ TPM_RESULT TPM_UnBind(TPM_KEY_HANDLE keyHandle, UINT32 inDataSize,
   /* decrypt data */
   *outDataSize = inDataSize;
   *outData = tpm_malloc(*outDataSize);
-  if (*outData == NULL) return TPM_FAIL;
+  if (*outData == NULL) return TPM_NOSPACE;
   switch (key->encScheme) {
     case TPM_ES_RSAESOAEP_SHA1_MGF1: scheme = RSA_ES_OAEP_SHA1; break;
     case TPM_ES_RSAESPKCSv15: scheme = RSA_ES_PKCSV15; break;
@@ -433,20 +436,19 @@ TPM_RESULT TPM_CreateWrapKey(TPM_KEY_HANDLE parentHandle,
     if (keyInfo->PCRInfoSize > 0) {
       memset(keyInfo->PCRInfo.digestAtCreation.digest, 0,
           sizeof(keyInfo->PCRInfo.digestAtCreation.digest));
-      keyInfo->PCRInfo.localityAtCreation = 0; 
+      keyInfo->PCRInfo.localityAtCreation = 0;
     }
   } else {
     memcpy(store.migrationAuth, tpmData.permanent.data.tpmProof.nonce, 
       sizeof(TPM_SECRET));
     /* compute PCR digest */
     if (keyInfo->PCRInfoSize > 0) {
-      tpm_compute_pcr_digest(&keyInfo->PCRInfo.creationPCRSelection,
+      tpm_compute_pcr_digest(&keyInfo->PCRInfo.creationPCRSelection, 
         &keyInfo->PCRInfo.digestAtCreation, NULL);
       keyInfo->PCRInfo.localityAtCreation = 
         tpmData.stany.flags.localityModifier;
     }
   }
-  if (compute_key_digest(wrappedKey, &store.pubDataDigest)) return TPM_FAIL;
   /* generate key and store it */
   key_length = keyInfo->algorithmParms.parms.rsa.keyLength;
   if (rsa_generate_key(&rsa, key_length)) return TPM_FAIL;
@@ -462,12 +464,17 @@ TPM_RESULT TPM_CreateWrapKey(TPM_KEY_HANDLE parentHandle,
     tpm_free(wrappedKey->pubKey.key);
     tpm_free(store.privKey.key);
     tpm_free(wrappedKey->encData);
-    return TPM_FAIL;
+    return TPM_NOSPACE;
   }
   rsa_export_modulus(&rsa, wrappedKey->pubKey.key, 
     &wrappedKey->pubKey.keyLength);
   rsa_export_prime1(&rsa, store.privKey.key, &store.privKey.keyLength);
   rsa_release_private_key(&rsa);
+  /* compute the digest of the wrapped key (without encData) */
+  if (compute_key_digest(wrappedKey, &store.pubDataDigest)) {
+    error("TPM_CreateWrapKey(): compute_key_digest() failed.");
+    return TPM_FAIL;
+  }
   /* encrypt private key data */
   if (encrypt_private_key(parent, &store, wrappedKey->encData, 
       &wrappedKey->encDataSize)) {
@@ -546,6 +553,7 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
                         inKey->algorithmParms.parms.rsa.exponent,
                         inKey->algorithmParms.parms.rsa.exponentSize,
                         store.privKey.key, NULL)) {
+    error("TPM_LoadKey(): verify_key_digest() || rsa_import_key() failed.");
     memset(key, 0, sizeof(TPM_KEY_DATA));
     tpm_free(key_buf);
     return TPM_FAIL;
@@ -554,10 +562,11 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
   if (!(inKey->keyFlags & TPM_KEY_FLAG_MIGRATABLE)) {
     if (memcmp(tpmData.permanent.data.tpmProof.nonce,
                store.migrationAuth, sizeof(TPM_NONCE))) {
+      error("TPM_LoadKey(): tpmProof verification failed.");
       memset(key, 0, sizeof(TPM_KEY_DATA));
       tpm_free(key_buf);
       return TPM_FAIL;
-    } 
+    }
   }
   key->keyUsage = inKey->keyUsage;
   key->keyFlags = inKey->keyFlags;
@@ -634,10 +643,11 @@ TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
   /* setup pubKey */
   pubKey->pubKey.keyLength = key->key.size >> 3;
   pubKey->pubKey.key = tpm_malloc(pubKey->pubKey.keyLength);
-  if (pubKey->pubKey.key == NULL) return TPM_FAIL;
+  if (pubKey->pubKey.key == NULL) return TPM_NOSPACE;
   rsa_export_modulus(&key->key, pubKey->pubKey.key, 
     &pubKey->pubKey.keyLength);
   if (tpm_setup_key_parms(key, &pubKey->algorithmParms) != 0) {
+    error("TPM_GetPubKey(): tpm_setup_key_parms() failed.");
     tpm_free(pubKey->pubKey.key);
     return TPM_FAIL;
   }

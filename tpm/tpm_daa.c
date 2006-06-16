@@ -349,8 +349,9 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
   TPM_DAA_BLOB blob;
   TPM_DAA_SENSITIVE sensitive;
   
-  info("TPM_DAA_Join(), handle = %.8x, stage = %d", handle, stage);
-  info("stany.data.currentDAA = %.8x", tpmData.stany.data.currentDAA);
+  info("TPM_DAA_Join()");
+  debug("handle = %.8x, stage = %d", handle, stage);
+  debug("stany.data.currentDAA = %.8x", tpmData.stany.data.currentDAA);
   
   /* Initalize internal scratch pad */
   memset(scratch, 0, SCRATCH_SIZE);
@@ -417,7 +418,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         return TPM_DAA_INPUT_DATA0;
       }
       /* Set DAA_tpmSpecific->DAA_count = inputData0 */
-      info("TPM_DAA_Join() -- set DAA_count := %d", cnt);
+      debug("TPM_DAA_Join() -- set DAA_count := %d", cnt);
       session->DAA_tpmSpecific.DAA_count = cnt;
       /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific ||
        * DAA_joinSession) */
@@ -426,12 +427,13 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       session->DAA_session.DAA_stage = 1;
       /* Assign session handle for DAA_Join */
       tpmData.stany.data.currentDAA = handle;
-      info("TPM_DAA_Join() -- set handle := %.8x", handle);
+      debug("TPM_DAA_Join() -- set handle := %.8x", handle);
       /* Set outputData = new session handle */
       *outputSize = sizeof(TPM_HANDLE);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL) {
         ptr = *outputData, len = *outputSize;
         if (tpm_marshal_TPM_HANDLE(&ptr, &len, handle)) {
+          error("TPM_DAA_Join(): tpm_marshal_TPM_HANDLE() failed.");
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_FAIL;
         }
@@ -990,6 +992,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         sizeof(session->DAA_session.DAA_scratch));
       ptr = scratch, len = sizeof(scratch);
       if (tpm_marshal_UINT32(&ptr, &len, session->DAA_tpmSpecific.DAA_count)) {
+        error("TPM_DAA_Join(): tpm_marshal_UINT32() failed.");
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_FAIL;
       }
@@ -2099,6 +2102,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
             return TPM_ENCRYPT_ERROR;
         }
         if (compute_daa_digest(&blob, &blob.blobIntegrity)) {
+          error("TPM_DAA_Join(): compute_daa_digest() failed.");
           tpm_free(blob.sensitiveData);
           tpm_free(blob.additionalData);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
@@ -2115,6 +2119,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         len = *outputSize;
         ptr = *outputData;
         if (tpm_marshal_TPM_DAA_BLOB(&ptr, &len, &blob)) {
+          error("TPM_DAA_Join(): tpm_marshal_TPM_DAA_BLOB() failed.");
           tpm_free(blob.sensitiveData);
           tpm_free(blob.additionalData);
           tpm_free(*outputData);
@@ -2204,6 +2209,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
             return TPM_ENCRYPT_ERROR;
         }
         if (compute_daa_digest(&blob, &blob.blobIntegrity)) {
+          error("TPM_DAA_Join(): compute_daa_digest() failed.");
           tpm_free(blob.sensitiveData);
           tpm_free(blob.additionalData);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
@@ -2220,6 +2226,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         len = *outputSize;
         ptr = *outputData;
         if (tpm_marshal_TPM_DAA_BLOB(&ptr, &len, &blob)) {
+          error("TPM_DAA_Join(): tpm_marshal_TPM_DAA_BLOB() failed.");
           tpm_free(blob.sensitiveData);
           tpm_free(blob.additionalData);
           tpm_free(*outputData);
@@ -2284,6 +2291,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         return TPM_NOSPACE;
       }
       if (tpm_marshal_TPM_DAA_TPM(&ptr, &len, &session->DAA_tpmSpecific)) {
+        error("TPM_DAA_Join(): tpm_marshal_TPM_DAA_TPM() failed.");
         tpm_free(blob.additionalData);
         tpm_free(sensitive.internalData);
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
@@ -2297,6 +2305,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
           return TPM_ENCRYPT_ERROR;
       }
       if (compute_daa_digest(&blob, &blob.blobIntegrity)) {
+        error("TPM_DAA_Join(): compute_daa_digest() failed.");
         tpm_free(blob.sensitiveData);
         tpm_free(sensitive.internalData);
         tpm_free(blob.additionalData);
@@ -2314,6 +2323,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       len = *outputSize;
       ptr = *outputData;
       if (tpm_marshal_TPM_DAA_BLOB(&ptr, &len, &blob)) {
+        error("TPM_DAA_Join(): tpm_marshal_TPM_DAA_BLOB() failed.");
         tpm_free(blob.sensitiveData);
         tpm_free(sensitive.internalData);
         tpm_free(blob.additionalData);
@@ -2359,8 +2369,9 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
   TPM_KEY_DATA *aikData;
   TPM_KEY_HANDLE aikHandle;
   
-  info("TPM_DAA_Sign(), handle = %.8x, stage = %d", handle, stage);
-  info("stany.data.currentDAA = %.8x", tpmData.stany.data.currentDAA);
+  info("TPM_DAA_Sign()");
+  debug("handle = %.8x, stage = %d", handle, stage);
+  debug("stany.data.currentDAA = %.8x", tpmData.stany.data.currentDAA);
   
   /* Initalize internal scratch pad */
   memset(scratch, 0, SCRATCH_SIZE);
@@ -2418,12 +2429,13 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       memset(&session->DAA_session, 0, sizeof(TPM_DAA_CONTEXT));
       /* Assign new handle for session */
       tpmData.stany.data.currentDAA = handle;
-      info("TPM_DAA_Sign() -- set handle := %.8x", handle);
+      debug("TPM_DAA_Sign() -- set handle := %.8x", handle);
       /* Set outputData to new handle */
       *outputSize = sizeof(TPM_HANDLE);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL) {
         ptr = *outputData, len = *outputSize;
         if (tpm_marshal_TPM_HANDLE(&ptr, &len, handle)) {
+          error("TPM_DAA_Sign(): tpm_marshal_TPM_HANDLE() failed.");
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_FAIL;
         }
@@ -3121,7 +3133,7 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       }
       /* If selector == 1, verify that inputSize1 == sizeOf(TPM_DIGEST), and */
       if (selector == '\x01') {
-        info("DAA_Sign(): selector == 1");
+        debug("DAA_Sign(): selector == 1");
         if (inputSize1 != sizeof(TPM_DIGEST)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA1;
@@ -3138,14 +3150,14 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       /* If selector == 0, verify that inputData1 is a handle to a TPM 
        * identity key (AIK), and */
       if (selector == '\x00') {
-        info("DAA_Sign(): selector == 0");
+        debug("DAA_Sign(): selector == 0");
         if (tpm_unmarshal_TPM_KEY_HANDLE(&inputData1, &inputSize1, 
           &aikHandle) || (inputSize1 != 0))
         {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DAA_INPUT_DATA1;
         }
-        info("DAA_Sign(): aikHandle == %.8x", aikHandle);
+        debug("DAA_Sign(): aikHandle == %.8x", aikHandle);
         aikData = tpm_get_key(aikHandle);
         if (aikData == NULL) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
