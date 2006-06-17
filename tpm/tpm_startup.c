@@ -100,5 +100,10 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
 TPM_RESULT TPM_SaveState()
 {
   info("TPM_SaveState()");
-  return (tpm_store_permanent_data()) ? TPM_FAIL : TPM_SUCCESS;
+  if (tpmData.permanent.flags.selfTestSucceeded) { 
+    return (tpm_store_permanent_data()) ? TPM_FAIL : TPM_SUCCESS;
+  } else {
+    debug("TPM is in fail-stop mode and thus the permanent data is not stored");
+    return TPM_SUCCESS;
+  }
 }

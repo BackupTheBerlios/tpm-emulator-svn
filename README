@@ -76,6 +76,12 @@ loaded, startup SHOULD be set to 'clear':
 
 bash# modprobe tpm_emulator startup="clear"
 
+In order to recover a TPM emulator which is in fail-stop mode, it first
+has to be deactivated and then reloaded in mode 'clear':
+
+bash# modprobe tpm_emulator startup="deactivated"
+bash# rmmod tpm_emulator
+bash# modprobe tpm_emulator startup="clear"
 
 Notes
 --------------------------------------------------------------------------

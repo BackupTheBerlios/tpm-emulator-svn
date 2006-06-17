@@ -18,8 +18,8 @@ VERSION_BUILD  := $(shell date +"%s")
 EXTRA_CFLAGS   += -Wall -DDEBUG -g  
 
 # GNU MP configuration
-GMP_LIB        := /usr/local/lib/libgmp.a
-GMP_HEADER     := /usr/local/include/gmp.h
+GMP_LIB        := /usr/lib/libgmp.a
+GMP_HEADER     := /usr/include/gmp.h
 
 # sources and objects
 src            ?= .
