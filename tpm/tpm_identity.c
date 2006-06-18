@@ -380,10 +380,13 @@ TPM_RESULT TPM_ActivateIdentity(
   TPM_DIGEST H1;
   BYTE *B1 = NULL;
   size_t sizeB1 = 0;
-  TPM_EK_BLOB *B1__TPM_EK_BLOB = NULL;
-  TPM_ASYM_CA_CONTENTS *B1__TPM_ASYM_CA_CONTENTS = NULL;
+  UINT32 len;
+  BYTE *ptr;
+  BYTE B1__what = 0x00;
+  TPM_EK_BLOB B1__ekBlob;
+  TPM_ASYM_CA_CONTENTS B1__asymCaContents;
   TPM_SYMMETRIC_KEY *K1 = NULL;
-  TPM_EK_BLOB_ACTIVATE *A1 = NULL;
+  TPM_EK_BLOB_ACTIVATE A1;
   TPM_COMPOSITE_HASH C1;
   
   info("TPM_ActivateIdentity()");
@@ -406,7 +409,7 @@ TPM_RESULT TPM_ActivateIdentity(
    * Return TPM_BAD_PARAMETER on mismatch */
   if (idKey->keyUsage != TPM_KEY_IDENTITY)
     return TPM_BAD_PARAMETER;
-debug("(4.)");
+  
   /* 4. Create H1 the digest of a TPM_PUBKEY derived from idKey */
   pubKey.pubKey.keyLength = idKey->key.size >> 3;
   pubKey.pubKey.key = tpm_malloc(pubKey.pubKey.keyLength);
@@ -426,7 +429,7 @@ debug("(4.)");
     tpm_free(pubKey.pubKey.key);
     return TPM_FAIL;
   }
-debug("(5.)");
+  
   /* 5. Decrypt blob creating B1 using PRIVEK as the decryption key */
   B1 = tpm_malloc(blobSize);
   if (B1 == NULL) {
@@ -439,61 +442,78 @@ debug("(5.)");
       tpm_free(B1);
       return TPM_DECRYPT_ERROR;
   }
-debug("(6.)");
+  
   /* 6. Determine the type and version of B1 */
   if (BE16_TO_CPU(*(UINT16*)(B1)) == TPM_TAG_EK_BLOB) {
     /* a. If B1->tag is TPM_TAG_EK_BLOB then */
       /* i. B1 is a TPM_EK_BLOB */
-    B1__TPM_EK_BLOB = (TPM_EK_BLOB*)B1;
+    ptr = B1;
+    len = sizeB1;
+    if (tpm_unmarshal_TPM_EK_BLOB(&ptr, &len, &B1__ekBlob)) {
+        error("TPM_ActivateIdentity(): tpm_unmarshal_TPM_EK_BLOB() failed.");
+        tpm_free(pubKey.pubKey.key);
+        tpm_free(B1);
+        return TPM_FAIL;
+    }
+    B1__what = 0x02;
   } else {
     /* b. Else */
       /* i. B1 is a TPM_ASYM_CA_CONTENTS. As there is no tag for this 
        * structure it is possible for the TPM to make a mistake here but 
        * other sections of the structure undergo validation */
-    B1__TPM_ASYM_CA_CONTENTS = (TPM_ASYM_CA_CONTENTS*)B1;
+    ptr = B1;
+    len = sizeB1;
+    if (tpm_unmarshal_TPM_ASYM_CA_CONTENTS(&ptr, &len, &B1__asymCaContents)) {
+        error("TPM_ActivateIdentity(): tpm_unmarshal_TPM_ASYM_CA_CONTENTS() failed.");
+        tpm_free(pubKey.pubKey.key);
+        tpm_free(B1);
+        return TPM_FAIL;
+    }
+    B1__what = 0x01;
   }
-debug("(7.)");
+  
   /* 7. If B1 is a version 1.1 TPM_ASYM_CA_CONTENTS then */
-  if (B1__TPM_ASYM_CA_CONTENTS != NULL) {
+  if (B1__what == 0x01) {
     /* a. Compare H1 to B1->idDigest on mismatch return TPM_BAD_PARAMETER */
-debug("H1.digest %.2X %.2X %.2X %.2X", H1.digest[0], H1.digest[1], H1.digest[2], H1.digest[3]);
-debug("idDigest %.2X %.2X %.2X %.2X", B1__TPM_ASYM_CA_CONTENTS->idDigest.digest[0], B1__TPM_ASYM_CA_CONTENTS->idDigest.digest[1], B1__TPM_ASYM_CA_CONTENTS->idDigest.digest[2], B1__TPM_ASYM_CA_CONTENTS->idDigest.digest[3]);
-debug("B1 %.2X %.2X %.2X %.2X", B1[0], B1[1], B1[2], B1[3]);
-    if (memcmp(H1.digest, B1__TPM_ASYM_CA_CONTENTS->idDigest.digest, 
+    if (memcmp(H1.digest, B1__asymCaContents.idDigest.digest, 
       sizeof(H1.digest))) {
         tpm_free(pubKey.pubKey.key);
         tpm_free(B1);
         return TPM_BAD_PARAMETER;
     }
     /* b. Set K1 to B1->sessionKey */
-    K1 = &B1__TPM_ASYM_CA_CONTENTS->sessionKey;
+    K1 = &B1__asymCaContents.sessionKey;
   }
-debug("(8.)");
+  
   /* 8. If B1 is a TPM_EK_BLOB then */
-  if (B1__TPM_EK_BLOB != NULL) {
+  if (B1__what == 0x02) {
     /* a. Validate that B1->ekType is TPM_EK_TYPE_ACTIVATE, 
      * return TPM_BAD_TYPE if not. */
-    if (B1__TPM_EK_BLOB->ekType != TPM_EK_TYPE_ACTIVATE) {
+    if (B1__ekBlob.ekType != TPM_EK_TYPE_ACTIVATE) {
       tpm_free(pubKey.pubKey.key);
       tpm_free(B1);
       return TPM_BAD_TYPE;
     }
-    
     /* b. Assign A1 as a TPM_EK_BLOB_ACTIVATE structure from B1->blob */
-    A1 = (TPM_EK_BLOB_ACTIVATE*)B1__TPM_EK_BLOB->blob;
-    
+    ptr = B1__ekBlob.blob;
+    len = B1__ekBlob.blobSize;
+    if (tpm_unmarshal_TPM_EK_BLOB_ACTIVATE(&ptr, &len, &A1)) {
+        error("TPM_ActivateIdentity(): tpm_unmarshal_TPM_EK_BLOB_ACTIVATE() failed.");
+        tpm_free(pubKey.pubKey.key);
+        tpm_free(B1);
+        return TPM_FAIL;
+    }
     /* c. Compare H1 to A1->idDigest on mismatch return TPM_BAD_PARAMETER */
-    if (memcmp(H1.digest, A1->idDigest.digest, sizeof(H1.digest))) {
+    if (memcmp(H1.digest, A1.idDigest.digest, sizeof(H1.digest))) {
       tpm_free(pubKey.pubKey.key);
       tpm_free(B1);
       return TPM_BAD_PARAMETER;
     }
-    
     /* d. If A1->pcrSelection is not NULL */
-    if (A1->pcrInfo.pcrSelection.sizeOfSelect > 0) {
+    if (A1.pcrInfo.pcrSelection.sizeOfSelect > 0) {
       /* i. Compute a composite hash C1 using the PCR selection 
        * A1->pcrSelection */
-      if (tpm_compute_pcr_digest(&A1->pcrInfo.pcrSelection, &C1, NULL) !=
+      if (tpm_compute_pcr_digest(&A1.pcrInfo.pcrSelection, &C1, NULL) !=
         TPM_SUCCESS) {
           error("TPM_ActivateIdentity(): tpm_compute_pcr_digest() failed.");
           tpm_free(pubKey.pubKey.key);
@@ -502,7 +522,7 @@ debug("(8.)");
       }
       /* ii. Compare C1 to A1->pcrInfo->digestAtRelease and return 
        * TPM_WRONGPCRVAL on a mismatch */
-      if (memcmp(&C1, &A1->pcrInfo.digestAtRelease, 
+      if (memcmp(&C1, &A1.pcrInfo.digestAtRelease, 
         sizeof(TPM_COMPOSITE_HASH))) {
           tpm_free(pubKey.pubKey.key);
           tpm_free(B1);
@@ -511,21 +531,24 @@ debug("(8.)");
       /* iii. If A1->pcrInfo specifies a locality ensure that the 
        * appropriate locality has been asserted, return TPM_BAD_LOCALITY 
        * on error */
-      if (!(A1->pcrInfo.localityAtRelease & (1 << LOCALITY))) {
+      if (!(A1.pcrInfo.localityAtRelease & (1 << LOCALITY))) {
         tpm_free(pubKey.pubKey.key);
         tpm_free(B1);
         return TPM_BAD_LOCALITY;
       }
     }
     /* e. Set K1 to A1->sessionKey */
-    K1 = &A1->sessionKey;
+    K1 = &A1.sessionKey;
   }
   
   /* 9. Return K1 */
-  if (K1 != NULL)
-    memcpy(symmetricKey, K1, sizeof_TPM_SYMMETRIC_KEY((*K1)));
+  if (K1 != NULL) {
+    symmetricKey->algId = K1->algId;
+    symmetricKey->encScheme = K1->encScheme;
+    symmetricKey->size = K1->size;
+    memcpy(symmetricKey->data, K1->data, K1->size);
+  }
   tpm_free(pubKey.pubKey.key);
   tpm_free(B1);
-  
   return TPM_SUCCESS;
 }

@@ -1,6 +1,12 @@
+2006-06-18  Heiko Stamer <stamer@gaos.org>
+	* tpm_identity.c: identity creation and activation,
+		that is TPM_MakeIdentity and TPM_ActivateIdentity added
+
+
 2005-12-24  Mario Strasser <mast@gmx.net>
 	* tpm_transport.c, tpm_marshalling.c, tpm_structures.h:
 		Transport session functionality added
+
 
 2005-12-16  Mario Strasser <mast@gmx.net>
 	* linux_module.c: ioctl() support added

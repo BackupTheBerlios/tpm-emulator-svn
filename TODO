@@ -1,15 +1,15 @@
 Partially Implemented:
 ----------------------
   TPM_GetCapability
-  TPM_CreateEndorsementKeyPair (currently disabled)
+  TPM_CreateEndorsementKeyPair (currently disabled; see CreateRevocableEK)
   TPM_SetOwnerPointer (currently disabled)
 
 Completely Missing:
 -------------------
-  Mandatory Functions:
+  Mandatory Commands:
     TPM_SetCapability
     TPM_ResetLockValue (protection against dictionary attacks)
-    TPM_LoadKey2
+    TPM_LoadKey2 (currently emulated by TPM_LoadKey)
     All Migration Functions
     TPM_Quote2
     TPM_DSAP

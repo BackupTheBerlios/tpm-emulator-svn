@@ -991,6 +991,62 @@ int tpm_unmarshal_TPM_CAP_VERSION_INFO(BYTE **ptr, UINT32 *length, TPM_CAP_VERSI
   return 0;
 }
 
+int tpm_marshal_TPM_ASYM_CA_CONTENTS(BYTE **ptr, UINT32 *length, TPM_ASYM_CA_CONTENTS *v)
+{
+  if (tpm_marshal_TPM_SYMMETRIC_KEY(ptr, length, &v->sessionKey)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->idDigest))
+        return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_ASYM_CA_CONTENTS(BYTE **ptr, UINT32 *length, TPM_ASYM_CA_CONTENTS *v)
+{
+  if (tpm_unmarshal_TPM_SYMMETRIC_KEY(ptr, length, &v->sessionKey)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->idDigest))
+        return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_EK_BLOB(BYTE **ptr, UINT32 *length, TPM_EK_BLOB *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_EK_TYPE(ptr, length, v->ekType)
+      || tpm_marshal_UINT32(ptr, length, v->blobSize)
+      || tpm_marshal_BLOB(ptr, length, v->blob, v->blobSize))
+        return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_EK_BLOB(BYTE **ptr, UINT32 *length, TPM_EK_BLOB *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_EK_TYPE(ptr, length, &v->ekType)
+      || tpm_unmarshal_UINT32(ptr, length, &v->blobSize)
+      || tpm_unmarshal_BLOB(ptr, length, &v->blob, v->blobSize))
+        return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_EK_BLOB_ACTIVATE(BYTE **ptr, UINT32 *length, TPM_EK_BLOB_ACTIVATE *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_SYMMETRIC_KEY(ptr, length, &v->sessionKey)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->idDigest)
+      || tpm_marshal_TPM_PCR_INFO_SHORT(ptr, length, &v->pcrInfo))
+        return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_EK_BLOB_ACTIVATE(BYTE **ptr, UINT32 *length, TPM_EK_BLOB_ACTIVATE *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_SYMMETRIC_KEY(ptr, length, &v->sessionKey)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->idDigest)
+      || tpm_unmarshal_TPM_PCR_INFO_SHORT(ptr, length, &v->pcrInfo))
+        return -1;
+  return 0;
+}
+
 int tpm_marshal_TPM_NV_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_NV_ATTRIBUTES *v)
 {
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)

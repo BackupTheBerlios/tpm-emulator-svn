@@ -1786,15 +1786,24 @@ static TPM_RESULT execute_TPM_ActivateIdentity(TPM_REQUEST *req, TPM_RESPONSE *r
       || tpm_unmarshal_UINT32(&ptr, &len, &blobSize)
       || tpm_unmarshal_BLOB(&ptr, &len, &blob, blobSize)
       || len != 0) return TPM_BAD_PARAMETER;
+  /* allocate memory for the symmetricKey data */
+  symmetricKey.size = blobSize;
+  symmetricKey.data = tpm_malloc(blobSize);
+  if (symmetricKey.data == NULL)
+    return TPM_NOSPACE;
   /* execute command */
   res = TPM_ActivateIdentity(idKeyHandle, blobSize, blob, &req->auth1, 
     &req->auth2, &symmetricKey);
-  if (res != TPM_SUCCESS) return res;
+  if (res != TPM_SUCCESS) {
+    free_TPM_SYMMETRIC_KEY(symmetricKey);
+    return res;
+  }
   /* marshal output */
   rsp->paramSize = len = sizeof_TPM_SYMMETRIC_KEY(symmetricKey);
   rsp->param = ptr = tpm_malloc(len);
-  if (ptr == NULL
-      || tpm_marshal_TPM_SYMMETRIC_KEY(&ptr, &len, &symmetricKey)) {
+  if (ptr == NULL)
+    res = TPM_NOSPACE;
+  else if (tpm_marshal_TPM_SYMMETRIC_KEY(&ptr, &len, &symmetricKey)) {
     tpm_free(rsp->param);
     res = TPM_FAIL;
   }

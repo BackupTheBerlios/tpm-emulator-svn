@@ -192,6 +192,8 @@ static inline int tpm_unmarshal_BYTE_ARRAY(BYTE **ptr, UINT32 *ptr_length,
 #define tpm_unmarshal_TPM_STRUCTURE_TAG        tpm_unmarshal_UINT16
 #define tpm_marshal_TPM_PLATFORM_SPECIFIC      tpm_marshal_UINT16
 #define tpm_unmarshal_TPM_PLATFORM_SPECIFIC    tpm_unmarshal_UINT16
+#define tpm_marshal_TPM_EK_TYPE                tpm_marshal_UINT16
+#define tpm_unmarshal_TPM_EK_TYPE              tpm_unmarshal_UINT16
 #define tpm_marshal_TPM_COMMAND_CODE           tpm_marshal_UINT32
 #define tpm_unmarshal_TPM_COMMAND_CODE         tpm_unmarshal_UINT32
 #define tpm_marshal_TPM_CAPABILITY_AREA        tpm_marshal_UINT32
@@ -381,6 +383,15 @@ int tpm_unmarshal_TPM_CMK_AUTH(BYTE **ptr, UINT32 *length, TPM_CMK_AUTH *v);
 
 int tpm_marshal_TPM_CAP_VERSION_INFO(BYTE **ptr, UINT32 *length, TPM_CAP_VERSION_INFO *v);
 int tpm_unmarshal_TPM_CAP_VERSION_INFO(BYTE **ptr, UINT32 *length, TPM_CAP_VERSION_INFO *v);
+
+int tpm_marshal_TPM_ASYM_CA_CONTENTS(BYTE **ptr, UINT32 *length, TPM_ASYM_CA_CONTENTS *v);
+int tpm_unmarshal_TPM_ASYM_CA_CONTENTS(BYTE **ptr, UINT32 *length, TPM_ASYM_CA_CONTENTS *v);
+
+int tpm_marshal_TPM_EK_BLOB(BYTE **ptr, UINT32 *length, TPM_EK_BLOB *v);
+int tpm_unmarshal_TPM_EK_BLOB(BYTE **ptr, UINT32 *length, TPM_EK_BLOB *v);
+
+int tpm_marshal_TPM_EK_BLOB_ACTIVATE(BYTE **ptr, UINT32 *length, TPM_EK_BLOB_ACTIVATE *v);
+int tpm_unmarshal_TPM_EK_BLOB_ACTIVATE(BYTE **ptr, UINT32 *length, TPM_EK_BLOB_ACTIVATE *v);
 
 int tpm_marshal_TPM_NV_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_NV_ATTRIBUTES *v);
 int tpm_unmarshal_TPM_NV_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_NV_ATTRIBUTES *v);
