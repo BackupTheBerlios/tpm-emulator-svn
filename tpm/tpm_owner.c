@@ -149,6 +149,7 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   srk->encScheme = srkParams->algorithmParms.encScheme;
   srk->sigScheme = srkParams->algorithmParms.sigScheme;
   srk->authDataUsage = srkParams->authDataUsage;
+  debug("[ srk->authDataUsage=%.2x ]", srk->authDataUsage);
   srkParams->algorithmParms.parms.rsa.keyLength = 2048;
   if (rsa_generate_key(&srk->key, 
       srkParams->algorithmParms.parms.rsa.keyLength)) return TPM_FAIL;

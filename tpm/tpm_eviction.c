@@ -54,7 +54,7 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
   int i;
   
   info("TPM_FlushSpecific()");
-  info("[ handle=%.8x resourceType=%.8x ]", handle, resourceType);
+  debug("[ handle=%.8x resourceType=%.8x ]", handle, resourceType);
   switch (resourceType) {
     case TPM_RT_CONTEXT:
       for (i = 0; i < TPM_MAX_SESSION_LIST; i++)

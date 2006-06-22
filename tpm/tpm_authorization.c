@@ -143,7 +143,9 @@ TPM_RESULT TPM_ChangeAuthOwner(TPM_PROTOCOL_ID protocolID,
     }
   } else if (entityType == TPM_ET_SRK) {
     memcpy(tpmData.permanent.data.srk.usageAuth, plainAuth, sizeof(TPM_SECRET));
-    tpmData.permanent.data.srk.authDataUsage = TPM_AUTH_ALWAYS; /* right? */
+/* probably not correct; spec. v1.2 rev94 says nothing about authDataUsage
+    tpmData.permanent.data.srk.authDataUsage = TPM_AUTH_ALWAYS;
+*/
     /* invalidate all associated sessions but the current one */
     for (i = 0; i < TPM_MAX_SESSIONS; i++) {
       if (tpmData.stany.data.sessions[i].handle == TPM_KH_SRK
@@ -284,7 +286,8 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
   TPM_SESSION_DATA *session;
   UINT32 auth_handle = CPU_TO_BE32(auth->authHandle);
   
-  info("tpm_verify_auth(%08x)", auth->authHandle);
+  info("tpm_verify_auth()");
+  debug("[ handle=%.8x ]", auth->authHandle);
   /* get dedicated authorization or transport session */
   session = tpm_get_auth(auth->authHandle);
   if (session == NULL) session = tpm_get_transport(auth->authHandle);

@@ -88,12 +88,22 @@ TPM_RESULT TPM_MakeIdentity(
     }
   /* 2. Use authHandle to verify that the Owner authorized all TPM_MakeIdentity 
    * input parameters. */
-  res = tpm_verify_auth(auth2, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
-  if (res != TPM_SUCCESS) return res;
+  if (auth2->authHandle != TPM_INVALID_HANDLE) {
+    res = tpm_verify_auth(auth2, tpmData.permanent.data.ownerAuth, 
+      TPM_KH_OWNER);
+    if (res != TPM_SUCCESS) return res;
+  } else {
+    res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, 
+      TPM_KH_OWNER);
+    if (res != TPM_SUCCESS) return res;
+  }
   /* 3. Use srkAuthHandle to verify that the SRK owner authorized all 
    * TPM_MakeIdentity input parameters. */
-  res = tpm_verify_auth(auth1, tpmData.permanent.data.srk.usageAuth, TPM_KH_SRK);
-  if (res != TPM_SUCCESS) return res;
+  if (auth2->authHandle != TPM_INVALID_HANDLE) {
+    res = tpm_verify_auth(auth1, tpmData.permanent.data.srk.usageAuth, 
+      TPM_KH_SRK);
+    if (res != TPM_SUCCESS) return res;
+  }
   /* 4. Verify that idKeyParams->keyUsage is TPM_KEY_IDENTITY. If it is not, 
    * return TPM_INVALID_KEYUSAGE */
   if (idKeyParams->keyUsage != TPM_KEY_IDENTITY)
@@ -393,16 +403,25 @@ TPM_RESULT TPM_ActivateIdentity(
   
   /* 1. Using the authHandle field, validate the owner's AuthData to execute 
    * the command and all of the incoming parameters. */
-  res = tpm_verify_auth(auth2, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
-  if (res != TPM_SUCCESS) return res;
+  if (auth2->authHandle != TPM_INVALID_HANDLE) {
+    res = tpm_verify_auth(auth2, tpmData.permanent.data.ownerAuth, 
+      TPM_KH_OWNER);
+    if (res != TPM_SUCCESS) return res;
+  } else {
+    res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, 
+      TPM_KH_OWNER);
+    if (res != TPM_SUCCESS) return res;
+  }
   
   /* 2. Using the idKeyAuthHandle, validate the AuthData to execute command 
    * and all of the incoming parameters */
   idKey = tpm_get_key(idKeyHandle);
   if (idKey == NULL)
-    return TPM_BAD_HANDLE; /* TODO: check return value */
-  res = tpm_verify_auth(auth1, idKey->usageAuth, idKeyHandle);
-  if (res != TPM_SUCCESS) return res;
+    return TPM_INVALID_KEYHANDLE;
+  if (auth2->authHandle != TPM_INVALID_HANDLE) {
+    res = tpm_verify_auth(auth1, idKey->usageAuth, idKeyHandle);
+    if (res != TPM_SUCCESS) return res;
+  }
   
   /* 3. Validate that the idKey is the public key of a valid TPM identity by 
    * checking that idKeyHandle->keyUsage is TPM_KEY_IDENTITY. 
