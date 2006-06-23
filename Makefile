@@ -11,7 +11,7 @@ MOD_SUBDIR     := misc
 # module settings
 MODULE_NAME    := tpm_emulator
 VERSION_MAJOR  := 0
-VERSION_MINOR  := 3
+VERSION_MINOR  := 4
 VERSION_BUILD  := $(shell date +"%s")
 
 # enable/disable DEBUG messages
