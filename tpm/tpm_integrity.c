@@ -81,8 +81,10 @@ TPM_RESULT TPM_Quote(TPM_KEY_HANDLE keyHandle, TPM_NONCE *extrnalData,
     res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
     if (res != TPM_SUCCESS) return res;
   }
-  if ((key->keyUsage != TPM_KEY_SIGNING && key->keyUsage != TPM_KEY_LEGACY)
-      || key->sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1) 
+  if (key->sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1)
+    return TPM_INAPPROPRIATE_SIG;
+  if (key->keyUsage != TPM_KEY_SIGNING && key->keyUsage != TPM_KEY_LEGACY
+      && key->keyUsage != TPM_KEY_IDENTITY)
     return TPM_INVALID_KEYUSAGE;
   /* compute composite hash */
   res = tpm_compute_pcr_digest(targetPCR, &hash, pcrData);
@@ -97,7 +99,7 @@ TPM_RESULT TPM_Quote(TPM_KEY_HANDLE keyHandle, TPM_NONCE *extrnalData,
   if (rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, buf, 48, *sig)) {
     tpm_free(*sig);
     return TPM_FAIL;
-  } 
+  }
   return TPM_SUCCESS;
 }
 

@@ -170,7 +170,7 @@ TPM_RESULT TPM_GetAuditDigestSigned(TPM_KEY_HANDLE keyHandle,
   }  
   /* check key usage */
   if (closeAudit && key->keyUsage == TPM_KEY_IDENTITY) {
-    memset(&tpmData.stany.data.auditDigest, 0, sizeof(TPM_DIGEST));  
+    memset(&tpmData.stany.data.auditDigest, 0, sizeof(TPM_DIGEST));
     tpmData.stany.data.auditSession = FALSE;
   } else {
     return TPM_INVALID_KEYUSAGE;

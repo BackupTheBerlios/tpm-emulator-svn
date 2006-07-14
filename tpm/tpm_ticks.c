@@ -62,6 +62,8 @@ TPM_RESULT TPM_TickStampBlob(TPM_KEY_HANDLE keyHandle, TPM_NONCE *antiReplay,
   if (res != TPM_SUCCESS) return res;
   if (key->keyUsage != TPM_KEY_SIGNING && key->keyUsage != TPM_KEY_LEGACY
       && key->keyUsage != TPM_KEY_IDENTITY) return TPM_INVALID_KEYUSAGE;
+  if (key->sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1)
+    return TPM_INAPPROPRIATE_SIG;
   /* get current ticks */
   TPM_GetTicks(currentTicks);
   /* sign data using signature scheme PKCS1_SHA1 and TPM_SIGN_INFO container */
@@ -83,11 +85,11 @@ TPM_RESULT TPM_TickStampBlob(TPM_KEY_HANDLE keyHandle, TPM_NONCE *antiReplay,
   p = &info[30 + sizeof(TPM_DIGEST)]; 
   length = sizeof_TPM_CURRENT_TICKS(currentTicks);
   if (tpm_marshal_TPM_CURRENT_TICKS(&p, &length, currentTicks)
-      || rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, info, info_length, *sig)) {   
+      || rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, info, info_length, *sig)) {
     tpm_free(*sig);
     tpm_free(info);
     return TPM_FAIL;
-  } 
+  }
   return TPM_SUCCESS;
 }
 
@@ -106,7 +108,7 @@ void tpm_update_ticks(void)
     tpmData.stany.data.currentTicks.tickSecurity = TICK_SEC_NO_CHECK;
 */
   } else {
-    tpmData.stany.data.currentTicks.currentTicks += tpm_get_ticks();   
+    tpmData.stany.data.currentTicks.currentTicks += tpm_get_ticks();
   }
 }
 

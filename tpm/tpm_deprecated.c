@@ -199,11 +199,17 @@ TPM_RESULT TPM_CertifySelfTest(TPM_KEY_HANDLE keyHandle, TPM_NONCE *antiReplay,
     res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
     if (res != TPM_SUCCESS) return res;
   }
+  if (key->keyUsage != TPM_KEY_SIGNING && key->keyUsage != TPM_KEY_LEGACY
+      && key->keyUsage != TPM_KEY_IDENTITY) return TPM_INVALID_KEYUSAGE;
+  /* not neccessary, because a vendor specific signature is allowed
+  if (key->sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1)
+    return TPM_BAD_SCHEME;
+  */
   /* setup and sign result */
   memcpy(&buf, "Test Passed", 11);
   memcpy(&buf[11], antiReplay->nonce, sizeof(TPM_NONCE));
   memcpy(&buf[31], "\x52\x00\x00\x00", 4);
-  return tpm_sign(key, auth1, FALSE, buf, sizeof(buf), sig, sigSize); 
+  return tpm_sign(key, auth1, FALSE, buf, sizeof(buf), sig, sigSize);
 }
 
 extern TPM_RESULT tpm_get_pubek(TPM_PUBKEY *pubEndorsementKey);
