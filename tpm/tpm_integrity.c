@@ -38,7 +38,7 @@ TPM_RESULT TPM_Extend(TPM_PCRINDEX pcrNum, TPM_DIGEST *inDigest,
   sha1_ctx_t ctx;
 
   info("TPM_Extend()");
-  if (pcrNum > TPM_NUM_PCR) return TPM_BADINDEX;
+  if (pcrNum >= TPM_NUM_PCR) return TPM_BADINDEX;
   if (!PCR_ATTRIB[pcrNum].pcrExtendLocal[LOCALITY]) return TPM_BAD_LOCALITY;
   /* compute new PCR value as SHA-1(old PCR value || inDigest) */
   sha1_init(&ctx);
@@ -57,7 +57,7 @@ TPM_RESULT TPM_Extend(TPM_PCRINDEX pcrNum, TPM_DIGEST *inDigest,
 TPM_RESULT TPM_PCRRead(TPM_PCRINDEX pcrIndex, TPM_PCRVALUE *outDigest)
 {
   info("TPM_PCRRead()");
-  if (pcrIndex > TPM_NUM_PCR) return TPM_BADINDEX;
+  if (pcrIndex >= TPM_NUM_PCR) return TPM_BADINDEX;
   memcpy(outDigest, &PCR_VALUE[pcrIndex], sizeof(TPM_PCRVALUE));
   return TPM_SUCCESS;
 }
