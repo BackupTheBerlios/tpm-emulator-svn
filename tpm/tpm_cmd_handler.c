@@ -22,7 +22,7 @@
 #include "tpm_data.h"
 #include "tpm_handles.h"
 
-UINT32 tpm_get_param_offset(TPM_COMMAND_CODE ordinal)
+UINT32 tpm_get_in_param_offset(TPM_COMMAND_CODE ordinal)
 {
   switch (ordinal) {
     case TPM_ORD_ActivateIdentity:
@@ -72,10 +72,21 @@ UINT32 tpm_get_param_offset(TPM_COMMAND_CODE ordinal)
   }
 }
 
+UINT32 tpm_get_out_param_offset(TPM_COMMAND_CODE ordinal)
+{
+  switch (ordinal) {
+    case TPM_ORD_LoadKey2:
+      return 4;
+
+    default:
+      return 0;
+  }
+}
+  
 void tpm_compute_in_param_digest(TPM_REQUEST *req)
 {
   sha1_ctx_t sha1;
-  UINT32 offset = tpm_get_param_offset(req->ordinal);
+  UINT32 offset = tpm_get_in_param_offset(req->ordinal);
   UINT32 ord = CPU_TO_BE32(req->ordinal);
 
   /* compute SHA1 hash */
@@ -92,6 +103,7 @@ void tpm_compute_in_param_digest(TPM_REQUEST *req)
 void tpm_compute_out_param_digest(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
 {
   sha1_ctx_t sha1;
+  UINT32 offset = tpm_get_out_param_offset(ordinal);
   UINT32 res = CPU_TO_BE32(rsp->result);
   UINT32 ord = CPU_TO_BE32(ordinal);
 
@@ -99,7 +111,7 @@ void tpm_compute_out_param_digest(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
   sha1_init(&sha1);
   sha1_update(&sha1, (BYTE*)&res, 4);
   sha1_update(&sha1, (BYTE*)&ord, 4);
-  sha1_update(&sha1, rsp->param, rsp->paramSize);
+  sha1_update(&sha1, rsp->param + offset, rsp->paramSize - offset);
   sha1_final(&sha1, rsp->auth1->digest);
   if (rsp->auth2 != NULL) memcpy(rsp->auth2->digest, 
     rsp->auth1->digest, sizeof(rsp->auth1->digest));

@@ -174,7 +174,7 @@ TPM_RESULT TPM_EstablishTransport(TPM_KEY_HANDLE encHandle,
   return TPM_SUCCESS;
 }
 
-extern UINT32 tpm_get_param_offset(TPM_COMMAND_CODE ordinal);
+extern UINT32 tpm_get_in_param_offset(TPM_COMMAND_CODE ordinal);
 extern void tpm_compute_in_param_digest(TPM_REQUEST *req);
 extern void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp);
 
@@ -245,7 +245,7 @@ TPM_RESULT TPM_ExecuteTransport(UINT32 inWrappedCmdSize, BYTE *inWrappedCmd,
   ptr = tpm_malloc(req.paramSize);
   if (ptr == NULL) return TPM_FAIL;
   memcpy(ptr, req.param, req.paramSize);
-  offset = tpm_get_param_offset(req.ordinal);
+  offset = tpm_get_in_param_offset(req.ordinal);
   if (session->transInternal.transPublic.transAttributes & TPM_TRANSPORT_ENCRYPT)
     decrypt_wrapped_command(ptr + offset, req.paramSize - offset,
                             auth1, session->transInternal.authData);
