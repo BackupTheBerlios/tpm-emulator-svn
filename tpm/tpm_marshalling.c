@@ -1007,6 +1007,32 @@ int tpm_unmarshal_TPM_ASYM_CA_CONTENTS(BYTE **ptr, UINT32 *length, TPM_ASYM_CA_C
   return 0;
 }
 
+int tpm_marshal_TPM_QUOTE_INFO2(BYTE **ptr, UINT32 *length, TPM_QUOTE_INFO2 *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_BYTE(ptr, length, v->fixed[0])
+      || tpm_marshal_BYTE(ptr, length, v->fixed[1])
+      || tpm_marshal_BYTE(ptr, length, v->fixed[2])
+      || tpm_marshal_BYTE(ptr, length, v->fixed[3])
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->externalData)
+      || tpm_marshal_TPM_PCR_INFO_SHORT(ptr, length, &v->infoShort))
+        return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_QUOTE_INFO2(BYTE **ptr, UINT32 *length, TPM_QUOTE_INFO2 *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_BYTE(ptr, length, &v->fixed[0])
+      || tpm_unmarshal_BYTE(ptr, length, &v->fixed[1])
+      || tpm_unmarshal_BYTE(ptr, length, &v->fixed[2])
+      || tpm_unmarshal_BYTE(ptr, length, &v->fixed[3])
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->externalData)
+      || tpm_unmarshal_TPM_PCR_INFO_SHORT(ptr, length, &v->infoShort))
+        return -1;
+  return 0;
+}
+
 int tpm_marshal_TPM_EK_BLOB(BYTE **ptr, UINT32 *length, TPM_EK_BLOB *v)
 {
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)

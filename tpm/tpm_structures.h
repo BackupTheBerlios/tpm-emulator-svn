@@ -751,7 +751,7 @@ typedef struct tdTPM_PCR_INFO {
 } TPM_PCR_INFO;
 #define sizeof_TPM_PCR_INFO(s) (2 + 1 + 1 \
   + sizeof_TPM_PCR_SELECTION(s.creationPCRSelection) \
-  + sizeof_TPM_PCR_SELECTION(s.releasePCRSelection) + 20 +20)
+  + sizeof_TPM_PCR_SELECTION(s.releasePCRSelection) + 20 + 20)
 
 /*
  * TPM_PCR_INFO_SHORT ([TPM_Part2], Section 8.5)
@@ -1076,6 +1076,8 @@ typedef struct tdTPM_QUOTE_INFO2 {
   TPM_NONCE externalData;
   TPM_PCR_INFO_SHORT infoShort;
 } TPM_QUOTE_INFO2;
+#define sizeof_TPM_QUOTE_INFO2(s) (2 + 4 + 20 + \
+  sizeof_TPM_PCR_INFO_SHORT(s.infoShort))
 
 /*
  * Identity Structures

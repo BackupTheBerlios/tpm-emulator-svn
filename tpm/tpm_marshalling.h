@@ -387,6 +387,9 @@ int tpm_unmarshal_TPM_CAP_VERSION_INFO(BYTE **ptr, UINT32 *length, TPM_CAP_VERSI
 int tpm_marshal_TPM_ASYM_CA_CONTENTS(BYTE **ptr, UINT32 *length, TPM_ASYM_CA_CONTENTS *v);
 int tpm_unmarshal_TPM_ASYM_CA_CONTENTS(BYTE **ptr, UINT32 *length, TPM_ASYM_CA_CONTENTS *v);
 
+int tpm_marshal_TPM_QUOTE_INFO2(BYTE **ptr, UINT32 *length, TPM_QUOTE_INFO2 *v);
+int tpm_unmarshal_TPM_QUOTE_INFO2(BYTE **ptr, UINT32 *length, TPM_QUOTE_INFO2 *v);
+
 int tpm_marshal_TPM_EK_BLOB(BYTE **ptr, UINT32 *length, TPM_EK_BLOB *v);
 int tpm_unmarshal_TPM_EK_BLOB(BYTE **ptr, UINT32 *length, TPM_EK_BLOB *v);
 

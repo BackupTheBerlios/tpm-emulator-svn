@@ -392,9 +392,7 @@ TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
     case TPM_ORD_PCRRead:
     case TPM_ORD_Quote:
     case TPM_ORD_PCR_Reset:
-/* WATCH: not yet implemented
     case TPM_ORD_Quote2:
-*/
     case TPM_ORD_ChangeAuth:
     case TPM_ORD_ChangeAuthOwner:
     case TPM_ORD_OIAP:

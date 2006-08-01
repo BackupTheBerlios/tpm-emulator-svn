@@ -1,6 +1,7 @@
 /* Software-Based Trusted Platform Module (TPM) Emulator for Linux
  * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+ *                    Swiss Federal Institute of Technology (ETH) Zurich,
+ *               2006 Heiko Stamer <stamer@gaos.org>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -22,6 +23,9 @@
 #include "crypto/rsa.h"
 #include "tpm_handles.h"
 #include "tpm_marshalling.h"
+
+/* import functions from tpm_capability.c */
+extern TPM_RESULT cap_version_val(UINT32 *respSize, BYTE **resp);
 
 /*
  * Integrity Collection and Reporting ([TPM_Part3], Section 16)
@@ -62,8 +66,8 @@ TPM_RESULT TPM_PCRRead(TPM_PCRINDEX pcrIndex, TPM_PCRVALUE *outDigest)
   return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_Quote(TPM_KEY_HANDLE keyHandle, TPM_NONCE *extrnalData,
-                     TPM_PCR_SELECTION *targetPCR, TPM_AUTH *auth1,  
+TPM_RESULT TPM_Quote(TPM_KEY_HANDLE keyHandle, TPM_NONCE *extrnalData, 
+                     TPM_PCR_SELECTION *targetPCR, TPM_AUTH *auth1, 
                      TPM_PCR_COMPOSITE *pcrData, 
                      UINT32 *sigSize, BYTE **sig)
 {
@@ -210,7 +214,107 @@ TPM_RESULT TPM_Quote2(
   BYTE **sig
 )
 {
-  info("TPM_Quote2() not implemented yet");
-  /* TODO: implement TPM_Quote2() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  TPM_KEY_DATA *key;
+  TPM_COMPOSITE_HASH H1;
+  TPM_QUOTE_INFO2 Q1;
+  sha1_ctx_t ctx;
+  TPM_DIGEST digest;
+  UINT32 respSize, len, size;
+  BYTE *resp, *ptr, *buf;
+  
+  info("TPM_Quote2()");
+  /* get key by keyHandle*/
+  key = tpm_get_key(keyHandle);
+  if (key == NULL) return TPM_INVALID_KEYHANDLE;
+  /* 1. The TPM MUST validate the AuthData to use the key pointed
+   *    to by keyhandle */
+  if (auth1->authHandle != TPM_INVALID_HANDLE
+      || key->authDataUsage != TPM_AUTH_NEVER) {
+    res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
+    if (res != TPM_SUCCESS) return res;
+  }
+  /* 2. The keyHandle->sigScheme MUST use SHA-1,
+   *    return TPM_INAPPROPRIATE_SIG if it does not */
+  if (key->sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1)
+    return TPM_INAPPROPRIATE_SIG;
+
+/* WATCH: ??? specification error, missing check for key usage ???
+   A security issue seems to be the (mis)usage of the EK for signing. */
+/*
+  if (key->keyUsage != TPM_KEY_SIGNING && key->keyUsage != TPM_KEY_LEGACY
+      && key->keyUsage != TPM_KEY_IDENTITY)
+    return TPM_INVALID_KEYUSAGE;
+*/
+
+  /* 3. Validate targetPCR is a valid TPM_PCR_SELECTION structure,
+   *    on errors return TPM_INVALID_PCR_INFO */
+  if (targetPCR->sizeOfSelect > sizeof(targetPCR->pcrSelect))
+    return TPM_INVALID_PCR_INFO;
+  /* 4. Create H1 a SHA-1 hash of a TPM_PCR_COMPOSITE using the
+   *    TPM_STCLEAR_DATA->PCR[] indicated by targetPCR->pcrSelect */
+  res = tpm_compute_pcr_digest(targetPCR, &H1, NULL);
+  if (res != TPM_SUCCESS) return res;
+  /* 5. Create S1 a TPM_PCR_INFO_SHORT */
+  pcrData->pcrSelection.sizeOfSelect = targetPCR->sizeOfSelect;
+  memcpy(pcrData->pcrSelection.pcrSelect, targetPCR->pcrSelect, targetPCR->sizeOfSelect);
+  pcrData->localityAtRelease = tpmData.stany.flags.localityModifier;
+  memcpy(&pcrData->digestAtRelease, &H1, sizeof(TPM_COMPOSITE_HASH));
+  /* 6. Create Q1 a TPM_QUOTE_INFO2 structure */
+  Q1.tag = TPM_TAG_QUOTE_INFO2;
+  memcpy(Q1.fixed, "QUT2", 4);
+  memcpy(&Q1.infoShort, pcrData, sizeof_TPM_PCR_INFO_SHORT((*pcrData)));
+  memcpy(&Q1.externalData, externalData, sizeof(TPM_NONCE));
+  size = len = sizeof_TPM_QUOTE_INFO2(Q1);
+  buf = ptr = tpm_malloc(size);
+  if (buf == NULL) return TPM_NOSPACE;
+  if (tpm_marshal_TPM_QUOTE_INFO2(&ptr, &len, &Q1) || (len != 0)) {
+    error("TPM_Quote2(): tpm_marshal_TPM_QUOTE_INFO2() failed.");
+    tpm_free(buf);
+    return TPM_FAIL;
+  }
+  /* 7. If addVersion is TRUE */
+  if (addVersion == TRUE) {
+    /* a. Concatenate to Q1 a TPM_CAP_VERSION_INFO structure */
+    res = cap_version_val(&respSize, &resp);
+    if (res != TPM_SUCCESS) {
+      error("TPM_Quote2(): cap_version_val() failed.");
+      tpm_free(buf);
+      return TPM_FAIL;
+    }
+    /* b. Set the output parameters for versionInfo */
+    ptr = resp;
+    len = respSize;
+    if (tpm_unmarshal_TPM_CAP_VERSION_INFO(&ptr, &len, versionInfo) || 
+      (len != 0)) {
+        error("TPM_Quote2(): tpm_unmarshal_TPM_CAP_VERSION_INFO() failed.");
+        tpm_free(buf);
+        return TPM_FAIL;
+    }
+    *versionInfoSize = respSize;
+   } else { /* 8. Else */
+    /* a. Set versionInfoSize to 0 and return no bytes in versionInfo */
+    *versionInfoSize = 0;
+  }
+  /* 9. Sign a SHA-1 hash of Q1 using keyHandle as the signature key */
+  sha1_init(&ctx);
+  sha1_update(&ctx, buf, size);
+  tpm_free(buf);
+  if (addVersion == TRUE) {
+    sha1_update(&ctx, resp, respSize);
+    tpm_free(resp);
+  }
+  sha1_final(&ctx, digest.digest);
+  *sigSize = key->key.size >> 3;
+  *sig = tpm_malloc(*sigSize);
+  if (*sig == NULL) return TPM_NOSPACE;
+  if (rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, digest.digest, 
+    sizeof(TPM_DIGEST), *sig)) {
+      error("TPM_Quote2(): rsa_sign() failed.");
+      tpm_free(*sig);
+      return TPM_FAIL;
+  }
+  
+  /* 10. Return the signature in sig */
+  return TPM_SUCCESS;
 }

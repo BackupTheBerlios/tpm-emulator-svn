@@ -11,7 +11,6 @@ Completely Missing:
     TPM_ResetLockValue (protection against dictionary attacks)
     TPM_LoadKey2 (currently emulated by TPM_LoadKey)
     All Migration Functions
-    TPM_Quote2
     TPM_DSAP
     All Delegation Functions
     All NV Storage Functions
