@@ -205,6 +205,21 @@ const char *tpm_error_to_string(TPM_RESULT res)
     case TPM_DAA_RESOURCES:
       return "The DAA command has no resources available to "
 	"execute the command.";
+    case TPM_DAA_INPUT_DATA0:
+      return "The consistency check on DAA parameter inputData0 has failed.";
+    case TPM_DAA_INPUT_DATA1:
+      return "The consistency check on DAA parameter inputData1 has failed.";
+    case TPM_DAA_ISSUER_SETTINGS:
+      return "The consistency check on DAA_issuerSettings has failed.";
+    case TPM_DAA_TPM_SETTINGS:
+      return "The consistency check on DAA_tpmSpecific has failed.";
+    case TPM_DAA_STAGE:
+      return "The atomic process indicated by the submitted DAA command "
+	"is not the expected process.";
+    case TPM_DAA_ISSUER_VALIDITY:
+      return "The issuer's validity check has detected an inconsistency.";
+    case TPM_DAA_WRONG_W:
+      return "The consistency check on w has failed.";
     case TPM_RETRY:
       return "The TPM is too busy to respond to the command immediately, "
 	"but the command could be resubmitted at a later time.";
