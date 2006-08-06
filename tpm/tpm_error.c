@@ -48,9 +48,9 @@ const char *tpm_error_to_string(TPM_RESULT res)
     case TPM_INSTALL_DISABLED:
       return "The ability to install an owner is disabled.";
     case TPM_INVALID_KEYHANDLE:
-      return "The key handle presented was invalid.";
+      return "The key handle can not be interpreted.";
     case TPM_KEYNOTFOUND:
-      return "The target key was not found.";
+      return "The key handle points to an invalid key.";
     case TPM_INAPPROPRIATE_ENC:
       return "Unacceptable encryption scheme.";
     case TPM_MIGRATEFAIL:
@@ -120,7 +120,7 @@ const char *tpm_error_to_string(TPM_RESULT res)
         "inconsistent with the referenced key.";
     case TPM_BAD_MODE:
       return "A mode parameter is bad, such as capArea or subCapArea for "
-	"TPM_GetCapability, phsicalPresence parameter for "
+	"TPM_GetCapability, physicalPresence parameter for "
 	"TPM_PhysicalPresence, or migrationType for TPM_CreateMigrationBlob.";
     case TPM_BAD_PRESENCE:
       return "Either the physicalPresence or physicalPresenceLock bits "
@@ -164,7 +164,7 @@ const char *tpm_error_to_string(TPM_RESULT res)
     case TPM_BAD_LOCALITY:
       return "The locality is incorrect for the attempted operation.";
     case TPM_READ_ONLY:
-      return "The NV area is read only and can t be written to.";
+      return "The NV area is read only and can't be written to.";
     case TPM_PER_NOWRITE:
       return "There is no protection on the write to the NV area.";
     case TPM_FAMILYCOUNT:
@@ -188,7 +188,7 @@ const char *tpm_error_to_string(TPM_RESULT res)
       return "The maximum number of NV writes without an "
 	"owner has been exceeded.";
     case TPM_NOOPERATOR:
-      return "No operator authorization value is set.";
+      return "No operator AuthData value is set.";
     case TPM_RESOURCEMISSING:
       return "The resource pointed to by context is not loaded.";
     case TPM_DELEGATE_LOCK:
@@ -220,6 +220,28 @@ const char *tpm_error_to_string(TPM_RESULT res)
       return "The issuer's validity check has detected an inconsistency.";
     case TPM_DAA_WRONG_W:
       return "The consistency check on w has failed.";
+    case TPM_BAD_HANDLE:
+      return "The handle is incorrect.";
+    case TPM_BAD_DELEGATE:
+      return "Delegation is not correct.";
+    case TPM_BADCONTEXT:
+      return "The context blob is invalid.";
+    case TPM_TOOMANYCONTEXTS:
+      return "Too many contexts held by the TPM.";
+    case TPM_MA_TICKET_SIGNATURE:
+      return "Migration authority signature validation failure.";
+    case TPM_MA_DESTINATION:
+      return "Migration destination not authenticated.";
+    case TPM_MA_SOURCE:
+      return "Migration source incorrect.";
+    case TPM_MA_AUTHORITY:
+      return "Incorrect migration authority.";
+    case TPM_PERMANENTEK:
+      return "Attempt to revoke the EK and the EK is not revocable.";
+    case TPM_BAD_SIGNATURE:
+      return "Bad signature of CMK ticket.";
+    case TPM_NOCONTEXTSPACE:
+      return "There is no room in the context list for additional contexts.";
     case TPM_RETRY:
       return "The TPM is too busy to respond to the command immediately, "
 	"but the command could be resubmitted at a later time.";
