@@ -1,9 +1,11 @@
 2006-08-01  Heiko Stamer <stamer@gaos.org>
 	* tpm_integrity.c: TPM_Quote2() added
 
+
 2006-06-23  Mario Strasser <mast@gmx.net>
 	* tpm_startup.c: behaviour of ST_CLEAR and storage of
 		persistent data adapted
+
 
 2006-06-18  Heiko Stamer <stamer@gaos.org>
 	* tpm_identity.c: identity creation and activation,
