@@ -213,7 +213,7 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
   }
 }
 
-/* changed since rev 94: returned version MUST BE 1.1.0.0 */
+/* changed since v1.2 rev 94: returned version MUST BE 1.1.0.0 */
 static TPM_RESULT cap_version(UINT32 *respSize, BYTE **resp)
 {
   UINT32 len = *respSize = 4;
@@ -229,16 +229,26 @@ static TPM_RESULT cap_version(UINT32 *respSize, BYTE **resp)
 }
 
 /* manufacturer specific */
-static TPM_RESULT cap_mfr(UINT32 *respSize, BYTE **resp)
+static TPM_RESULT cap_mfr(UINT32 subCapSize, BYTE *subCap,
+                            UINT32 *respSize, BYTE **resp)
 {
-  UINT32 len = *respSize = 4;
+  UINT32 len = *respSize = 4, type;
   BYTE *ptr = *resp = tpm_malloc(*respSize);
-  if (ptr == NULL || tpm_marshal_TPM_VERSION(&ptr, &len, 
-      &tpmData.permanent.data.version)) {
-    tpm_free(*resp);
-    return TPM_FAIL;
+  
+  if (tpm_unmarshal_UINT32(&subCap, &subCapSize, &type))
+    return TPM_BAD_MODE;
+  
+  switch (type) {
+    /* TODO */
+    
+    default:
+      if (ptr == NULL || tpm_marshal_TPM_VERSION(&ptr, &len, 
+        &tpmData.permanent.data.version)) {
+          tpm_free(*resp);
+          return TPM_FAIL;
+      }
+      return TPM_SUCCESS;
   }
-  return TPM_SUCCESS;
 }
 
 static TPM_RESULT cap_handle(UINT32 subCapSize, BYTE *subCap,
@@ -563,7 +573,7 @@ TPM_RESULT cap_auth_encrypt(UINT32 subCapSize, BYTE *subCap,
   }
 }
 
-/* TODO: added since rev 94 */
+/* WATCH: added since v1.2 rev 94 */
 TPM_RESULT cap_version_val(UINT32 *respSize, BYTE **resp)
 {
   UINT32 len;
@@ -574,7 +584,9 @@ TPM_RESULT cap_version_val(UINT32 *respSize, BYTE **resp)
   version.version = tpmData.permanent.data.version;
   version.specLevel = 2;
   version.errataRev = 94;
-  memset(version.tpmVendorID, 0, sizeof(version.tpmVendorID));
+  len = 4, ptr = version.tpmVendorID;
+  if (tpm_marshal_UINT32(&ptr, &len, TPM_MANUFACTURER))
+    return TPM_FAIL;
   version.vendorSpecificSize = 0;
   version.vendorSpecific = NULL;
   
@@ -644,7 +656,7 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
 
     case TPM_CAP_MFR:
       debug("[TPM_CAP_MFR]");
-      return cap_mfr(respSize, resp);
+      return cap_mfr(subCapSize, subCap, respSize, resp);
 
     case TPM_CAP_NV_INDEX:
       debug("[TPM_CAP_NV_INDEX]");
