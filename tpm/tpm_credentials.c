@@ -20,7 +20,6 @@
 #include "tpm_marshalling.h"
 #include "tpm_data.h"
 #include "crypto/sha1.h"
-#include "linux_module.h"
 
 /*
  * Credential Handling ([TPM_Part3], Section 14)

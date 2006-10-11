@@ -21,7 +21,6 @@
 #include "crypto/sha1.h"
 #include "crypto/hmac.h"
 #include "crypto/rsa.h"
-#include "linux_module.h"
 
 #define INTERVAL(x,a,b) ((a) <= (x) && (x) <= (b))
 static int tpm_test_prng(void)

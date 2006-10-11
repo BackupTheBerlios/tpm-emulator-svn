@@ -21,7 +21,6 @@
 #include "tpm_data.h"
 #include "crypto/hmac.h"
 #include "crypto/sha1.h"
-#include "linux_module.h"
 
 /*
  * Authorization Changing ([TPM_Part3], Section 17)

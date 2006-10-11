@@ -25,7 +25,6 @@
 #include "crypto/rsa.h"
 #include "crypto/rc4.h"
 #include "crypto/hmac.h"
-#include "linux_module.h"
 
 UINT32 tpm_get_free_daa_session(void)
 {

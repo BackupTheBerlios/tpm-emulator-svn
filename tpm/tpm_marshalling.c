@@ -19,7 +19,6 @@
 #include "tpm_marshalling.h"
 #include "tpm_handles.h"
 #include "crypto/rsa.h"
-#include "linux_module.h"
 
 int tpm_marshal_UINT32_ARRAY(BYTE **ptr, UINT32 *length,
                              UINT32 *v, UINT32 n)

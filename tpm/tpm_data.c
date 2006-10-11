@@ -18,7 +18,6 @@
 #include "tpm_emulator.h"
 #include "tpm_structures.h"
 #include "tpm_marshalling.h"
-#include "linux_module.h"
 
 TPM_DATA tpmData;
 

@@ -20,7 +20,6 @@
 #include "tpm_data.h"
 #include "tpm_handles.h"
 #include "crypto/sha1.h"
-#include "linux_module.h"
 #include "tpm_marshalling.h"
 
 /*

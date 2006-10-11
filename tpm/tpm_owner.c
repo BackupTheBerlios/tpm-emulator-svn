@@ -20,7 +20,6 @@
 #include "tpm_data.h"
 #include "tpm_handles.h"
 #include "crypto/rsa.h"
-#include "linux_module.h"
 
 /*
  * Admin Opt-in ([TPM_Part3], Section 5)
