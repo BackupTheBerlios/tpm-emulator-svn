@@ -4164,6 +4164,7 @@ int tpm_handle_command(const uint8_t *in, uint32_t in_size, uint8_t **out, uint3
   TPM_RESPONSE rsp;
   BYTE *ptr;
   UINT32 len;
+  BOOL free_out;
 
   debug("tpm_handle_command()");
 
@@ -4186,19 +4187,32 @@ int tpm_handle_command(const uint8_t *in, uint32_t in_size, uint8_t **out, uint3
   tpm_audit_response(req.ordinal, &rsp);
 
   /* init output and marshal response */
-  *out_size = len = rsp.size;
-  *out = ptr = tpm_malloc(len);
-  if (ptr == NULL) {
-    error("tpm_malloc() failed");
-    tpm_free(rsp.param);
-    return -1;
+  if (*out != NULL) {
+    if (*out_size < rsp.size) {
+      error("output buffer to small (%d/%d)", *out_size, rsp.size);
+      tpm_free(rsp.param);
+      return -1;
+    }
+    *out_size = len = rsp.size;
+    ptr = *out;
+    free_out = FALSE;
+  } else {
+    *out_size = len = rsp.size;
+    *out = ptr = tpm_malloc(len);
+    if (ptr == NULL) {
+      error("tpm_malloc() failed");
+      tpm_free(rsp.param);
+      return -1;
+    }
+    free_out = TRUE;
   }
   if (tpm_marshal_TPM_RESPONSE(&ptr, &len, &rsp) != 0) {
     error("tpm_marshal_TPM_RESPONSE() failed");
-    tpm_free(*out);
+    if (free_out) tpm_free(*out);
     tpm_free(rsp.param);
     return -1;
   }
   tpm_free(rsp.param);
   return 0;
 }
+

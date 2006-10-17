@@ -96,9 +96,11 @@ static ssize_t tpm_write(struct file *file, const char *buf, size_t count, loff_
   debug("%s(%d)", __FUNCTION__, count);
   down(&tpm_mutex);
   *ppos = 0;
-  if (tpm_response.data != NULL) kfree(tpm_response.data);
-  if (tpm_handle_command(buf, count, &tpm_response.data, 
-                         &tpm_response.size) != 0) { 
+  if (tpm_response.data != NULL) {
+    kfree(tpm_response.data);
+    tpm_response.data = NULL;
+  }
+  if (tpm_handle_command(buf, count, &tpm_response.data, &tpm_response.size) != 0) { 
     count = -EILSEQ;
     tpm_response.data = NULL;
   }
@@ -115,11 +117,12 @@ static int tpm_ioctl(struct inode *inode, struct file *file, unsigned int cmd, u
   if (cmd == TPMIOC_TRANSMIT) {
     uint32_t count = ntohl(*(uint32_t*)(arg + 2));
     down(&tpm_mutex);
-    if (tpm_response.data != NULL) kfree(tpm_response.data);
-    if (tpm_handle_command((char*)arg, count, &tpm_response.data,
-                           &tpm_response.size) == 0) {
-      tpm_response.size -= copy_to_user((char*)arg, tpm_response.data,
-                            tpm_response.size);
+    if (tpm_response.data != NULL) {
+      kfree(tpm_response.data);
+      tpm_response.data = NULL;
+    }
+    if (tpm_handle_command((char*)arg, count, &tpm_response.data, &tpm_response.size) == 0) {
+      tpm_response.size -= copy_to_user((char*)arg, tpm_response.data, tpm_response.size);
       kfree(tpm_response.data);
       tpm_response.data = NULL;
     } else {

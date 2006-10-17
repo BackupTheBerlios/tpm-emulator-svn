@@ -41,14 +41,18 @@ void tpm_emulator_shutdown(void);
  * tpm_handle_command - handles (i.e., executes) TPM commands
  * @in: [in] incoming TPM command
  * @in_size: [in] total number of input bytes
- * @out: [out] outgoing TPM result
- * @out_size: [out] total number of output bytes
+ * @out: [inout] outgoing TPM result
+ * @out_size: [inout] total number of output bytes
  * @Returns: 0 on success, -1 otherwise
  *
- * Description: Handles (i.e., executes) TPM commands. If the function
- * returns successfully and out is unequal to NULL, it has to be released 
- * (after usage ;-) by means of kfree. 
+ * Description: Handles (i.e., executes) TPM commands. The parameters
+ * out and out_size determine the output buffer and its capacity,
+ * respectively. If out is NULL, the required memory is allocated
+ * internally and has to be released by means of tpm_free() after
+ * its usage. In case of an error, all internally allocated memory
+ * is released and the the state of out and out_size is unspecified.
  */ 
 int tpm_handle_command(const uint8_t *in, uint32_t in_size, uint8_t **out, uint32_t *out_size);
 
 #endif /* _TPM_EMULATOR_H_ */
+
