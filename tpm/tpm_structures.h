@@ -19,7 +19,7 @@
 #ifndef _TPM_STRUCTURES_H_
 #define _TPM_STRUCTURES_H_
 
-#include <linux/types.h>
+#include "tpm_emulator.h"
 #include "crypto/rsa.h"
 
 /*

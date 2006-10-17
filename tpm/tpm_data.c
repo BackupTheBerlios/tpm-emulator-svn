@@ -149,69 +149,6 @@ void tpm_release_data(void)
       rsa_release_private_key(&tpmData.permanent.data.keys[i].key);
 }
 
-#ifdef TPM_STORE_TO_FILE
-
-#include <linux/fs.h>
-#include <linux/unistd.h>
-#include <asm/uaccess.h>
-
-#define TPM_STORAGE_FILE "/var/tpm/tpm_emulator-1.2." STR(VERSION_MAJOR) "." STR(VERSION_MINOR) 
-
-static int write_to_file(uint8_t *data, size_t data_length)
-{
-  int res;
-  struct file *fp;
-  mm_segment_t old_fs = get_fs();
-  fp = filp_open(TPM_STORAGE_FILE, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
-  if (IS_ERR(fp)) return -1;
-  set_fs(get_ds());
-  res = fp->f_op->write(fp, data, data_length, &fp->f_pos);
-  set_fs(old_fs);
-  filp_close(fp, NULL);
-  return (res == data_length) ? 0 : -1;
-}
-
-static int read_from_file(uint8_t **data, size_t *data_length)
-{
-  int res;
-  struct file *fp;
-  mm_segment_t old_fs = get_fs();
-  fp = filp_open(TPM_STORAGE_FILE, O_RDONLY, 0);
-  if (IS_ERR(fp)) return -1;
-  *data_length = (size_t)fp->f_dentry->d_inode->i_size;
-  /* *data_length = i_size_read(fp->f_dentry->d_inode); */
-  *data = tpm_malloc(*data_length);
-  if (*data == NULL) {
-    filp_close(fp, NULL);
-    return -1;
-  }
-  set_fs(get_ds());
-  res = fp->f_op->read(fp, *data, *data_length, &fp->f_pos);
-  set_fs(old_fs);
-  filp_close(fp, NULL);
-  if (res != *data_length) {
-    tpm_free(*data);
-    return -1;
-  }
-  return 0;
-}
-
-#else
-
-static int write_to_file(uint8_t *data, size_t data_length)
-{
-  info("TPM_STORE_TO_FILE disabled, no data written");
-  return 0;
-}
-
-static int read_from_file(uint8_t **data, size_t *data_length)
-{
-  info("TPM_STORE_TO_FILE disabled, no data read");
-  return 0;
-}
-
-#endif /* TPM_STORE_TO_FILE */
-
 int tpm_store_permanent_data(void)
 {
   uint8_t *buf, *ptr;
@@ -232,7 +169,7 @@ int tpm_store_permanent_data(void)
     tpm_free(buf);
     return -1;
   }
-  if (write_to_file(buf, buf_length - len)) {
+  if (tpm_write_to_file(buf, buf_length - len)) {
     tpm_free(buf);
     return -1; 
   }
@@ -247,7 +184,7 @@ int tpm_restore_permanent_data(void)
   TPM_VERSION ver;
 
   /* read data */
-  if (read_from_file(&buf, &buf_length)) return -1;
+  if (tpm_read_from_file(&buf, &buf_length)) return -1;
   ptr = buf;
   len = buf_length;
   /* unmarshal data */
@@ -267,7 +204,7 @@ int tpm_restore_permanent_data(void)
 
 int tpm_erase_permanent_data(void)
 {
-  int res = write_to_file("", 0);
+  int res = tpm_write_to_file("", 0);
   return res;
 }
 

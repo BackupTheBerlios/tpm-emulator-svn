@@ -20,7 +20,6 @@
 #include "linux_module.h"
 
 /* TPM configuration */
-#define TPM_STORE_TO_FILE       1
 #undef  TPM_STRONG_PERSISTENCE
 #undef  TPM_GENERATE_EK
 #undef  TPM_GENERATE_SEED_DAA
