@@ -184,7 +184,7 @@ TPM_RESULT TPM_OIAP(TPM_AUTHHANDLE *authHandle, TPM_NONCE *nonceEven)
   session = tpm_get_auth(*authHandle);
   if (session == NULL) return TPM_RESOURCES;
   /* setup session */
-  get_random_bytes(nonceEven->nonce, sizeof(nonceEven->nonce));
+  tpm_get_random_bytes(nonceEven->nonce, sizeof(nonceEven->nonce));
   memcpy(&session->nonceEven, nonceEven, sizeof(TPM_NONCE));
   return TPM_SUCCESS;
 }
@@ -246,9 +246,9 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
   /* save entity type */
   session->entityType = entityType;
   /* generate nonces */
-  get_random_bytes(nonceEven->nonce, sizeof(nonceEven->nonce));
+  tpm_get_random_bytes(nonceEven->nonce, sizeof(nonceEven->nonce));
   memcpy(&session->nonceEven, nonceEven, sizeof(TPM_NONCE));
-  get_random_bytes(nonceEvenOSAP->nonce, sizeof(nonceEvenOSAP->nonce));
+  tpm_get_random_bytes(nonceEvenOSAP->nonce, sizeof(nonceEvenOSAP->nonce));
   /* compute shared secret */
   hmac_init(&ctx, *secret, sizeof(*secret));
   hmac_update(&ctx, nonceEvenOSAP->nonce, sizeof(nonceEvenOSAP->nonce));
@@ -319,7 +319,7 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
   if (memcmp(auth->digest, auth->auth, sizeof(auth->digest))) return TPM_AUTHFAIL;
   /* generate new nonceEven */
   memcpy(&session->lastNonceEven, &session->nonceEven, sizeof(TPM_NONCE));
-  get_random_bytes(auth->nonceEven.nonce, sizeof(auth->nonceEven.nonce));
+  tpm_get_random_bytes(auth->nonceEven.nonce, sizeof(auth->nonceEven.nonce));
   memcpy(&session->nonceEven, &auth->nonceEven, sizeof(TPM_NONCE));
   return TPM_SUCCESS;
 }

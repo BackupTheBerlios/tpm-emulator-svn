@@ -137,7 +137,7 @@ TPM_RESULT TPM_EstablishTransport(TPM_KEY_HANDLE encHandle,
     if (transPublic->algID != TPM_ALG_MGF1) return TPM_BAD_KEY_PROPERTY;
   }
   /* initialize transport session */
-  get_random_bytes(transNonce->nonce, sizeof(transNonce->nonce));
+  tpm_get_random_bytes(transNonce->nonce, sizeof(transNonce->nonce));
   *transHandle = tpm_get_free_session(TPM_ST_TRANSPORT);
   session = tpm_get_transport(*transHandle);
   if (session == NULL) return TPM_RESOURCES;

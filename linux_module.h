@@ -84,9 +84,9 @@ uint64_t tpm_get_ticks(void);
 #define CPU_TO_LE16(x) __cpu_to_le16(x)
 
 #define BE64_TO_CPU(x) __be64_to_cpu(x)
-#define LE64_TO_CPU(x) __be64_to_cpu(x)
+#define LE64_TO_CPU(x) __le64_to_cpu(x)
 #define BE32_TO_CPU(x) __be32_to_cpu(x)
-#define LE32_TO_CPU(x) __be32_to_cpu(x)
+#define LE32_TO_CPU(x) __le32_to_cpu(x)
 #define BE16_TO_CPU(x) __be16_to_cpu(x)
 #define LE16_TO_CPU(x) __le16_to_cpu(x)
 

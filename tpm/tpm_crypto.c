@@ -159,7 +159,7 @@ TPM_RESULT TPM_GetRandom(UINT32 bytesRequested, UINT32 *randomBytesSize,
   *randomBytesSize = (bytesRequested < 2048) ? bytesRequested : 2048;
   *randomBytes = tpm_malloc(*randomBytesSize);
   if (*randomBytes == NULL) return TPM_SIZE;
-  get_random_bytes(*randomBytes, *randomBytesSize);
+  tpm_get_random_bytes(*randomBytes, *randomBytesSize);
   return TPM_SUCCESS;
 }
 

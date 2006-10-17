@@ -40,7 +40,7 @@ static int tpm_test_prng(void)
   debug("tpm_test_prng()");
   /* Statistical random number generator tests according to FIPS 140-1 */
   for (i = 0; i < 2500 / sizeof(buf); i++) {
-    get_random_bytes(buf, sizeof(buf));
+    tpm_get_random_bytes(buf, sizeof(buf));
     for (j = 0; j < sizeof(buf); j++) {
       BYTE hi = (buf[j] >> 4) & 0x0f;
       BYTE lo = buf[j] & 0x0f;

@@ -367,7 +367,7 @@ static int encode_message(int type, uint8_t *data, size_t data_len,
       msg[0] = 0x00; msg[1] = 0x02;
       tpm_get_random_bytes(&msg[2], msg_len - data_len - 3);
       for (i = 2; i < msg_len - data_len; i++)
-        while (!msg[i]) get_random_bytes(&msg[i], 1);
+        while (!msg[i]) tpm_get_random_bytes(&msg[i], 1);
       msg[msg_len - data_len - 1] = 0x00;
       memcpy(&msg[msg_len - data_len], data, data_len);
       break;
@@ -379,7 +379,7 @@ static int encode_message(int type, uint8_t *data, size_t data_len,
          EM = 0x00||masked-seed||masked-DB */
       if (msg_len < data_len + 2 * SHA1_DIGEST_LENGTH + 2) return -1;
       msg[0] = 0x00;
-      get_random_bytes(&msg[1], SHA1_DIGEST_LENGTH);
+      tpm_get_random_bytes(&msg[1], SHA1_DIGEST_LENGTH);
       sha1_init(&ctx);
       sha1_update(&ctx, "TCPA", 4);
       sha1_final(&ctx, &msg[1 + SHA1_DIGEST_LENGTH]);
