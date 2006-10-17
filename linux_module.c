@@ -32,7 +32,8 @@ char *startup = "save";
 module_param(startup, charp, 0444);
 MODULE_PARM_DESC(startup, " Sets the startup mode of the TPM. "
   "Possible values are 'clear', 'save' (default) and 'deactivated.");
-char *storage_file = "/var/tpm/tpm_emulator-1.2.0.2";
+char *storage_file = "/var/tpm/tpm_emulator-1.2."
+  STR(VERSION_MAJOR) "." STR(VERSION_MINOR);
 module_param(storage_file, charp, 0644);
 MODULE_PARM_DESC(storage_file, " Sets the persistent-data storage " 
   "file of the TPM.");
@@ -200,14 +201,12 @@ uint64_t tpm_get_ticks(void)
 #include <linux/unistd.h>
 #include <asm/uaccess.h>
 
-#define TPM_STORAGE_FILE "/var/tpm/tpm_emulator-1.2." STR(VERSION_MAJOR) "." STR(VERSION_MINOR)
-
 int tpm_write_to_file(uint8_t *data, size_t data_length)
 {
   int res;
   struct file *fp;
   mm_segment_t old_fs = get_fs();
-  fp = filp_open(TPM_STORAGE_FILE, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
+  fp = filp_open(storage_file, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
   if (IS_ERR(fp)) return -1;
   set_fs(get_ds());
   res = fp->f_op->write(fp, data, data_length, &fp->f_pos);
@@ -221,7 +220,7 @@ int tpm_read_from_file(uint8_t **data, size_t *data_length)
   int res;
   struct file *fp;
   mm_segment_t old_fs = get_fs();
-  fp = filp_open(TPM_STORAGE_FILE, O_RDONLY, 0);
+  fp = filp_open(storage_file, O_RDONLY, 0);
   if (IS_ERR(fp)) return -1;
   *data_length = (size_t)fp->f_dentry->d_inode->i_size;
   /* *data_length = i_size_read(fp->f_dentry->d_inode); */
