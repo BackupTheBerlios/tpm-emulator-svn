@@ -29,7 +29,7 @@
  * the requester to specify which piece of information that is required. 
  */
 
-inline TPM_RESULT return_UINT32(UINT32 *respSize, BYTE **resp, UINT32 value)
+static inline TPM_RESULT return_UINT32(UINT32 *respSize, BYTE **resp, UINT32 value)
 {
   UINT32 len = *respSize = 4;
   BYTE *ptr = *resp = tpm_malloc(*respSize);
@@ -40,7 +40,7 @@ inline TPM_RESULT return_UINT32(UINT32 *respSize, BYTE **resp, UINT32 value)
   return TPM_SUCCESS;
 }
 
-inline TPM_RESULT return_BOOL(UINT32 *respSize, BYTE **resp, BOOL value)
+static inline TPM_RESULT return_BOOL(UINT32 *respSize, BYTE **resp, BOOL value)
 {
   UINT32 len = *respSize = 1;
   BYTE *ptr = *resp = tpm_malloc(*respSize);
