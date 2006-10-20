@@ -577,7 +577,8 @@ static TPM_RESULT execute_TPM_Seal(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &keyHandle)
       || tpm_unmarshal_TPM_ENCAUTH(&ptr, &len, &encAuth)
       || tpm_unmarshal_UINT32(&ptr, &len, &pcrInfoSize)
-      || tpm_unmarshal_TPM_PCR_INFO(&ptr, &len, &pcrInfo)
+      || (pcrInfoSize > 0
+          && tpm_unmarshal_TPM_PCR_INFO(&ptr, &len, &pcrInfo))
       || tpm_unmarshal_UINT32(&ptr, &len, &inDataSize)
       || tpm_unmarshal_BLOB(&ptr, &len, &inData, inDataSize)
       || len != 0) return TPM_BAD_PARAMETER;
@@ -810,7 +811,8 @@ static TPM_RESULT execute_TPM_Sealx(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &keyHandle)
       || tpm_unmarshal_TPM_ENCAUTH(&ptr, &len, &encAuth)
       || tpm_unmarshal_UINT32(&ptr, &len, &pcrInfoSize)
-      || tpm_unmarshal_TPM_PCR_INFO(&ptr, &len, &pcrInfo)
+      || (pcrInfoSize > 0
+          && tpm_unmarshal_TPM_PCR_INFO(&ptr, &len, &pcrInfo))
       || tpm_unmarshal_UINT32(&ptr, &len, &inDataSize)
       || tpm_unmarshal_BLOB(&ptr, &len, &inData, inDataSize)
       || len != 0) return TPM_BAD_PARAMETER;
