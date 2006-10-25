@@ -75,7 +75,12 @@ static inline int tpm_unmarshal_BYTE(BYTE **ptr, UINT32 *length, BYTE *v)
 static inline int tpm_marshal_UINT16(BYTE **ptr, UINT32 *length, UINT16 v)
 {
   if (*length < 2) return -1;
+#ifndef TPM_MEMORY_ALIGNMENT_MANDATORY  
   **(UINT16**)ptr = CPU_TO_BE16(v);
+#else  
+  (*ptr)[0] = (v >> 8) & 0xff; 
+  (*ptr)[1] = v & 0xff;
+#endif  
   *ptr += 2; *length -= 2;
   return 0;
 }
@@ -83,7 +88,11 @@ static inline int tpm_marshal_UINT16(BYTE **ptr, UINT32 *length, UINT16 v)
 static inline int tpm_unmarshal_UINT16(BYTE **ptr, UINT32 *length, UINT16 *v)
 {
   if (*length < 2) return -1;
+#ifndef TPM_MEMORY_ALIGNMENT_MANDATORY
   *v = BE16_TO_CPU(**(UINT16**)ptr);
+#else  
+  *v = (((UINT16)(*ptr)[0] << 8) | (*ptr)[1]);
+#endif  
   *ptr += 2; *length -= 2;
   return 0;
 }
@@ -91,7 +100,12 @@ static inline int tpm_unmarshal_UINT16(BYTE **ptr, UINT32 *length, UINT16 *v)
 static inline int tpm_marshal_UINT32(BYTE **ptr, UINT32 *length, UINT32 v)
 {
   if (*length < 4) return -1;
+#ifndef TPM_MEMORY_ALIGNMENT_MANDATORY
   **(UINT32**)ptr = CPU_TO_BE32(v);
+#else  
+  (*ptr)[0] = (v >> 24) & 0xff; (*ptr)[1] = (v >> 16) & 0xff;
+  (*ptr)[2] = (v >>  8) & 0xff; (*ptr)[3] = v & 0xff;
+#endif
   *ptr += 4; *length -= 4;
   return 0;
 }
@@ -99,7 +113,12 @@ static inline int tpm_marshal_UINT32(BYTE **ptr, UINT32 *length, UINT32 v)
 static inline int tpm_unmarshal_UINT32(BYTE **ptr, UINT32 *length, UINT32 *v)
 {
   if (*length < 4) return -1;
+#ifndef TPM_MEMORY_ALIGNMENT_MANDATORY
   *v = BE32_TO_CPU(**(UINT32**)ptr);
+#else
+  *v = (((UINT32)(*ptr)[0] << 24) | ((UINT32)(*ptr)[1] << 16) | 
+        ((UINT32)(*ptr)[2] <<  8) | (*ptr)[3]);
+#endif
   *ptr += 4; *length -= 4;
   return 0;
 }
@@ -107,7 +126,14 @@ static inline int tpm_unmarshal_UINT32(BYTE **ptr, UINT32 *length, UINT32 *v)
 static inline int tpm_marshal_UINT64(BYTE **ptr, UINT32 *length, UINT64 v)
 {
   if (*length < 8) return -1;
+#ifndef TPM_MEMORY_ALIGNMENT_MANDATORY
   **(UINT64**)ptr = CPU_TO_BE64(v);
+#else  
+  (*ptr)[0] = (v >> 56) & 0xff; (*ptr)[1] = (v >> 48) & 0xff;
+  (*ptr)[2] = (v >> 40) & 0xff; (*ptr)[3] = (v >> 32) & 0xff;
+  (*ptr)[4] = (v >> 24) & 0xff; (*ptr)[5] = (v >> 16) & 0xff;
+  (*ptr)[6] = (v >>  8) & 0xff; (*ptr)[7] = v & 0xff;
+#endif  
   *ptr += 8; *length -= 8;
   return 0;
 }
@@ -115,7 +141,14 @@ static inline int tpm_marshal_UINT64(BYTE **ptr, UINT32 *length, UINT64 v)
 static inline int tpm_unmarshal_UINT64(BYTE **ptr, UINT32 *length, UINT64 *v)
 {
   if (*length < 8) return -1;
+#ifndef TPM_MEMORY_ALIGNMENT_MANDATORY
   *v = BE64_TO_CPU(**(UINT64**)ptr);
+#else
+  *v = (((UINT64)(*ptr)[0] << 56) | ((UINT64)(*ptr)[1] << 48) |
+        ((UINT64)(*ptr)[2] << 40) | ((UINT64)(*ptr)[3] << 32) |
+        ((UINT64)(*ptr)[4] << 24) | ((UINT64)(*ptr)[5] << 16) |
+        ((UINT64)(*ptr)[6] <<  8) | (*ptr)[7]);
+#endif
   *ptr += 8; *length -= 8;
   return 0;
 }

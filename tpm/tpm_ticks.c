@@ -51,8 +51,8 @@ TPM_RESULT TPM_TickStampBlob(TPM_KEY_HANDLE keyHandle, TPM_NONCE *antiReplay,
 {
   TPM_RESULT res;
   TPM_KEY_DATA *key;
-  BYTE *info, *p;
-  UINT32 info_length, length;
+  BYTE *info, *ptr;
+  UINT32 info_length, len;
   info("TPM_TickStampBlob()");
   /* get key */
   key = tpm_get_key(keyHandle);
@@ -79,12 +79,11 @@ TPM_RESULT TPM_TickStampBlob(TPM_KEY_HANDLE keyHandle, TPM_NONCE *antiReplay,
   }
   memcpy(&info[0], "\x05\x00TSTP", 6);
   memcpy(&info[6], antiReplay->nonce, 20);
-  *(UINT32*)&info[26] = CPU_TO_BE32(20
-                        + sizeof_TPM_CURRENT_TICKS(currentTicks));
-  memcpy(&info[30], digestToStamp->digest, sizeof(TPM_DIGEST));
-  p = &info[30 + sizeof(TPM_DIGEST)]; 
-  length = sizeof_TPM_CURRENT_TICKS(currentTicks);
-  if (tpm_marshal_TPM_CURRENT_TICKS(&p, &length, currentTicks)
+  ptr = &info[26]; len = info_length - 26;
+  tpm_marshal_UINT32(&ptr, &len, info_length - 30);
+  memcpy(ptr, digestToStamp->digest, sizeof(TPM_DIGEST));
+  ptr += sizeof(TPM_DIGEST); len -= sizeof(TPM_DIGEST);
+  if (tpm_marshal_TPM_CURRENT_TICKS(&ptr, &len, currentTicks)
       || rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, info, info_length, *sig)) {
     tpm_free(*sig);
     tpm_free(info);

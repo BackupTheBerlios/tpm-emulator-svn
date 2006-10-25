@@ -46,7 +46,7 @@ static int decrypt_transport_auth(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
   if (buf == NULL
       || rsa_decrypt(&key->key, scheme, enc, enc_size, buf, &enc_size)
       || enc_size != sizeof_TPM_TRANSPORT_AUTH(x)
-      || BE16_TO_CPU(*(UINT16*)buf) != TPM_TAG_TRANSPORT_AUTH) {
+      || (((UINT16)buf[0] << 8) | buf[1]) != TPM_TAG_TRANSPORT_AUTH) {
     tpm_free(buf);
     return -1;
   }
@@ -357,7 +357,7 @@ TPM_RESULT TPM_ReleaseTransportSigned(TPM_KEY_HANDLE keyHandle,
   /* setup a TPM_SIGN_INFO structure */
   memcpy(&buf[0], "\x05\x00TRAN", 6);
   memcpy(&buf[6], antiReplay->nonce, 20);
-  *(UINT32*)&buf[26] = CPU_TO_BE32(20);
+  memcpy(&buf[26], "\x00\x00\x00\x14", 4);
   memcpy(&buf[30], session->transInternal.transDigest.digest, 20);
   /* sign info structure */ 
   res = tpm_sign(key, auth1, TRUE, buf, sizeof(buf), signature, signSize);

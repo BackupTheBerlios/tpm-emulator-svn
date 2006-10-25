@@ -463,7 +463,7 @@ TPM_RESULT TPM_ActivateIdentity(
   }
   
   /* 6. Determine the type and version of B1 */
-  if (BE16_TO_CPU(*(UINT16*)(B1)) == TPM_TAG_EK_BLOB) {
+  if ((((UINT16)B1[0] << 8) | B1[1]) == TPM_TAG_EK_BLOB) {
     /* a. If B1->tag is TPM_TAG_EK_BLOB then */
       /* i. B1 is a TPM_EK_BLOB */
     ptr = B1;

@@ -47,7 +47,7 @@ Installation
 --------------------------------------------------------------------------
 The compilation and installation process uses the build environment for 
 external kernel modules of the 2.5.X Linux kernels, which must therefore
-be setup properly. If you are using a pre-compiled standard kernel of 
+be set up properly. If you are using a pre-compiled standard kernel of 
 some distribution, install the appropriate kernel-source packages and call
 the following commands:
 

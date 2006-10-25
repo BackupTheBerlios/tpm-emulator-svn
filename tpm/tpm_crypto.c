@@ -105,7 +105,10 @@ TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
     /* setup TPM_SIGN_INFO structure */
     memcpy(&buf[0], "\x05\x00SIGN", 6);
     memcpy(&buf[6], auth->nonceOdd.nonce, 20);
-    *(UINT32*)&buf[26] = CPU_TO_BE32(areaToSignSize);
+    buf[26] = (areaToSignSize >> 24) & 0xff;
+    buf[27] = (areaToSignSize >> 16) & 0xff;
+    buf[28] = (areaToSignSize >>  8) & 0xff;
+    buf[29] = (areaToSignSize      ) & 0xff;
     memcpy(&buf[30], areaToSign, areaToSignSize);
     if (rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, 
         buf, areaToSignSize + 30, *sig)) {

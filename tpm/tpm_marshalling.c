@@ -232,7 +232,7 @@ int tpm_marshal_TPM_PCR_INFO(BYTE **ptr, UINT32 *length, TPM_PCR_INFO *v)
 
 int tpm_unmarshal_TPM_PCR_INFO(BYTE **ptr, UINT32 *length, TPM_PCR_INFO *v)
 {
-  if (BE16_TO_CPU(*(UINT16*)(*ptr)) == TPM_TAG_PCR_INFO_LONG) {
+  if ((((UINT16)(*ptr)[0] << 8) | (*ptr)[1]) == TPM_TAG_PCR_INFO_LONG) {
     if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
         || tpm_unmarshal_TPM_LOCALITY_SELECTION(ptr, length, &v->localityAtCreation)
         || tpm_unmarshal_TPM_LOCALITY_SELECTION(ptr, length, &v->localityAtRelease)
