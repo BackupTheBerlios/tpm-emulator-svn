@@ -33,49 +33,6 @@ void __attribute__ ((regparm(0))) abort(void)
   panic(KERN_CRIT TPM_MODULE_NAME "GNU MP abort() was called\n");
 }
 
-/* overwrite GNU MP random functions (used by mpz/millerrabin.c) */ 
-
-#if 0
-void __attribute__ ((regparm(0))) gmp_randinit(gmp_randstate_t rstate, 
-  gmp_randalg_t alg, ...)
-{
-  /* nothing to do */
-}
-
-void __attribute__ ((regparm(0))) gmp_randclear(gmp_randstate_t rstate)
-{
-  /* nothing to do */
-}
-
-#define SIZ(x) ((x)->_mp_size)
-#define PTR(x) ((x)->_mp_d)
-#define ALLOC(x) ((x)->_mp_alloc)
-#define MPN_NORMALIZE(DST, NLIMBS) \
-  do {                                                                  \
-    while (NLIMBS > 0)                                                  \
-      {                                                                 \
-        if ((DST)[(NLIMBS) - 1] != 0)                                   \
-          break;                                                        \
-        NLIMBS--;                                                       \
-      }                                                                 \
-  } while (0)
-
-void __attribute__ ((regparm(0))) mpz_urandomb(mpz_ptr rop, 
-  gmp_randstate_t rstate, unsigned long int nbits)
-{
-  mp_ptr rp;
-  mp_size_t size;
-
-  size = (nbits + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS;
-  if (ALLOC (rop) < size) _mpz_realloc (rop, size);
-  rp = PTR (rop);
-  tpm_get_random_bytes(rp, nbits >> 3);
-  MPN_NORMALIZE (rp, size);
-  SIZ (rop) = size;
-}
-
-#endif
-
 /* GNU MP memory management */
 
 void __attribute__ ((regparm(0))) *kernel_allocate(size_t size)
