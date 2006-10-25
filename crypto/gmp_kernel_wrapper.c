@@ -14,7 +14,7 @@
  * $Id$
  */
 
-#include "linux_module.h"
+#include "tpm_emulator_config.h"
 #include "gmp.h"
 
 int __gmp_junk;
@@ -35,6 +35,7 @@ void __attribute__ ((regparm(0))) abort(void)
 
 /* overwrite GNU MP random functions (used by mpz/millerrabin.c) */ 
 
+#if 0
 void __attribute__ ((regparm(0))) gmp_randinit(gmp_randstate_t rstate, 
   gmp_randalg_t alg, ...)
 {
@@ -72,6 +73,8 @@ void __attribute__ ((regparm(0))) mpz_urandomb(mpz_ptr rop,
   MPN_NORMALIZE (rp, size);
   SIZ (rop) = size;
 }
+
+#endif
 
 /* GNU MP memory management */
 

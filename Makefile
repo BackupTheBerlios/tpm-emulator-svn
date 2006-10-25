@@ -80,12 +80,12 @@ $(src)/crypto/gmp.h:
 		> $(src)/crypto/gmp.h
 
 version:
-	@echo "#ifndef _TPM_VERSION_H_" > $(src)/tpm_version.h
-	@echo "#define _TPM_VERSION_H_" >> $(src)/tpm_version.h
-	@echo "#define VERSION_MAJOR $(VERSION_MAJOR)" >> $(src)/tpm_version.h
-	@echo "#define VERSION_MINOR $(VERSION_MINOR)" >> $(src)/tpm_version.h
-	@echo "#define VERSION_BUILD $(VERSION_BUILD)" >> $(src)/tpm_version.h
-	@echo "#endif /* _TPM_VERSION_H_ */" >> $(src)/tpm_version.h
+	@echo "#ifndef _TPM_VERSION_H_" > $(src)/tpm/tpm_version.h
+	@echo "#define _TPM_VERSION_H_" >> $(src)/tpm/tpm_version.h
+	@echo "#define VERSION_MAJOR $(VERSION_MAJOR)" >> $(src)/tpm/tpm_version.h
+	@echo "#define VERSION_MINOR $(VERSION_MINOR)" >> $(src)/tpm/tpm_version.h
+	@echo "#define VERSION_BUILD $(VERSION_BUILD)" >> $(src)/tpm/tpm_version.h
+	@echo "#endif /* _TPM_VERSION_H_ */" >> $(src)/tpm/tpm_version.h
 
 .PHONY: all install clean dist gmp version
 

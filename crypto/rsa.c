@@ -17,6 +17,8 @@
 #include "rsa.h"
 #include "sha1.h"
 
+gmp_randstate_t rsa_rand_state;
+
 static int rsa_public(rsa_public_key_t *key, 
                       uint8_t *in, size_t in_len, uint8_t *out)
 {
@@ -190,6 +192,14 @@ int rsa_import_public_key(rsa_public_key_t *key, int endian,
   return 0;
 }
 
+static void rsa_mpz_random(mpz_t a, unsigned int nbits)
+{
+  unsigned int size = nbits >> 3;
+  char buf[size];
+  tpm_get_random_bytes(buf, size);
+  mpz_import(a, size, 1, 1, 0, 0, buf);
+}
+
 int rsa_generate_key(rsa_private_key_t *key, int key_size)
 {
   mpz_t e, p, q, n, t1, t2, phi, d, u;
@@ -208,7 +218,8 @@ int rsa_generate_key(rsa_private_key_t *key, int key_size)
   mpz_init2(u, key_size / 2 + GMP_NUMB_BITS);
   do {  
     /* get prime p */
-    mpz_urandomb(p, NULL, key_size / 2);
+    //mpz_urandomb(p, rsa_rand_state, key_size / 2);
+    rsa_mpz_random(p, key_size / 2);
     mpz_setbit(p, 0); 
     mpz_setbit(p, key_size / 2 - 1);
     mpz_setbit(p, key_size / 2 - 2);
@@ -217,7 +228,8 @@ int rsa_generate_key(rsa_private_key_t *key, int key_size)
     mpz_gcd(phi, e, t1);
     if (mpz_cmp_ui(phi, 1) != 0) continue;
     /* get prime q */
-    mpz_urandomb(q, NULL, key_size / 2);
+    //mpz_urandomb(q, rsa_rand_state, key_size / 2);
+    rsa_mpz_random(q, key_size / 2);
     mpz_setbit(q, 0);
     mpz_setbit(q, key_size / 2 - 1);
     mpz_setbit(q, key_size / 2 - 2);

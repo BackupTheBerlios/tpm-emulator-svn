@@ -17,7 +17,7 @@
 #ifndef _RSA_H_
 #define _RSA_H_
 
-#include "linux_module.h"
+#include "tpm_emulator_config.h"
 #include "gmp.h"
 
 typedef struct {

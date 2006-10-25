@@ -19,7 +19,7 @@
 #include <linux/init.h>
 #include <linux/miscdevice.h>
 #include <linux/poll.h>
-#include "linux_module.h"
+#include "tpm_emulator_config.h"
 #include "tpm/tpm_emulator.h"
 
 MODULE_LICENSE("GPL");

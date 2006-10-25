@@ -14,8 +14,8 @@
  * $Id$
  */
 
-#ifndef _LINUX_MODULE_H_
-#define _LINUX_MODULE_H_
+#ifndef _TPM_EMULATOR_CONFIG_H_
+#define _TPM_EMULATOR_CONFIG_H_
 
 #include <linux/version.h>
 #include <linux/kernel.h>
@@ -28,13 +28,16 @@
 
 /* module settings */
 
-#define STR(s) __STR__(s)
-#define __STR__(s) #s
-#include "tpm_version.h"
-
 #define TPM_DEVICE_MINOR  224
 #define TPM_DEVICE_NAME   "tpm"
 #define TPM_MODULE_NAME   "tpm_emulator"
+
+/* TPM emulator configuration */
+
+#undef  TPM_STRONG_PERSISTENCE
+#undef  TPM_GENERATE_EK
+#undef  TPM_GENERATE_SEED_DAA
+#undef  TPM_MEMORY_ALIGNMENT_MANDATORY
 
 /* debug and log output functions */
 
@@ -95,4 +98,4 @@ int tpm_read_from_file(uint8_t **data, size_t *data_length);
 #define BE16_TO_CPU(x) __be16_to_cpu(x)
 #define LE16_TO_CPU(x) __le16_to_cpu(x)
 
-#endif /* _LINUX_MODULE_H_ */
+#endif /* _TPM_EMULATOR_CONFIG_H_ */

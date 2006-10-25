@@ -17,7 +17,7 @@
 #ifndef _HMAC_H_
 #define _HMAC_H_
 
-#include "linux_module.h"
+#include "tpm_emulator_config.h"
 #include "sha1.h"
 
 #define HMAC_PAD_LENGTH 64

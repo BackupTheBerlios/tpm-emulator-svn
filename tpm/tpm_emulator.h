@@ -17,12 +17,12 @@
 #ifndef _TPM_EMULATOR_H_
 #define _TPM_EMULATOR_H_
 
-#include "linux_module.h"
+#include "tpm_emulator_config.h"
 
-/* TPM configuration */
-#undef  TPM_STRONG_PERSISTENCE
-#undef  TPM_GENERATE_EK
-#undef  TPM_GENERATE_SEED_DAA
+/* emulator version */
+#define STR(s) __STR__(s)
+#define __STR__(s) #s
+#include "tpm_version.h"
 
 #define TPM_MANUFACTURER 0x4554485A /* 'ETHZ' */        
 

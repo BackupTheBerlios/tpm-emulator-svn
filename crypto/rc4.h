@@ -18,7 +18,7 @@
 #ifndef _RC4_H_
 #define _RC4_H_
 
-#include "linux_module.h"
+#include "tpm_emulator_config.h"
 
 typedef struct {
     uint8_t state[256];
