@@ -85,7 +85,7 @@ TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
     }
   } else if (key->sigScheme == TPM_SS_RSASSAPKCS1v15_DER) {
     /* use signature scheme PKCS1_DER */ 
-    if (areaToSignSize > ((key->key.size >> 3) - 11)
+    if ((areaToSignSize + 11) > (key->key.size >> 3)
         || areaToSignSize == 0) return TPM_BAD_PARAMETER;
     *sigSize = key->key.size >> 3;
     *sig = tpm_malloc(*sigSize);

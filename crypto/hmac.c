@@ -16,7 +16,7 @@
 
 #include "hmac.h"
 
-void hmac_init(hmac_ctx_t *ctx, uint8_t *key, size_t key_len)
+void hmac_init(hmac_ctx_t *ctx, const uint8_t *key, size_t key_len)
 {
   uint8_t tk[SHA1_DIGEST_LENGTH];
   uint8_t k_ipad[HMAC_PAD_LENGTH];
@@ -45,7 +45,7 @@ void hmac_init(hmac_ctx_t *ctx, uint8_t *key, size_t key_len)
   sha1_update(&ctx->ctx, k_ipad, HMAC_PAD_LENGTH);
 }
 
-void hmac_update(hmac_ctx_t *ctx, uint8_t *data, size_t length)
+void hmac_update(hmac_ctx_t *ctx, const uint8_t *data, size_t length)
 {
   /* update inner hash */
   sha1_update(&ctx->ctx, data, length);

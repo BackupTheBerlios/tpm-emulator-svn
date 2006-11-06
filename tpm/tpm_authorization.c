@@ -26,17 +26,17 @@
  * Authorization Changing ([TPM_Part3], Section 17)
  */
 
-extern int encrypt_sealed_data(TPM_KEY_DATA *key, TPM_SEALED_DATA *seal,
-                               BYTE *enc, UINT32 *enc_size);
+extern int tpm_encrypt_sealed_data(TPM_KEY_DATA *key, TPM_SEALED_DATA *seal,
+                                   BYTE *enc, UINT32 *enc_size);
                                
-extern int decrypt_sealed_data(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
-                               TPM_SEALED_DATA *seal, BYTE **buf);
+extern int tpm_decrypt_sealed_data(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
+                                   TPM_SEALED_DATA *seal, BYTE **buf);
                                
-extern int encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
-                               BYTE *enc, UINT32 *enc_size);
+extern int tpm_encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
+                                   BYTE *enc, UINT32 *enc_size);
                   
-extern int decrypt_private_key(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size, 
-                               TPM_STORE_ASYMKEY *store, BYTE **buf);
+extern int tpm_decrypt_private_key(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size, 
+                                   TPM_STORE_ASYMKEY *store, BYTE **buf);
 
 TPM_RESULT TPM_ChangeAuth(TPM_KEY_HANDLE parentHandle,
                           TPM_PROTOCOL_ID protocolID, TPM_ENCAUTH *newAuth,
@@ -70,7 +70,7 @@ TPM_RESULT TPM_ChangeAuth(TPM_KEY_HANDLE parentHandle,
     TPM_SEALED_DATA seal;
     BYTE *seal_buf;
     /* decrypt entity */
-    if (decrypt_sealed_data(parent, encData, encDataSize,
+    if (tpm_decrypt_sealed_data(parent, encData, encDataSize,
         &seal, &seal_buf)) return TPM_DECRYPT_ERROR;
     /* verify auth2 */
     res = tpm_verify_auth(auth2, seal.authData, TPM_INVALID_HANDLE);
@@ -80,7 +80,7 @@ TPM_RESULT TPM_ChangeAuth(TPM_KEY_HANDLE parentHandle,
     /* encrypt entity */
     *outDataSize = parent->key.size >> 3;
     *outData = tpm_malloc(*outDataSize);
-    if (encrypt_sealed_data(parent, &seal, *outData, outDataSize)) {
+    if (tpm_encrypt_sealed_data(parent, &seal, *outData, outDataSize)) {
       tpm_free(encData);
       tpm_free(seal_buf);      
       return TPM_ENCRYPT_ERROR;
@@ -90,7 +90,7 @@ TPM_RESULT TPM_ChangeAuth(TPM_KEY_HANDLE parentHandle,
     TPM_STORE_ASYMKEY store;
     BYTE *store_buf;
     /* decrypt entity */
-    if (decrypt_private_key(parent, encData, encDataSize,
+    if (tpm_decrypt_private_key(parent, encData, encDataSize,
         &store, &store_buf)) return TPM_DECRYPT_ERROR;
     /* verify auth2 */
     res = tpm_verify_auth(auth2, store.usageAuth, TPM_INVALID_HANDLE);
@@ -100,7 +100,7 @@ TPM_RESULT TPM_ChangeAuth(TPM_KEY_HANDLE parentHandle,
     /* encrypt entity */
     *outDataSize = parent->key.size >> 3;
     *outData = tpm_malloc(*outDataSize);
-    if (encrypt_private_key(parent, &store, *outData, outDataSize)) {
+    if (tpm_encrypt_private_key(parent, &store, *outData, outDataSize)) {
       tpm_free(encData);
       tpm_free(store_buf);      
       return TPM_ENCRYPT_ERROR;
@@ -327,7 +327,7 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
 void tpm_decrypt_auth_secret(TPM_ENCAUTH encAuth, TPM_SECRET secret,
                              TPM_NONCE *nonce, TPM_SECRET plainAuth)
 {
-  int i;
+  unsigned int i;
   sha1_ctx_t ctx;
   sha1_init(&ctx);
   sha1_update(&ctx, secret, sizeof(TPM_SECRET));
@@ -336,3 +336,4 @@ void tpm_decrypt_auth_secret(TPM_ENCAUTH encAuth, TPM_SECRET secret,
   for (i = 0; i < sizeof(TPM_SECRET); i++)
     plainAuth[i] ^= encAuth[i];
 }
+

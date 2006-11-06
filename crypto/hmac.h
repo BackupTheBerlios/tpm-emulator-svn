@@ -27,9 +27,9 @@ typedef struct {
   uint8_t k_opad[HMAC_PAD_LENGTH];
 } hmac_ctx_t;
 
-void hmac_init(hmac_ctx_t *ctx, uint8_t *key, size_t key_len);
+void hmac_init(hmac_ctx_t *ctx, const uint8_t *key, size_t key_len);
 
-void hmac_update(hmac_ctx_t *ctx, uint8_t *data, size_t length);
+void hmac_update(hmac_ctx_t *ctx, const uint8_t *data, size_t length);
 
 void hmac_final(hmac_ctx_t *ctx, uint8_t *digest);
 

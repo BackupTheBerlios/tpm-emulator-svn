@@ -42,8 +42,8 @@ UINT32 tpm_get_free_daa_session(void)
 
 /* Verify that DAA_session->DAA_digestContext == 
  * SHA-1(DAA_tpmSpecific || DAA_joinSession) and return error on mismatch */
-TPM_RESULT tpm_daa_verify_digestContext(TPM_DAA_SESSION_DATA *session, 
-                                        sha1_ctx_t *sha1)
+static TPM_RESULT tpm_daa_verify_digestContext(TPM_DAA_SESSION_DATA *session, 
+                                               sha1_ctx_t *sha1)
 {
   TPM_DIGEST dgt;
   UINT32 size, len;
@@ -83,8 +83,8 @@ TPM_RESULT tpm_daa_verify_digestContext(TPM_DAA_SESSION_DATA *session,
 
 /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific || 
  * DAA_joinSession) */
-void tpm_daa_update_digestContext(TPM_DAA_SESSION_DATA *session,
-                                  sha1_ctx_t *sha1)
+static void tpm_daa_update_digestContext(TPM_DAA_SESSION_DATA *session,
+                                         sha1_ctx_t *sha1)
 {
   UINT32 size, len;
   BYTE *buf, *ptr;
@@ -122,8 +122,8 @@ void tpm_daa_update_digestContext(TPM_DAA_SESSION_DATA *session,
 
 /* Verify that DAA_session->DAA_digestContext == SHA-1(DAA_tpmSpecific) and 
  * return error on mismatch */
-TPM_RESULT tpm_daa_verify_digestContext_sign(TPM_DAA_SESSION_DATA *session,
-                                             sha1_ctx_t *sha1)
+static TPM_RESULT tpm_daa_verify_digestContext_sign(TPM_DAA_SESSION_DATA *session,
+                                                    sha1_ctx_t *sha1)
 {
   TPM_DIGEST dgt;
   UINT32 size, len;
@@ -150,8 +150,8 @@ TPM_RESULT tpm_daa_verify_digestContext_sign(TPM_DAA_SESSION_DATA *session,
 }
 
 /* Set DAA_session->DAA_digestContext = SHA-1(DAA_tpmSpecific) */
-void tpm_daa_update_digestContext_sign(TPM_DAA_SESSION_DATA *session,
-                                       sha1_ctx_t *sha1)
+static void tpm_daa_update_digestContext_sign(TPM_DAA_SESSION_DATA *session,
+                                              sha1_ctx_t *sha1)
 {
   UINT32 size, len;
   BYTE *buf, *ptr;
@@ -175,8 +175,8 @@ void tpm_daa_update_digestContext_sign(TPM_DAA_SESSION_DATA *session,
 
 /* Verify that DAA_tpmSpecific->DAA_digestIssuer == 
  * SHA-1(DAA_issuerSettings) and return error on mismatch */
-TPM_RESULT tpm_daa_verify_digestIssuer(TPM_DAA_SESSION_DATA *session,
-                                       sha1_ctx_t *sha1)
+static TPM_RESULT tpm_daa_verify_digestIssuer(TPM_DAA_SESSION_DATA *session,
+                                              sha1_ctx_t *sha1)
 {
   TPM_DIGEST dgt;
   UINT32 size, len;
@@ -203,8 +203,8 @@ TPM_RESULT tpm_daa_verify_digestIssuer(TPM_DAA_SESSION_DATA *session,
 }
 
 /* Set DAA_tpmSpecific->DAA_digestIssuer == SHA-1(DAA_issuerSettings) */
-void tpm_daa_update_digestIssuer(TPM_DAA_SESSION_DATA *session,
-                                 sha1_ctx_t *sha1)
+static void tpm_daa_update_digestIssuer(TPM_DAA_SESSION_DATA *session,
+                                        sha1_ctx_t *sha1)
 {
   UINT32 size, len;
   BYTE *buf, *ptr;
@@ -228,8 +228,8 @@ void tpm_daa_update_digestIssuer(TPM_DAA_SESSION_DATA *session,
 
 /* Verify that SHA-1(input) == digest and return error !TPM_SUCCESS 
  * on mismatch */
-TPM_RESULT tpm_daa_verify_generic(TPM_DIGEST digest, BYTE *input, 
-                                  UINT32 inputSize, sha1_ctx_t *sha1)
+static TPM_RESULT tpm_daa_verify_generic(TPM_DIGEST digest, BYTE *input, 
+                                         UINT32 inputSize, sha1_ctx_t *sha1)
 {
   TPM_DIGEST dgt;
   
@@ -240,8 +240,8 @@ TPM_RESULT tpm_daa_verify_generic(TPM_DIGEST digest, BYTE *input,
 }
 
 /* Encryption and decryption of the TPM_DAA_SENSITIVE structure */
-int encrypt_daa(BYTE *iv, UINT32 iv_size, TPM_DAA_SENSITIVE *sensitive, 
-                BYTE **enc, UINT32 *enc_size)
+static int encrypt_daa(BYTE *iv, UINT32 iv_size, TPM_DAA_SENSITIVE *sensitive, 
+                       BYTE **enc, UINT32 *enc_size)
 {
   UINT32 len;
   BYTE *ptr;
@@ -267,8 +267,8 @@ int encrypt_daa(BYTE *iv, UINT32 iv_size, TPM_DAA_SENSITIVE *sensitive,
   return 0;
 }
 
-int decrypt_daa(BYTE *iv, UINT32 iv_size, BYTE *enc, UINT32 enc_size, 
-                TPM_DAA_SENSITIVE *sensitive, BYTE **buf)
+static int decrypt_daa(BYTE *iv, UINT32 iv_size, BYTE *enc, UINT32 enc_size, 
+                       TPM_DAA_SENSITIVE *sensitive, BYTE **buf)
 {
   UINT32 len;
   BYTE *ptr;
@@ -294,7 +294,7 @@ int decrypt_daa(BYTE *iv, UINT32 iv_size, BYTE *enc, UINT32 enc_size,
 }
 
 /* Computation of the HMAC which protects the integrity of the TPM_DAA_BLOB */
-int compute_daa_digest(TPM_DAA_BLOB *daaBlob, TPM_DIGEST *digest)
+static int compute_daa_digest(TPM_DAA_BLOB *daaBlob, TPM_DIGEST *digest)
 {
   BYTE *buf, *ptr;
   UINT32 len;
@@ -432,7 +432,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       if ((*outputData = tpm_malloc(*outputSize)) != NULL) {
         ptr = *outputData, len = *outputSize;
         if (tpm_marshal_TPM_HANDLE(&ptr, &len, handle)) {
-          error("TPM_DAA_Join(): tpm_marshal_TPM_HANDLE() failed.");
+          debug("TPM_DAA_Join(): tpm_marshal_TPM_HANDLE() failed.");
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_FAIL;
         }
@@ -991,7 +991,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         sizeof(session->DAA_session.DAA_scratch));
       ptr = scratch, len = sizeof(scratch);
       if (tpm_marshal_UINT32(&ptr, &len, session->DAA_tpmSpecific.DAA_count)) {
-        error("TPM_DAA_Join(): tpm_marshal_UINT32() failed.");
+        debug("TPM_DAA_Join(): tpm_marshal_UINT32() failed.");
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_FAIL;
       }
@@ -2101,7 +2101,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
             return TPM_ENCRYPT_ERROR;
         }
         if (compute_daa_digest(&blob, &blob.blobIntegrity)) {
-          error("TPM_DAA_Join(): compute_daa_digest() failed.");
+          debug("TPM_DAA_Join(): compute_daa_digest() failed.");
           tpm_free(blob.sensitiveData);
           tpm_free(blob.additionalData);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
@@ -2118,7 +2118,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         len = *outputSize;
         ptr = *outputData;
         if (tpm_marshal_TPM_DAA_BLOB(&ptr, &len, &blob)) {
-          error("TPM_DAA_Join(): tpm_marshal_TPM_DAA_BLOB() failed.");
+          debug("TPM_DAA_Join(): tpm_marshal_TPM_DAA_BLOB() failed.");
           tpm_free(blob.sensitiveData);
           tpm_free(blob.additionalData);
           tpm_free(*outputData);
@@ -2208,7 +2208,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
             return TPM_ENCRYPT_ERROR;
         }
         if (compute_daa_digest(&blob, &blob.blobIntegrity)) {
-          error("TPM_DAA_Join(): compute_daa_digest() failed.");
+          debug("TPM_DAA_Join(): compute_daa_digest() failed.");
           tpm_free(blob.sensitiveData);
           tpm_free(blob.additionalData);
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
@@ -2225,7 +2225,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         len = *outputSize;
         ptr = *outputData;
         if (tpm_marshal_TPM_DAA_BLOB(&ptr, &len, &blob)) {
-          error("TPM_DAA_Join(): tpm_marshal_TPM_DAA_BLOB() failed.");
+          debug("TPM_DAA_Join(): tpm_marshal_TPM_DAA_BLOB() failed.");
           tpm_free(blob.sensitiveData);
           tpm_free(blob.additionalData);
           tpm_free(*outputData);
@@ -2290,7 +2290,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         return TPM_NOSPACE;
       }
       if (tpm_marshal_TPM_DAA_TPM(&ptr, &len, &session->DAA_tpmSpecific)) {
-        error("TPM_DAA_Join(): tpm_marshal_TPM_DAA_TPM() failed.");
+        debug("TPM_DAA_Join(): tpm_marshal_TPM_DAA_TPM() failed.");
         tpm_free(blob.additionalData);
         tpm_free(sensitive.internalData);
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
@@ -2304,7 +2304,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
           return TPM_ENCRYPT_ERROR;
       }
       if (compute_daa_digest(&blob, &blob.blobIntegrity)) {
-        error("TPM_DAA_Join(): compute_daa_digest() failed.");
+        debug("TPM_DAA_Join(): compute_daa_digest() failed.");
         tpm_free(blob.sensitiveData);
         tpm_free(sensitive.internalData);
         tpm_free(blob.additionalData);
@@ -2322,7 +2322,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       len = *outputSize;
       ptr = *outputData;
       if (tpm_marshal_TPM_DAA_BLOB(&ptr, &len, &blob)) {
-        error("TPM_DAA_Join(): tpm_marshal_TPM_DAA_BLOB() failed.");
+        debug("TPM_DAA_Join(): tpm_marshal_TPM_DAA_BLOB() failed.");
         tpm_free(blob.sensitiveData);
         tpm_free(sensitive.internalData);
         tpm_free(blob.additionalData);
@@ -2434,7 +2434,7 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       if ((*outputData = tpm_malloc(*outputSize)) != NULL) {
         ptr = *outputData, len = *outputSize;
         if (tpm_marshal_TPM_HANDLE(&ptr, &len, handle)) {
-          error("TPM_DAA_Sign(): tpm_marshal_TPM_HANDLE() failed.");
+          debug("TPM_DAA_Sign(): tpm_marshal_TPM_HANDLE() failed.");
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_FAIL;
         }

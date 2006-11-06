@@ -27,13 +27,13 @@ typedef struct {
   mpz_t p;
   mpz_t q;
   mpz_t u;
-  int size;
+  uint16_t size;
 } rsa_private_key_t;
 
 typedef struct {
   mpz_t n;
   mpz_t e;
-  int size;
+  uint16_t size;
 } rsa_public_key_t;
 
 enum { 
@@ -54,15 +54,17 @@ enum {
   pub_key.size = priv_key.size; }
 
 int rsa_import_key(rsa_private_key_t *key, int endian, 
-                   uint8_t *n, size_t n_len, uint8_t *e, size_t e_len, 
-                   uint8_t *p, uint8_t *q);
+                   const uint8_t *n, size_t n_len,
+                   const uint8_t *e, size_t e_len, 
+                   const uint8_t *p, const uint8_t *q);
 
 void rsa_copy_key(rsa_private_key_t *dst, rsa_private_key_t *src);
 
 int rsa_import_public_key(rsa_public_key_t *key, int endian, 
-                          uint8_t *n, size_t n_len, uint8_t *e, size_t e_len);
+                          const uint8_t *n, size_t n_len,
+                          const uint8_t *e, size_t e_len);
 
-int rsa_generate_key(rsa_private_key_t *key, int key_size);
+int rsa_generate_key(rsa_private_key_t *key, uint16_t key_size);
 
 void rsa_release_private_key(rsa_private_key_t *key);
 
@@ -80,23 +82,23 @@ void rsa_export_prime1(rsa_private_key_t *key,
 void rsa_export_prime2(rsa_private_key_t *key, 
                        uint8_t *prime, size_t *length);
 
-void mask_generation(uint8_t *seed, size_t seed_len, 
+void mask_generation(const uint8_t *seed, size_t seed_len, 
                      uint8_t *data, size_t data_len);
 
 /* Note: Input and output areas MUST NOT overlap (i.e., one can't 
    use the same buffer for data and sig or in and out). */
 
 int rsa_sign(rsa_private_key_t *key, int type,
-             uint8_t *data, size_t data_len, uint8_t *sig);
+             const uint8_t *data, size_t data_len, uint8_t *sig);
 
 int rsa_verify(rsa_public_key_t *key, int type,
-               uint8_t *data, size_t data_len, uint8_t *sig);
+               const uint8_t *data, size_t data_len, uint8_t *sig);
 
 int rsa_decrypt(rsa_private_key_t *key, int type,
-                uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len);
+                const uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len);
 
 int rsa_encrypt(rsa_public_key_t *key, int type,
-                uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len);
+                const uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len);
 
 #endif /* _RSA_H_ */
 

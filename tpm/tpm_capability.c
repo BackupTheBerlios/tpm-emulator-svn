@@ -318,7 +318,7 @@ static TPM_RESULT cap_handle(UINT32 subCapSize, BYTE *subCap,
   return TPM_SUCCESS;
 }
 
-TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
+static TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
                    UINT32 *respSize, BYTE **resp)
 {
   TPM_COMMAND_CODE ord;
@@ -464,8 +464,8 @@ TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
   }
 }
 
-TPM_RESULT cap_alg(UINT32 subCapSize, BYTE *subCap,
-                   UINT32 *respSize, BYTE **resp)
+static TPM_RESULT cap_alg(UINT32 subCapSize, BYTE *subCap,
+                          UINT32 *respSize, BYTE **resp)
 {
   TPM_ALGORITHM_ID id;
   if (tpm_unmarshal_TPM_ALGORITHM_ID(&subCap, &subCapSize, &id))
@@ -478,8 +478,8 @@ TPM_RESULT cap_alg(UINT32 subCapSize, BYTE *subCap,
   }
 }
 
-TPM_RESULT cap_pid(UINT32 subCapSize, BYTE *subCap,
-                   UINT32 *respSize, BYTE **resp)
+static TPM_RESULT cap_pid(UINT32 subCapSize, BYTE *subCap,
+                          UINT32 *respSize, BYTE **resp)
 {
   TPM_PROTOCOL_ID id;
   if (tpm_unmarshal_TPM_PROTOCOL_ID(&subCap, &subCapSize, &id))
@@ -500,8 +500,8 @@ TPM_RESULT cap_pid(UINT32 subCapSize, BYTE *subCap,
   }
 }
 
-TPM_RESULT cap_flag(UINT32 subCapSize, BYTE *subCap,
-                    UINT32 *respSize, BYTE **resp)
+static TPM_RESULT cap_flag(UINT32 subCapSize, BYTE *subCap,
+                           UINT32 *respSize, BYTE **resp)
 {
   UINT32 type, len;
   BYTE *ptr;
@@ -541,8 +541,8 @@ TPM_RESULT cap_flag(UINT32 subCapSize, BYTE *subCap,
   }
 }
 
-TPM_RESULT cap_loaded(UINT32 subCapSize, BYTE *subCap,
-                     UINT32 *respSize, BYTE **resp)
+static TPM_RESULT cap_loaded(UINT32 subCapSize, BYTE *subCap,
+                             UINT32 *respSize, BYTE **resp)
 {
   int i;
   BOOL free_space = FALSE;
@@ -559,8 +559,8 @@ TPM_RESULT cap_loaded(UINT32 subCapSize, BYTE *subCap,
   return return_BOOL(respSize, resp, FALSE);
 }
 
-TPM_RESULT cap_auth_encrypt(UINT32 subCapSize, BYTE *subCap,
-                            UINT32 *respSize, BYTE **resp)
+static TPM_RESULT cap_auth_encrypt(UINT32 subCapSize, BYTE *subCap,
+                                   UINT32 *respSize, BYTE **resp)
 {
   TPM_ALGORITHM_ID id;
   if (tpm_unmarshal_TPM_ALGORITHM_ID(&subCap, &subCapSize, &id))

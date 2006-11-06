@@ -299,6 +299,9 @@ int tpm_unmarshal_TPM_DIGEST(BYTE **ptr, UINT32 *length, TPM_DIGEST *v);
 #define tpm_marshal_TPM_PCRVALUE               tpm_marshal_TPM_DIGEST
 #define tpm_unmarshal_TPM_PCRVALUE             tpm_unmarshal_TPM_DIGEST
 
+int tpm_marshal_TPM_PCRVALUE_ARRAY(BYTE **ptr, UINT32 *length, TPM_PCRVALUE *v, UINT32 n);
+int tpm_unmarshal_TPM_PCRVALUE_ARRAY(BYTE **ptr, UINT32 *length, TPM_PCRVALUE *v, UINT32 n);
+
 int tpm_marshal_TPM_NONCE(BYTE **ptr, UINT32 *length, TPM_NONCE *v);
 int tpm_unmarshal_TPM_NONCE(BYTE **ptr, UINT32 *length, TPM_NONCE *v);
 
@@ -381,6 +384,9 @@ int tpm_unmarshal_TPM_CURRENT_TICKS(BYTE **ptr, UINT32 *length, TPM_CURRENT_TICK
 int tpm_marshal_TPM_TRANSPORT_PUBLIC(BYTE **ptr, UINT32 *length, TPM_TRANSPORT_PUBLIC *v);
 int tpm_unmarshal_TPM_TRANSPORT_PUBLIC(BYTE **ptr, UINT32 *length, TPM_TRANSPORT_PUBLIC *v);
 
+int tpm_marshal_TPM_TRANSPORT_INTERNAL(BYTE **ptr, UINT32 *length, TPM_TRANSPORT_INTERNAL *v);
+int tpm_unmarshal_TPM_TRANSPORT_INTERNAL(BYTE **ptr, UINT32 *length, TPM_TRANSPORT_INTERNAL *v);
+
 int tpm_marshal_TPM_CONTEXT_BLOB(BYTE **ptr, UINT32 *length, TPM_CONTEXT_BLOB *v);
 int tpm_unmarshal_TPM_CONTEXT_BLOB(BYTE **ptr, UINT32 *length, TPM_CONTEXT_BLOB *v);
 
@@ -461,6 +467,9 @@ int tpm_unmarshal_TPM_STCLEAR_FLAGS(BYTE **ptr, UINT32 *length, TPM_STCLEAR_FLAG
 
 int tpm_marshal_TPM_STANY_FLAGS(BYTE **ptr, UINT32 *length, TPM_STANY_FLAGS *v);
 int tpm_unmarshal_TPM_STANY_FLAGS(BYTE **ptr, UINT32 *length, TPM_STANY_FLAGS *v);
+
+int tpm_marshal_RSA(BYTE **ptr, UINT32 *length, rsa_private_key_t *v);
+int tpm_unmarshal_RSA(BYTE **ptr, UINT32 *length, rsa_private_key_t *v);
 
 int tpm_marshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v);
 int tpm_unmarshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v);

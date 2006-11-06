@@ -2059,7 +2059,7 @@ TPM_RESULT TPM_KeyControlOwner(
 TPM_RESULT TPM_SaveContext(  
   TPM_HANDLE handle,
   TPM_RESOURCE_TYPE resourceType,
-  BYTE label[16],  
+  const BYTE label[16],  
   UINT32 *contextSize,
   TPM_CONTEXT_BLOB *contextBlob 
 );

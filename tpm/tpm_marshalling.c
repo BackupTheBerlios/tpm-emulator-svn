@@ -1338,7 +1338,7 @@ int tpm_unmarshal_TPM_STANY_FLAGS(BYTE **ptr, UINT32 *length, TPM_STANY_FLAGS *v
 int tpm_marshal_RSA(BYTE **ptr, UINT32 *length, rsa_private_key_t *v)
 {
   UINT32 m_len, e_len, q_len;
-  if (*length < sizeof_RSA((*v))) return -1;
+  if (*length < (UINT32)sizeof_RSA((*v))) return -1;
   if (v->size > 0) {
     rsa_export_modulus(v, &(*ptr)[6], &m_len);
     rsa_export_exponent(v, &(*ptr)[6+m_len], &e_len);
@@ -1366,7 +1366,7 @@ int tpm_unmarshal_RSA(BYTE **ptr, UINT32 *length, rsa_private_key_t *v)
     v->size = 0;
     return 0;
   }
-  if (*length < m_len + e_len + q_len
+  if (*length < (UINT32)m_len + (UINT32)e_len + (UINT32)q_len
       || q_len != m_len/2
       || rsa_import_key(v, RSA_MSB_FIRST,
                         &(*ptr)[0], m_len,

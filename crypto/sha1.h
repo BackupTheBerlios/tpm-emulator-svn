@@ -29,7 +29,7 @@ typedef struct {
 
 void sha1_init(sha1_ctx_t *ctx);
 
-void sha1_update(sha1_ctx_t *ctx, uint8_t *data, uint32_t length);
+void sha1_update(sha1_ctx_t *ctx, const uint8_t *data, uint32_t length);
 
 void sha1_final(sha1_ctx_t *ctx, uint8_t digest[SHA1_DIGEST_LENGTH]);
 

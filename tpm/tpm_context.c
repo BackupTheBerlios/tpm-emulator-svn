@@ -62,8 +62,8 @@ TPM_RESULT TPM_KeyControlOwner(TPM_KEY_HANDLE keyHandle, UINT32 bitName,
   }
 }
 
-int encrypt_context(BYTE *iv, UINT32 iv_size, TPM_CONTEXT_SENSITIVE *context, 
-                    BYTE **enc, UINT32 *enc_size)
+static int encrypt_context(BYTE *iv, UINT32 iv_size, TPM_CONTEXT_SENSITIVE *context, 
+                           BYTE **enc, UINT32 *enc_size)
 {
   UINT32 len;
   BYTE *ptr;
@@ -86,8 +86,8 @@ int encrypt_context(BYTE *iv, UINT32 iv_size, TPM_CONTEXT_SENSITIVE *context,
   return 0;
 }
 
-int decrypt_context(BYTE *iv, UINT32 iv_size, BYTE *enc, UINT32 enc_size, 
-                    TPM_CONTEXT_SENSITIVE *context, BYTE **buf) 
+static int decrypt_context(BYTE *iv, UINT32 iv_size, BYTE *enc, UINT32 enc_size, 
+                           TPM_CONTEXT_SENSITIVE *context, BYTE **buf) 
 {
   UINT32 len;
   BYTE *ptr;
@@ -110,7 +110,7 @@ int decrypt_context(BYTE *iv, UINT32 iv_size, BYTE *enc, UINT32 enc_size,
   return 0;
 }
 
-int compute_context_digest(TPM_CONTEXT_BLOB *contextBlob, TPM_DIGEST *digest)
+static int compute_context_digest(TPM_CONTEXT_BLOB *contextBlob, TPM_DIGEST *digest)
 {
   BYTE *buf, *ptr;
   UINT32 len;
@@ -133,7 +133,7 @@ int compute_context_digest(TPM_CONTEXT_BLOB *contextBlob, TPM_DIGEST *digest)
 }
 
 TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
-                           BYTE label[16], UINT32 *contextSize,
+                           const BYTE label[16], UINT32 *contextSize,
                            TPM_CONTEXT_BLOB *contextBlob)
 {
   TPM_CONTEXT_SENSITIVE context;

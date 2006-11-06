@@ -34,7 +34,7 @@ static int tpm_test_prng(void)
   int run1[6] = {0};
   int run_34 = 0;
   unsigned long x = 0;
-  int i, j, k;
+  unsigned int i, j, k;
   BYTE buf[25];
   
   debug("tpm_test_prng()");
@@ -89,10 +89,10 @@ static int tpm_test_sha1(void)
 {
   sha1_ctx_t ctx;
   BYTE digest[SHA1_DIGEST_LENGTH];
-  int i, j;
+  unsigned int i, j;
   /* test cases for SHA-1 given in FIPS PUB 180-1 */
   struct {
-    uint8_t *data; uint32_t repetitions; uint8_t *digest;
+    const uint8_t *data; uint32_t repetitions; const uint8_t *digest;
   } test_cases[] =  {{
     "abc", 1,
     "\xA9\x99\x3E\x36\x47\x06\x81\x6A\xBA\x3E\x25\x71\x78\x50\xC2\x6C\x9C\xD0\xD8\x9D"
@@ -122,10 +122,10 @@ static int tpm_test_hmac(void)
 {
   hmac_ctx_t ctx;
   uint8_t digest[SHA1_DIGEST_LENGTH];
-  int i, j;
+  unsigned int i, j;
   /* test cases for HMAC-SHA-1 given in RFC 2202 */
   struct {
-    uint8_t *key, key_len, *data, data_len, *digest;
+    const uint8_t *key, key_len, *data, data_len, *digest;
   } test_cases[] = {{
     "\x0b", 20, "Hi There", 8,
     "\xb6\x17\x31\x86\x55\x05\x72\x64\xe2\x8b\xc0\xb6\xfb\x37\x8c\x8e\xf1\x46\xbe\x00"
@@ -172,7 +172,7 @@ static int tpm_test_hmac(void)
 static int tpm_test_rsa_EK(void)
 {
   int res = 0;
-  char *data = "RSA PKCS #1 v1.5 Test-String";
+  const char *data = "RSA PKCS #1 v1.5 Test-String";
   uint8_t buf[256];
   size_t buf_len, data_len = strlen(data);
   rsa_private_key_t priv_key;

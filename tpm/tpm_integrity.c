@@ -269,7 +269,7 @@ TPM_RESULT TPM_Quote2(
   buf = ptr = tpm_malloc(size);
   if (buf == NULL) return TPM_NOSPACE;
   if (tpm_marshal_TPM_QUOTE_INFO2(&ptr, &len, &Q1) || (len != 0)) {
-    error("TPM_Quote2(): tpm_marshal_TPM_QUOTE_INFO2() failed.");
+    debug("TPM_Quote2(): tpm_marshal_TPM_QUOTE_INFO2() failed.");
     tpm_free(buf);
     return TPM_FAIL;
   }
@@ -278,7 +278,7 @@ TPM_RESULT TPM_Quote2(
     /* a. Concatenate to Q1 a TPM_CAP_VERSION_INFO structure */
     res = cap_version_val(&respSize, &resp);
     if (res != TPM_SUCCESS) {
-      error("TPM_Quote2(): cap_version_val() failed.");
+      debug("TPM_Quote2(): cap_version_val() failed.");
       tpm_free(buf);
       return TPM_FAIL;
     }
@@ -287,7 +287,7 @@ TPM_RESULT TPM_Quote2(
     len = respSize;
     if (tpm_unmarshal_TPM_CAP_VERSION_INFO(&ptr, &len, versionInfo) || 
       (len != 0)) {
-        error("TPM_Quote2(): tpm_unmarshal_TPM_CAP_VERSION_INFO() failed.");
+        debug("TPM_Quote2(): tpm_unmarshal_TPM_CAP_VERSION_INFO() failed.");
         tpm_free(buf);
         return TPM_FAIL;
     }
@@ -310,7 +310,7 @@ TPM_RESULT TPM_Quote2(
   if (*sig == NULL) return TPM_NOSPACE;
   if (rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, digest.digest, 
     sizeof(TPM_DIGEST), *sig)) {
-      error("TPM_Quote2(): rsa_sign() failed.");
+      debug("TPM_Quote2(): rsa_sign() failed.");
       tpm_free(*sig);
       return TPM_FAIL;
   }

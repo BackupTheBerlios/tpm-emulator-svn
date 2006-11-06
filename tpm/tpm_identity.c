@@ -27,10 +27,10 @@
 #define LOCALITY       tpmData.stany.flags.localityModifier
 
 /* import functions from tpm_storage.c */
-extern int compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
-extern int compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest);
-extern int encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
-  BYTE *enc, UINT32 *enc_size);
+extern int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
+extern int tpm_compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest);
+extern int tpm_encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
+                                   BYTE *enc, UINT32 *enc_size);
 extern int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms);
 
 /*
@@ -128,7 +128,7 @@ TPM_RESULT TPM_MakeIdentity(
      * in the OSAP session */
     /* b. Key is from ownerAuth->sharedSecret */
     /* c. IV is SHA-1 of (authLastNonceEven || nonceOdd) */
-    error("TPM_MakeIdentity() does not support entityType=%.8x yet.", 
+    debug("TPM_MakeIdentity() does not support entityType=%.8x yet.", 
       ownerAuth_sessionData->entityType);
     return TPM_FAIL;
   }
@@ -212,7 +212,7 @@ TPM_RESULT TPM_MakeIdentity(
       idKey->PCRInfo.digestAtCreation = 
         idKeyParams->PCRInfo.digestAtCreation;
     } else {
-      error("TPM_MakeIdentity() does not support this TPM_KEY structure.");
+      debug("TPM_MakeIdentity(): unsupport this TPM_KEY structure.");
       return TPM_FAIL;
     }
   /* 10. Set the digestAtCreation values for pcrInfo */
@@ -229,7 +229,7 @@ TPM_RESULT TPM_MakeIdentity(
    * specified in idKeyParams */
   key_length = idKeyParams->algorithmParms.parms.rsa.keyLength;
   if (rsa_generate_key(&tpm_signature_key, key_length)) {
-    error("TPM_MakeIdentity(): rsa_generate_key() failed.");
+    debug("TPM_MakeIdentity(): rsa_generate_key() failed.");
     return TPM_FAIL;
   }
   /* 12. Ensure that the AuthData information in A1 is properly stored in the 
@@ -268,8 +268,8 @@ TPM_RESULT TPM_MakeIdentity(
    * TPM_PT_ASYM */
   store.payload = TPM_PT_ASYM;
   /* compute the digest on all public data of this key */
-  if (compute_key_digest(idKey, &store.pubDataDigest)) {
-    error("TPM_MakeIdentity(): compute_key_digest() failed.");
+  if (tpm_compute_key_digest(idKey, &store.pubDataDigest)) {
+    debug("TPM_MakeIdentity(): tpm_compute_key_digest() failed.");
     tpm_free(idKey->encData);
     tpm_free(store.privKey.key);
     tpm_free(idKey->pubKey.key);
@@ -277,7 +277,7 @@ TPM_RESULT TPM_MakeIdentity(
     return TPM_FAIL;
   }
   /* 16. Encrypt the private portion of idKey using the SRK as the parent key */
-  if (encrypt_private_key(&tpmData.permanent.data.srk, &store, idKey->encData, 
+  if (tpm_encrypt_private_key(&tpmData.permanent.data.srk, &store, idKey->encData, 
     &idKey->encDataSize)) {
       tpm_free(idKey->encData);
       tpm_free(store.privKey.key);
@@ -337,7 +337,7 @@ TPM_RESULT TPM_MakeIdentity(
     return TPM_NOSPACE;
   }
   if (tpm_marshal_TPM_IDENTITY_CONTENTS(&ptr, &len, &idContents)) {
-    error("TPM_MakeIdentity(): tpm_marshal_TPM_IDENTITY_CONTENTS() failed.");
+    debug("TPM_MakeIdentity(): tpm_marshal_TPM_IDENTITY_CONTENTS() failed.");
     tpm_free(buf);
     tpm_free(idContents.identityPubKey.pubKey.key);
     tpm_free(idKey->encData);
@@ -359,7 +359,7 @@ TPM_RESULT TPM_MakeIdentity(
   }
   if (rsa_sign(&tpm_signature_key, RSA_SSA_PKCS1_SHA1, buf, 
     sizeof_TPM_IDENTITY_CONTENTS((idContents)), *identityBinding)) {
-      error("TPM_MakeIdentity(): rsa_sign() failed.");
+      debug("TPM_MakeIdentity(): rsa_sign() failed.");
       tpm_free(*identityBinding);
       tpm_free(buf);
       tpm_free(idContents.identityPubKey.pubKey.key);
@@ -436,15 +436,15 @@ TPM_RESULT TPM_ActivateIdentity(
     return TPM_NOSPACE;
   rsa_export_modulus(&idKey->key, pubKey.pubKey.key, &pubKey.pubKey.keyLength);
   if (tpm_setup_key_parms(idKey, &pubKey.algorithmParms) != 0) {
-    error("TPM_ActivateIdentity(): tpm_setup_key_parms() failed.");
+    debug("TPM_ActivateIdentity(): tpm_setup_key_parms() failed.");
     tpm_free(pubKey.pubKey.key);
     return TPM_FAIL;
   }
   tpm_free(pubKey.algorithmParms.parms.rsa.exponent);
   pubKey.algorithmParms.parms.rsa.exponentSize = 0;
   pubKey.algorithmParms.parmSize = 12;
-  if (compute_pubkey_digest(&pubKey, &H1)) {
-    error("TPM_ActivateIdentity(): compute_pubkey_digest() failed.");
+  if (tpm_compute_pubkey_digest(&pubKey, &H1)) {
+    debug("TPM_ActivateIdentity(): tpm_compute_pubkey_digest() failed.");
     tpm_free(pubKey.pubKey.key);
     return TPM_FAIL;
   }
@@ -469,7 +469,7 @@ TPM_RESULT TPM_ActivateIdentity(
     ptr = B1;
     len = sizeB1;
     if (tpm_unmarshal_TPM_EK_BLOB(&ptr, &len, &B1__ekBlob)) {
-        error("TPM_ActivateIdentity(): tpm_unmarshal_TPM_EK_BLOB() failed.");
+        debug("TPM_ActivateIdentity(): tpm_unmarshal_TPM_EK_BLOB() failed.");
         tpm_free(pubKey.pubKey.key);
         tpm_free(B1);
         return TPM_FAIL;
@@ -483,7 +483,7 @@ TPM_RESULT TPM_ActivateIdentity(
     ptr = B1;
     len = sizeB1;
     if (tpm_unmarshal_TPM_ASYM_CA_CONTENTS(&ptr, &len, &B1__asymCaContents)) {
-        error("TPM_ActivateIdentity(): tpm_unmarshal_TPM_ASYM_CA_CONTENTS() failed.");
+        debug("TPM_ActivateIdentity(): tpm_unmarshal_TPM_ASYM_CA_CONTENTS() failed.");
         tpm_free(pubKey.pubKey.key);
         tpm_free(B1);
         return TPM_FAIL;
@@ -517,7 +517,7 @@ TPM_RESULT TPM_ActivateIdentity(
     ptr = B1__ekBlob.blob;
     len = B1__ekBlob.blobSize;
     if (tpm_unmarshal_TPM_EK_BLOB_ACTIVATE(&ptr, &len, &A1)) {
-        error("TPM_ActivateIdentity(): tpm_unmarshal_TPM_EK_BLOB_ACTIVATE() failed.");
+        debug("TPM_ActivateIdentity(): tpm_unmarshal_TPM_EK_BLOB_ACTIVATE() failed.");
         tpm_free(pubKey.pubKey.key);
         tpm_free(B1);
         return TPM_FAIL;
@@ -534,7 +534,7 @@ TPM_RESULT TPM_ActivateIdentity(
        * A1->pcrSelection */
       if (tpm_compute_pcr_digest(&A1.pcrInfo.pcrSelection, &C1, NULL) !=
         TPM_SUCCESS) {
-          error("TPM_ActivateIdentity(): tpm_compute_pcr_digest() failed.");
+          debug("TPM_ActivateIdentity(): tpm_compute_pcr_digest() failed.");
           tpm_free(pubKey.pubKey.key);
           tpm_free(B1);
           return TPM_FAIL;
@@ -571,3 +571,4 @@ TPM_RESULT TPM_ActivateIdentity(
   tpm_free(B1);
   return TPM_SUCCESS;
 }
+

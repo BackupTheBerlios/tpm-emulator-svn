@@ -18,7 +18,7 @@
 #include "sha1.h"
 
 static int rsa_public(rsa_public_key_t *key, 
-                      uint8_t *in, size_t in_len, uint8_t *out)
+                      const uint8_t *in, size_t in_len, uint8_t *out)
 {
   size_t t;
   mpz_t p, c;
@@ -43,7 +43,7 @@ static int rsa_public(rsa_public_key_t *key,
 }
 
 static int rsa_private(rsa_private_key_t *key,
-                       uint8_t *in, size_t in_len, uint8_t *out)
+                       const uint8_t *in, size_t in_len, uint8_t *out)
 {
   size_t t;
   mpz_t p, c, m1, m2, h;
@@ -114,8 +114,9 @@ static int rsa_test_key(rsa_private_key_t *key)
 }
 
 int rsa_import_key(rsa_private_key_t *key, int endian,
-                   uint8_t *n, size_t n_len, uint8_t *e, size_t e_len,
-                   uint8_t *p, uint8_t *q)
+                   const uint8_t *n, size_t n_len,
+                   const uint8_t *e, size_t e_len,
+                   const uint8_t *p, const uint8_t *q)
 {
   mpz_t t1, t2, phi;
   if (n == NULL || n_len == 0 || (p == NULL && q == NULL)) return -1;
@@ -173,7 +174,8 @@ void rsa_copy_key(rsa_private_key_t *dst, rsa_private_key_t *src)
 }
 
 int rsa_import_public_key(rsa_public_key_t *key, int endian,
-                          uint8_t *n, size_t n_len, uint8_t *e, size_t e_len)
+                          const uint8_t *n, size_t n_len,
+                          const uint8_t *e, size_t e_len)
 {
   if (n == NULL || n_len == 0) return -1;
   /* init key */
@@ -190,15 +192,15 @@ int rsa_import_public_key(rsa_public_key_t *key, int endian,
   return 0;
 }
 
-static void rsa_mpz_random(mpz_t a, unsigned int nbits)
+static void rsa_mpz_random(mpz_t a, size_t nbits)
 {
-  unsigned int size = nbits >> 3;
+  size_t size = nbits >> 3;
   char buf[size];
   tpm_get_random_bytes(buf, size);
   mpz_import(a, size, 1, 1, 0, 0, buf);
 }
 
-int rsa_generate_key(rsa_private_key_t *key, int key_size)
+int rsa_generate_key(rsa_private_key_t *key, uint16_t key_size)
 {
   mpz_t e, p, q, n, t1, t2, phi, d, u;
 
@@ -312,7 +314,7 @@ void rsa_export_prime2(rsa_private_key_t *key,
   mpz_export(prime, length, 1 , 1, 0, 0, key->q);
 }
 
-void mask_generation(uint8_t *seed, size_t seed_len, 
+void mask_generation(const uint8_t *seed, size_t seed_len, 
                      uint8_t *data, size_t data_len)
 {
   sha1_ctx_t ctx;
@@ -331,7 +333,7 @@ void mask_generation(uint8_t *seed, size_t seed_len,
   }
 }
 
-static int encode_message(int type, uint8_t *data, size_t data_len, 
+static int encode_message(int type, const uint8_t *data, size_t data_len, 
                           uint8_t *msg, size_t msg_len)
 {
   size_t i;
@@ -454,7 +456,7 @@ static int decode_message(int type, uint8_t *msg, size_t msg_len,
 }
 
 int rsa_sign(rsa_private_key_t *key, int type, 
-             uint8_t *data, size_t data_len, uint8_t *sig)
+             const uint8_t *data, size_t data_len, uint8_t *sig)
 {
   size_t sig_len = key->size >> 3;
 
@@ -466,7 +468,7 @@ int rsa_sign(rsa_private_key_t *key, int type,
 }
 
 int rsa_verify(rsa_public_key_t *key, int type,
-               uint8_t *data, size_t data_len, uint8_t *sig)
+               const uint8_t *data, size_t data_len, uint8_t *sig)
 {
   size_t sig_len = key->size >> 3;
   uint8_t msg_a[sig_len];
@@ -481,7 +483,7 @@ int rsa_verify(rsa_public_key_t *key, int type,
 }
 
 int rsa_decrypt(rsa_private_key_t *key, int type,
-                uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len)
+                const uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len)
 {
   *out_len = key->size >> 3;
   if (in_len != *out_len || in_len < 11) return -1;
@@ -493,7 +495,7 @@ int rsa_decrypt(rsa_private_key_t *key, int type,
 }
 
 int rsa_encrypt(rsa_public_key_t *key, int type,
-                uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len)
+                const uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len)
 {
   *out_len = key->size >> 3;
   /* encode message */

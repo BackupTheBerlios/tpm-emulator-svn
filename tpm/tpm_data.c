@@ -18,6 +18,7 @@
 #include "tpm_emulator.h"
 #include "tpm_structures.h"
 #include "tpm_marshalling.h"
+#include "tpm_data.h"
 
 TPM_DATA tpmData;
 
@@ -204,7 +205,8 @@ int tpm_restore_permanent_data(void)
 
 int tpm_erase_permanent_data(void)
 {
-  int res = tpm_write_to_file("", 0);
+  uint8_t d[1];
+  int res = tpm_write_to_file(d, 0);
   return res;
 }
 
