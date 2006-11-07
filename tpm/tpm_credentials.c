@@ -54,8 +54,7 @@ TPM_RESULT tpm_get_pubek(TPM_PUBKEY *pubEndorsementKey)
   pubEndorsementKey->pubKey.key = tpm_malloc(pubEndorsementKey->pubKey.keyLength);
   if (pubEndorsementKey->pubKey.key == NULL) return TPM_FAIL;
   rsa_export_modulus(&tpmData.permanent.data.endorsementKey,
-    pubEndorsementKey->pubKey.key,
-    &pubEndorsementKey->pubKey.keyLength);
+                     pubEndorsementKey->pubKey.key, NULL);
   pubEndorsementKey->algorithmParms.algorithmID = TPM_ALG_RSA;
   pubEndorsementKey->algorithmParms.encScheme = TPM_ES_RSAESOAEP_SHA1_MGF1;
   pubEndorsementKey->algorithmParms.sigScheme = TPM_SS_NONE;
@@ -184,8 +183,7 @@ TPM_RESULT TPM_OwnerReadInternalPub(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
     publicPortion->pubKey.keyLength = srk->key.size >> 3;
     publicPortion->pubKey.key = tpm_malloc(publicPortion->pubKey.keyLength);
     if (publicPortion->pubKey.key == NULL) return TPM_FAIL;
-    rsa_export_modulus(&srk->key, publicPortion->pubKey.key, 
-      &publicPortion->pubKey.keyLength);
+    rsa_export_modulus(&srk->key, publicPortion->pubKey.key, NULL);
     publicPortion->algorithmParms.algorithmID = TPM_ALG_RSA;
     publicPortion->algorithmParms.encScheme = srk->encScheme;
     publicPortion->algorithmParms.sigScheme = srk->sigScheme;

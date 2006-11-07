@@ -107,7 +107,7 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   TPM_RESULT res;
   rsa_private_key_t *ek = &tpmData.permanent.data.endorsementKey;
   TPM_KEY_DATA *srk = &tpmData.permanent.data.srk;
-  UINT32 buf_size = ek->size >> 3;
+  size_t buf_size = ek->size >> 3;
   BYTE buf[buf_size];
 
   info("TPM_TakeOwnership()");
@@ -171,8 +171,7 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
     srk->valid = FALSE;
     return TPM_FAIL;
   }
-  rsa_export_modulus(&srk->key, srkPub->pubKey.key,
-    &srkPub->pubKey.keyLength);
+  rsa_export_modulus(&srk->key, srkPub->pubKey.key, NULL);
   /* setup tpmProof and set state to owned */
   tpm_get_random_bytes(tpmData.permanent.data.tpmProof.nonce, 
     sizeof(tpmData.permanent.data.tpmProof.nonce));

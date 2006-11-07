@@ -88,10 +88,10 @@ void sha1_init(sha1_ctx_t *ctx)
   ctx->count_lo = ctx->count_hi = 0;
 }
 
-void sha1_update(sha1_ctx_t *ctx, const uint8_t *data, uint32_t length)
+void sha1_update(sha1_ctx_t *ctx, const uint8_t *data, size_t length)
 {
-  uint32_t buf_off = (ctx->count_lo >> 3) & 63;
-  uint32_t data_off = 0;
+  size_t buf_off = (ctx->count_lo >> 3) & 63;
+  size_t data_off = 0;
 
   /* add data */
   if (length + buf_off >= 64) {

@@ -258,7 +258,7 @@ TPM_RESULT TPM_CertifyKey(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
     free_TPM_KEY_PARMS(certifyInfo->algorithmParms);
     return TPM_FAIL;
   }
-  rsa_export_modulus(&key->key, buf, &length);
+  rsa_export_modulus(&key->key, buf, NULL);
   sha1_init(&sha1_ctx);
   sha1_update(&sha1_ctx, buf, length);
   sha1_final(&sha1_ctx, certifyInfo->pubkeyDigest.digest);
@@ -356,7 +356,7 @@ TPM_RESULT TPM_CertifyKey2(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
     free_TPM_KEY_PARMS(certifyInfo->algorithmParms);
     return TPM_FAIL;
   }
-  rsa_export_modulus(&key->key, buf, &length);
+  rsa_export_modulus(&key->key, buf, NULL);
   sha1_init(&sha1_ctx);
   sha1_update(&sha1_ctx, buf, length);
   sha1_final(&sha1_ctx, certifyInfo->pubkeyDigest.digest);

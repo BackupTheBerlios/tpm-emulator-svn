@@ -29,7 +29,7 @@ BOOL tpm_get_physical_presence(void)
 
 static inline void init_pcr_attr(int pcr, BOOL reset, BYTE rl, BYTE el)
 {
-  int i;
+  unsigned int i;
   tpmData.permanent.data.pcrAttrib[pcr].pcrReset = reset;
   for (i = 0; i < TPM_NUM_LOCALITY; i++) {
     tpmData.permanent.data.pcrAttrib[pcr].pcrResetLocal[i] = (rl & (1 << i));
@@ -139,7 +139,7 @@ void tpm_init_data(void)
 
 void tpm_release_data(void)
 {
-  int i;
+  unsigned int i;
   /* release the EK, SRK as well as all other rsa keys */
   if (tpmData.permanent.data.endorsementKey.size > 0)
     rsa_release_private_key(&tpmData.permanent.data.endorsementKey);
@@ -153,7 +153,8 @@ void tpm_release_data(void)
 int tpm_store_permanent_data(void)
 {
   uint8_t *buf, *ptr;
-  size_t buf_length, len;
+  size_t buf_length;
+  uint32_t len;
 
   /* marshal data */
   buf_length = len = sizeof_TPM_STCLEAR_FLAGS(tpmData.stclear.flags)
@@ -181,7 +182,8 @@ int tpm_store_permanent_data(void)
 int tpm_restore_permanent_data(void)
 {
   uint8_t *buf, *ptr;
-  size_t buf_length, len;
+  size_t buf_length;
+  uint32_t len;
   TPM_VERSION ver;
 
   /* read data */

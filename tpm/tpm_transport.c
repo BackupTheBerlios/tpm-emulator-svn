@@ -36,6 +36,7 @@ static int decrypt_transport_auth(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
                                   TPM_TRANSPORT_AUTH *trans_auth) 
 {
   BYTE *buf;
+  size_t buf_size;
   int scheme;
   switch (key->encScheme) {
     case TPM_ES_RSAESOAEP_SHA1_MGF1: scheme = RSA_ES_OAEP_SHA1; break;
@@ -44,8 +45,8 @@ static int decrypt_transport_auth(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
   }
   buf = tpm_malloc(key->key.size);
   if (buf == NULL
-      || rsa_decrypt(&key->key, scheme, enc, enc_size, buf, &enc_size)
-      || enc_size != sizeof_TPM_TRANSPORT_AUTH(x)
+      || rsa_decrypt(&key->key, scheme, enc, enc_size, buf, &buf_size)
+      || buf_size != sizeof_TPM_TRANSPORT_AUTH(x)
       || (((UINT16)buf[0] << 8) | buf[1]) != TPM_TAG_TRANSPORT_AUTH) {
     tpm_free(buf);
     return -1;

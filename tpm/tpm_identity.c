@@ -257,10 +257,8 @@ TPM_RESULT TPM_MakeIdentity(
     rsa_release_private_key(&tpm_signature_key);
     return TPM_NOSPACE;
   }
-  rsa_export_modulus(&tpm_signature_key, idKey->pubKey.key, 
-    &idKey->pubKey.keyLength);
-  rsa_export_prime1(&tpm_signature_key, store.privKey.key, 
-    &store.privKey.keyLength);
+  rsa_export_modulus(&tpm_signature_key, idKey->pubKey.key, NULL);
+  rsa_export_prime1(&tpm_signature_key, store.privKey.key, NULL);
   /* 14. Set idKey->migrationAuth to TPM_PERMANENT_DATA->tpmProof */
   memcpy(store.migrationAuth, tpmData.permanent.data.tpmProof.nonce, 
     sizeof(TPM_SECRET));
@@ -325,8 +323,7 @@ TPM_RESULT TPM_MakeIdentity(
     rsa_release_private_key(&tpm_signature_key);
     return TPM_NOSPACE;
   }
-  rsa_export_modulus(&tpm_signature_key, idContents.identityPubKey.pubKey.key, 
-    &idContents.identityPubKey.pubKey.keyLength);
+  rsa_export_modulus(&tpm_signature_key, idContents.identityPubKey.pubKey.key, NULL);
   len = sizeof_TPM_IDENTITY_CONTENTS((idContents));
   buf = ptr = tpm_malloc(len);
   if (buf == NULL) {
@@ -434,7 +431,7 @@ TPM_RESULT TPM_ActivateIdentity(
   pubKey.pubKey.key = tpm_malloc(pubKey.pubKey.keyLength);
   if (pubKey.pubKey.key == NULL)
     return TPM_NOSPACE;
-  rsa_export_modulus(&idKey->key, pubKey.pubKey.key, &pubKey.pubKey.keyLength);
+  rsa_export_modulus(&idKey->key, pubKey.pubKey.key, NULL);
   if (tpm_setup_key_parms(idKey, &pubKey.algorithmParms) != 0) {
     debug("TPM_ActivateIdentity(): tpm_setup_key_parms() failed.");
     tpm_free(pubKey.pubKey.key);
