@@ -204,8 +204,8 @@ int rsa_generate_key(rsa_private_key_t *key, uint16_t key_size)
 {
   mpz_t e, p, q, n, t1, t2, phi, d, u;
 
-  /* bit_size must be even */
-  if (key_size & 0x01) key_size++;
+  /* bit_size must be a multiply of eight */
+  while (key_size & 0x03) key_size++;
   /* we use e = 65537 */
   mpz_init_set_ui(e, 65537);
   mpz_init2(p, key_size / 2 + GMP_NUMB_BITS);
