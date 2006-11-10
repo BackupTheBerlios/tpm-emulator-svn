@@ -32,7 +32,7 @@
 #define R3(a,b,c,d,e,i) e += F2(b,c,d) + B1(i) + 0x8F1BBCDC + rol(a,5); b = rol(b,30);
 #define R4(a,b,c,d,e,i) e += F1(b,c,d) + B1(i) + 0xCA62C1D6 + rol(a,5); b = rol(b,30);
 
-static void sha1_transform(uint32_t h[5], const uint8_t data[64])
+static void tpm_sha1_transform(uint32_t h[5], const uint8_t data[64])
 {
   uint32_t a, b, c, d, e;
   uint32_t buf[16];
@@ -77,7 +77,7 @@ static void sha1_transform(uint32_t h[5], const uint8_t data[64])
 }
 
 
-void sha1_init(sha1_ctx_t *ctx)
+void tpm_sha1_init(tpm_sha1_ctx_t *ctx)
 {
   /* initialise with sha-1 constants */
   ctx->h[0] = 0x67452301;
@@ -88,7 +88,7 @@ void sha1_init(sha1_ctx_t *ctx)
   ctx->count_lo = ctx->count_hi = 0;
 }
 
-void sha1_update(sha1_ctx_t *ctx, const uint8_t *data, size_t length)
+void tpm_sha1_update(tpm_sha1_ctx_t *ctx, const uint8_t *data, size_t length)
 {
   size_t buf_off = (ctx->count_lo >> 3) & 63;
   size_t data_off = 0;
@@ -97,9 +97,9 @@ void sha1_update(sha1_ctx_t *ctx, const uint8_t *data, size_t length)
   if (length + buf_off >= 64) {
     data_off = 64 - buf_off;
     memcpy(&ctx->buf[buf_off], data, data_off);
-    sha1_transform(ctx->h, ctx->buf);
+    tpm_sha1_transform(ctx->h, ctx->buf);
     while (data_off + 64 <= length) { 
-      sha1_transform(ctx->h, &data[data_off]);
+      tpm_sha1_transform(ctx->h, &data[data_off]);
       data_off += 64;
     }
     buf_off = 0;
@@ -112,7 +112,7 @@ void sha1_update(sha1_ctx_t *ctx, const uint8_t *data, size_t length)
   ctx->count_hi += length >> 29;
 }
 
-void sha1_final(sha1_ctx_t *ctx, uint8_t digest[SHA1_DIGEST_LENGTH])
+void tpm_sha1_final(tpm_sha1_ctx_t *ctx, uint8_t digest[SHA1_DIGEST_LENGTH])
 {
   uint8_t d, counter[8];
 
@@ -123,11 +123,11 @@ void sha1_final(sha1_ctx_t *ctx, uint8_t digest[SHA1_DIGEST_LENGTH])
   }
   /* add padding */
   d = 0x80;
-  sha1_update(ctx, &d, 1);
+  tpm_sha1_update(ctx, &d, 1);
   d = 0x00;
-  while ((ctx->count_lo & (63 * 8)) != (56 * 8)) sha1_update(ctx, &d, 1);
+  while ((ctx->count_lo & (63 * 8)) != (56 * 8)) tpm_sha1_update(ctx, &d, 1);
   /* add counter */
-  sha1_update(ctx, counter, 8);
+  tpm_sha1_update(ctx, counter, 8);
   for (d = 0; d < SHA1_DIGEST_LENGTH; d++) 
     digest[d] = (uint8_t)(ctx->h[d >> 2] >> (8 * (3 - (d & 3))) & 0xff);
   /* overwrite all used variables */

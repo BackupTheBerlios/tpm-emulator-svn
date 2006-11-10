@@ -275,6 +275,8 @@ static inline int tpm_unmarshal_BYTE_ARRAY(BYTE **ptr, UINT32 *ptr_length,
 #define tpm_unmarshal_TPM_CMK_DELEGATE         tpm_unmarshal_UINT32
 #define tpm_marshal_TPM_REDIR_COMMAND          tpm_marshal_UINT32
 #define tpm_unmarshal_TPM_REDIR_COMMAND        tpm_unmarshal_UINT32
+#define tpm_marshal_DAAHANDLE                  tpm_marshal_UINT32
+#define tpm_unmarshal_DAAHANDLE                tpm_unmarshal_UINT32
 
 int tpm_marshal_UINT32_ARRAY(BYTE **ptr, UINT32 *length, UINT32 *v, UINT32 n);
 int tpm_unmarshal_UINT32_ARRAY(BYTE **ptr, UINT32 *length, UINT32 *v, UINT32 n);
@@ -468,8 +470,8 @@ int tpm_unmarshal_TPM_STCLEAR_FLAGS(BYTE **ptr, UINT32 *length, TPM_STCLEAR_FLAG
 int tpm_marshal_TPM_STANY_FLAGS(BYTE **ptr, UINT32 *length, TPM_STANY_FLAGS *v);
 int tpm_unmarshal_TPM_STANY_FLAGS(BYTE **ptr, UINT32 *length, TPM_STANY_FLAGS *v);
 
-int tpm_marshal_RSA(BYTE **ptr, UINT32 *length, rsa_private_key_t *v);
-int tpm_unmarshal_RSA(BYTE **ptr, UINT32 *length, rsa_private_key_t *v);
+int tpm_marshal_RSA(BYTE **ptr, UINT32 *length, tpm_rsa_private_key_t *v);
+int tpm_unmarshal_RSA(BYTE **ptr, UINT32 *length, tpm_rsa_private_key_t *v);
 
 int tpm_marshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v);
 int tpm_unmarshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v);
@@ -477,8 +479,14 @@ int tpm_unmarshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v);
 int tpm_marshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DATA *);
 int tpm_unmarshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DATA *);
 
+int tpm_marshal_TPM_STCLEAR_DATA(BYTE **ptr, UINT32 *length, TPM_STCLEAR_DATA *v);
+int tpm_unmarshal_TPM_STCLEAR_DATA(BYTE **ptr, UINT32 *length, TPM_STCLEAR_DATA *v);
+
 int tpm_marshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA *v);
 int tpm_unmarshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA *v);
+
+int tpm_marshal_TPM_STANY_DATA(BYTE **ptr, UINT32 *length, TPM_STANY_DATA *v);
+int tpm_unmarshal_TPM_STANY_DATA(BYTE **ptr, UINT32 *length, TPM_STANY_DATA *v);
 
 int tpm_marshal_TPM_RESPONSE(BYTE **ptr, UINT32 *length, TPM_RESPONSE *v);
 int tpm_unmarshal_TPM_REQUEST(BYTE **ptr, UINT32 *length, TPM_REQUEST *v);

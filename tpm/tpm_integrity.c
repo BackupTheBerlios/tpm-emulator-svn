@@ -39,16 +39,16 @@ extern TPM_RESULT cap_version_val(UINT32 *respSize, BYTE **resp);
 TPM_RESULT TPM_Extend(TPM_PCRINDEX pcrNum, TPM_DIGEST *inDigest, 
                       TPM_PCRVALUE *outDigest)
 {
-  sha1_ctx_t ctx;
+  tpm_sha1_ctx_t ctx;
 
   info("TPM_Extend()");
   if (pcrNum >= TPM_NUM_PCR) return TPM_BADINDEX;
   if (!PCR_ATTRIB[pcrNum].pcrExtendLocal[LOCALITY]) return TPM_BAD_LOCALITY;
   /* compute new PCR value as SHA-1(old PCR value || inDigest) */
-  sha1_init(&ctx);
-  sha1_update(&ctx, PCR_VALUE[pcrNum].digest, sizeof(PCR_VALUE[pcrNum].digest));
-  sha1_update(&ctx, inDigest->digest, sizeof(inDigest->digest));
-  sha1_final(&ctx, PCR_VALUE[pcrNum].digest);  
+  tpm_sha1_init(&ctx);
+  tpm_sha1_update(&ctx, PCR_VALUE[pcrNum].digest, sizeof(PCR_VALUE[pcrNum].digest));
+  tpm_sha1_update(&ctx, inDigest->digest, sizeof(inDigest->digest));
+  tpm_sha1_final(&ctx, PCR_VALUE[pcrNum].digest);  
   /* set output digest */
   if (tpmData.permanent.flags.disable) {
     memset(outDigest->digest, 0, sizeof(*outDigest->digest));
@@ -100,7 +100,7 @@ TPM_RESULT TPM_Quote(TPM_KEY_HANDLE keyHandle, TPM_NONCE *extrnalData,
   *sigSize = key->key.size >> 3;
   *sig = tpm_malloc(*sigSize);
   if (*sig == NULL) return TPM_FAIL;
-  if (rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, buf, 48, *sig)) {
+  if (tpm_rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, buf, 48, *sig)) {
     tpm_free(*sig);
     return TPM_FAIL;
   }
@@ -138,7 +138,7 @@ TPM_RESULT tpm_compute_pcr_digest(TPM_PCR_SELECTION *pcrSelection,
 {
   int i,j;
   TPM_PCR_COMPOSITE comp;
-  sha1_ctx_t ctx;
+  tpm_sha1_ctx_t ctx;
   UINT32 len;
   BYTE *buf, *ptr;
   info("tpm_compute_pcr_digest()");
@@ -161,9 +161,9 @@ TPM_RESULT tpm_compute_pcr_digest(TPM_PCR_SELECTION *pcrSelection,
      tpm_free(buf);
      return TPM_FAIL;
   }
-  sha1_init(&ctx);
-  sha1_update(&ctx, buf, sizeof_TPM_PCR_COMPOSITE(comp));
-  sha1_final(&ctx, digest->digest);
+  tpm_sha1_init(&ctx);
+  tpm_sha1_update(&ctx, buf, sizeof_TPM_PCR_COMPOSITE(comp));
+  tpm_sha1_final(&ctx, digest->digest);
   tpm_free(buf);
   /* copy composite if requested */
   if (composite != NULL)
@@ -218,7 +218,7 @@ TPM_RESULT TPM_Quote2(
   TPM_KEY_DATA *key;
   TPM_COMPOSITE_HASH H1;
   TPM_QUOTE_INFO2 Q1;
-  sha1_ctx_t ctx;
+  tpm_sha1_ctx_t ctx;
   TPM_DIGEST digest;
   UINT32 respSize, len, size;
   BYTE *resp, *ptr, *buf;
@@ -297,20 +297,20 @@ TPM_RESULT TPM_Quote2(
     *versionInfoSize = 0;
   }
   /* 9. Sign a SHA-1 hash of Q1 using keyHandle as the signature key */
-  sha1_init(&ctx);
-  sha1_update(&ctx, buf, size);
+  tpm_sha1_init(&ctx);
+  tpm_sha1_update(&ctx, buf, size);
   tpm_free(buf);
   if (addVersion == TRUE) {
-    sha1_update(&ctx, resp, respSize);
+    tpm_sha1_update(&ctx, resp, respSize);
     tpm_free(resp);
   }
-  sha1_final(&ctx, digest.digest);
+  tpm_sha1_final(&ctx, digest.digest);
   *sigSize = key->key.size >> 3;
   *sig = tpm_malloc(*sigSize);
   if (*sig == NULL) return TPM_NOSPACE;
-  if (rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, digest.digest, 
+  if (tpm_rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, digest.digest, 
     sizeof(TPM_DIGEST), *sig)) {
-      debug("TPM_Quote2(): rsa_sign() failed.");
+      debug("TPM_Quote2(): tpm_rsa_sign() failed.");
       tpm_free(*sig);
       return TPM_FAIL;
   }

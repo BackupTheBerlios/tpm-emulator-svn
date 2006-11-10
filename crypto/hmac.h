@@ -23,15 +23,15 @@
 #define HMAC_PAD_LENGTH 64
 
 typedef struct {
-  sha1_ctx_t ctx;
+  tpm_sha1_ctx_t ctx;
   uint8_t k_opad[HMAC_PAD_LENGTH];
-} hmac_ctx_t;
+} tpm_hmac_ctx_t;
 
-void hmac_init(hmac_ctx_t *ctx, const uint8_t *key, size_t key_len);
+void tpm_hmac_init(tpm_hmac_ctx_t *ctx, const uint8_t *key, size_t key_len);
 
-void hmac_update(hmac_ctx_t *ctx, const uint8_t *data, size_t length);
+void tpm_hmac_update(tpm_hmac_ctx_t *ctx, const uint8_t *data, size_t length);
 
-void hmac_final(hmac_ctx_t *ctx, uint8_t *digest);
+void tpm_hmac_final(tpm_hmac_ctx_t *ctx, uint8_t *digest);
 
 #endif /* _HMAC_H_ */
 

@@ -67,7 +67,7 @@ static int encrypt_context(BYTE *iv, UINT32 iv_size, TPM_CONTEXT_SENSITIVE *cont
 {
   UINT32 len;
   BYTE *ptr;
-  rc4_ctx_t rc4_ctx;
+  tpm_rc4_ctx_t rc4_ctx;
   BYTE key[TPM_CONTEXT_KEY_SIZE + iv_size];
   /* marshal context */
   *enc_size = len = sizeof_TPM_CONTEXT_SENSITIVE((*context));
@@ -81,8 +81,8 @@ static int encrypt_context(BYTE *iv, UINT32 iv_size, TPM_CONTEXT_SENSITIVE *cont
   /* encrypt context */
   memcpy(key, tpmData.permanent.data.contextKey, TPM_CONTEXT_KEY_SIZE);
   memcpy(&key[TPM_CONTEXT_KEY_SIZE], iv, iv_size);
-  rc4_init(&rc4_ctx, key, sizeof(key));
-  rc4_crypt(&rc4_ctx, *enc, *enc, *enc_size);
+  tpm_rc4_init(&rc4_ctx, key, sizeof(key));
+  tpm_rc4_crypt(&rc4_ctx, *enc, *enc, *enc_size);
   return 0;
 }
 
@@ -91,7 +91,7 @@ static int decrypt_context(BYTE *iv, UINT32 iv_size, BYTE *enc, UINT32 enc_size,
 {
   UINT32 len;
   BYTE *ptr;
-  rc4_ctx_t rc4_ctx;
+  tpm_rc4_ctx_t rc4_ctx;
   BYTE key[TPM_CONTEXT_KEY_SIZE + iv_size];
   len = enc_size;
   *buf = ptr = tpm_malloc(len);
@@ -100,8 +100,8 @@ static int decrypt_context(BYTE *iv, UINT32 iv_size, BYTE *enc, UINT32 enc_size,
   /* decrypt context */
   memcpy(key, tpmData.permanent.data.contextKey, TPM_CONTEXT_KEY_SIZE);
   memcpy(&key[TPM_CONTEXT_KEY_SIZE], iv, iv_size);
-  rc4_init(&rc4_ctx, key, sizeof(key));  
-  rc4_crypt(&rc4_ctx, enc, *buf, enc_size);
+  tpm_rc4_init(&rc4_ctx, key, sizeof(key));  
+  tpm_rc4_crypt(&rc4_ctx, enc, *buf, enc_size);
   /* unmarshal context */
   if (tpm_unmarshal_TPM_CONTEXT_SENSITIVE(&ptr, &len, context)) {
     tpm_free(*buf);
@@ -114,7 +114,7 @@ static int compute_context_digest(TPM_CONTEXT_BLOB *contextBlob, TPM_DIGEST *dig
 {
   BYTE *buf, *ptr;
   UINT32 len;
-  hmac_ctx_t hmac_ctx;
+  tpm_hmac_ctx_t hmac_ctx;
   len = sizeof_TPM_CONTEXT_BLOB((*contextBlob));
   buf = ptr = tpm_malloc(len);
   if (buf == NULL)
@@ -124,10 +124,10 @@ static int compute_context_digest(TPM_CONTEXT_BLOB *contextBlob, TPM_DIGEST *dig
     return -1;
   }
   memset(&buf[30], 0, 20);
-  hmac_init(&hmac_ctx, tpmData.permanent.data.tpmProof.nonce, 
+  tpm_hmac_init(&hmac_ctx, tpmData.permanent.data.tpmProof.nonce, 
     sizeof(tpmData.permanent.data.tpmProof.nonce));
-  hmac_update(&hmac_ctx, buf, sizeof_TPM_CONTEXT_BLOB((*contextBlob)));
-  hmac_final(&hmac_ctx, digest->digest);
+  tpm_hmac_update(&hmac_ctx, buf, sizeof_TPM_CONTEXT_BLOB((*contextBlob)));
+  tpm_hmac_final(&hmac_ctx, digest->digest);
   tpm_free(buf);
   return 0;
 }
@@ -161,7 +161,7 @@ TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
     if (key->keyControl & TPM_KEY_CONTROL_OWNER_EVICT) return TPM_OWNER_CONTROL;
     /* store key data */
     memcpy(&context.internalData.key, key, sizeof(TPM_KEY_DATA));
-    rsa_copy_key(&context.internalData.key.key, &key->key);
+    tpm_rsa_copy_key(&context.internalData.key.key, &key->key);
     context.internalSize = sizeof_TPM_KEY_DATA((*key));
     /* set context nonce */
     memcpy(&context.contextNonce, &tpmData.stclear.data.contextNonceKey, 
@@ -289,7 +289,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
     }
     /* reload resource */
     memcpy(key, &context.internalData.key, sizeof(TPM_KEY_DATA));
-    rsa_copy_key(&key->key, &context.internalData.key.key);
+    tpm_rsa_copy_key(&key->key, &context.internalData.key.key);
   } else if (contextBlob->resourceType == TPM_RT_DAA_TPM) {
     /* check contextNonce */
     if (memcmp(&context.contextNonce, &tpmData.stany.data.contextNonceSession, 

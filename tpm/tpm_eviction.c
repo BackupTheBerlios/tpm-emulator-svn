@@ -71,7 +71,7 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
       if (key == NULL) return TPM_INVALID_KEYHANDLE;
       if (key->keyControl & TPM_KEY_CONTROL_OWNER_EVICT)
         return TPM_KEY_OWNER_CONTROL;
-      rsa_release_private_key(&key->key);
+      tpm_rsa_release_private_key(&key->key);
       memset(key, 0, sizeof(*key));
       invalidate_sessions(handle);
       return TPM_SUCCESS;

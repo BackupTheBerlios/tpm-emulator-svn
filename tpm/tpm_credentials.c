@@ -31,16 +31,16 @@
 int tpm_compute_pubkey_checksum(TPM_NONCE *antiReplay, TPM_PUBKEY *pubKey,
                                 TPM_DIGEST *checksum)
 {
-  sha1_ctx_t sha1;
+  tpm_sha1_ctx_t sha1;
   UINT32 len = sizeof_TPM_PUBKEY((*pubKey));
   BYTE buf[len], *ptr = buf;
 
   if (tpm_marshal_TPM_PUBKEY(&ptr, &len, pubKey)) return -1;
   /* compute SHA1 hash */
-  sha1_init(&sha1);
-  sha1_update(&sha1, buf, sizeof_TPM_PUBKEY((*pubKey)));
-  sha1_update(&sha1, antiReplay->nonce, sizeof(antiReplay->nonce));
-  sha1_final(&sha1, checksum->digest);
+  tpm_sha1_init(&sha1);
+  tpm_sha1_update(&sha1, buf, sizeof_TPM_PUBKEY((*pubKey)));
+  tpm_sha1_update(&sha1, antiReplay->nonce, sizeof(antiReplay->nonce));
+  tpm_sha1_final(&sha1, checksum->digest);
   return 0;
 }
 
@@ -53,7 +53,7 @@ TPM_RESULT tpm_get_pubek(TPM_PUBKEY *pubEndorsementKey)
   pubEndorsementKey->pubKey.keyLength = key_length >> 3;
   pubEndorsementKey->pubKey.key = tpm_malloc(pubEndorsementKey->pubKey.keyLength);
   if (pubEndorsementKey->pubKey.key == NULL) return TPM_FAIL;
-  rsa_export_modulus(&tpmData.permanent.data.endorsementKey,
+  tpm_rsa_export_modulus(&tpmData.permanent.data.endorsementKey,
                      pubEndorsementKey->pubKey.key, NULL);
   pubEndorsementKey->algorithmParms.algorithmID = TPM_ALG_RSA;
   pubEndorsementKey->algorithmParms.encScheme = TPM_ES_RSAESOAEP_SHA1_MGF1;
@@ -93,19 +93,19 @@ TPM_RESULT TPM_CreateRevocableEK(TPM_NONCE *antiReplay, TPM_KEY_PARMS *keyInfo,
       || keyInfo->parms.rsa.numPrimes != 2
       || keyInfo->parms.rsa.exponentSize != 0) return TPM_BAD_KEY_PROPERTY;
   /* create endorsement key */
-  if (rsa_generate_key(&tpmData.permanent.data.endorsementKey, 
+  if (tpm_rsa_generate_key(&tpmData.permanent.data.endorsementKey, 
       keyInfo->parms.rsa.keyLength)) return TPM_FAIL;
   /* return PUBEK */
   res = tpm_get_pubek(pubEndorsementKey);
   if (res != TPM_SUCCESS) {
-    rsa_release_private_key(&tpmData.permanent.data.endorsementKey);
+    tpm_rsa_release_private_key(&tpmData.permanent.data.endorsementKey);
     tpmData.permanent.data.endorsementKey.size = 0;
     return res;
   }
   /* compute checksum */
   if (tpm_compute_pubkey_checksum(antiReplay, pubEndorsementKey, checksum)) {
     tpm_free(pubEndorsementKey->pubKey.key);
-    rsa_release_private_key(&tpmData.permanent.data.endorsementKey);
+    tpm_rsa_release_private_key(&tpmData.permanent.data.endorsementKey);
     tpmData.permanent.data.endorsementKey.size = 0;
     return TPM_FAIL;
   }
@@ -132,7 +132,7 @@ TPM_RESULT TPM_RevokeTrust(TPM_NONCE *ekReset)
   if (memcmp(ekReset, &tpmData.permanent.data.ekReset, 
              sizeof(TPM_NONCE))) return TPM_AUTHFAIL;
   tpm_owner_clear();
-  rsa_release_private_key(&tpmData.permanent.data.endorsementKey);
+  tpm_rsa_release_private_key(&tpmData.permanent.data.endorsementKey);
   tpmData.permanent.data.endorsementKey.size = 0;
   /* Invalidate TPM_PERMANENT_DATA->tpmDAASeed */
   memset(tpmData.permanent.data.tpmDAASeed.digest, 0, 
@@ -183,7 +183,7 @@ TPM_RESULT TPM_OwnerReadInternalPub(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
     publicPortion->pubKey.keyLength = srk->key.size >> 3;
     publicPortion->pubKey.key = tpm_malloc(publicPortion->pubKey.keyLength);
     if (publicPortion->pubKey.key == NULL) return TPM_FAIL;
-    rsa_export_modulus(&srk->key, publicPortion->pubKey.key, NULL);
+    tpm_rsa_export_modulus(&srk->key, publicPortion->pubKey.key, NULL);
     publicPortion->algorithmParms.algorithmID = TPM_ALG_RSA;
     publicPortion->algorithmParms.encScheme = srk->encScheme;
     publicPortion->algorithmParms.sigScheme = srk->sigScheme;

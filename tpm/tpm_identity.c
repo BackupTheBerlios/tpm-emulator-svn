@@ -51,7 +51,7 @@ TPM_RESULT TPM_MakeIdentity(
   TPM_RESULT res;
   TPM_SESSION_DATA *ownerAuth_sessionData;
   TPM_SECRET A1;
-  rsa_private_key_t tpm_signature_key;
+  tpm_rsa_private_key_t tpm_signature_key;
   UINT32 key_length;
   TPM_STORE_ASYMKEY store;
   TPM_IDENTITY_CONTENTS idContents;
@@ -228,8 +228,8 @@ TPM_RESULT TPM_MakeIdentity(
    * using a TPM-protected capability, in accordance with the algorithm 
    * specified in idKeyParams */
   key_length = idKeyParams->algorithmParms.parms.rsa.keyLength;
-  if (rsa_generate_key(&tpm_signature_key, key_length)) {
-    debug("TPM_MakeIdentity(): rsa_generate_key() failed.");
+  if (tpm_rsa_generate_key(&tpm_signature_key, key_length)) {
+    debug("TPM_MakeIdentity(): tpm_rsa_generate_key() failed.");
     return TPM_FAIL;
   }
   /* 12. Ensure that the AuthData information in A1 is properly stored in the 
@@ -239,14 +239,14 @@ TPM_RESULT TPM_MakeIdentity(
   idKey->pubKey.keyLength = key_length >> 3;
   idKey->pubKey.key = tpm_malloc(idKey->pubKey.keyLength);
   if (idKey->pubKey.key == NULL) {
-    rsa_release_private_key(&tpm_signature_key);
+    tpm_rsa_release_private_key(&tpm_signature_key);
     return TPM_NOSPACE;
   }
   store.privKey.keyLength = key_length >> 4;
   store.privKey.key = tpm_malloc(store.privKey.keyLength);
   if (store.privKey.key == NULL) {
     tpm_free(idKey->pubKey.key);
-    rsa_release_private_key(&tpm_signature_key);
+    tpm_rsa_release_private_key(&tpm_signature_key);
     return TPM_NOSPACE;
   }
   idKey->encDataSize = tpmData.permanent.data.srk.key.size >> 3;
@@ -254,11 +254,11 @@ TPM_RESULT TPM_MakeIdentity(
   if (idKey->encData == NULL) {
     tpm_free(store.privKey.key);
     tpm_free(idKey->pubKey.key);
-    rsa_release_private_key(&tpm_signature_key);
+    tpm_rsa_release_private_key(&tpm_signature_key);
     return TPM_NOSPACE;
   }
-  rsa_export_modulus(&tpm_signature_key, idKey->pubKey.key, NULL);
-  rsa_export_prime1(&tpm_signature_key, store.privKey.key, NULL);
+  tpm_rsa_export_modulus(&tpm_signature_key, idKey->pubKey.key, NULL);
+  tpm_rsa_export_prime1(&tpm_signature_key, store.privKey.key, NULL);
   /* 14. Set idKey->migrationAuth to TPM_PERMANENT_DATA->tpmProof */
   memcpy(store.migrationAuth, tpmData.permanent.data.tpmProof.nonce, 
     sizeof(TPM_SECRET));
@@ -271,7 +271,7 @@ TPM_RESULT TPM_MakeIdentity(
     tpm_free(idKey->encData);
     tpm_free(store.privKey.key);
     tpm_free(idKey->pubKey.key);
-    rsa_release_private_key(&tpm_signature_key);
+    tpm_rsa_release_private_key(&tpm_signature_key);
     return TPM_FAIL;
   }
   /* 16. Encrypt the private portion of idKey using the SRK as the parent key */
@@ -280,7 +280,7 @@ TPM_RESULT TPM_MakeIdentity(
       tpm_free(idKey->encData);
       tpm_free(store.privKey.key);
       tpm_free(idKey->pubKey.key);
-      rsa_release_private_key(&tpm_signature_key);
+      tpm_rsa_release_private_key(&tpm_signature_key);
       return TPM_ENCRYPT_ERROR;
   }
   tpm_free(store.privKey.key);
@@ -311,7 +311,7 @@ TPM_RESULT TPM_MakeIdentity(
     default:
       tpm_free(idKey->encData);
       tpm_free(idKey->pubKey.key);
-      rsa_release_private_key(&tpm_signature_key);
+      tpm_rsa_release_private_key(&tpm_signature_key);
       return TPM_BAD_KEY_PROPERTY;
   }
   idContents.identityPubKey.pubKey.keyLength = key_length >> 3;
@@ -320,17 +320,17 @@ TPM_RESULT TPM_MakeIdentity(
   if (idContents.identityPubKey.pubKey.key == NULL) {
     tpm_free(idKey->encData);
     tpm_free(idKey->pubKey.key);
-    rsa_release_private_key(&tpm_signature_key);
+    tpm_rsa_release_private_key(&tpm_signature_key);
     return TPM_NOSPACE;
   }
-  rsa_export_modulus(&tpm_signature_key, idContents.identityPubKey.pubKey.key, NULL);
+  tpm_rsa_export_modulus(&tpm_signature_key, idContents.identityPubKey.pubKey.key, NULL);
   len = sizeof_TPM_IDENTITY_CONTENTS((idContents));
   buf = ptr = tpm_malloc(len);
   if (buf == NULL) {
     tpm_free(idContents.identityPubKey.pubKey.key);
     tpm_free(idKey->encData);
     tpm_free(idKey->pubKey.key);
-    rsa_release_private_key(&tpm_signature_key);
+    tpm_rsa_release_private_key(&tpm_signature_key);
     return TPM_NOSPACE;
   }
   if (tpm_marshal_TPM_IDENTITY_CONTENTS(&ptr, &len, &idContents)) {
@@ -339,7 +339,7 @@ TPM_RESULT TPM_MakeIdentity(
     tpm_free(idContents.identityPubKey.pubKey.key);
     tpm_free(idKey->encData);
     tpm_free(idKey->pubKey.key);
-    rsa_release_private_key(&tpm_signature_key);
+    tpm_rsa_release_private_key(&tpm_signature_key);
     return TPM_FAIL;
   }
   /* 18. Sign idContents using tpm_signature_key and 
@@ -351,23 +351,23 @@ TPM_RESULT TPM_MakeIdentity(
     tpm_free(idContents.identityPubKey.pubKey.key);
     tpm_free(idKey->encData);
     tpm_free(idKey->pubKey.key);
-    rsa_release_private_key(&tpm_signature_key);
+    tpm_rsa_release_private_key(&tpm_signature_key);
     return TPM_NOSPACE;
   }
-  if (rsa_sign(&tpm_signature_key, RSA_SSA_PKCS1_SHA1, buf, 
+  if (tpm_rsa_sign(&tpm_signature_key, RSA_SSA_PKCS1_SHA1, buf, 
     sizeof_TPM_IDENTITY_CONTENTS((idContents)), *identityBinding)) {
-      debug("TPM_MakeIdentity(): rsa_sign() failed.");
+      debug("TPM_MakeIdentity(): tpm_rsa_sign() failed.");
       tpm_free(*identityBinding);
       tpm_free(buf);
       tpm_free(idContents.identityPubKey.pubKey.key);
       tpm_free(idKey->encData);
       tpm_free(idKey->pubKey.key);
-      rsa_release_private_key(&tpm_signature_key);
+      tpm_rsa_release_private_key(&tpm_signature_key);
       return TPM_FAIL;
   }
   tpm_free(buf);
   tpm_free(idContents.identityPubKey.pubKey.key);
-  rsa_release_private_key(&tpm_signature_key);
+  tpm_rsa_release_private_key(&tpm_signature_key);
   
   return TPM_SUCCESS;
 }
@@ -431,7 +431,7 @@ TPM_RESULT TPM_ActivateIdentity(
   pubKey.pubKey.key = tpm_malloc(pubKey.pubKey.keyLength);
   if (pubKey.pubKey.key == NULL)
     return TPM_NOSPACE;
-  rsa_export_modulus(&idKey->key, pubKey.pubKey.key, NULL);
+  tpm_rsa_export_modulus(&idKey->key, pubKey.pubKey.key, NULL);
   if (tpm_setup_key_parms(idKey, &pubKey.algorithmParms) != 0) {
     debug("TPM_ActivateIdentity(): tpm_setup_key_parms() failed.");
     tpm_free(pubKey.pubKey.key);
@@ -452,7 +452,7 @@ TPM_RESULT TPM_ActivateIdentity(
     tpm_free(pubKey.pubKey.key);
     return TPM_NOSPACE;
   }
-  if (rsa_decrypt(&tpmData.permanent.data.endorsementKey, RSA_ES_OAEP_SHA1, 
+  if (tpm_rsa_decrypt(&tpmData.permanent.data.endorsementKey, RSA_ES_OAEP_SHA1, 
     blob, blobSize, B1, &sizeB1)) {
       tpm_free(pubKey.pubKey.key);
       tpm_free(B1);

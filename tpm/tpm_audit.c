@@ -33,7 +33,7 @@
 
 void tpm_audit_request(TPM_COMMAND_CODE ordinal, TPM_REQUEST *req)
 {
-  sha1_ctx_t sha1_ctx;
+  tpm_sha1_ctx_t sha1_ctx;
   BYTE buf[sizeof_TPM_AUDIT_EVENT_IN(x)], *ptr;
   UINT32 len;
   TPM_COMMAND_CODE ord = ordinal & TPM_ORD_INDEX_MASK;
@@ -49,23 +49,23 @@ void tpm_audit_request(TPM_COMMAND_CODE ordinal, TPM_REQUEST *req)
     ptr = buf; len = sizeof(buf);
     tpm_marshal_TPM_TAG(&ptr, &len, TPM_TAG_AUDIT_EVENT_IN);
     tpm_marshal_TPM_COMMAND_CODE(&ptr, &len, ordinal);
-    sha1_init(&sha1_ctx);
-    sha1_update(&sha1_ctx, req->param, req->paramSize);
-    sha1_final(&sha1_ctx, ptr);
+    tpm_sha1_init(&sha1_ctx);
+    tpm_sha1_update(&sha1_ctx, req->param, req->paramSize);
+    tpm_sha1_final(&sha1_ctx, ptr);
     ptr += 20; len -= 20;
     tpm_marshal_TPM_TAG(&ptr, &len, TPM_TAG_COUNTER_VALUE);
     tpm_marshal_UINT32(&ptr, &len, 0);
     tpm_marshal_UINT32(&ptr, &len, tpmData.permanent.data.auditMonotonicCounter);
-    sha1_init(&sha1_ctx);
-    sha1_update(&sha1_ctx, tpmData.stany.data.auditDigest.digest, sizeof(TPM_DIGEST));
-    sha1_update(&sha1_ctx, buf, sizeof(buf));
-    sha1_final(&sha1_ctx, tpmData.stany.data.auditDigest.digest);
+    tpm_sha1_init(&sha1_ctx);
+    tpm_sha1_update(&sha1_ctx, tpmData.stany.data.auditDigest.digest, sizeof(TPM_DIGEST));
+    tpm_sha1_update(&sha1_ctx, buf, sizeof(buf));
+    tpm_sha1_final(&sha1_ctx, tpmData.stany.data.auditDigest.digest);
   }
 }
 
 void tpm_audit_response(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
 {
-  sha1_ctx_t sha1_ctx;
+  tpm_sha1_ctx_t sha1_ctx;
   BYTE buf[sizeof_TPM_AUDIT_EVENT_OUT()], *ptr;
   UINT32 len;
   TPM_COMMAND_CODE ord = ordinal & TPM_ORD_INDEX_MASK;
@@ -76,18 +76,18 @@ void tpm_audit_response(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
     ptr = buf; len = sizeof(buf);
     tpm_marshal_TPM_TAG(&ptr, &len, TPM_TAG_AUDIT_EVENT_OUT);
     tpm_marshal_TPM_COMMAND_CODE(&ptr, &len, ordinal);
-    sha1_init(&sha1_ctx);
-    sha1_update(&sha1_ctx, rsp->param, rsp->paramSize);
-    sha1_final(&sha1_ctx, ptr);
+    tpm_sha1_init(&sha1_ctx);
+    tpm_sha1_update(&sha1_ctx, rsp->param, rsp->paramSize);
+    tpm_sha1_final(&sha1_ctx, ptr);
     ptr += 20; len -= 20;
     tpm_marshal_TPM_TAG(&ptr, &len, TPM_TAG_COUNTER_VALUE);
     tpm_marshal_UINT32(&ptr, &len, 0);
     tpm_marshal_UINT32(&ptr, &len, tpmData.permanent.data.auditMonotonicCounter);
     tpm_marshal_TPM_RESULT(&ptr, &len, rsp->result);
-    sha1_init(&sha1_ctx);
-    sha1_update(&sha1_ctx, tpmData.stany.data.auditDigest.digest, sizeof(TPM_DIGEST));
-    sha1_update(&sha1_ctx, buf, sizeof(buf));
-    sha1_final(&sha1_ctx, tpmData.stany.data.auditDigest.digest);
+    tpm_sha1_init(&sha1_ctx);
+    tpm_sha1_update(&sha1_ctx, tpmData.stany.data.auditDigest.digest, sizeof(TPM_DIGEST));
+    tpm_sha1_update(&sha1_ctx, buf, sizeof(buf));
+    tpm_sha1_final(&sha1_ctx, tpmData.stany.data.auditDigest.digest);
   }
 }
 

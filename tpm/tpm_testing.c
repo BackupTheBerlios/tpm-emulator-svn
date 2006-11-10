@@ -87,7 +87,7 @@ static int tpm_test_prng(void)
 
 static int tpm_test_sha1(void)
 {
-  sha1_ctx_t ctx;
+  tpm_sha1_ctx_t ctx;
   BYTE digest[SHA1_DIGEST_LENGTH];
   unsigned int i, j;
   /* test cases for SHA-1 given in FIPS PUB 180-1 */
@@ -109,10 +109,10 @@ static int tpm_test_sha1(void)
 
   debug("tpm_test_sha1()");
   for (i = 0; i < sizeof(test_cases) / sizeof(test_cases[0]); i++) {
-    sha1_init(&ctx);
+    tpm_sha1_init(&ctx);
     for (j = 0; j < test_cases[i].repetitions; j++)
-      sha1_update(&ctx, test_cases[i].data, strlen(test_cases[i].data));
-    sha1_final(&ctx, digest);
+      tpm_sha1_update(&ctx, test_cases[i].data, strlen(test_cases[i].data));
+    tpm_sha1_final(&ctx, digest);
     if (memcmp(digest, test_cases[i].digest, SHA1_DIGEST_LENGTH) != 0) return -1;
   }
   return 0;
@@ -120,12 +120,14 @@ static int tpm_test_sha1(void)
 
 static int tpm_test_hmac(void)
 {
-  hmac_ctx_t ctx;
+  tpm_hmac_ctx_t ctx;
   uint8_t digest[SHA1_DIGEST_LENGTH];
   unsigned int i, j;
   /* test cases for HMAC-SHA-1 given in RFC 2202 */
   struct {
-    const uint8_t *key, key_len, *data, data_len, *digest;
+    const uint8_t *key; uint8_t key_len;
+    const uint8_t *data; uint8_t data_len;
+    const uint8_t *digest;
   } test_cases[] = {{
     "\x0b", 20, "Hi There", 8,
     "\xb6\x17\x31\x86\x55\x05\x72\x64\xe2\x8b\xc0\xb6\xfb\x37\x8c\x8e\xf1\x46\xbe\x00"
@@ -156,14 +158,14 @@ static int tpm_test_hmac(void)
     if (strlen(test_cases[i].key) < test_cases[i].key_len) {
       uint8_t key[test_cases[i].key_len];
       memset(key, test_cases[i].key[0], test_cases[i].key_len);
-      hmac_init(&ctx, key, test_cases[i].key_len);
+      tpm_hmac_init(&ctx, key, test_cases[i].key_len);
     } else {
-      hmac_init(&ctx, test_cases[i].key, test_cases[i].key_len);
+      tpm_hmac_init(&ctx, test_cases[i].key, test_cases[i].key_len);
     }
     for (j = 0; j < test_cases[i].data_len; j += strlen(test_cases[i].data)) {
-      hmac_update(&ctx, test_cases[i].data, strlen(test_cases[i].data));
+      tpm_hmac_update(&ctx, test_cases[i].data, strlen(test_cases[i].data));
     }
-    hmac_final(&ctx, digest);
+    tpm_hmac_final(&ctx, digest);
     if (memcmp(digest, test_cases[i].digest, SHA1_DIGEST_LENGTH) != 0) return -1;
   }
   return 0;
@@ -175,15 +177,15 @@ static int tpm_test_rsa_EK(void)
   const char *data = "RSA PKCS #1 v1.5 Test-String";
   uint8_t buf[256];
   size_t buf_len, data_len = strlen(data);
-  rsa_private_key_t priv_key;
-  rsa_public_key_t pub_key;
+  tpm_rsa_private_key_t priv_key;
+  tpm_rsa_public_key_t pub_key;
 
   debug("tpm_test_rsa_EK()");
   /* generate and test key-pair */
-  debug("rsa_generate_key()");
-  res = rsa_generate_key(&priv_key, 512);
+  debug("tpm_rsa_generate_key()");
+  res = tpm_rsa_generate_key(&priv_key, 512);
   if (res) return res;
-  rsa_release_private_key(&priv_key);
+  tpm_rsa_release_private_key(&priv_key);
   /* test endorsement key */
   debug("testing endorsement key");
   do {
@@ -191,43 +193,43 @@ static int tpm_test_rsa_EK(void)
     if (!priv_key.size) return 0;
     RSA_EXTRACT_PUBLIC_KEY(priv_key, pub_key);
     /* test sign and verify functions */
-    debug("rsa_sign(RSA_SSA_PKCS1_SHA1)");
-    res = rsa_sign(&priv_key, RSA_SSA_PKCS1_SHA1, data, data_len, buf);
+    debug("tpm_rsa_sign(RSA_SSA_PKCS1_SHA1)");
+    res = tpm_rsa_sign(&priv_key, RSA_SSA_PKCS1_SHA1, data, data_len, buf);
     if (res) break;
-    debug("rsa_verify(RSA_SSA_PKCS1_SHA1)");
-    res = rsa_verify(&pub_key, RSA_SSA_PKCS1_SHA1, data, data_len, buf);
+    debug("tpm_rsa_verify(RSA_SSA_PKCS1_SHA1)");
+    res = tpm_rsa_verify(&pub_key, RSA_SSA_PKCS1_SHA1, data, data_len, buf);
     if (res) break;
-    debug("rsa_sign(RSA_SSA_PKCS1_DER)");
-    res = rsa_sign(&priv_key, RSA_SSA_PKCS1_DER, data, data_len, buf);
+    debug("tpm_rsa_sign(RSA_SSA_PKCS1_DER)");
+    res = tpm_rsa_sign(&priv_key, RSA_SSA_PKCS1_DER, data, data_len, buf);
     if (res) break;
-    debug("rsa_verify(RSA_SSA_PKCS1_DER)");
-    res = rsa_verify(&pub_key, RSA_SSA_PKCS1_DER, data, data_len, buf);
+    debug("tpm_rsa_verify(RSA_SSA_PKCS1_DER)");
+    res = tpm_rsa_verify(&pub_key, RSA_SSA_PKCS1_DER, data, data_len, buf);
     if (res) break;
     /* test encryption and decryption */
-    debug("rsa_encrypt(RSA_ES_PKCSV15)");
-    res = rsa_encrypt(&pub_key, RSA_ES_PKCSV15,
+    debug("tpm_rsa_encrypt(RSA_ES_PKCSV15)");
+    res = tpm_rsa_encrypt(&pub_key, RSA_ES_PKCSV15,
       data, data_len, buf, &buf_len);
     if (res) break;
-    debug("rsa_decrypt(RSA_ES_PKCSV15)");
-    res = rsa_decrypt(&priv_key, RSA_ES_PKCSV15,
+    debug("tpm_rsa_decrypt(RSA_ES_PKCSV15)");
+    res = tpm_rsa_decrypt(&priv_key, RSA_ES_PKCSV15,
       buf, buf_len, buf, &buf_len);
     if (res) break;
     debug("verify plain text");
     res = !((buf_len == data_len) && !memcmp(buf, data, buf_len));
     if (res) break;
-    debug("rsa_encrypt(RSA_ES_OAEP_SHA1)");
-    res = rsa_encrypt(&pub_key, RSA_ES_OAEP_SHA1,
+    debug("tpm_rsa_encrypt(RSA_ES_OAEP_SHA1)");
+    res = tpm_rsa_encrypt(&pub_key, RSA_ES_OAEP_SHA1,
       data, data_len/2, buf, &buf_len);
     if (res) break;
-    debug("rsa_decrypt(RSA_ES_OAEP_SHA1)");
-    res = rsa_decrypt(&priv_key, RSA_ES_OAEP_SHA1,
+    debug("tpm_rsa_decrypt(RSA_ES_OAEP_SHA1)");
+    res = tpm_rsa_decrypt(&priv_key, RSA_ES_OAEP_SHA1,
       buf, buf_len, buf, &buf_len);
     if (res) break;
     debug("verify plain text");
     res = !(buf_len == data_len/2 && !memcmp(buf, data, buf_len));
   } while (0);
   /* release public key and exit */
-  rsa_release_public_key(&pub_key);
+  tpm_rsa_release_public_key(&pub_key);
   return res;
 }
 

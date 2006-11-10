@@ -17,7 +17,7 @@
 #include "rsa.h"
 #include "sha1.h"
 
-static int rsa_public(rsa_public_key_t *key, 
+static int rsa_public(tpm_rsa_public_key_t *key, 
                       const uint8_t *in, size_t in_len, uint8_t *out)
 {
   size_t t;
@@ -42,7 +42,7 @@ static int rsa_public(rsa_public_key_t *key,
   return 0;
 }
 
-static int rsa_private(rsa_private_key_t *key,
+static int rsa_private(tpm_rsa_private_key_t *key,
                        const uint8_t *in, size_t in_len, uint8_t *out)
 {
   size_t t;
@@ -92,7 +92,7 @@ static int rsa_private(rsa_private_key_t *key,
   return 0;
 }
 
-static int rsa_test_key(rsa_private_key_t *key)
+static int rsa_test_key(tpm_rsa_private_key_t *key)
 {
   mpz_t a, b, t;
   int res = 0;
@@ -113,10 +113,10 @@ static int rsa_test_key(rsa_private_key_t *key)
   return res;
 }
 
-int rsa_import_key(rsa_private_key_t *key, int endian,
-                   const uint8_t *n, size_t n_len,
-                   const uint8_t *e, size_t e_len,
-                   const uint8_t *p, const uint8_t *q)
+int tpm_rsa_import_key(tpm_rsa_private_key_t *key, int endian,
+                       const uint8_t *n, size_t n_len,
+                       const uint8_t *e, size_t e_len,
+                       const uint8_t *p, const uint8_t *q)
 {
   mpz_t t1, t2, phi;
   if (n == NULL || n_len == 0 || (p == NULL && q == NULL)) return -1;
@@ -156,13 +156,13 @@ int rsa_import_key(rsa_private_key_t *key, int endian,
   mpz_clear(phi);
   /* test key */
   if (rsa_test_key(key) != 0) {
-    rsa_release_private_key(key);
+    tpm_rsa_release_private_key(key);
     return -1;
   }
   return 0;
 }
 
-void rsa_copy_key(rsa_private_key_t *dst, rsa_private_key_t *src)
+void tpm_rsa_copy_key(tpm_rsa_private_key_t *dst, tpm_rsa_private_key_t *src)
 {
   mpz_init_set(dst->n, src->n);
   mpz_init_set(dst->e, src->n);
@@ -173,9 +173,9 @@ void rsa_copy_key(rsa_private_key_t *dst, rsa_private_key_t *src)
   dst->size = src->size;
 }
 
-int rsa_import_public_key(rsa_public_key_t *key, int endian,
-                          const uint8_t *n, size_t n_len,
-                          const uint8_t *e, size_t e_len)
+int tpm_rsa_import_public_key(tpm_rsa_public_key_t *key, int endian,
+                              const uint8_t *n, size_t n_len,
+                              const uint8_t *e, size_t e_len)
 {
   if (n == NULL || n_len == 0) return -1;
   /* init key */
@@ -200,7 +200,7 @@ static void rsa_mpz_random(mpz_t a, size_t nbits)
   mpz_import(a, size, 1, 1, 0, 0, buf);
 }
 
-int rsa_generate_key(rsa_private_key_t *key, uint16_t key_size)
+int tpm_rsa_generate_key(tpm_rsa_private_key_t *key, uint16_t key_size)
 {
   mpz_t e, p, q, n, t1, t2, phi, d, u;
 
@@ -266,13 +266,13 @@ int rsa_generate_key(rsa_private_key_t *key, uint16_t key_size)
   mpz_clear(u);
   /* test key */
   if (rsa_test_key(key) != 0) {
-    rsa_release_private_key(key);
+    tpm_rsa_release_private_key(key);
     return -1;
   }
   return 0;
 }
 
-void rsa_release_private_key(rsa_private_key_t *key)
+void tpm_rsa_release_private_key(tpm_rsa_private_key_t *key)
 {
   mpz_clear(key->n);
   mpz_clear(key->e);
@@ -283,49 +283,49 @@ void rsa_release_private_key(rsa_private_key_t *key)
   memset(key, 0, sizeof(*key));
 }
 
-void rsa_release_public_key(rsa_public_key_t *key)
+void tpm_rsa_release_public_key(tpm_rsa_public_key_t *key)
 {
   mpz_clear(key->n);
   mpz_clear(key->e);
   memset(key, 0, sizeof(*key));
 }
 
-void rsa_export_modulus(rsa_private_key_t *key, 
-                        uint8_t *modulus, size_t *length)
+void tpm_rsa_export_modulus(tpm_rsa_private_key_t *key, 
+                            uint8_t *modulus, size_t *length)
 {
   mpz_export(modulus, length, 1 , 1, 0, 0, key->n);
 }
 
-void rsa_export_exponent(rsa_private_key_t *key, 
-                         uint8_t *exponent, size_t *length)
+void tpm_rsa_export_exponent(tpm_rsa_private_key_t *key, 
+                             uint8_t *exponent, size_t *length)
 {
   mpz_export(exponent, length, 1 , 1, 0, 0, key->e);
 }
 
-void rsa_export_prime1(rsa_private_key_t *key, 
-                       uint8_t *prime, size_t *length)
+void tpm_rsa_export_prime1(tpm_rsa_private_key_t *key, 
+                           uint8_t *prime, size_t *length)
 {
   mpz_export(prime, length, 1 , 1, 0, 0, key->p);
 }
 
-void rsa_export_prime2(rsa_private_key_t *key, 
-                       uint8_t *prime, size_t *length)
+void tpm_rsa_export_prime2(tpm_rsa_private_key_t *key, 
+                           uint8_t *prime, size_t *length)
 {
   mpz_export(prime, length, 1 , 1, 0, 0, key->q);
 }
 
-void mask_generation(const uint8_t *seed, size_t seed_len, 
-                     uint8_t *data, size_t data_len)
+void tpm_rsa_mask_generation(const uint8_t *seed, size_t seed_len, 
+                             uint8_t *data, size_t data_len)
 {
-  sha1_ctx_t ctx;
+  tpm_sha1_ctx_t ctx;
   uint8_t mask[SHA1_DIGEST_LENGTH];
   uint32_t i, len, counter = 0;
   
   while (data_len > 0) {
-    sha1_init(&ctx);
-    sha1_update(&ctx, seed, seed_len);
-    sha1_update(&ctx, (uint8_t*)&counter, 4);
-    sha1_final(&ctx, mask);
+    tpm_sha1_init(&ctx);
+    tpm_sha1_update(&ctx, seed, seed_len);
+    tpm_sha1_update(&ctx, (uint8_t*)&counter, 4);
+    tpm_sha1_final(&ctx, mask);
     counter = CPU_TO_BE32(BE32_TO_CPU(counter) + 1);
     len = (data_len < SHA1_DIGEST_LENGTH) ? data_len : SHA1_DIGEST_LENGTH;
     for (i = 0; i < len; i++) *data++ ^= mask[i];
@@ -337,7 +337,7 @@ static int encode_message(int type, const uint8_t *data, size_t data_len,
                           uint8_t *msg, size_t msg_len)
 {
   size_t i;
-  sha1_ctx_t ctx;
+  tpm_sha1_ctx_t ctx;
 
   /* encode message according to type */
   switch (type) {
@@ -349,9 +349,9 @@ static int encode_message(int type, const uint8_t *data, size_t data_len,
       msg[msg_len - 36] = 0x00;
       memcpy(&msg[msg_len - 35], "\x30\x21\x30\x09\x06\x05\x2b"
         "\x0e\x03\x02\x1a\x05\x00\x04\x14", 15);
-      sha1_init(&ctx);
-      sha1_update(&ctx, data, data_len);
-      sha1_final(&ctx, &msg[msg_len - 20]);
+      tpm_sha1_init(&ctx);
+      tpm_sha1_update(&ctx, data, data_len);
+      tpm_sha1_final(&ctx, &msg[msg_len - 20]);
       break;
     case RSA_SSA_PKCS1_SHA1_RAW:
       /* EM = 0x00||0x01||0xff-pad||0x00||SHA-1 DER header||SHA-1 digest */
@@ -390,16 +390,16 @@ static int encode_message(int type, const uint8_t *data, size_t data_len,
       if (msg_len < data_len + 2 * SHA1_DIGEST_LENGTH + 2) return -1;
       msg[0] = 0x00;
       tpm_get_random_bytes(&msg[1], SHA1_DIGEST_LENGTH);
-      sha1_init(&ctx);
-      sha1_update(&ctx, "TCPA", 4);
-      sha1_final(&ctx, &msg[1 + SHA1_DIGEST_LENGTH]);
+      tpm_sha1_init(&ctx);
+      tpm_sha1_update(&ctx, "TCPA", 4);
+      tpm_sha1_final(&ctx, &msg[1 + SHA1_DIGEST_LENGTH]);
       memset(&msg[1 + 2 * SHA1_DIGEST_LENGTH], 0x00, 
         msg_len - data_len - 2 * SHA1_DIGEST_LENGTH - 2);
       msg[msg_len - data_len - 1] = 0x01;
       memcpy(&msg[msg_len - data_len], data, data_len);
-      mask_generation(&msg[1], SHA1_DIGEST_LENGTH, 
+      tpm_rsa_mask_generation(&msg[1], SHA1_DIGEST_LENGTH, 
         &msg[1 + SHA1_DIGEST_LENGTH], msg_len - SHA1_DIGEST_LENGTH - 1);
-      mask_generation(&msg[1 + SHA1_DIGEST_LENGTH], 
+      tpm_rsa_mask_generation(&msg[1 + SHA1_DIGEST_LENGTH], 
         msg_len - SHA1_DIGEST_LENGTH - 1, &msg[1], SHA1_DIGEST_LENGTH);
       break; 
     default:
@@ -413,7 +413,7 @@ static int decode_message(int type, uint8_t *msg, size_t msg_len,
                           uint8_t *data, size_t *data_len)
 {
   size_t i;
-  sha1_ctx_t ctx;
+  tpm_sha1_ctx_t ctx;
 
   /* decode message according to type */
   switch (type) {
@@ -434,13 +434,13 @@ static int decode_message(int type, uint8_t *msg, size_t msg_len,
          EM = 0x00||masked-seed||masked-DB */
       if (msg_len < 2 + 2 * SHA1_DIGEST_LENGTH) return -1;
       if (msg[0] != 0x00) return -1;
-      mask_generation(&msg[1 + SHA1_DIGEST_LENGTH],
+      tpm_rsa_mask_generation(&msg[1 + SHA1_DIGEST_LENGTH],
         msg_len - SHA1_DIGEST_LENGTH - 1, &msg[1], SHA1_DIGEST_LENGTH);
-      mask_generation(&msg[1], SHA1_DIGEST_LENGTH,
+      tpm_rsa_mask_generation(&msg[1], SHA1_DIGEST_LENGTH,
         &msg[1 + SHA1_DIGEST_LENGTH], msg_len - SHA1_DIGEST_LENGTH - 1);
-      sha1_init(&ctx);
-      sha1_update(&ctx, "TCPA", 4);
-      sha1_final(&ctx, &msg[1]);
+      tpm_sha1_init(&ctx);
+      tpm_sha1_update(&ctx, "TCPA", 4);
+      tpm_sha1_final(&ctx, &msg[1]);
       if (memcmp(&msg[1], &msg[1 + SHA1_DIGEST_LENGTH], 
           SHA1_DIGEST_LENGTH) != 0) return -1;
       for (i = 1 + 2 * SHA1_DIGEST_LENGTH; i < msg_len && !msg[i]; i++);
@@ -455,8 +455,8 @@ static int decode_message(int type, uint8_t *msg, size_t msg_len,
   return 0;
 }
 
-int rsa_sign(rsa_private_key_t *key, int type, 
-             const uint8_t *data, size_t data_len, uint8_t *sig)
+int tpm_rsa_sign(tpm_rsa_private_key_t *key, int type, 
+                 const uint8_t *data, size_t data_len, uint8_t *sig)
 {
   size_t sig_len = key->size >> 3;
 
@@ -467,8 +467,8 @@ int rsa_sign(rsa_private_key_t *key, int type,
   return 0;
 }
 
-int rsa_verify(rsa_public_key_t *key, int type,
-               const uint8_t *data, size_t data_len, uint8_t *sig)
+int tpm_rsa_verify(tpm_rsa_public_key_t *key, int type,
+                   const uint8_t *data, size_t data_len, uint8_t *sig)
 {
   size_t sig_len = key->size >> 3;
   uint8_t msg_a[sig_len];
@@ -482,8 +482,9 @@ int rsa_verify(rsa_public_key_t *key, int type,
   return (memcmp(msg_a, msg_b, sig_len) == 0) ? 0 : 1;
 }
 
-int rsa_decrypt(rsa_private_key_t *key, int type,
-                const uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len)
+int tpm_rsa_decrypt(tpm_rsa_private_key_t *key, int type,
+                    const uint8_t *in, size_t in_len,
+                    uint8_t *out, size_t *out_len)
 {
   *out_len = key->size >> 3;
   if (in_len != *out_len || in_len < 11) return -1;
@@ -494,8 +495,9 @@ int rsa_decrypt(rsa_private_key_t *key, int type,
   return 0;
 }
 
-int rsa_encrypt(rsa_public_key_t *key, int type,
-                const uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len)
+int tpm_rsa_encrypt(tpm_rsa_public_key_t *key, int type,
+                    const uint8_t *in, size_t in_len,
+                    uint8_t *out, size_t *out_len)
 {
   *out_len = key->size >> 3;
   /* encode message */

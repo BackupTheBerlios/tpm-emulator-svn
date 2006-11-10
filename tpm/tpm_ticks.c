@@ -84,7 +84,7 @@ TPM_RESULT TPM_TickStampBlob(TPM_KEY_HANDLE keyHandle, TPM_NONCE *antiReplay,
   memcpy(ptr, digestToStamp->digest, sizeof(TPM_DIGEST));
   ptr += sizeof(TPM_DIGEST); len -= sizeof(TPM_DIGEST);
   if (tpm_marshal_TPM_CURRENT_TICKS(&ptr, &len, currentTicks)
-      || rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, info, info_length, *sig)) {
+      || tpm_rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, info, info_length, *sig)) {
     tpm_free(*sig);
     tpm_free(info);
     return TPM_FAIL;

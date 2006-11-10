@@ -39,6 +39,7 @@ static inline void init_pcr_attr(int pcr, BOOL reset, BYTE rl, BYTE el)
 
 void tpm_init_data(void)
 {
+#ifndef TPM_GENERATE_EK
   /* endorsement key */
   uint8_t ek_n[] =  "\xa8\xdb\xa9\x42\xa8\xf3\xb8\x06\x85\x90\x76\x93\xad\xf7"
     "\x74\xec\x3f\xd3\x3d\x9d\xe8\x2e\xff\x15\xed\x0e\xce\x5f\x93"
@@ -77,6 +78,7 @@ void tpm_init_data(void)
     "\xd1\xc0\x8b\x5b\xa2\x2e\xa7\x15\xca\x50\x75\x10\x48\x9c\x2b"
     "\x18\xb9\x67\x8f\x5d\x64\xc3\x28\x9f\x2f\x16\x2f\x08\xda\x47"
     "\xec\x86\x43\x0c\x80\x99\x07\x34\x0f";
+#endif
   int i;
   /* reset all data to NULL, FALSE or 0 */
   memset(&tpmData, 0, sizeof(tpmData));
@@ -117,10 +119,10 @@ void tpm_init_data(void)
 */
 #ifdef TPM_GENERATE_EK
   /* generate a new endorsement key */
-  rsa_generate_key(&tpmData.permanent.data.endorsementKey, 2048);
+  tpm_rsa_generate_key(&tpmData.permanent.data.endorsementKey, 2048);
 #else
   /* setup endorsement key */
-  rsa_import_key(&tpmData.permanent.data.endorsementKey, 
+  tpm_rsa_import_key(&tpmData.permanent.data.endorsementKey, 
     RSA_MSB_FIRST, ek_n, 256, ek_e, 3, ek_p, ek_q);
 #endif
 #ifdef TPM_GENERATE_SEED_DAA
@@ -142,12 +144,12 @@ void tpm_release_data(void)
   unsigned int i;
   /* release the EK, SRK as well as all other rsa keys */
   if (tpmData.permanent.data.endorsementKey.size > 0)
-    rsa_release_private_key(&tpmData.permanent.data.endorsementKey);
+    tpm_rsa_release_private_key(&tpmData.permanent.data.endorsementKey);
   if (tpmData.permanent.data.srk.valid)
-    rsa_release_private_key(&tpmData.permanent.data.srk.key);
+    tpm_rsa_release_private_key(&tpmData.permanent.data.srk.key);
   for (i = 0; i < TPM_MAX_KEYS; i++)
     if (tpmData.permanent.data.keys[i].valid)
-      rsa_release_private_key(&tpmData.permanent.data.keys[i].key);
+      tpm_rsa_release_private_key(&tpmData.permanent.data.keys[i].key);
 }
 
 int tpm_store_permanent_data(void)

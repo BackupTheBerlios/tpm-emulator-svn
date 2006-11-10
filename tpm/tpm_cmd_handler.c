@@ -85,34 +85,34 @@ UINT32 tpm_get_out_param_offset(TPM_COMMAND_CODE ordinal)
   
 void tpm_compute_in_param_digest(TPM_REQUEST *req)
 {
-  sha1_ctx_t sha1;
+  tpm_sha1_ctx_t sha1;
   UINT32 offset = tpm_get_in_param_offset(req->ordinal);
   UINT32 ord = CPU_TO_BE32(req->ordinal);
 
   /* compute SHA1 hash */
   if (offset <= req->paramSize) {
-    sha1_init(&sha1);
-    sha1_update(&sha1, (BYTE*)&ord, 4);
+    tpm_sha1_init(&sha1);
+    tpm_sha1_update(&sha1, (BYTE*)&ord, 4);
     /* skip all handles at the beginning */
-    sha1_update(&sha1, req->param + offset, req->paramSize - offset);
-    sha1_final(&sha1, req->auth1.digest);
+    tpm_sha1_update(&sha1, req->param + offset, req->paramSize - offset);
+    tpm_sha1_final(&sha1, req->auth1.digest);
     memcpy(req->auth2.digest, req->auth1.digest, sizeof(req->auth1.digest));
   }
 }
 
 void tpm_compute_out_param_digest(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
 {
-  sha1_ctx_t sha1;
+  tpm_sha1_ctx_t sha1;
   UINT32 offset = tpm_get_out_param_offset(ordinal);
   UINT32 res = CPU_TO_BE32(rsp->result);
   UINT32 ord = CPU_TO_BE32(ordinal);
 
   /* compute SHA1 hash */
-  sha1_init(&sha1);
-  sha1_update(&sha1, (BYTE*)&res, 4);
-  sha1_update(&sha1, (BYTE*)&ord, 4);
-  sha1_update(&sha1, rsp->param + offset, rsp->paramSize - offset);
-  sha1_final(&sha1, rsp->auth1->digest);
+  tpm_sha1_init(&sha1);
+  tpm_sha1_update(&sha1, (BYTE*)&res, 4);
+  tpm_sha1_update(&sha1, (BYTE*)&ord, 4);
+  tpm_sha1_update(&sha1, rsp->param + offset, rsp->paramSize - offset);
+  tpm_sha1_final(&sha1, rsp->auth1->digest);
   if (rsp->auth2 != NULL) memcpy(rsp->auth2->digest, 
     rsp->auth1->digest, sizeof(rsp->auth1->digest));
 }
@@ -3325,7 +3325,7 @@ static TPM_RESULT execute_TPM_OwnerReadPubek(TPM_REQUEST *req, TPM_RESPONSE *rsp
 
 static void tpm_setup_rsp_auth(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp) 
 {
-  hmac_ctx_t hmac;
+  tpm_hmac_ctx_t hmac;
 
   /* compute parameter digest */
   if (ordinal != TPM_ORD_ExecuteTransport)
@@ -3333,35 +3333,35 @@ static void tpm_setup_rsp_auth(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
   /* compute authorization values */
   switch (rsp->tag) {
     case TPM_TAG_RSP_AUTH2_COMMAND:
-      hmac_init(&hmac, *rsp->auth2->secret, sizeof(*rsp->auth2->secret));
-      hmac_update(&hmac, rsp->auth2->digest, sizeof(rsp->auth2->digest));
+      tpm_hmac_init(&hmac, *rsp->auth2->secret, sizeof(*rsp->auth2->secret));
+      tpm_hmac_update(&hmac, rsp->auth2->digest, sizeof(rsp->auth2->digest));
 #if 0
       if (tpm_get_auth(rsp->auth2->authHandle)->type == TPM_ST_OIAP) {
         UINT32 handle = CPU_TO_BE32(rsp->auth2->authHandle);
-        hmac_update(&hmac, (BYTE*)&handle, 4);
+        tpm_hmac_update(&hmac, (BYTE*)&handle, 4);
       }
 #endif
-      hmac_update(&hmac, rsp->auth2->nonceEven.nonce, 
+      tpm_hmac_update(&hmac, rsp->auth2->nonceEven.nonce, 
                   sizeof(rsp->auth2->nonceEven.nonce));
-      hmac_update(&hmac, rsp->auth2->nonceOdd.nonce, 
+      tpm_hmac_update(&hmac, rsp->auth2->nonceOdd.nonce, 
                   sizeof(rsp->auth2->nonceOdd.nonce));
-      hmac_update(&hmac, (BYTE*)&rsp->auth2->continueAuthSession, 1);
-      hmac_final(&hmac, rsp->auth2->auth);
+      tpm_hmac_update(&hmac, (BYTE*)&rsp->auth2->continueAuthSession, 1);
+      tpm_hmac_final(&hmac, rsp->auth2->auth);
     case TPM_TAG_RSP_AUTH1_COMMAND:
-      hmac_init(&hmac, *rsp->auth1->secret, sizeof(*rsp->auth1->secret));
-      hmac_update(&hmac, rsp->auth1->digest, sizeof(rsp->auth1->digest));
+      tpm_hmac_init(&hmac, *rsp->auth1->secret, sizeof(*rsp->auth1->secret));
+      tpm_hmac_update(&hmac, rsp->auth1->digest, sizeof(rsp->auth1->digest));
 #if 0
       if (tpm_get_auth(rsp->auth1->authHandle)->type == TPM_ST_OIAP) {
         UINT32 handle = CPU_TO_BE32(rsp->auth1->authHandle);
-        hmac_update(&hmac, (BYTE*)&handle, 4);
+        tpm_hmac_update(&hmac, (BYTE*)&handle, 4);
       }
 #endif
-      hmac_update(&hmac, rsp->auth1->nonceEven.nonce, 
+      tpm_hmac_update(&hmac, rsp->auth1->nonceEven.nonce, 
         sizeof(rsp->auth1->nonceEven.nonce));
-      hmac_update(&hmac, rsp->auth1->nonceOdd.nonce, 
+      tpm_hmac_update(&hmac, rsp->auth1->nonceOdd.nonce, 
         sizeof(rsp->auth1->nonceOdd.nonce));
-      hmac_update(&hmac, (BYTE*)&rsp->auth1->continueAuthSession, 1);
-      hmac_final(&hmac, rsp->auth1->auth);
+      tpm_hmac_update(&hmac, (BYTE*)&rsp->auth1->continueAuthSession, 1);
+      tpm_hmac_final(&hmac, rsp->auth1->auth);
       break;
   }
 }

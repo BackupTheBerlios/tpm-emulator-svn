@@ -25,12 +25,12 @@ typedef struct {
   uint32_t h[5];
   uint32_t count_lo, count_hi;
   uint8_t buf[64];
-} sha1_ctx_t;
+} tpm_sha1_ctx_t;
 
-void sha1_init(sha1_ctx_t *ctx);
+void tpm_sha1_init(tpm_sha1_ctx_t *ctx);
 
-void sha1_update(sha1_ctx_t *ctx, const uint8_t *data, size_t length);
+void tpm_sha1_update(tpm_sha1_ctx_t *ctx, const uint8_t *data, size_t length);
 
-void sha1_final(sha1_ctx_t *ctx, uint8_t digest[SHA1_DIGEST_LENGTH]);
+void tpm_sha1_final(tpm_sha1_ctx_t *ctx, uint8_t digest[SHA1_DIGEST_LENGTH]);
 
 #endif /* _SHA1_H_ */

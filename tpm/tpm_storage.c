@@ -29,7 +29,7 @@
 
 static int compute_store_digest(TPM_STORED_DATA *store, TPM_DIGEST *digest)
 {
-  sha1_ctx_t sha1;
+  tpm_sha1_ctx_t sha1;
   UINT32 len = sizeof_TPM_STORED_DATA((*store));
   BYTE *buf, *ptr;
   buf = ptr = tpm_malloc(len);
@@ -39,9 +39,9 @@ static int compute_store_digest(TPM_STORED_DATA *store, TPM_DIGEST *digest)
     return -1;
   }
   /* compute SHA1 hash */
-  sha1_init(&sha1);
-  sha1_update(&sha1, buf, sizeof_TPM_STORED_DATA((*store)));
-  sha1_final(&sha1, digest->digest);
+  tpm_sha1_init(&sha1);
+  tpm_sha1_update(&sha1, buf, sizeof_TPM_STORED_DATA((*store)));
+  tpm_sha1_final(&sha1, digest->digest);
   tpm_free(buf);
   return 0;
 }
@@ -60,7 +60,7 @@ int tpm_encrypt_sealed_data(TPM_KEY_DATA *key, TPM_SEALED_DATA *seal,
   UINT32 len;
   size_t enc_len;
   BYTE *buf, *ptr;
-  rsa_public_key_t pub_key;
+  tpm_rsa_public_key_t pub_key;
   int scheme;
   switch (key->encScheme) {
     case TPM_ES_RSAESOAEP_SHA1_MGF1: scheme = RSA_ES_OAEP_SHA1; break;
@@ -72,15 +72,15 @@ int tpm_encrypt_sealed_data(TPM_KEY_DATA *key, TPM_SEALED_DATA *seal,
   buf = ptr = tpm_malloc(len);
   if (buf == NULL
       || tpm_marshal_TPM_SEALED_DATA(&ptr, &len, seal)
-      || rsa_encrypt(&pub_key, scheme, buf, sizeof_TPM_SEALED_DATA((*seal)),
+      || tpm_rsa_encrypt(&pub_key, scheme, buf, sizeof_TPM_SEALED_DATA((*seal)),
                      enc, &enc_len)) {
     tpm_free(buf);
-    rsa_release_public_key(&pub_key);
+    tpm_rsa_release_public_key(&pub_key);
     return -1;
   }
   *enc_size = enc_len;
   tpm_free(buf);
-  rsa_release_public_key(&pub_key);
+  tpm_rsa_release_public_key(&pub_key);
   return 0;
 }
 
@@ -99,7 +99,7 @@ int tpm_decrypt_sealed_data(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
   len = enc_size;
   *buf = ptr = tpm_malloc(len);
   if (*buf == NULL
-      || rsa_decrypt(&key->key, scheme, enc, enc_size, *buf, &dec_len)
+      || tpm_rsa_decrypt(&key->key, scheme, enc, enc_size, *buf, &dec_len)
       || (len = dec_len) == 0
       || tpm_unmarshal_TPM_SEALED_DATA(&ptr, &len, seal)) {
     tpm_free(*buf);
@@ -275,7 +275,7 @@ TPM_RESULT TPM_UnBind(TPM_KEY_HANDLE keyHandle, UINT32 inDataSize,
     case TPM_ES_RSAESPKCSv15: scheme = RSA_ES_PKCSV15; break;
     default: tpm_free(*outData); return TPM_DECRYPT_ERROR;
   }
-  if (rsa_decrypt(&key->key, scheme, inData, inDataSize, *outData, &out_len)) {
+  if (tpm_rsa_decrypt(&key->key, scheme, inData, inDataSize, *outData, &out_len)) {
     tpm_free(*outData);
     return TPM_DECRYPT_ERROR;
   }
@@ -295,7 +295,7 @@ TPM_RESULT TPM_UnBind(TPM_KEY_HANDLE keyHandle, UINT32 inDataSize,
 
 int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest)
 {
-  sha1_ctx_t sha1;
+  tpm_sha1_ctx_t sha1;
   UINT32 len = sizeof_TPM_KEY((*key));
   BYTE *buf, *ptr;
   buf = ptr = tpm_malloc(len);
@@ -305,9 +305,9 @@ int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest)
     return -1;
   }
   /* compute SHA1 hash */
-  sha1_init(&sha1);
-  sha1_update(&sha1, buf, sizeof_TPM_KEY((*key)) - key->encDataSize - 4);
-  sha1_final(&sha1, digest->digest);
+  tpm_sha1_init(&sha1);
+  tpm_sha1_update(&sha1, buf, sizeof_TPM_KEY((*key)) - key->encDataSize - 4);
+  tpm_sha1_final(&sha1, digest->digest);
   tpm_free(buf);
   return 0;
 }
@@ -321,7 +321,7 @@ static int tpm_verify_key_digest(TPM_KEY *key, TPM_DIGEST *digest)
 
 int tpm_compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest)
 {
-  sha1_ctx_t sha1;
+  tpm_sha1_ctx_t sha1;
   UINT32 len = sizeof_TPM_PUBKEY((*key));
   BYTE *buf, *ptr;
   buf = ptr = tpm_malloc(len);
@@ -331,9 +331,9 @@ int tpm_compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest)
     return -1;
   }
   /* compute SHA1 hash */
-  sha1_init(&sha1);
-  sha1_update(&sha1, buf, sizeof_TPM_PUBKEY((*key)));
-  sha1_final(&sha1, digest->digest);
+  tpm_sha1_init(&sha1);
+  tpm_sha1_update(&sha1, buf, sizeof_TPM_PUBKEY((*key)));
+  tpm_sha1_final(&sha1, digest->digest);
   tpm_free(buf);
   return 0;
 }
@@ -344,7 +344,7 @@ int tpm_encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
   UINT32 len;
   size_t enc_len;
   BYTE *buf, *ptr;
-  rsa_public_key_t pub_key;
+  tpm_rsa_public_key_t pub_key;
   int scheme;
   switch (key->encScheme) {
     case TPM_ES_RSAESOAEP_SHA1_MGF1: scheme = RSA_ES_OAEP_SHA1; break;
@@ -356,15 +356,15 @@ int tpm_encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
   buf = ptr = tpm_malloc(len);
   if (buf == NULL
       || tpm_marshal_TPM_STORE_ASYMKEY(&ptr, &len, store)
-      || rsa_encrypt(&pub_key, scheme, buf, sizeof_TPM_STORE_ASYMKEY((*store)),
+      || tpm_rsa_encrypt(&pub_key, scheme, buf, sizeof_TPM_STORE_ASYMKEY((*store)),
                      enc, &enc_len)) {
     tpm_free(buf);
-    rsa_release_public_key(&pub_key);
+    tpm_rsa_release_public_key(&pub_key);
     return -1;
   }
   *enc_size = enc_len;
   tpm_free(buf);
-  rsa_release_public_key(&pub_key);
+  tpm_rsa_release_public_key(&pub_key);
   return 0;
 } 
 
@@ -383,7 +383,7 @@ int tpm_decrypt_private_key(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
   len = enc_size;
   *buf = ptr = tpm_malloc(len);
   if (*buf == NULL
-      || rsa_decrypt(&key->key, scheme, enc, enc_size, *buf, &dec_len)
+      || tpm_rsa_decrypt(&key->key, scheme, enc, enc_size, *buf, &dec_len)
       || (len = dec_len) == 0
       || tpm_unmarshal_TPM_STORE_ASYMKEY(&ptr, &len, store)) {
     tpm_free(*buf);
@@ -402,7 +402,7 @@ TPM_RESULT TPM_CreateWrapKey(TPM_KEY_HANDLE parentHandle,
   TPM_KEY_DATA *parent;
   TPM_SESSION_DATA *session;
   TPM_STORE_ASYMKEY store;
-  rsa_private_key_t rsa;
+  tpm_rsa_private_key_t rsa;
   UINT32 key_length;
 
   info("TPM_CreateWrapKey()");
@@ -461,7 +461,7 @@ TPM_RESULT TPM_CreateWrapKey(TPM_KEY_HANDLE parentHandle,
   }
   /* generate key and store it */
   key_length = keyInfo->algorithmParms.parms.rsa.keyLength;
-  if (rsa_generate_key(&rsa, key_length)) return TPM_FAIL;
+  if (tpm_rsa_generate_key(&rsa, key_length)) return TPM_FAIL;
   wrappedKey->pubKey.keyLength = key_length >> 3;
   wrappedKey->pubKey.key = tpm_malloc(wrappedKey->pubKey.keyLength);
   store.privKey.keyLength = key_length >> 4;
@@ -470,15 +470,15 @@ TPM_RESULT TPM_CreateWrapKey(TPM_KEY_HANDLE parentHandle,
   wrappedKey->encData = tpm_malloc(wrappedKey->encDataSize);
   if (wrappedKey->pubKey.key == NULL || store.privKey.key == NULL
       || wrappedKey->encData == NULL) {
-    rsa_release_private_key(&rsa);
+    tpm_rsa_release_private_key(&rsa);
     tpm_free(wrappedKey->pubKey.key);
     tpm_free(store.privKey.key);
     tpm_free(wrappedKey->encData);
     return TPM_NOSPACE;
   }
-  rsa_export_modulus(&rsa, wrappedKey->pubKey.key, NULL);
-  rsa_export_prime1(&rsa, store.privKey.key, NULL);
-  rsa_release_private_key(&rsa);
+  tpm_rsa_export_modulus(&rsa, wrappedKey->pubKey.key, NULL);
+  tpm_rsa_export_prime1(&rsa, store.privKey.key, NULL);
+  tpm_rsa_release_private_key(&rsa);
   /* compute the digest of the wrapped key (without encData) */
   if (tpm_compute_key_digest(wrappedKey, &store.pubDataDigest)) {
     debug("TPM_CreateWrapKey(): tpm_compute_key_digest() failed.");
@@ -563,12 +563,12 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
   /* import key */
   if (tpm_verify_key_digest(inKey, &store.pubDataDigest)
       || inKey->pubKey.keyLength != (store.privKey.keyLength * 2)
-      || rsa_import_key(&key->key, RSA_MSB_FIRST,
+      || tpm_rsa_import_key(&key->key, RSA_MSB_FIRST,
                         inKey->pubKey.key, inKey->pubKey.keyLength,
                         inKey->algorithmParms.parms.rsa.exponent,
                         inKey->algorithmParms.parms.rsa.exponentSize,
                         store.privKey.key, NULL)) {
-    debug("TPM_LoadKey(): tpm_verify_key_digest() or rsa_import_key() failed.");
+    debug("TPM_LoadKey(): tpm_verify_key_digest() or tpm_rsa_import_key() failed.");
     memset(key, 0, sizeof(TPM_KEY_DATA));
     tpm_free(key_buf);
     return TPM_FAIL;
@@ -620,7 +620,7 @@ int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms)
   parms->parms.rsa.exponentSize = key->key.size >> 3;
   parms->parms.rsa.exponent = tpm_malloc(parms->parms.rsa.exponentSize);
   if (parms->parms.rsa.exponent == NULL) return -1;
-  rsa_export_exponent(&key->key, parms->parms.rsa.exponent, &exp_len);
+  tpm_rsa_export_exponent(&key->key, parms->parms.rsa.exponent, &exp_len);
   parms->parms.rsa.exponentSize = exp_len;
   parms->parmSize = 12 + parms->parms.rsa.exponentSize;
   return 0;
@@ -660,7 +660,7 @@ TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
   pubKey->pubKey.keyLength = key->key.size >> 3;
   pubKey->pubKey.key = tpm_malloc(pubKey->pubKey.keyLength);
   if (pubKey->pubKey.key == NULL) return TPM_NOSPACE;
-  rsa_export_modulus(&key->key, pubKey->pubKey.key, NULL);
+  tpm_rsa_export_modulus(&key->key, pubKey->pubKey.key, NULL);
   if (tpm_setup_key_parms(key, &pubKey->algorithmParms) != 0) {
     debug("TPM_GetPubKey(): tpm_setup_key_parms() failed.");
     tpm_free(pubKey->pubKey.key);

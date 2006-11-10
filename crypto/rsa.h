@@ -28,13 +28,13 @@ typedef struct {
   mpz_t q;
   mpz_t u;
   uint16_t size;
-} rsa_private_key_t;
+} tpm_rsa_private_key_t;
 
 typedef struct {
   mpz_t n;
   mpz_t e;
   uint16_t size;
-} rsa_public_key_t;
+} tpm_rsa_public_key_t;
 
 enum { 
   RSA_ES_PKCSV15, 
@@ -53,52 +53,52 @@ enum {
   mpz_init_set(pub_key.e, priv_key.e); \
   pub_key.size = priv_key.size; }
 
-int rsa_import_key(rsa_private_key_t *key, int endian, 
-                   const uint8_t *n, size_t n_len,
-                   const uint8_t *e, size_t e_len, 
-                   const uint8_t *p, const uint8_t *q);
+int tpm_rsa_import_key(tpm_rsa_private_key_t *key, int endian, 
+                       const uint8_t *n, size_t n_len,
+                       const uint8_t *e, size_t e_len, 
+                       const uint8_t *p, const uint8_t *q);
 
-void rsa_copy_key(rsa_private_key_t *dst, rsa_private_key_t *src);
+void tpm_rsa_copy_key(tpm_rsa_private_key_t *dst, tpm_rsa_private_key_t *src);
 
-int rsa_import_public_key(rsa_public_key_t *key, int endian, 
-                          const uint8_t *n, size_t n_len,
-                          const uint8_t *e, size_t e_len);
+int tpm_rsa_import_public_key(tpm_rsa_public_key_t *key, int endian, 
+                              const uint8_t *n, size_t n_len,
+                              const uint8_t *e, size_t e_len);
 
-int rsa_generate_key(rsa_private_key_t *key, uint16_t key_size);
+int tpm_rsa_generate_key(tpm_rsa_private_key_t *key, uint16_t key_size);
 
-void rsa_release_private_key(rsa_private_key_t *key);
+void tpm_rsa_release_private_key(tpm_rsa_private_key_t *key);
 
-void rsa_release_public_key(rsa_public_key_t *key);
+void tpm_rsa_release_public_key(tpm_rsa_public_key_t *key);
 
-void rsa_export_modulus(rsa_private_key_t *key, 
-                        uint8_t *modulus, size_t *length);
+void tpm_rsa_export_modulus(tpm_rsa_private_key_t *key, 
+                            uint8_t *modulus, size_t *length);
 
-void rsa_export_exponent(rsa_private_key_t *key, 
-                         uint8_t *exponent, size_t *length);
+void tpm_rsa_export_exponent(tpm_rsa_private_key_t *key, 
+                             uint8_t *exponent, size_t *length);
 
-void rsa_export_prime1(rsa_private_key_t *key, 
-                       uint8_t *prime, size_t *length);
+void tpm_rsa_export_prime1(tpm_rsa_private_key_t *key, 
+                           uint8_t *prime, size_t *length);
 
-void rsa_export_prime2(rsa_private_key_t *key, 
-                       uint8_t *prime, size_t *length);
+void tpm_rsa_export_prime2(tpm_rsa_private_key_t *key, 
+                           uint8_t *prime, size_t *length);
 
-void mask_generation(const uint8_t *seed, size_t seed_len, 
-                     uint8_t *data, size_t data_len);
+void tpm_rsa_mask_generation(const uint8_t *seed, size_t seed_len, 
+                             uint8_t *data, size_t data_len);
 
 /* Note: Input and output areas MUST NOT overlap (i.e., one can't 
    use the same buffer for data and sig or in and out). */
 
-int rsa_sign(rsa_private_key_t *key, int type,
-             const uint8_t *data, size_t data_len, uint8_t *sig);
+int tpm_rsa_sign(tpm_rsa_private_key_t *key, int type,
+                 const uint8_t *data, size_t data_len, uint8_t *sig);
 
-int rsa_verify(rsa_public_key_t *key, int type,
-               const uint8_t *data, size_t data_len, uint8_t *sig);
+int tpm_rsa_verify(tpm_rsa_public_key_t *key, int type,
+                   const uint8_t *data, size_t data_len, uint8_t *sig);
 
-int rsa_decrypt(rsa_private_key_t *key, int type,
-                const uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len);
+int tpm_rsa_decrypt(tpm_rsa_private_key_t *key, int type,
+                    const uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len);
 
-int rsa_encrypt(rsa_public_key_t *key, int type,
-                const uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len);
+int tpm_rsa_encrypt(tpm_rsa_public_key_t *key, int type,
+                    const uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len);
 
 #endif /* _RSA_H_ */
 

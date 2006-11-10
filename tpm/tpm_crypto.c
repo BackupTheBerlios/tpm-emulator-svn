@@ -26,13 +26,13 @@
  * Cryptographic Functions ([TPM_Part3], Section 13)
  */
 
-static sha1_ctx_t sha1_ctx;
+static tpm_sha1_ctx_t sha1_ctx;
 static BOOL sha1_ctx_valid = FALSE;
 
 TPM_RESULT TPM_SHA1Start(UINT32 *maxNumBytes)
 {
   info("TPM_SHA1Start()");
-  sha1_init(&sha1_ctx);
+  tpm_sha1_init(&sha1_ctx);
   sha1_ctx_valid = TRUE;
   /* this limit was arbitrarily chosen */
   *maxNumBytes = 2048;
@@ -43,7 +43,7 @@ TPM_RESULT TPM_SHA1Update(UINT32 numBytes, BYTE *hashData)
 {
   info("TPM_SHA1Update()");
   if (!sha1_ctx_valid) return TPM_SHA_THREAD;
-  sha1_update(&sha1_ctx, hashData, numBytes);
+  tpm_sha1_update(&sha1_ctx, hashData, numBytes);
   return TPM_SUCCESS;
 }
 
@@ -53,8 +53,8 @@ TPM_RESULT TPM_SHA1Complete(UINT32 hashDataSize, BYTE *hashData,
   info("TPM_SHA1Complete()");
   if (!sha1_ctx_valid) return TPM_SHA_THREAD;
   sha1_ctx_valid = FALSE;
-  sha1_update(&sha1_ctx, hashData, hashDataSize);
-  sha1_final(&sha1_ctx, hashValue->digest);
+  tpm_sha1_update(&sha1_ctx, hashData, hashDataSize);
+  tpm_sha1_final(&sha1_ctx, hashValue->digest);
   return TPM_SUCCESS;
 }
 
@@ -78,7 +78,7 @@ TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
     if (areaToSignSize != 20) return TPM_BAD_PARAMETER;
     *sigSize = key->key.size >> 3;
     *sig = tpm_malloc(*sigSize);
-    if (*sig == NULL || rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1_RAW, 
+    if (*sig == NULL || tpm_rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1_RAW, 
         areaToSign, areaToSignSize, *sig)) {
       tpm_free(*sig);
       return TPM_FAIL;
@@ -89,7 +89,7 @@ TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
         || areaToSignSize == 0) return TPM_BAD_PARAMETER;
     *sigSize = key->key.size >> 3;
     *sig = tpm_malloc(*sigSize);
-    if (*sig == NULL || rsa_sign(&key->key, RSA_SSA_PKCS1_DER, 
+    if (*sig == NULL || tpm_rsa_sign(&key->key, RSA_SSA_PKCS1_DER, 
         areaToSign, areaToSignSize, *sig)) {
       tpm_free(*sig);
       return TPM_FAIL;
@@ -110,7 +110,7 @@ TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
     buf[28] = (areaToSignSize >>  8) & 0xff;
     buf[29] = (areaToSignSize      ) & 0xff;
     memcpy(&buf[30], areaToSign, areaToSignSize);
-    if (rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, 
+    if (tpm_rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, 
         buf, areaToSignSize + 30, *sig)) {
       tpm_free(*sig);
       return TPM_FAIL;
@@ -122,7 +122,7 @@ TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
     *sigSize = key->key.size >> 3;
     *sig = tpm_malloc(*sigSize);
     if (*sig == NULL) return TPM_FAIL; 
-    if (rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, 
+    if (tpm_rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, 
         areaToSign, areaToSignSize, *sig)) {
       tpm_free(*sig);
       return TPM_FAIL;
@@ -182,7 +182,7 @@ TPM_RESULT TPM_CertifyKey(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
 {
   TPM_RESULT res;
   TPM_KEY_DATA *cert, *key;
-  sha1_ctx_t sha1_ctx;
+  tpm_sha1_ctx_t sha1_ctx;
   BYTE *buf, *p;
   UINT32 length;
   info("TPM_CertifyKey()");
@@ -258,10 +258,10 @@ TPM_RESULT TPM_CertifyKey(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
     free_TPM_KEY_PARMS(certifyInfo->algorithmParms);
     return TPM_FAIL;
   }
-  rsa_export_modulus(&key->key, buf, NULL);
-  sha1_init(&sha1_ctx);
-  sha1_update(&sha1_ctx, buf, length);
-  sha1_final(&sha1_ctx, certifyInfo->pubkeyDigest.digest);
+  tpm_rsa_export_modulus(&key->key, buf, NULL);
+  tpm_sha1_init(&sha1_ctx);
+  tpm_sha1_update(&sha1_ctx, buf, length);
+  tpm_sha1_final(&sha1_ctx, certifyInfo->pubkeyDigest.digest);
   tpm_free(buf);
   /* compute the digest of the CERTIFY_INFO[2] structure and sign it */
   length = sizeof_TPM_CERTIFY_INFO((*certifyInfo));
@@ -272,9 +272,9 @@ TPM_RESULT TPM_CertifyKey(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
     return TPM_FAIL;
   }
   length = sizeof_TPM_CERTIFY_INFO((*certifyInfo));
-  sha1_init(&sha1_ctx);
-  sha1_update(&sha1_ctx, buf, length);
-  sha1_final(&sha1_ctx, buf);
+  tpm_sha1_init(&sha1_ctx);
+  tpm_sha1_update(&sha1_ctx, buf, length);
+  tpm_sha1_final(&sha1_ctx, buf);
   res = tpm_sign(cert, auth1, FALSE, buf, SHA1_DIGEST_LENGTH, outData, outDataSize);
   tpm_free(buf);
   if (res != TPM_SUCCESS) {
@@ -292,7 +292,7 @@ TPM_RESULT TPM_CertifyKey2(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
 {
   TPM_RESULT res;
   TPM_KEY_DATA *cert, *key;
-  sha1_ctx_t sha1_ctx;
+  tpm_sha1_ctx_t sha1_ctx;
   BYTE *buf, *p;
   UINT32 length;
   info("TPM_CertifyKey2()");
@@ -356,10 +356,10 @@ TPM_RESULT TPM_CertifyKey2(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
     free_TPM_KEY_PARMS(certifyInfo->algorithmParms);
     return TPM_FAIL;
   }
-  rsa_export_modulus(&key->key, buf, NULL);
-  sha1_init(&sha1_ctx);
-  sha1_update(&sha1_ctx, buf, length);
-  sha1_final(&sha1_ctx, certifyInfo->pubkeyDigest.digest);
+  tpm_rsa_export_modulus(&key->key, buf, NULL);
+  tpm_sha1_init(&sha1_ctx);
+  tpm_sha1_update(&sha1_ctx, buf, length);
+  tpm_sha1_final(&sha1_ctx, certifyInfo->pubkeyDigest.digest);
   tpm_free(buf);
   /* compute the digest of the CERTIFY_INFO[2] structure and sign it */
   length = sizeof_TPM_CERTIFY_INFO((*certifyInfo));
@@ -370,9 +370,9 @@ TPM_RESULT TPM_CertifyKey2(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
     return TPM_FAIL;
   }
   length = sizeof_TPM_CERTIFY_INFO((*certifyInfo));
-  sha1_init(&sha1_ctx);
-  sha1_update(&sha1_ctx, buf, length);
-  sha1_final(&sha1_ctx, buf);
+  tpm_sha1_init(&sha1_ctx);
+  tpm_sha1_update(&sha1_ctx, buf, length);
+  tpm_sha1_final(&sha1_ctx, buf);
   res = tpm_sign(cert, auth1, FALSE, buf, SHA1_DIGEST_LENGTH, outData, outDataSize);
   tpm_free(buf);
   if (res != TPM_SUCCESS) {

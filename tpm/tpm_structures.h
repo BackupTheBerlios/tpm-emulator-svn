@@ -1960,6 +1960,7 @@ typedef struct tdTPM_DAA_ISSUER {
   TPM_DIGEST DAA_digest_gamma;
   BYTE DAA_generic_q[26];
 } TPM_DAA_ISSUER;
+#define sizeof_TPM_DAA_ISSUER(s) (2 + (6 * 20) + 26)
 
 /*
  * TPM_DAA_TPM ([TPM_Part2], Section 22.4)
@@ -1975,6 +1976,7 @@ typedef struct tdTPM_DAA_TPM {
   TPM_DIGEST DAA_rekey;
   UINT32 DAA_count;
 } TPM_DAA_TPM;
+#define sizeof_TPM_DAA_TPM(s) (2 + (4 * 20) + 4)
 
 /*
  * TPM_DAA_CONTEXT ([TPM_Part2], Section 22.5)
@@ -1989,6 +1991,7 @@ typedef struct tdTPM_DAA_CONTEXT {
   BYTE DAA_scratch[256];
   BYTE DAA_stage;
 } TPM_DAA_CONTEXT;
+#define sizeof_TPM_DAA_CONTEXT(s) (2 + (3 * 20) + 256 + 1)
 
 /*
  * TPM_DAA_JOINDATA ([TPM_Part2], Section 22.6)
@@ -2000,6 +2003,7 @@ typedef struct tdTPM_DAA_JOINDATA {
   BYTE DAA_join_u1[138];
   TPM_DIGEST DAA_digest_n0;
 } TPM_DAA_JOINDATA;
+#define sizeof_TPM_DAA_JOINDATA(s) (128 + 138 + 20)
 
 /*
  * TPM_DAA_BLOB ([TPM_Part2], Section 22.8)
@@ -2132,7 +2136,7 @@ typedef struct tdTPM_KEY_DATA {
   TPM_SECRET usageAuth;
   TPM_PCR_INFO pcrInfo;
   BOOL parentPCRStatus;
-  rsa_private_key_t key;
+  tpm_rsa_private_key_t key;
 } TPM_KEY_DATA;
 #define sizeof_RSA(s) (6 + 2*(s.size >> 3) + (s.size >> 4))
 #define sizeof_TPM_KEY_DATA(s) (1 + 2 + 4 + 4 + 1 + 2 + 2 + 20 \
@@ -2161,7 +2165,7 @@ typedef struct tdTPM_PERMANENT_DATA {
   //TPM_SECRET adminAuth;
   //TPM_PUBKEY manuMaintPub;
   TPM_NONCE ekReset;
-  rsa_private_key_t endorsementKey;
+  tpm_rsa_private_key_t endorsementKey;
   TPM_KEY_DATA srk;
   BYTE contextKey[TPM_CONTEXT_KEY_SIZE];
   //TPM_KEY delegateKey;
@@ -2204,6 +2208,7 @@ typedef struct tdTPM_STCLEAR_DATA {
   //UINT32 ownerReference;
   //BOOL disableResetLock;
 } TPM_STCLEAR_DATA;
+#define sizeof_TPM_STCLEAR_DATA(s) (2 + 20 + 4)
 
 /*
  * TPM_SESSION_DATA
@@ -2240,6 +2245,11 @@ typedef struct tdTPM_DAA_SESSION_DATA {
   TPM_DAA_JOINDATA DAA_joinSession;
   TPM_HANDLE handle;
 } TPM_DAA_SESSION_DATA;
+#define sizeof_TPM_DAA_SESSION_DATA(s) (1 \
+  + sizeof_TPM_DAA_ISSUER(s.DAA_issuerSettings) \
+  + sizeof_TPM_DAA_TPM(s.DAA_tpmSpecific) \
+  + sizeof_TPM_DAA_CONTEXT(s.DAA_session) \
+  + sizeof_TPM_DAA_JOINDATA(s.DAA_joinSession) + 4)
 
 /*
  * TPM_STANY_DATA ([TPM_Part2], Section 7.6)
@@ -2264,6 +2274,12 @@ typedef struct tdTPM_STANY_DATA {
   TPM_DAAHANDLE currentDAA;
   TPM_TRANSHANDLE transExclusive;
 } TPM_STANY_DATA;
+#define sizeof_TPM_STANY_DATA(s) (2 + 20 + 20 + 1 \
+  + sizeof_TPM_CURRENT_TICKS(s.currentTicks) \
+  + 4 + (4 * TPM_MAX_SESSION_LIST) \
+  + (sizeof_TPM_SESSION_DATA(s.sessions[0]) * TPM_MAX_SESSIONS) \
+  + (sizeof_TPM_DAA_SESSION_DATA(s.sessionsDAA[0]) * TPM_MAX_SESSIONS_DAA) \
+  + 4 + 4)
 
 /*
  * TPM_DATA

@@ -23,10 +23,10 @@
 typedef struct {
     uint8_t state[256];
     uint8_t x, y;
-} rc4_ctx_t;
+} tpm_rc4_ctx_t;
 
-void rc4_init(rc4_ctx_t *s, uint8_t *key, size_t key_len);
+void tpm_rc4_init(tpm_rc4_ctx_t *s, uint8_t *key, size_t key_len);
 
-void rc4_crypt(rc4_ctx_t *s, uint8_t *in, uint8_t *out, size_t length);
+void tpm_rc4_crypt(tpm_rc4_ctx_t *s, uint8_t *in, uint8_t *out, size_t length);
 
 #endif /* _RC4_h_ */

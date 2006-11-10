@@ -16,7 +16,7 @@
 
 #include "hmac.h"
 
-void hmac_init(hmac_ctx_t *ctx, const uint8_t *key, size_t key_len)
+void tpm_hmac_init(tpm_hmac_ctx_t *ctx, const uint8_t *key, size_t key_len)
 {
   uint8_t tk[SHA1_DIGEST_LENGTH];
   uint8_t k_ipad[HMAC_PAD_LENGTH];
@@ -24,9 +24,9 @@ void hmac_init(hmac_ctx_t *ctx, const uint8_t *key, size_t key_len)
 
   /* if the key is longer than 64 bytes reset it to key := hash(key) */
   if (key_len > HMAC_PAD_LENGTH) {
-    sha1_init(&ctx->ctx);
-    sha1_update(&ctx->ctx, key, key_len);
-    sha1_final(&ctx->ctx, tk);
+    tpm_sha1_init(&ctx->ctx);
+    tpm_sha1_update(&ctx->ctx, key, key_len);
+    tpm_sha1_final(&ctx->ctx, tk);
     key = tk;
     key_len = SHA1_DIGEST_LENGTH;
   }
@@ -41,24 +41,24 @@ void hmac_init(hmac_ctx_t *ctx, const uint8_t *key, size_t key_len)
     ctx->k_opad[i] ^= 0x5C;
   }
   /* start inner hash */
-  sha1_init(&ctx->ctx);
-  sha1_update(&ctx->ctx, k_ipad, HMAC_PAD_LENGTH);
+  tpm_sha1_init(&ctx->ctx);
+  tpm_sha1_update(&ctx->ctx, k_ipad, HMAC_PAD_LENGTH);
 }
 
-void hmac_update(hmac_ctx_t *ctx, const uint8_t *data, size_t length)
+void tpm_hmac_update(tpm_hmac_ctx_t *ctx, const uint8_t *data, size_t length)
 {
   /* update inner hash */
-  sha1_update(&ctx->ctx, data, length);
+  tpm_sha1_update(&ctx->ctx, data, length);
 }
 
-void hmac_final(hmac_ctx_t *ctx, uint8_t *digest)
+void tpm_hmac_final(tpm_hmac_ctx_t *ctx, uint8_t *digest)
 {
   /* complete inner hash */
-  sha1_final(&ctx->ctx, digest);
+  tpm_sha1_final(&ctx->ctx, digest);
   /* perform outer hash */
-  sha1_init(&ctx->ctx);
-  sha1_update(&ctx->ctx, ctx->k_opad, HMAC_PAD_LENGTH);
-  sha1_update(&ctx->ctx, digest, SHA1_DIGEST_LENGTH);
-  sha1_final(&ctx->ctx, digest);
+  tpm_sha1_init(&ctx->ctx);
+  tpm_sha1_update(&ctx->ctx, ctx->k_opad, HMAC_PAD_LENGTH);
+  tpm_sha1_update(&ctx->ctx, digest, SHA1_DIGEST_LENGTH);
+  tpm_sha1_final(&ctx->ctx, digest);
 }
 

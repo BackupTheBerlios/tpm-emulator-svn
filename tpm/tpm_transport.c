@@ -45,7 +45,7 @@ static int decrypt_transport_auth(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
   }
   buf = tpm_malloc(key->key.size);
   if (buf == NULL
-      || rsa_decrypt(&key->key, scheme, enc, enc_size, buf, &buf_size)
+      || tpm_rsa_decrypt(&key->key, scheme, enc, enc_size, buf, &buf_size)
       || buf_size != sizeof_TPM_TRANSPORT_AUTH(x)
       || (((UINT16)buf[0] << 8) | buf[1]) != TPM_TAG_TRANSPORT_AUTH) {
     tpm_free(buf);
@@ -63,15 +63,15 @@ static void transport_log_in(TPM_COMMAND_CODE ordinal, BYTE parameters[20],
   UINT32 tag = CPU_TO_BE32(TPM_TAG_TRANSPORT_LOG_IN);
   BYTE *ptr, buf[sizeof_TPM_TRANSPORT_LOG_IN(x)];
   UINT32 len = sizeof(buf);
-  sha1_ctx_t sha1;
+  tpm_sha1_ctx_t sha1;
   tpm_marshal_TPM_TAG(&ptr, &len, tag);
   tpm_marshal_TPM_COMMAND_CODE(&ptr, &len, ordinal);
   tpm_marshal_BYTE_ARRAY(&ptr, &len, parameters, 20);
   tpm_marshal_BYTE_ARRAY(&ptr, &len, pubKeyHash, 20);
-  sha1_init(&sha1);
-  sha1_update(&sha1, transDigest->digest, sizeof(transDigest->digest));
-  sha1_update(&sha1, buf, sizeof(buf));
-  sha1_final(&sha1, transDigest->digest);
+  tpm_sha1_init(&sha1);
+  tpm_sha1_update(&sha1, transDigest->digest, sizeof(transDigest->digest));
+  tpm_sha1_update(&sha1, buf, sizeof(buf));
+  tpm_sha1_final(&sha1, transDigest->digest);
 }
 
 static void transport_log_out(TPM_CURRENT_TICKS *currentTicks, BYTE parameters[20],
@@ -80,15 +80,15 @@ static void transport_log_out(TPM_CURRENT_TICKS *currentTicks, BYTE parameters[2
   UINT32 tag = CPU_TO_BE32(TPM_TAG_TRANSPORT_LOG_OUT);
   BYTE *ptr, buf[sizeof_TPM_TRANSPORT_LOG_OUT(x)];
   UINT32 len = sizeof(buf);
-  sha1_ctx_t sha1;
+  tpm_sha1_ctx_t sha1;
   tpm_marshal_TPM_TAG(&ptr, &len, tag);
   tpm_marshal_TPM_CURRENT_TICKS(&ptr, &len, currentTicks);
   tpm_marshal_BYTE_ARRAY(&ptr, &len, parameters, 20);
   tpm_marshal_TPM_MODIFIER_INDICATOR(&ptr, &len, locality);
-  sha1_init(&sha1);
-  sha1_update(&sha1, transDigest->digest, sizeof(transDigest->digest));
-  sha1_update(&sha1, buf, sizeof(buf));
-  sha1_final(&sha1, transDigest->digest);
+  tpm_sha1_init(&sha1);
+  tpm_sha1_update(&sha1, transDigest->digest, sizeof(transDigest->digest));
+  tpm_sha1_update(&sha1, buf, sizeof(buf));
+  tpm_sha1_final(&sha1, transDigest->digest);
 }
 
 extern UINT32 tpm_get_free_session(BYTE type);
@@ -108,7 +108,7 @@ TPM_RESULT TPM_EstablishTransport(TPM_KEY_HANDLE encHandle,
   TPM_SESSION_DATA *session;
   BYTE *ptr, buf[4 + 4 + 4 + 36 + 20];
   UINT32 len;
-  sha1_ctx_t sha1;
+  tpm_sha1_ctx_t sha1;
   info("TPM_EstablishTransport()");
   /* setup authorization data */
   if (encHandle == TPM_KH_TRANSPORT) {
@@ -161,9 +161,9 @@ TPM_RESULT TPM_EstablishTransport(TPM_KEY_HANDLE encHandle,
     tpm_marshal_TPM_MODIFIER_INDICATOR(&ptr, &len, *locality);
     tpm_marshal_TPM_CURRENT_TICKS(&ptr, &len, currentTicks);
     tpm_marshal_TPM_NONCE(&ptr, &len, transNonce);
-    sha1_init(&sha1);
-    sha1_update(&sha1, buf, sizeof(buf));
-    sha1_final(&sha1, buf);
+    tpm_sha1_init(&sha1);
+    tpm_sha1_update(&sha1, buf, sizeof(buf));
+    tpm_sha1_final(&sha1, buf);
     transport_log_out(currentTicks, buf, *locality,
       &session->transInternal.transDigest);
   }
@@ -185,16 +185,16 @@ static void decrypt_wrapped_command(BYTE *buf, UINT32 buf_len,
 {
   UINT32 i, j;
   BYTE mask[SHA1_DIGEST_LENGTH];
-  sha1_ctx_t sha1;
+  tpm_sha1_ctx_t sha1;
   for (i = 0; buf_len > 0; i++) {
-    sha1_init(&sha1);
-    sha1_update(&sha1, auth->nonceEven.nonce, sizeof(auth->nonceEven.nonce));
-    sha1_update(&sha1, auth->nonceOdd.nonce, sizeof(auth->nonceOdd.nonce));
-    sha1_update(&sha1, "in", 2);
-    sha1_update(&sha1, secret, sizeof(TPM_SECRET));
+    tpm_sha1_init(&sha1);
+    tpm_sha1_update(&sha1, auth->nonceEven.nonce, sizeof(auth->nonceEven.nonce));
+    tpm_sha1_update(&sha1, auth->nonceOdd.nonce, sizeof(auth->nonceOdd.nonce));
+    tpm_sha1_update(&sha1, "in", 2);
+    tpm_sha1_update(&sha1, secret, sizeof(TPM_SECRET));
     j = CPU_TO_BE32(i);
-    sha1_update(&sha1, (BYTE*)&j, 4);
-    sha1_final(&sha1, mask);
+    tpm_sha1_update(&sha1, (BYTE*)&j, 4);
+    tpm_sha1_final(&sha1, mask);
     for (j = 0; j < sizeof(mask) && buf_len > 0; j++) { 
       *buf++ ^= mask[j];
       buf_len--;
@@ -207,16 +207,16 @@ static void encrypt_wrapped_command(BYTE *buf, UINT32 buf_len,
 {
   UINT32 i, j;
   BYTE mask[SHA1_DIGEST_LENGTH];
-  sha1_ctx_t sha1;
+  tpm_sha1_ctx_t sha1;
   for (i = 0; buf_len > 0; i++) {
-    sha1_init(&sha1);
-    sha1_update(&sha1, auth->nonceEven.nonce, sizeof(auth->nonceEven.nonce));
-    sha1_update(&sha1, auth->nonceOdd.nonce, sizeof(auth->nonceOdd.nonce));
-    sha1_update(&sha1, "out", 3);
-    sha1_update(&sha1, secret, sizeof(TPM_SECRET));
+    tpm_sha1_init(&sha1);
+    tpm_sha1_update(&sha1, auth->nonceEven.nonce, sizeof(auth->nonceEven.nonce));
+    tpm_sha1_update(&sha1, auth->nonceOdd.nonce, sizeof(auth->nonceOdd.nonce));
+    tpm_sha1_update(&sha1, "out", 3);
+    tpm_sha1_update(&sha1, secret, sizeof(TPM_SECRET));
     j = CPU_TO_BE32(i);
-    sha1_update(&sha1, (BYTE*)&j, 4);
-    sha1_final(&sha1, mask);
+    tpm_sha1_update(&sha1, (BYTE*)&j, 4);
+    tpm_sha1_final(&sha1, mask);
     for (j = 0; j < sizeof(mask) && buf_len > 0; j++) { 
       *buf++ ^= mask[j];
       buf_len--;
@@ -235,7 +235,7 @@ TPM_RESULT TPM_ExecuteTransport(UINT32 inWrappedCmdSize, BYTE *inWrappedCmd,
   TPM_RESPONSE rsp;
   BYTE *ptr, buf[4 + 4 + 36 + 4 + 20];
   UINT32 len, offset;
-  sha1_ctx_t sha1;
+  tpm_sha1_ctx_t sha1;
   info("TPM_ExecuteTransport()");
   /* get transport session */
   session = tpm_get_transport(auth1->authHandle);
@@ -253,13 +253,13 @@ TPM_RESULT TPM_ExecuteTransport(UINT32 inWrappedCmdSize, BYTE *inWrappedCmd,
   req.param = ptr;
   /* verify authorization */
   tpm_compute_in_param_digest(&req);
-  sha1_init(&sha1);
+  tpm_sha1_init(&sha1);
   res = CPU_TO_BE32(TPM_ORD_ExecuteTransport);
-  sha1_update(&sha1, (BYTE*)&res, 4);
+  tpm_sha1_update(&sha1, (BYTE*)&res, 4);
   res = CPU_TO_BE32(inWrappedCmdSize);
-  sha1_update(&sha1, (BYTE*)&res, 4);
-  sha1_update(&sha1, req.auth1.digest, sizeof(req.auth1.digest));
-  sha1_final(&sha1, auth1->digest);
+  tpm_sha1_update(&sha1, (BYTE*)&res, 4);
+  tpm_sha1_update(&sha1, req.auth1.digest, sizeof(req.auth1.digest));
+  tpm_sha1_final(&sha1, auth1->digest);
   res = tpm_verify_auth(auth1, session->transInternal.authData, TPM_INVALID_HANDLE);
   if (res != TPM_SUCCESS) {
     tpm_free(ptr);
@@ -301,9 +301,9 @@ TPM_RESULT TPM_ExecuteTransport(UINT32 inWrappedCmdSize, BYTE *inWrappedCmd,
   tpm_marshal_TPM_CURRENT_TICKS(&ptr, &len, currentTicks);
   tpm_marshal_TPM_MODIFIER_INDICATOR(&ptr, &len, *locality);
   memcpy(ptr, rsp.auth1->digest, sizeof(rsp.auth1->digest));
-  sha1_init(&sha1);
-  sha1_update(&sha1, buf, sizeof(buf));
-  sha1_final(&sha1, auth1->digest);
+  tpm_sha1_init(&sha1);
+  tpm_sha1_update(&sha1, buf, sizeof(buf));
+  tpm_sha1_final(&sha1, auth1->digest);
   /* log output parameters */
   if (session->transInternal.transPublic.transAttributes & TPM_TRANSPORT_LOG) {
     transport_log_out(currentTicks, auth1->digest, *locality,

@@ -1335,14 +1335,14 @@ int tpm_unmarshal_TPM_STANY_FLAGS(BYTE **ptr, UINT32 *length, TPM_STANY_FLAGS *v
   return 0;
 }
 
-int tpm_marshal_RSA(BYTE **ptr, UINT32 *length, rsa_private_key_t *v)
+int tpm_marshal_RSA(BYTE **ptr, UINT32 *length, tpm_rsa_private_key_t *v)
 {
   size_t m_len, e_len, q_len;
   if (*length < (UINT32)sizeof_RSA((*v))) return -1;
   if (v->size > 0) {
-    rsa_export_modulus(v, &(*ptr)[6], &m_len);
-    rsa_export_exponent(v, &(*ptr)[6+m_len], &e_len);
-    rsa_export_prime1(v, &(*ptr)[6+m_len+e_len], &q_len);
+    tpm_rsa_export_modulus(v, &(*ptr)[6], &m_len);
+    tpm_rsa_export_exponent(v, &(*ptr)[6+m_len], &e_len);
+    tpm_rsa_export_prime1(v, &(*ptr)[6+m_len+e_len], &q_len);
     tpm_marshal_UINT16(ptr, length, m_len);
     tpm_marshal_UINT16(ptr, length, e_len);
     tpm_marshal_UINT16(ptr, length, q_len);
@@ -1356,7 +1356,7 @@ int tpm_marshal_RSA(BYTE **ptr, UINT32 *length, rsa_private_key_t *v)
   return 0;
 }
 
-int tpm_unmarshal_RSA(BYTE **ptr, UINT32 *length, rsa_private_key_t *v)
+int tpm_unmarshal_RSA(BYTE **ptr, UINT32 *length, tpm_rsa_private_key_t *v)
 {
   UINT16 m_len, e_len, q_len;
   if (tpm_unmarshal_UINT16(ptr, length, &m_len)
@@ -1368,7 +1368,7 @@ int tpm_unmarshal_RSA(BYTE **ptr, UINT32 *length, rsa_private_key_t *v)
   }
   if (*length < (UINT32)m_len + (UINT32)e_len + (UINT32)q_len
       || q_len != m_len/2
-      || rsa_import_key(v, RSA_MSB_FIRST,
+      || tpm_rsa_import_key(v, RSA_MSB_FIRST,
                         &(*ptr)[0], m_len,
                         &(*ptr)[m_len], e_len,
                         &(*ptr)[m_len+e_len], NULL)) return -1;
@@ -1485,6 +1485,22 @@ int tpm_unmarshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_D
   return 0;
 }
 
+int tpm_marshal_TPM_STCLEAR_DATA(BYTE **ptr, UINT32 *length, TPM_STCLEAR_DATA *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->contextNonceKey)
+      || tpm_marshal_TPM_COUNT_ID(ptr, length, v->countID) ) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_STCLEAR_DATA(BYTE **ptr, UINT32 *length, TPM_STCLEAR_DATA *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->contextNonceKey)
+      || tpm_unmarshal_TPM_COUNT_ID(ptr, length, &v->countID) ) return -1;
+  return 0;
+}
+
 int tpm_marshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA *v)
 {
   if (tpm_marshal_BYTE(ptr, length, v->type)
@@ -1508,6 +1524,48 @@ int tpm_unmarshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA 
       || tpm_unmarshal_TPM_ENTITY_TYPE(ptr, length, &v->entityType)
       || (v->type == TPM_ST_TRANSPORT 
           && tpm_unmarshal_TPM_TRANSPORT_INTERNAL(ptr, length, &v->transInternal))) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_STANY_DATA(BYTE **ptr, UINT32 *length, TPM_STANY_DATA *v)
+{
+  UINT32 i;
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->contextNonceSession)
+      || tpm_marshal_TPM_DIGEST(ptr, length, &v->auditDigest)
+      || tpm_marshal_BOOL(ptr, length, v->auditSession)
+      || tpm_marshal_TPM_CURRENT_TICKS(ptr, length, &v->currentTicks)
+      || tpm_marshal_UINT32(ptr, length, v->contextCount)
+      || tpm_marshal_UINT32_ARRAY(ptr, length, v->contextList, TPM_MAX_SESSION_LIST)) return -1;
+  for (i = 0; i < TPM_MAX_SESSIONS; i++) {
+    if (tpm_marshal_TPM_SESSION_DATA(ptr, length, &v->sessions[i])) return -1;
+  }
+  for (i = 0; i < TPM_MAX_SESSIONS_DAA; i++) {
+    if (tpm_marshal_TPM_DAA_SESSION_DATA(ptr, length, &v->sessionsDAA[i])) return -1;
+  }
+  if (tpm_marshal_DAAHANDLE(ptr, length, v->currentDAA)
+      || tpm_marshal_TPM_TRANSHANDLE(ptr, length, v->transExclusive)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_STANY_DATA(BYTE **ptr, UINT32 *length, TPM_STANY_DATA *v)
+{
+  UINT32 i;
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->contextNonceSession)
+      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->auditDigest)
+      || tpm_unmarshal_BOOL(ptr, length, &v->auditSession)
+      || tpm_unmarshal_TPM_CURRENT_TICKS(ptr, length, &v->currentTicks)
+      || tpm_unmarshal_UINT32(ptr, length, &v->contextCount)
+      || tpm_unmarshal_UINT32_ARRAY(ptr, length, v->contextList, TPM_MAX_SESSION_LIST)) return -1;
+  for (i = 0; i < TPM_MAX_SESSIONS; i++) {
+    if (tpm_unmarshal_TPM_SESSION_DATA(ptr, length, &v->sessions[i])) return -1;
+  }
+  for (i = 0; i < TPM_MAX_SESSIONS_DAA; i++) {
+    if (tpm_unmarshal_TPM_DAA_SESSION_DATA(ptr, length, &v->sessionsDAA[i])) return -1;
+  }
+  if (tpm_unmarshal_DAAHANDLE(ptr, length, &v->currentDAA)
+      || tpm_unmarshal_TPM_TRANSHANDLE(ptr, length, &v->transExclusive)) return -1;
   return 0;
 }
 

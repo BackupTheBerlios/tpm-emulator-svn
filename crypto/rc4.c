@@ -17,7 +17,7 @@
 
 #include "rc4.h"
 
-void rc4_init(rc4_ctx_t *ctx, uint8_t *key, size_t key_len)
+void tpm_rc4_init(tpm_rc4_ctx_t *ctx, uint8_t *key, size_t key_len)
 {
     int i;
     uint8_t a, j, k;
@@ -37,11 +37,11 @@ void rc4_init(rc4_ctx_t *ctx, uint8_t *key, size_t key_len)
        discard the first few (say 256) octets */
     for (i = 0; i < 16; i++) {
         uint8_t buf[16];
-        rc4_crypt(ctx, buf, buf, sizeof(buf));
+        tpm_rc4_crypt(ctx, buf, buf, sizeof(buf));
     }
 }
 
-void rc4_crypt(rc4_ctx_t *ctx, uint8_t *in, uint8_t *out, size_t length)
+void tpm_rc4_crypt(tpm_rc4_ctx_t *ctx, uint8_t *in, uint8_t *out, size_t length)
 {
     uint8_t a, x, y, *state;
     

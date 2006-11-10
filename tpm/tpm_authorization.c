@@ -193,7 +193,7 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
                     TPM_NONCE *nonceOddOSAP, TPM_AUTHHANDLE *authHandle,
                     TPM_NONCE *nonceEven, TPM_NONCE *nonceEvenOSAP)
 {
-  hmac_ctx_t ctx;
+  tpm_hmac_ctx_t ctx;
   TPM_SESSION_DATA *session;
   TPM_SECRET *secret = NULL;
   info("TPM_OSAP()");
@@ -250,10 +250,10 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
   memcpy(&session->nonceEven, nonceEven, sizeof(TPM_NONCE));
   tpm_get_random_bytes(nonceEvenOSAP->nonce, sizeof(nonceEvenOSAP->nonce));
   /* compute shared secret */
-  hmac_init(&ctx, *secret, sizeof(*secret));
-  hmac_update(&ctx, nonceEvenOSAP->nonce, sizeof(nonceEvenOSAP->nonce));
-  hmac_update(&ctx, nonceOddOSAP->nonce, sizeof(nonceOddOSAP->nonce));
-  hmac_final(&ctx, session->sharedSecret);
+  tpm_hmac_init(&ctx, *secret, sizeof(*secret));
+  tpm_hmac_update(&ctx, nonceEvenOSAP->nonce, sizeof(nonceEvenOSAP->nonce));
+  tpm_hmac_update(&ctx, nonceOddOSAP->nonce, sizeof(nonceOddOSAP->nonce));
+  tpm_hmac_final(&ctx, session->sharedSecret);
   return TPM_SUCCESS;
 }
 
@@ -281,7 +281,7 @@ TPM_RESULT TPM_SetOwnerPointer(TPM_ENTITY_TYPE entityType, UINT32 entityValue)
 TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret, 
                            TPM_HANDLE handle)
 {
-  hmac_ctx_t ctx;
+  tpm_hmac_ctx_t ctx;
   TPM_SESSION_DATA *session;
   UINT32 auth_handle = CPU_TO_BE32(auth->authHandle);
   
@@ -308,14 +308,14 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
   }
   auth->secret = &session->sharedSecret;
   /* verify authorization */
-  hmac_init(&ctx, *auth->secret, sizeof(*auth->secret));
-  hmac_update(&ctx, auth->digest, sizeof(auth->digest));
+  tpm_hmac_init(&ctx, *auth->secret, sizeof(*auth->secret));
+  tpm_hmac_update(&ctx, auth->digest, sizeof(auth->digest));
   if (session->type == TPM_ST_OIAP && FALSE) 
-    hmac_update(&ctx, (BYTE*)&auth_handle, 4);
-  hmac_update(&ctx, session->nonceEven.nonce, sizeof(session->nonceEven.nonce));
-  hmac_update(&ctx, auth->nonceOdd.nonce, sizeof(auth->nonceOdd.nonce));
-  hmac_update(&ctx, &auth->continueAuthSession, 1);
-  hmac_final(&ctx, auth->digest);
+    tpm_hmac_update(&ctx, (BYTE*)&auth_handle, 4);
+  tpm_hmac_update(&ctx, session->nonceEven.nonce, sizeof(session->nonceEven.nonce));
+  tpm_hmac_update(&ctx, auth->nonceOdd.nonce, sizeof(auth->nonceOdd.nonce));
+  tpm_hmac_update(&ctx, &auth->continueAuthSession, 1);
+  tpm_hmac_final(&ctx, auth->digest);
   if (memcmp(auth->digest, auth->auth, sizeof(auth->digest))) return TPM_AUTHFAIL;
   /* generate new nonceEven */
   memcpy(&session->lastNonceEven, &session->nonceEven, sizeof(TPM_NONCE));
@@ -328,11 +328,11 @@ void tpm_decrypt_auth_secret(TPM_ENCAUTH encAuth, TPM_SECRET secret,
                              TPM_NONCE *nonce, TPM_SECRET plainAuth)
 {
   unsigned int i;
-  sha1_ctx_t ctx;
-  sha1_init(&ctx);
-  sha1_update(&ctx, secret, sizeof(TPM_SECRET));
-  sha1_update(&ctx, nonce->nonce, sizeof(nonce->nonce));
-  sha1_final(&ctx, plainAuth);
+  tpm_sha1_ctx_t ctx;
+  tpm_sha1_init(&ctx);
+  tpm_sha1_update(&ctx, secret, sizeof(TPM_SECRET));
+  tpm_sha1_update(&ctx, nonce->nonce, sizeof(nonce->nonce));
+  tpm_sha1_final(&ctx, plainAuth);
   for (i = 0; i < sizeof(TPM_SECRET); i++)
     plainAuth[i] ^= encAuth[i];
 }

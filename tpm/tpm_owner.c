@@ -105,7 +105,7 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
                              TPM_KEY *srkPub)
 {
   TPM_RESULT res;
-  rsa_private_key_t *ek = &tpmData.permanent.data.endorsementKey;
+  tpm_rsa_private_key_t *ek = &tpmData.permanent.data.endorsementKey;
   TPM_KEY_DATA *srk = &tpmData.permanent.data.srk;
   size_t buf_size = ek->size >> 3;
   BYTE buf[buf_size];
@@ -116,7 +116,7 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   if (tpmData.permanent.flags.owned) return TPM_OWNER_SET;
   if (!tpmData.permanent.flags.ownership) return TPM_INSTALL_DISABLED;
   /* decrypt ownerAuth */
-  if (rsa_decrypt(ek, RSA_ES_OAEP_SHA1, encOwnerAuth, encOwnerAuthSize, 
+  if (tpm_rsa_decrypt(ek, RSA_ES_OAEP_SHA1, encOwnerAuth, encOwnerAuthSize, 
       buf, &buf_size) != 0) return TPM_FAIL;
   if (buf_size != sizeof(TPM_SECRET)) return TPM_BAD_KEY_PROPERTY;
   memcpy(tpmData.permanent.data.ownerAuth, buf, buf_size);
@@ -127,7 +127,7 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
     return TPM_AUTHFAIL;
   /* reset srk and decrypt srkAuth */
   memset(srk, 0, sizeof(*srk));
-  if (rsa_decrypt(ek, RSA_ES_OAEP_SHA1, encSrkAuth, encSrkAuthSize,
+  if (tpm_rsa_decrypt(ek, RSA_ES_OAEP_SHA1, encSrkAuth, encSrkAuthSize,
       buf, &buf_size) != 0) return TPM_FAIL;
   if (buf_size != sizeof(TPM_SECRET)) return TPM_BAD_KEY_PROPERTY;
   memcpy(srk->usageAuth, buf, buf_size);
@@ -150,7 +150,7 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   srk->authDataUsage = srkParams->authDataUsage;
   debug("[ srk->authDataUsage=%.2x ]", srk->authDataUsage);
   srkParams->algorithmParms.parms.rsa.keyLength = 2048;
-  if (rsa_generate_key(&srk->key, 
+  if (tpm_rsa_generate_key(&srk->key, 
       srkParams->algorithmParms.parms.rsa.keyLength)) return TPM_FAIL;
   srk->valid = TRUE;
   /* we do not allow binding of the SRK to PCRs */
@@ -167,11 +167,11 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   srkPub->pubKey.keyLength = srk->key.size >> 3;
   srkPub->pubKey.key = tpm_malloc(srkPub->pubKey.keyLength);
   if (srkPub->pubKey.key == NULL) {
-    rsa_release_private_key(&srk->key);
+    tpm_rsa_release_private_key(&srk->key);
     srk->valid = FALSE;
     return TPM_FAIL;
   }
-  rsa_export_modulus(&srk->key, srkPub->pubKey.key, NULL);
+  tpm_rsa_export_modulus(&srk->key, srkPub->pubKey.key, NULL);
   /* setup tpmProof and set state to owned */
   tpm_get_random_bytes(tpmData.permanent.data.tpmProof.nonce, 
     sizeof(tpmData.permanent.data.tpmProof.nonce));
