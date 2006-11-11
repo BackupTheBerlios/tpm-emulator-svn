@@ -190,7 +190,7 @@ static void decrypt_wrapped_command(BYTE *buf, UINT32 buf_len,
     tpm_sha1_init(&sha1);
     tpm_sha1_update(&sha1, auth->nonceEven.nonce, sizeof(auth->nonceEven.nonce));
     tpm_sha1_update(&sha1, auth->nonceOdd.nonce, sizeof(auth->nonceOdd.nonce));
-    tpm_sha1_update(&sha1, "in", 2);
+    tpm_sha1_update(&sha1, (uint8_t*)"in", 2);
     tpm_sha1_update(&sha1, secret, sizeof(TPM_SECRET));
     j = CPU_TO_BE32(i);
     tpm_sha1_update(&sha1, (BYTE*)&j, 4);
@@ -212,7 +212,7 @@ static void encrypt_wrapped_command(BYTE *buf, UINT32 buf_len,
     tpm_sha1_init(&sha1);
     tpm_sha1_update(&sha1, auth->nonceEven.nonce, sizeof(auth->nonceEven.nonce));
     tpm_sha1_update(&sha1, auth->nonceOdd.nonce, sizeof(auth->nonceOdd.nonce));
-    tpm_sha1_update(&sha1, "out", 3);
+    tpm_sha1_update(&sha1, (uint8_t*)"out", 3);
     tpm_sha1_update(&sha1, secret, sizeof(TPM_SECRET));
     j = CPU_TO_BE32(i);
     tpm_sha1_update(&sha1, (BYTE*)&j, 4);
@@ -356,9 +356,9 @@ TPM_RESULT TPM_ReleaseTransportSigned(TPM_KEY_HANDLE keyHandle,
   transport_log_out(currentTicks, auth1->digest, *locality,
     &session->transInternal.transDigest);
   /* setup a TPM_SIGN_INFO structure */
-  memcpy(&buf[0], "\x05\x00TRAN", 6);
+  memcpy(&buf[0], (uint8_t*)"\x05\x00TRAN", 6);
   memcpy(&buf[6], antiReplay->nonce, 20);
-  memcpy(&buf[26], "\x00\x00\x00\x14", 4);
+  memcpy(&buf[26], (uint8_t*)"\x00\x00\x00\x14", 4);
   memcpy(&buf[30], session->transInternal.transDigest.digest, 20);
   /* sign info structure */ 
   res = tpm_sign(key, auth1, TRUE, buf, sizeof(buf), signature, signSize);

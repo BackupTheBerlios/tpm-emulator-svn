@@ -92,7 +92,7 @@ static int tpm_test_sha1(void)
   unsigned int i, j;
   /* test cases for SHA-1 given in FIPS PUB 180-1 */
   struct {
-    const uint8_t *data; uint32_t repetitions; const uint8_t *digest;
+    const char *data; uint32_t repetitions; const char *digest;
   } test_cases[] =  {{
     "abc", 1,
     "\xA9\x99\x3E\x36\x47\x06\x81\x6A\xBA\x3E\x25\x71\x78\x50\xC2\x6C\x9C\xD0\xD8\x9D"
@@ -111,7 +111,7 @@ static int tpm_test_sha1(void)
   for (i = 0; i < sizeof(test_cases) / sizeof(test_cases[0]); i++) {
     tpm_sha1_init(&ctx);
     for (j = 0; j < test_cases[i].repetitions; j++)
-      tpm_sha1_update(&ctx, test_cases[i].data, strlen(test_cases[i].data));
+      tpm_sha1_update(&ctx, (uint8_t*)test_cases[i].data, strlen(test_cases[i].data));
     tpm_sha1_final(&ctx, digest);
     if (memcmp(digest, test_cases[i].digest, SHA1_DIGEST_LENGTH) != 0) return -1;
   }
@@ -125,9 +125,9 @@ static int tpm_test_hmac(void)
   unsigned int i, j;
   /* test cases for HMAC-SHA-1 given in RFC 2202 */
   struct {
-    const uint8_t *key; uint8_t key_len;
-    const uint8_t *data; uint8_t data_len;
-    const uint8_t *digest;
+    const char *key; uint8_t key_len;
+    const char *data; uint8_t data_len;
+    const char *digest;
   } test_cases[] = {{
     "\x0b", 20, "Hi There", 8,
     "\xb6\x17\x31\x86\x55\x05\x72\x64\xe2\x8b\xc0\xb6\xfb\x37\x8c\x8e\xf1\x46\xbe\x00"
@@ -158,12 +158,12 @@ static int tpm_test_hmac(void)
     if (strlen(test_cases[i].key) < test_cases[i].key_len) {
       uint8_t key[test_cases[i].key_len];
       memset(key, test_cases[i].key[0], test_cases[i].key_len);
-      tpm_hmac_init(&ctx, key, test_cases[i].key_len);
+      tpm_hmac_init(&ctx, (uint8_t*)key, test_cases[i].key_len);
     } else {
-      tpm_hmac_init(&ctx, test_cases[i].key, test_cases[i].key_len);
+      tpm_hmac_init(&ctx, (uint8_t*)test_cases[i].key, test_cases[i].key_len);
     }
     for (j = 0; j < test_cases[i].data_len; j += strlen(test_cases[i].data)) {
-      tpm_hmac_update(&ctx, test_cases[i].data, strlen(test_cases[i].data));
+      tpm_hmac_update(&ctx, (uint8_t *)test_cases[i].data, strlen(test_cases[i].data));
     }
     tpm_hmac_final(&ctx, digest);
     if (memcmp(digest, test_cases[i].digest, SHA1_DIGEST_LENGTH) != 0) return -1;
@@ -174,9 +174,9 @@ static int tpm_test_hmac(void)
 static int tpm_test_rsa_EK(void)
 {
   int res = 0;
-  const char *data = "RSA PKCS #1 v1.5 Test-String";
+  uint8_t *data = (uint8_t*)"RSA PKCS #1 v1.5 Test-String";
   uint8_t buf[256];
-  size_t buf_len, data_len = strlen(data);
+  size_t buf_len, data_len = strlen((char*)data);
   tpm_rsa_private_key_t priv_key;
   tpm_rsa_public_key_t pub_key;
 

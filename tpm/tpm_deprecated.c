@@ -21,6 +21,9 @@
 #include "tpm_handles.h"
 #include "tpm_marshalling.h"
 
+#define SAVE_KEY_CONTEXT_LABEL  ((uint8_t*)"SaveKeyContext..")
+#define SAVE_AUTH_CONTEXT_LABEL ((uint8_t*)"SaveAuthContext.")
+
 /*
  * Deprecated commands ([TPM_Part3], Section 28)
  * This section covers the commands that were in version 1.1 but now have 
@@ -50,7 +53,7 @@ TPM_RESULT TPM_SaveKeyContext(TPM_KEY_HANDLE keyHandle,
   BYTE *ptr;
   UINT32 len;
   info("TPM_SaveKeyContext()");
-  res = TPM_SaveContext(keyHandle, TPM_RT_KEY, "SaveKeyContext..", 
+  res = TPM_SaveContext(keyHandle, TPM_RT_KEY, SAVE_KEY_CONTEXT_LABEL,
                         keyContextSize, &contextBlob);
   if (res != TPM_SUCCESS) return res;
   len = *keyContextSize;
@@ -82,7 +85,7 @@ TPM_RESULT TPM_SaveAuthContext(TPM_AUTHHANDLE authHandle,
   BYTE *ptr;
   UINT32 len;
   info("TPM_SaveAuthContext()");
-  res = TPM_SaveContext(authHandle, TPM_RT_KEY, "SaveAuthContext.", 
+  res = TPM_SaveContext(authHandle, TPM_RT_KEY, SAVE_AUTH_CONTEXT_LABEL,
                         authContextSize, &contextBlob);
   if (res != TPM_SUCCESS) return res;
   len = *authContextSize;

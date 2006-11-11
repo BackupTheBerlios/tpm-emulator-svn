@@ -391,7 +391,7 @@ static int encode_message(int type, const uint8_t *data, size_t data_len,
       msg[0] = 0x00;
       tpm_get_random_bytes(&msg[1], SHA1_DIGEST_LENGTH);
       tpm_sha1_init(&ctx);
-      tpm_sha1_update(&ctx, "TCPA", 4);
+      tpm_sha1_update(&ctx, (uint8_t*)"TCPA", 4);
       tpm_sha1_final(&ctx, &msg[1 + SHA1_DIGEST_LENGTH]);
       memset(&msg[1 + 2 * SHA1_DIGEST_LENGTH], 0x00, 
         msg_len - data_len - 2 * SHA1_DIGEST_LENGTH - 2);
@@ -439,7 +439,7 @@ static int decode_message(int type, uint8_t *msg, size_t msg_len,
       tpm_rsa_mask_generation(&msg[1], SHA1_DIGEST_LENGTH,
         &msg[1 + SHA1_DIGEST_LENGTH], msg_len - SHA1_DIGEST_LENGTH - 1);
       tpm_sha1_init(&ctx);
-      tpm_sha1_update(&ctx, "TCPA", 4);
+      tpm_sha1_update(&ctx, (uint8_t*)"TCPA", 4);
       tpm_sha1_final(&ctx, &msg[1]);
       if (memcmp(&msg[1], &msg[1 + SHA1_DIGEST_LENGTH], 
           SHA1_DIGEST_LENGTH) != 0) return -1;

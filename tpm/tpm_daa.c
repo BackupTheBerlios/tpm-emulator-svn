@@ -26,6 +26,12 @@
 #include "crypto/rc4.h"
 #include "crypto/hmac.h"
 
+#define DAA_LABEL_00 ((uint8_t*)"\x00")
+#define DAA_LABEL_01 ((uint8_t*)"\x01")
+#define DAA_LABEL_r0 ((uint8_t*)"r0")
+#define DAA_LABEL_r1 ((uint8_t*)"r1")
+#define DAA_LABEL_r2 ((uint8_t*)"r2")
+
 UINT32 tpm_get_free_daa_session(void)
 {
   UINT32 i;
@@ -715,14 +721,14 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
           sizeof(session->DAA_tpmSpecific.DAA_rekey));
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
           sizeof(session->DAA_tpmSpecific.DAA_count));
-      tpm_sha1_update(&sha1, "\x00", 1);
+      tpm_sha1_update(&sha1, DAA_LABEL_00, 1);
       tpm_sha1_final(&sha1, scratch);
       tpm_sha1_init(&sha1);
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_rekey, 
           sizeof(session->DAA_tpmSpecific.DAA_rekey));
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
           sizeof(session->DAA_tpmSpecific.DAA_count));
-      tpm_sha1_update(&sha1, "\x01", 1);
+      tpm_sha1_update(&sha1, DAA_LABEL_01, 1);
       tpm_sha1_final(&sha1, scratch + SHA1_DIGEST_LENGTH);
       tpm_bn_init(f), tpm_bn_init(q);
       tpm_bn_import(f, 2 * SHA1_DIGEST_LENGTH, 1, 1, 0, 0, scratch);
@@ -804,14 +810,14 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
           sizeof(session->DAA_tpmSpecific.DAA_rekey));
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
           sizeof(session->DAA_tpmSpecific.DAA_count));
-      tpm_sha1_update(&sha1, "\x00", 1);
+      tpm_sha1_update(&sha1, DAA_LABEL_00, 1);
       tpm_sha1_final(&sha1, scratch);
       tpm_sha1_init(&sha1);
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_rekey, 
           sizeof(session->DAA_tpmSpecific.DAA_rekey));
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
           sizeof(session->DAA_tpmSpecific.DAA_count));
-      tpm_sha1_update(&sha1, "\x01", 1);
+      tpm_sha1_update(&sha1, DAA_LABEL_01, 1);
       tpm_sha1_final(&sha1, scratch + SHA1_DIGEST_LENGTH);
       tpm_bn_init(f), tpm_bn_init(q);
       tpm_bn_import(f, 2 * SHA1_DIGEST_LENGTH, 1, 1, 0, 0, scratch);
@@ -1488,14 +1494,14 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
           sizeof(session->DAA_tpmSpecific.DAA_rekey));
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
           sizeof(session->DAA_tpmSpecific.DAA_count));
-      tpm_sha1_update(&sha1, "\x00", 1);
+      tpm_sha1_update(&sha1, DAA_LABEL_00, 1);
       tpm_sha1_final(&sha1, scratch);
       tpm_sha1_init(&sha1);
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_rekey, 
           sizeof(session->DAA_tpmSpecific.DAA_rekey));
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
           sizeof(session->DAA_tpmSpecific.DAA_count));
-      tpm_sha1_update(&sha1, "\x01", 1);
+      tpm_sha1_update(&sha1, DAA_LABEL_01, 1);
       tpm_sha1_final(&sha1, scratch + SHA1_DIGEST_LENGTH);
       tpm_bn_init(f), tpm_bn_init(q);
       tpm_bn_import(f, 2 * SHA1_DIGEST_LENGTH, 1, 1, 0, 0, scratch);
@@ -1711,14 +1717,14 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
           sizeof(session->DAA_tpmSpecific.DAA_rekey));
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
           sizeof(session->DAA_tpmSpecific.DAA_count));
-      tpm_sha1_update(&sha1, "\x00", 1);
+      tpm_sha1_update(&sha1, DAA_LABEL_00, 1);
       tpm_sha1_final(&sha1, scratch);
       tpm_sha1_init(&sha1);
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_rekey, 
           sizeof(session->DAA_tpmSpecific.DAA_rekey));
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
           sizeof(session->DAA_tpmSpecific.DAA_count));
-      tpm_sha1_update(&sha1, "\x01", 1);
+      tpm_sha1_update(&sha1, DAA_LABEL_01, 1);
       tpm_sha1_final(&sha1, scratch + SHA1_DIGEST_LENGTH);
       tpm_bn_init(f), tpm_bn_init(q);
       tpm_bn_import(f, 2 * SHA1_DIGEST_LENGTH, 1, 1, 0, 0, scratch);
@@ -1792,14 +1798,14 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
           sizeof(session->DAA_tpmSpecific.DAA_rekey));
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
           sizeof(session->DAA_tpmSpecific.DAA_count));
-      tpm_sha1_update(&sha1, "\x00", 1);
+      tpm_sha1_update(&sha1, DAA_LABEL_00, 1);
       tpm_sha1_final(&sha1, scratch);
       tpm_sha1_init(&sha1);
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_rekey, 
           sizeof(session->DAA_tpmSpecific.DAA_rekey));
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
           sizeof(session->DAA_tpmSpecific.DAA_count));
-      tpm_sha1_update(&sha1, "\x01", 1);
+      tpm_sha1_update(&sha1, DAA_LABEL_01, 1);
       tpm_sha1_final(&sha1, scratch + SHA1_DIGEST_LENGTH);
       tpm_bn_init(f), tpm_bn_init(q);
       tpm_bn_import(f, 2 * SHA1_DIGEST_LENGTH, 1, 1, 0, 0, scratch);
@@ -2917,14 +2923,14 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
           sizeof(session->DAA_tpmSpecific.DAA_rekey));
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
           sizeof(session->DAA_tpmSpecific.DAA_count));
-      tpm_sha1_update(&sha1, "\x00", 1);
+      tpm_sha1_update(&sha1, DAA_LABEL_00, 1);
       tpm_sha1_final(&sha1, scratch);
       tpm_sha1_init(&sha1);
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_rekey, 
           sizeof(session->DAA_tpmSpecific.DAA_rekey));
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
           sizeof(session->DAA_tpmSpecific.DAA_count));
-      tpm_sha1_update(&sha1, "\x01", 1);
+      tpm_sha1_update(&sha1, DAA_LABEL_01, 1);
       tpm_sha1_final(&sha1, scratch + SHA1_DIGEST_LENGTH);
       tpm_bn_init(f), tpm_bn_init(q);
       tpm_bn_import(f, 2 * SHA1_DIGEST_LENGTH, 1, 1, 0, 0, scratch);
@@ -3142,7 +3148,7 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         tpm_sha1_init(&sha1);
         tpm_sha1_update(&sha1, (BYTE*) &session->DAA_session.DAA_digest, 
           sizeof(session->DAA_session.DAA_digest));
-        tpm_sha1_update(&sha1, "\x01", 1);
+        tpm_sha1_update(&sha1, DAA_LABEL_01, 1);
         tpm_sha1_update(&sha1, inputData1, inputSize1);
         tpm_sha1_final(&sha1, (BYTE*) &session->DAA_session.DAA_digest);
       }
@@ -3171,7 +3177,7 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         tpm_sha1_init(&sha1);
         tpm_sha1_update(&sha1, (BYTE*) &session->DAA_session.DAA_digest, 
           sizeof(session->DAA_session.DAA_digest));
-        tpm_sha1_update(&sha1, "\x00", 1);
+        tpm_sha1_update(&sha1, DAA_LABEL_00, 1);
         tpm_rsa_export_modulus(&aikData->key, scratch, &size);
         tpm_sha1_update(&sha1, scratch, size);
         tpm_sha1_final(&sha1, (BYTE*) &session->DAA_session.DAA_digest);
@@ -3228,14 +3234,14 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
           sizeof(session->DAA_tpmSpecific.DAA_rekey));
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
           sizeof(session->DAA_tpmSpecific.DAA_count));
-      tpm_sha1_update(&sha1, "\x00", 1);
+      tpm_sha1_update(&sha1, DAA_LABEL_00, 1);
       tpm_sha1_final(&sha1, scratch);
       tpm_sha1_init(&sha1);
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_rekey, 
           sizeof(session->DAA_tpmSpecific.DAA_rekey));
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
           sizeof(session->DAA_tpmSpecific.DAA_count));
-      tpm_sha1_update(&sha1, "\x01", 1);
+      tpm_sha1_update(&sha1, DAA_LABEL_01, 1);
       tpm_sha1_final(&sha1, scratch + SHA1_DIGEST_LENGTH);
       tpm_bn_init(f), tpm_bn_init(q);
       tpm_bn_import(f, 2 * SHA1_DIGEST_LENGTH, 1, 1, 0, 0, scratch);
@@ -3308,14 +3314,14 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
           sizeof(session->DAA_tpmSpecific.DAA_rekey));
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
           sizeof(session->DAA_tpmSpecific.DAA_count));
-      tpm_sha1_update(&sha1, "\x00", 1);
+      tpm_sha1_update(&sha1, DAA_LABEL_00, 1);
       tpm_sha1_final(&sha1, scratch);
       tpm_sha1_init(&sha1);
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_rekey, 
           sizeof(session->DAA_tpmSpecific.DAA_rekey));
       tpm_sha1_update(&sha1, (BYTE*) &session->DAA_tpmSpecific.DAA_count, 
           sizeof(session->DAA_tpmSpecific.DAA_count));
-      tpm_sha1_update(&sha1, "\x01", 1);
+      tpm_sha1_update(&sha1, DAA_LABEL_01, 1);
       tpm_sha1_final(&sha1, scratch + SHA1_DIGEST_LENGTH);
       tpm_bn_init(f), tpm_bn_init(q);
       tpm_bn_import(f, 2 * SHA1_DIGEST_LENGTH, 1, 1, 0, 0, scratch);
