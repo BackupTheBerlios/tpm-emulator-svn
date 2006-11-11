@@ -33,10 +33,9 @@ module_param(startup, charp, 0444);
 MODULE_PARM_DESC(startup, " Sets the startup mode of the TPM. "
   "Possible values are 'clear', 'save' (default) and 'deactivated.");
 char *storage_file = "/var/tpm/tpm_emulator-1.2."
-  STR(VERSION_MAJOR) "." STR(VERSION_MINOR);
+  TPM_STR(VERSION_MAJOR) "." TPM_STR(VERSION_MINOR);
 module_param(storage_file, charp, 0644);
-MODULE_PARM_DESC(storage_file, " Sets the persistent-data storage " 
-  "file of the TPM.");
+MODULE_PARM_DESC(storage_file, " Sets the persistent-data storage file of the TPM.");
 
 /* TPM lock */
 static struct semaphore tpm_mutex;

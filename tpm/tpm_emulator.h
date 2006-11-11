@@ -20,8 +20,8 @@
 #include "tpm_emulator_config.h"
 
 /* emulator version */
-#define STR(s) __STR__(s)
-#define __STR__(s) #s
+#define TPM_STR(s) _TPM_STR(s)
+#define _TPM_STR(s) #s
 #include "tpm_version.h"
 
 #define TPM_MANUFACTURER 0x4554485A /* 'ETHZ' */        
