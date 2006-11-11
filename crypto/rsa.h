@@ -18,21 +18,21 @@
 #define _RSA_H_
 
 #include "tpm_emulator_config.h"
-#include "gmp.h"
+#include "bn.h"
 
 typedef struct {
-  mpz_t n;
-  mpz_t e;
-  mpz_t d;
-  mpz_t p;
-  mpz_t q;
-  mpz_t u;
+  tpm_bn_t n;
+  tpm_bn_t e;
+  tpm_bn_t d;
+  tpm_bn_t p;
+  tpm_bn_t q;
+  tpm_bn_t u;
   uint16_t size;
 } tpm_rsa_private_key_t;
 
 typedef struct {
-  mpz_t n;
-  mpz_t e;
+  tpm_bn_t n;
+  tpm_bn_t e;
   uint16_t size;
 } tpm_rsa_public_key_t;
 
@@ -48,9 +48,9 @@ enum {
   RSA_LSB_FIRST = -1, RSA_MSB_FIRST = 1
 };
 
-#define RSA_EXTRACT_PUBLIC_KEY(priv_key, pub_key) { \
-  mpz_init_set(pub_key.n, priv_key.n); \
-  mpz_init_set(pub_key.e, priv_key.e); \
+#define TPM_RSA_EXTRACT_PUBLIC_KEY(priv_key, pub_key) { \
+  tpm_bn_init_set(pub_key.n, priv_key.n); \
+  tpm_bn_init_set(pub_key.e, priv_key.e); \
   pub_key.size = priv_key.size; }
 
 int tpm_rsa_import_key(tpm_rsa_private_key_t *key, int endian, 

@@ -21,24 +21,24 @@ static int rsa_public(tpm_rsa_public_key_t *key,
                       const uint8_t *in, size_t in_len, uint8_t *out)
 {
   size_t t;
-  mpz_t p, c;
+  tpm_bn_t p, c;
 
-  mpz_init2(p, key->size + GMP_NUMB_BITS);
-  mpz_init2(c, key->size + GMP_NUMB_BITS);
-  mpz_import(p, in_len, 1, 1, 0, 0, in);
+  tpm_bn_init2(p, key->size + GMP_NUMB_BITS);
+  tpm_bn_init2(c, key->size + GMP_NUMB_BITS);
+  tpm_bn_import(p, in_len, 1, 1, 0, 0, in);
   /* c = p ^ d mod n */
-  mpz_powm(c, p, key->e, key->n);
-  t = mpz_sizeinbase(c, 2);
+  tpm_bn_powm(c, p, key->e, key->n);
+  t = tpm_bn_bitsize(c);
   if (t > key->size) {
-    mpz_clear(p);
-    mpz_clear(c);
+    tpm_bn_clear(p);
+    tpm_bn_clear(c);
     return -1;
   }
   t = (key->size - t) >> 3;
   memset(out, 0, t);
-  mpz_export(&out[t], &t, 1, 1, 0, 0, c);
-  mpz_clear(p);
-  mpz_clear(c);
+  tpm_bn_export(&out[t], &t, 1, 1, 0, 0, c);
+  tpm_bn_clear(p);
+  tpm_bn_clear(c);
   return 0;
 }
 
@@ -46,70 +46,70 @@ static int rsa_private(tpm_rsa_private_key_t *key,
                        const uint8_t *in, size_t in_len, uint8_t *out)
 {
   size_t t;
-  mpz_t p, c, m1, m2, h;
+  tpm_bn_t p, c, m1, m2, h;
 
-  mpz_init2(p, key->size + GMP_NUMB_BITS);
-  mpz_init2(c, key->size + GMP_NUMB_BITS);
-  mpz_import(p, in_len, 1, 1, 0, 0, in);
+  tpm_bn_init2(p, key->size + GMP_NUMB_BITS);
+  tpm_bn_init2(c, key->size + GMP_NUMB_BITS);
+  tpm_bn_import(p, in_len, 1, 1, 0, 0, in);
 
   if (!key->p || !key->q || !key->u) {
     /* c = p ^ d mod n */
-    mpz_powm(c, p, key->d, key->n);
+    tpm_bn_powm(c, p, key->d, key->n);
   } else {
-    mpz_init2(m1, key->size / 2);
-    mpz_init2(m2, key->size / 2);
-    mpz_init2(h, key->size / 2 + GMP_NUMB_BITS);
+    tpm_bn_init2(m1, key->size / 2);
+    tpm_bn_init2(m2, key->size / 2);
+    tpm_bn_init2(h, key->size / 2 + GMP_NUMB_BITS);
     /* m1 = p ^ (d mod (p-1)) mod p */
-    mpz_sub_ui(h, key->p, 1);
-    mpz_mod(h, key->d, h);
-    mpz_powm(m1, p, h, key->p);
+    tpm_bn_sub_ui(h, key->p, 1);
+    tpm_bn_mod(h, key->d, h);
+    tpm_bn_powm(m1, p, h, key->p);
     /* m2 = p ^ (d mod (q-1)) mod q */
-    mpz_sub_ui(h, key->q, 1);
-    mpz_mod(h, key->d, h);
-    mpz_powm(m2, p, h, key->q);
+    tpm_bn_sub_ui(h, key->q, 1);
+    tpm_bn_mod(h, key->d, h);
+    tpm_bn_powm(m2, p, h, key->q);
     /* h = u * ( m2 - m1 ) mod q */
-    mpz_sub(h, m2, m1);
-    if (mpz_sgn(h) < 0) mpz_add(h, h, key->q);
-    mpz_mul(h, key->u, h);
-    mpz_mod(h, h, key->q);
+    tpm_bn_sub(h, m2, m1);
+    if (tpm_bn_sgn(h) < 0) tpm_bn_add(h, h, key->q);
+    tpm_bn_mul(h, key->u, h);
+    tpm_bn_mod(h, h, key->q);
     /* c = m1 + h * p */
-    mpz_mul(h, h, key->p);
-    mpz_add(c, m1, h);
-    mpz_clear(m1);
-    mpz_clear(m2);
+    tpm_bn_mul(h, h, key->p);
+    tpm_bn_add(c, m1, h);
+    tpm_bn_clear(m1);
+    tpm_bn_clear(m2);
   }
-  t = mpz_sizeinbase(c, 2);
+  t = tpm_bn_bitsize(c);
   if (t > key->size) {
-    mpz_clear(p);
-    mpz_clear(c);
+    tpm_bn_clear(p);
+    tpm_bn_clear(c);
     return -1;
   }
   t = (key->size - t) >> 3;
   memset(out, 0, t);
-  mpz_export(&out[t], &t, 1, 1, 0, 0, c);
-  mpz_clear(p);
-  mpz_clear(c);
+  tpm_bn_export(&out[t], &t, 1, 1, 0, 0, c);
+  tpm_bn_clear(p);
+  tpm_bn_clear(c);
   return 0;
 }
 
 static int rsa_test_key(tpm_rsa_private_key_t *key)
 {
-  mpz_t a, b, t;
+  tpm_bn_t a, b, t;
   int res = 0;
   
-  mpz_init2(a, key->size + GMP_NUMB_BITS);
-  mpz_init2(b, key->size + GMP_NUMB_BITS);
-  mpz_init2(t, key->size + GMP_NUMB_BITS);
-  mpz_set_ui(t, 0xdeadbeef);
-  mpz_powm(a, t, key->e, key->n);
-  mpz_powm(b, a, key->d, key->n);
-  if (mpz_cmp(t, b) != 0) res = -1;
-  mpz_powm(a, t, key->d, key->n);
-  mpz_powm(b, a, key->e, key->n);
-  if (mpz_cmp(t, b) != 0) res = -1;
-  mpz_clear(a);
-  mpz_clear(b);
-  mpz_clear(t);
+  tpm_bn_init2(a, key->size + GMP_NUMB_BITS);
+  tpm_bn_init2(b, key->size + GMP_NUMB_BITS);
+  tpm_bn_init2(t, key->size + GMP_NUMB_BITS);
+  tpm_bn_set_ui(t, 0xdeadbeef);
+  tpm_bn_powm(a, t, key->e, key->n);
+  tpm_bn_powm(b, a, key->d, key->n);
+  if (tpm_bn_cmp(t, b) != 0) res = -1;
+  tpm_bn_powm(a, t, key->d, key->n);
+  tpm_bn_powm(b, a, key->e, key->n);
+  if (tpm_bn_cmp(t, b) != 0) res = -1;
+  tpm_bn_clear(a);
+  tpm_bn_clear(b);
+  tpm_bn_clear(t);
   return res;
 }
 
@@ -118,42 +118,42 @@ int tpm_rsa_import_key(tpm_rsa_private_key_t *key, int endian,
                        const uint8_t *e, size_t e_len,
                        const uint8_t *p, const uint8_t *q)
 {
-  mpz_t t1, t2, phi;
+  tpm_bn_t t1, t2, phi;
   if (n == NULL || n_len == 0 || (p == NULL && q == NULL)) return -1;
   /* init key */
   key->size = n_len << 3;
   if (e == NULL || e_len == 0) {
-    mpz_init_set_ui(key->e, 65537);
+    tpm_bn_init_set_ui(key->e, 65537);
   } else {
-    mpz_init2(key->e, (e_len << 3) + GMP_NUMB_BITS);
-    mpz_import(key->e, e_len, endian, 1, 0, 0, e);
+    tpm_bn_init2(key->e, (e_len << 3) + GMP_NUMB_BITS);
+    tpm_bn_import(key->e, e_len, endian, 1, 0, 0, e);
   }
-  mpz_init2(key->n, key->size + GMP_NUMB_BITS);
-  mpz_init2(key->p, key->size / 2 + GMP_NUMB_BITS);
-  mpz_init2(key->q, key->size / 2 + GMP_NUMB_BITS);
-  mpz_init2(key->d, key->size + GMP_NUMB_BITS);
-  mpz_init2(key->u, key->size / 2 + GMP_NUMB_BITS); 
-  mpz_init2(t1, key->size / 2 + GMP_NUMB_BITS);
-  mpz_init2(t2, key->size / 2 + GMP_NUMB_BITS);
-  mpz_init2(phi, key->size + GMP_NUMB_BITS);
+  tpm_bn_init2(key->n, key->size + GMP_NUMB_BITS);
+  tpm_bn_init2(key->p, key->size / 2 + GMP_NUMB_BITS);
+  tpm_bn_init2(key->q, key->size / 2 + GMP_NUMB_BITS);
+  tpm_bn_init2(key->d, key->size + GMP_NUMB_BITS);
+  tpm_bn_init2(key->u, key->size / 2 + GMP_NUMB_BITS); 
+  tpm_bn_init2(t1, key->size / 2 + GMP_NUMB_BITS);
+  tpm_bn_init2(t2, key->size / 2 + GMP_NUMB_BITS);
+  tpm_bn_init2(phi, key->size + GMP_NUMB_BITS);
   /* import values */
-  mpz_import(key->n, n_len, endian, 1, 0, 0, n);
-  if (p != NULL) mpz_import(key->p, n_len / 2, endian, 1, 0, 0, p);
-  if (q != NULL) mpz_import(key->q, n_len / 2, endian, 1, 0, 0, q);
-  if (p == NULL) mpz_tdiv_q(key->p, key->n, key->q);
-  if (q == NULL) mpz_tdiv_q(key->q, key->n, key->p);
+  tpm_bn_import(key->n, n_len, endian, 1, 0, 0, n);
+  if (p != NULL) tpm_bn_import(key->p, n_len / 2, endian, 1, 0, 0, p);
+  if (q != NULL) tpm_bn_import(key->q, n_len / 2, endian, 1, 0, 0, q);
+  if (p == NULL) tpm_bn_tdiv_q(key->p, key->n, key->q);
+  if (q == NULL) tpm_bn_tdiv_q(key->q, key->n, key->p);
   /* p shall be smaller than q */
-  if (mpz_cmp(key->p, key->q) > 0) mpz_swap(key->p, key->q);
+  if (tpm_bn_cmp(key->p, key->q) > 0) tpm_bn_swap(key->p, key->q);
   /* calculate missing values */
-  mpz_sub_ui(t1, key->p, 1);
-  mpz_sub_ui(t2, key->q, 1);
-  mpz_mul(phi, t1, t2);
-  mpz_invert(key->d, key->e, phi);
-  mpz_invert(key->u, key->p, key->q);
+  tpm_bn_sub_ui(t1, key->p, 1);
+  tpm_bn_sub_ui(t2, key->q, 1);
+  tpm_bn_mul(phi, t1, t2);
+  tpm_bn_invert(key->d, key->e, phi);
+  tpm_bn_invert(key->u, key->p, key->q);
   /* release helper variables */
-  mpz_clear(t1);
-  mpz_clear(t2);
-  mpz_clear(phi);
+  tpm_bn_clear(t1);
+  tpm_bn_clear(t2);
+  tpm_bn_clear(phi);
   /* test key */
   if (rsa_test_key(key) != 0) {
     tpm_rsa_release_private_key(key);
@@ -164,12 +164,12 @@ int tpm_rsa_import_key(tpm_rsa_private_key_t *key, int endian,
 
 void tpm_rsa_copy_key(tpm_rsa_private_key_t *dst, tpm_rsa_private_key_t *src)
 {
-  mpz_init_set(dst->n, src->n);
-  mpz_init_set(dst->e, src->n);
-  mpz_init_set(dst->d, src->n);
-  mpz_init_set(dst->p, src->n);
-  mpz_init_set(dst->q, src->n);
-  mpz_init_set(dst->u, src->n);
+  tpm_bn_init_set(dst->n, src->n);
+  tpm_bn_init_set(dst->e, src->n);
+  tpm_bn_init_set(dst->d, src->n);
+  tpm_bn_init_set(dst->p, src->n);
+  tpm_bn_init_set(dst->q, src->n);
+  tpm_bn_init_set(dst->u, src->n);
   dst->size = src->size;
 }
 
@@ -181,89 +181,89 @@ int tpm_rsa_import_public_key(tpm_rsa_public_key_t *key, int endian,
   /* init key */
   key->size = n_len << 3;
   if (e == NULL || e_len == 0) {
-    mpz_init_set_ui(key->e, 65537);
+    tpm_bn_init_set_ui(key->e, 65537);
   } else {
-    mpz_init2(key->e, (e_len << 3) + GMP_NUMB_BITS);
-    mpz_import(key->e, e_len, endian, 1, 0, 0, e);
+    tpm_bn_init2(key->e, (e_len << 3) + GMP_NUMB_BITS);
+    tpm_bn_import(key->e, e_len, endian, 1, 0, 0, e);
   }
-  mpz_init2(key->n, key->size + GMP_NUMB_BITS);
+  tpm_bn_init2(key->n, key->size + GMP_NUMB_BITS);
   /* import values */
-  mpz_import(key->n, n_len, endian, 1, 0, 0, n);
+  tpm_bn_import(key->n, n_len, endian, 1, 0, 0, n);
   return 0;
 }
 
-static void rsa_mpz_random(mpz_t a, size_t nbits)
+static void rsa_tpm_bn_random(tpm_bn_t a, size_t nbits)
 {
   size_t size = nbits >> 3;
   char buf[size];
   tpm_get_random_bytes(buf, size);
-  mpz_import(a, size, 1, 1, 0, 0, buf);
+  tpm_bn_import(a, size, 1, 1, 0, 0, buf);
 }
 
 int tpm_rsa_generate_key(tpm_rsa_private_key_t *key, uint16_t key_size)
 {
-  mpz_t e, p, q, n, t1, t2, phi, d, u;
+  tpm_bn_t e, p, q, n, t1, t2, phi, d, u;
 
   /* bit_size must be a multiply of eight */
   while (key_size & 0x07) key_size++;
   /* we use e = 65537 */
-  mpz_init_set_ui(e, 65537);
-  mpz_init2(p, key_size / 2 + GMP_NUMB_BITS);
-  mpz_init2(q, key_size / 2 + GMP_NUMB_BITS);
-  mpz_init2(n, key_size + GMP_NUMB_BITS);
-  mpz_init2(t1, key_size / 2 + GMP_NUMB_BITS);
-  mpz_init2(t2, key_size / 2 + GMP_NUMB_BITS);
-  mpz_init2(phi, key_size + GMP_NUMB_BITS);
-  mpz_init2(d, key_size + GMP_NUMB_BITS);
-  mpz_init2(u, key_size / 2 + GMP_NUMB_BITS);
+  tpm_bn_init_set_ui(e, 65537);
+  tpm_bn_init2(p, key_size / 2 + GMP_NUMB_BITS);
+  tpm_bn_init2(q, key_size / 2 + GMP_NUMB_BITS);
+  tpm_bn_init2(n, key_size + GMP_NUMB_BITS);
+  tpm_bn_init2(t1, key_size / 2 + GMP_NUMB_BITS);
+  tpm_bn_init2(t2, key_size / 2 + GMP_NUMB_BITS);
+  tpm_bn_init2(phi, key_size + GMP_NUMB_BITS);
+  tpm_bn_init2(d, key_size + GMP_NUMB_BITS);
+  tpm_bn_init2(u, key_size / 2 + GMP_NUMB_BITS);
   do {  
     /* get prime p */
-    rsa_mpz_random(p, key_size / 2);
-    mpz_setbit(p, 0); 
-    mpz_setbit(p, key_size / 2 - 1);
-    mpz_setbit(p, key_size / 2 - 2);
-    mpz_nextprime(p, p);
-    mpz_sub_ui(t1, p, 1);
-    mpz_gcd(phi, e, t1);
-    if (mpz_cmp_ui(phi, 1) != 0) continue;
+    rsa_tpm_bn_random(p, key_size / 2);
+    tpm_bn_setbit(p, 0); 
+    tpm_bn_setbit(p, key_size / 2 - 1);
+    tpm_bn_setbit(p, key_size / 2 - 2);
+    tpm_bn_nextprime(p, p);
+    tpm_bn_sub_ui(t1, p, 1);
+    tpm_bn_gcd(phi, e, t1);
+    if (tpm_bn_cmp_ui(phi, 1) != 0) continue;
     /* get prime q */
-    rsa_mpz_random(q, key_size / 2);
-    mpz_setbit(q, 0);
-    mpz_setbit(q, key_size / 2 - 1);
-    mpz_setbit(q, key_size / 2 - 2);
-    mpz_nextprime(q, q);
-    mpz_sub_ui(t2, q, 1); 
-    mpz_gcd(phi, e, t1);
-    if (mpz_cmp_ui(phi, 1) != 0) continue;
+    rsa_tpm_bn_random(q, key_size / 2);
+    tpm_bn_setbit(q, 0);
+    tpm_bn_setbit(q, key_size / 2 - 1);
+    tpm_bn_setbit(q, key_size / 2 - 2);
+    tpm_bn_nextprime(q, q);
+    tpm_bn_sub_ui(t2, q, 1); 
+    tpm_bn_gcd(phi, e, t1);
+    if (tpm_bn_cmp_ui(phi, 1) != 0) continue;
     /* p shall be smaller than q */
-    if (mpz_cmp(p, q) > 0) mpz_swap(p, q);
+    if (tpm_bn_cmp(p, q) > 0) tpm_bn_swap(p, q);
     /* calculate the modulus */
-    mpz_mul(n, p, q);
-  } while (mpz_sizeinbase(n, 2) != key_size);
+    tpm_bn_mul(n, p, q);
+  } while (tpm_bn_bitsize(n) != key_size);
   /* calculate Euler totient: phi = (p-1)(q-1) */
-  mpz_mul(phi, t1, t2);
+  tpm_bn_mul(phi, t1, t2);
   /* calculate the secret key d = e^(-1) mod phi */
-  mpz_invert(d, e, phi);
+  tpm_bn_invert(d, e, phi);
   /* calculate the inverse of p and q (used for chinese remainder theorem) */
-  mpz_invert(u, p, q);
+  tpm_bn_invert(u, p, q);
   /* setup private key */
-  mpz_init_set(key->n, n);
-  mpz_init_set(key->e, e);
-  mpz_init_set(key->p, p);
-  mpz_init_set(key->q, q);
-  mpz_init_set(key->d, d);
-  mpz_init_set(key->u, u);  
+  tpm_bn_init_set(key->n, n);
+  tpm_bn_init_set(key->e, e);
+  tpm_bn_init_set(key->p, p);
+  tpm_bn_init_set(key->q, q);
+  tpm_bn_init_set(key->d, d);
+  tpm_bn_init_set(key->u, u);  
   key->size = key_size;
   /* release helper variables */
-  mpz_clear(e);
-  mpz_clear(p);
-  mpz_clear(q);
-  mpz_clear(n);
-  mpz_clear(t1);
-  mpz_clear(t2);
-  mpz_clear(phi);
-  mpz_clear(d);
-  mpz_clear(u);
+  tpm_bn_clear(e);
+  tpm_bn_clear(p);
+  tpm_bn_clear(q);
+  tpm_bn_clear(n);
+  tpm_bn_clear(t1);
+  tpm_bn_clear(t2);
+  tpm_bn_clear(phi);
+  tpm_bn_clear(d);
+  tpm_bn_clear(u);
   /* test key */
   if (rsa_test_key(key) != 0) {
     tpm_rsa_release_private_key(key);
@@ -274,44 +274,44 @@ int tpm_rsa_generate_key(tpm_rsa_private_key_t *key, uint16_t key_size)
 
 void tpm_rsa_release_private_key(tpm_rsa_private_key_t *key)
 {
-  mpz_clear(key->n);
-  mpz_clear(key->e);
-  mpz_clear(key->p);
-  mpz_clear(key->q);
-  mpz_clear(key->d);
-  mpz_clear(key->u);
+  tpm_bn_clear(key->n);
+  tpm_bn_clear(key->e);
+  tpm_bn_clear(key->p);
+  tpm_bn_clear(key->q);
+  tpm_bn_clear(key->d);
+  tpm_bn_clear(key->u);
   memset(key, 0, sizeof(*key));
 }
 
 void tpm_rsa_release_public_key(tpm_rsa_public_key_t *key)
 {
-  mpz_clear(key->n);
-  mpz_clear(key->e);
+  tpm_bn_clear(key->n);
+  tpm_bn_clear(key->e);
   memset(key, 0, sizeof(*key));
 }
 
 void tpm_rsa_export_modulus(tpm_rsa_private_key_t *key, 
                             uint8_t *modulus, size_t *length)
 {
-  mpz_export(modulus, length, 1 , 1, 0, 0, key->n);
+  tpm_bn_export(modulus, length, 1 , 1, 0, 0, key->n);
 }
 
 void tpm_rsa_export_exponent(tpm_rsa_private_key_t *key, 
                              uint8_t *exponent, size_t *length)
 {
-  mpz_export(exponent, length, 1 , 1, 0, 0, key->e);
+  tpm_bn_export(exponent, length, 1 , 1, 0, 0, key->e);
 }
 
 void tpm_rsa_export_prime1(tpm_rsa_private_key_t *key, 
                            uint8_t *prime, size_t *length)
 {
-  mpz_export(prime, length, 1 , 1, 0, 0, key->p);
+  tpm_bn_export(prime, length, 1 , 1, 0, 0, key->p);
 }
 
 void tpm_rsa_export_prime2(tpm_rsa_private_key_t *key, 
                            uint8_t *prime, size_t *length)
 {
-  mpz_export(prime, length, 1 , 1, 0, 0, key->q);
+  tpm_bn_export(prime, length, 1 , 1, 0, 0, key->q);
 }
 
 void tpm_rsa_mask_generation(const uint8_t *seed, size_t seed_len, 

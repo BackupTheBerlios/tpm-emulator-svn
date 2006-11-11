@@ -67,7 +67,7 @@ int tpm_encrypt_sealed_data(TPM_KEY_DATA *key, TPM_SEALED_DATA *seal,
     case TPM_ES_RSAESPKCSv15: scheme = RSA_ES_PKCSV15; break;
     default: return -1;
   }
-  RSA_EXTRACT_PUBLIC_KEY(key->key, pub_key);
+  TPM_RSA_EXTRACT_PUBLIC_KEY(key->key, pub_key);
   len = sizeof_TPM_SEALED_DATA((*seal));
   buf = ptr = tpm_malloc(len);
   if (buf == NULL
@@ -351,7 +351,7 @@ int tpm_encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
     case TPM_ES_RSAESPKCSv15: scheme = RSA_ES_PKCSV15; break;
     default: return -1;
   }
-  RSA_EXTRACT_PUBLIC_KEY(key->key, pub_key);
+  TPM_RSA_EXTRACT_PUBLIC_KEY(key->key, pub_key);
   len = sizeof_TPM_STORE_ASYMKEY((*store));
   buf = ptr = tpm_malloc(len);
   if (buf == NULL

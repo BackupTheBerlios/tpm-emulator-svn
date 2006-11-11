@@ -191,7 +191,7 @@ static int tpm_test_rsa_EK(void)
   do {
     priv_key = tpmData.permanent.data.endorsementKey;
     if (!priv_key.size) return 0;
-    RSA_EXTRACT_PUBLIC_KEY(priv_key, pub_key);
+    TPM_RSA_EXTRACT_PUBLIC_KEY(priv_key, pub_key);
     /* test sign and verify functions */
     debug("tpm_rsa_sign(RSA_SSA_PKCS1_SHA1)");
     res = tpm_rsa_sign(&priv_key, RSA_SSA_PKCS1_SHA1, data, data_len, buf);
