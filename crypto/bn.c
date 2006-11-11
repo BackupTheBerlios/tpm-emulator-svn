@@ -137,7 +137,7 @@ void tpm_bn_fdiv_q_2exp(tpm_bn_t res, tpm_bn_t n, uint32_t b)
 
 void tpm_bn_tdiv_q(tpm_bn_t res, tpm_bn_t a, tpm_bn_t b)
 {
-  tpm_bn_tdiv_q(res, a, b);
+  mpz_tdiv_q(res, a, b);
 }
 
 void tpm_bn_gcd(tpm_bn_t res, tpm_bn_t a, tpm_bn_t b)
