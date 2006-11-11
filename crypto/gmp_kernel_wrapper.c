@@ -39,7 +39,7 @@ void __attribute__ ((regparm(0))) *kernel_allocate(size_t size)
 {
   void *ret  = (void*)kmalloc(size, GFP_KERNEL);
   if (!ret) panic(KERN_CRIT TPM_MODULE_NAME 
-    "GMP: cannot allocate memory (size=%u)\n", size);
+    "GMP: cannot allocate memory (size=%zd)\n", size);
   return ret;
 }
 
@@ -48,7 +48,7 @@ void __attribute__ ((regparm(0))) *kernel_reallocate(void *oldptr,
 {
   void *ret = (void*)kmalloc(new_size, GFP_KERNEL);
   if (!ret) panic(KERN_CRIT TPM_MODULE_NAME "GMP: Cannot reallocate memory "
-    "(old_size=%u new_size=%u)\n", old_size, new_size);
+    "(old_size=%zd new_size=%zd)\n", old_size, new_size);
   memcpy(ret, oldptr, old_size);
   kfree(oldptr);
   return ret;

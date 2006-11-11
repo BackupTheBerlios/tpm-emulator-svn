@@ -61,7 +61,7 @@ dist:	$(DISTSRC)
 	rm -rf $(DISTDIR)
 
 $(src)/crypto/libgmp.a:
-	test -f $(src)/crypto/libgmp.a || ln -s $(GMP_LIB) $(src)/crypto/libgmp.a
+	test -e $(src)/crypto/libgmp.a || ln -s $(GMP_LIB) $(src)/crypto/libgmp.a
 
 # Note: We have to make sure that we use stack-based calling conventions 
 # when using GNU MP library functions

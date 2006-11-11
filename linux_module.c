@@ -74,7 +74,7 @@ static int tpm_release(struct inode *inode, struct file *file)
 
 static ssize_t tpm_read(struct file *file, char *buf, size_t count, loff_t *ppos)
 {
-  debug("%s(%d)", __FUNCTION__, count);
+  debug("%s(%zd)", __FUNCTION__, count);
   down(&tpm_mutex);
   if (tpm_response.data != NULL) {
     count = min(count, (size_t)tpm_response.size - (size_t)*ppos);
@@ -93,7 +93,7 @@ static ssize_t tpm_read(struct file *file, char *buf, size_t count, loff_t *ppos
 
 static ssize_t tpm_write(struct file *file, const char *buf, size_t count, loff_t *ppos)
 {
-  debug("%s(%d)", __FUNCTION__, count);
+  debug("%s(%zd)", __FUNCTION__, count);
   down(&tpm_mutex);
   *ppos = 0;
   if (tpm_response.data != NULL) {
