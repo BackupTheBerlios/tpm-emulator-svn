@@ -341,7 +341,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
   TPM_DAA_SESSION_DATA *session = NULL;
   
   TPM_RESULT res;
-  UINT32 cnt, len, size;
+  UINT32 cnt, len;
   tpm_sha1_ctx_t sha1;
   tpm_rsa_public_key_t key;
   BYTE *signedData = NULL, *signatureValue = NULL, *DAA_generic_gamma = NULL,
@@ -349,7 +349,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
     *DAA_generic_S0 = NULL, *DAA_generic_S1 = NULL, *ptr;
   tpm_bn_t X, Y, Z, n, f, q, f0, f1, w1, w, gamma, r0, r1, r2, r3, r, s0, s1, 
     s12, s2, s3, E, E1, u2, u3, v0, v10, v1, tmp;
-  size_t sizeNE = 0;
+  size_t size;
   BYTE mgf1_seed[2 + sizeof(TPM_DIGEST)];
   TPM_DAA_BLOB blob;
   TPM_DAA_SENSITIVE sensitive;
@@ -982,13 +982,12 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       tpm_bn_powm(tmp, X, Y, n);
       tpm_bn_mul(tmp, tmp, Z);
       tpm_bn_mod(tmp, tmp, n);
-      tpm_bn_export(session->DAA_session.DAA_scratch, outputSize, 
-        1, 1, 0, 0, tmp);
+      tpm_bn_export(session->DAA_session.DAA_scratch, &size, 1, 1, 0, 0, tmp);
       memset(session->DAA_session.DAA_scratch, 0, 
         sizeof(session->DAA_session.DAA_scratch));
       tpm_bn_export(session->DAA_session.DAA_scratch + 
-        (sizeof(session->DAA_session.DAA_scratch) - *outputSize),
-        outputSize, 1, 1, 0, 0, tmp);
+        (sizeof(session->DAA_session.DAA_scratch) - size),
+        &size, 1, 1, 0, 0, tmp);
       tpm_bn_clear(X), tpm_bn_clear(Y), tpm_bn_clear(Z), tpm_bn_clear(n), tpm_bn_clear(tmp);
       /* Set DAA_session->DAA_digest to the SHA-1(DAA_session->DAA_scratch || 
        * DAA_tpmSpecific->DAA_count || DAA_joinSession->DAA_digest_n0) */
@@ -1052,7 +1051,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       /* Set NE = decrypt(inputData0, privEK) */
       memset(scratch, 0, sizeof(scratch));
       if (tpm_rsa_decrypt(&tpmData.permanent.data.endorsementKey, 
-        RSA_ES_OAEP_SHA1, inputData0, inputSize0, scratch, &sizeNE)) {
+        RSA_ES_OAEP_SHA1, inputData0, inputSize0, scratch, &size)) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_DECRYPT_ERROR;
       }
@@ -1065,7 +1064,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       tpm_sha1_init(&sha1);
       tpm_sha1_update(&sha1, session->DAA_session.DAA_digest.digest, 
         sizeof(session->DAA_session.DAA_digest.digest));
-      tpm_sha1_update(&sha1, scratch, sizeNE);
+      tpm_sha1_update(&sha1, scratch, size);
       tpm_sha1_final(&sha1, *outputData);
       /* Set DAA_session->DAA_digest = NULL */
       memset(&session->DAA_session.DAA_digest, 0, 
@@ -1368,8 +1367,8 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       tpm_bn_powm(tmp, X, Y, n);
       tpm_bn_mul(tmp, tmp, Z);
       tpm_bn_mod(tmp, tmp, n);
-      tpm_bn_export(session->DAA_session.DAA_scratch, outputSize, 
-        1, 1, 0, 0, tmp);
+      tpm_bn_export(session->DAA_session.DAA_scratch, &size, 1, 1, 0, 0, tmp);
+      *outputSize = (uint32_t)size;
       tpm_bn_clear(X), tpm_bn_clear(Y), tpm_bn_clear(Z), tpm_bn_clear(n), tpm_bn_clear(tmp);
       /* Set outputData = DAA_session->DAA_scratch */
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
@@ -1517,7 +1516,8 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       tpm_bn_init(E);
       tpm_bn_powm(E, w, f, gamma);
       /* Set outputData = E */
-      tpm_bn_export(scratch, outputSize, 1, 1, 0, 0, E);
+      tpm_bn_export(scratch, &size, 1, 1, 0, 0, E);
+      *outputSize = (uint32_t)size;
       tpm_bn_clear(f), tpm_bn_clear(q), tpm_bn_clear(gamma), tpm_bn_clear(w), tpm_bn_clear(E);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
         memcpy(*outputData, scratch, *outputSize);
@@ -1603,7 +1603,8 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       memset(session->DAA_session.DAA_scratch, 0, 
         sizeof(session->DAA_session.DAA_scratch));
       /* Set outputData = E1 */
-      tpm_bn_export(scratch, outputSize, 1, 1, 0, 0, E1);
+      tpm_bn_export(scratch, &size, 1, 1, 0, 0, E1);
+      *outputSize = (uint32_t)size;
       tpm_bn_clear(r0), tpm_bn_clear(r1), tpm_bn_clear(q), tpm_bn_clear(r);
       tpm_bn_clear(gamma), tpm_bn_clear(w), tpm_bn_clear(E1);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
@@ -1744,7 +1745,8 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       tpm_bn_mul(s0, tmp, f0);
       tpm_bn_add(s0, r0, s0);
       /* Set outputData = s0 */
-      tpm_bn_export(scratch, outputSize, 1, 1, 0, 0, s0);
+      tpm_bn_export(scratch, &size, 1, 1, 0, 0, s0);
+      *outputSize = (uint32_t)size;
       tpm_bn_clear(r0), tpm_bn_clear(f), tpm_bn_clear(q), tpm_bn_clear(f0);
       tpm_bn_clear(s0), tpm_bn_clear(tmp);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
@@ -1824,7 +1826,8 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       tpm_bn_mul(s1, tmp, f1);
       tpm_bn_add(s1, r1, s1);
       /* Set outputData = s1 */
-      tpm_bn_export(scratch, outputSize, 1, 1, 0, 0, s1);
+      tpm_bn_export(scratch, &size, 1, 1, 0, 0, s1);
+      *outputSize = (uint32_t)size;
       tpm_bn_clear(r1), tpm_bn_clear(f), tpm_bn_clear(q), tpm_bn_clear(f1);
       tpm_bn_clear(s1), tpm_bn_clear(tmp);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
@@ -1887,7 +1890,8 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         sizeof(session->DAA_session.DAA_scratch));
       tpm_bn_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, s2);
       /* Set outputData = s2 */
-      tpm_bn_export(scratch, outputSize, 1, 1, 0, 0, s2);
+      tpm_bn_export(scratch, &size, 1, 1, 0, 0, s2);
+      *outputSize = (uint32_t)size;
       tpm_bn_clear(r2), tpm_bn_clear(s2), tpm_bn_clear(tmp);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
         memcpy(*outputData, scratch, *outputSize);
@@ -2011,7 +2015,8 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       memset(session->DAA_session.DAA_scratch, 0, 
         sizeof(session->DAA_session.DAA_scratch));
       /* Set outputData = s3 */
-      tpm_bn_export(scratch, outputSize, 1, 1, 0, 0, s3);
+      tpm_bn_export(scratch, &size, 1, 1, 0, 0, s3);
+      *outputSize = (uint32_t)size;
       tpm_bn_clear(r3), tpm_bn_clear(s3), tpm_bn_clear(tmp);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
         memcpy(*outputData, scratch, *outputSize);
@@ -2370,7 +2375,7 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
   tpm_bn_t X, Y, Z, n, w1, w, gamma, q, f, E, r0, r1, r, E1, f0, s0, f1, s1, 
     r2, s2, s12, r4, s3, tmp;
   BYTE selector;
-  UINT32 size;
+  size_t size;
   TPM_KEY_DATA *aikData;
   TPM_KEY_HANDLE aikHandle;
   
@@ -2799,8 +2804,8 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       tpm_bn_powm(tmp, X, Y, n);
       tpm_bn_mul(tmp, tmp, Z);
       tpm_bn_mod(tmp, tmp, n);
-      tpm_bn_export(session->DAA_session.DAA_scratch, outputSize, 
-        1, 1, 0, 0, tmp);
+      tpm_bn_export(session->DAA_session.DAA_scratch, &size, 1, 1, 0, 0, tmp);
+      *outputSize = (uint32_t)size;
       tpm_bn_clear(X), tpm_bn_clear(Y), tpm_bn_clear(Z), tpm_bn_clear(n), tpm_bn_clear(tmp);
       /* Set outputData = DAA_session->DAA_scratch */
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
@@ -2946,7 +2951,8 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       tpm_bn_init(E);
       tpm_bn_powm(E, w, f, gamma);
       /* Set outputData = E */
-      tpm_bn_export(scratch, outputSize, 1, 1, 0, 0, E);
+      tpm_bn_export(scratch, &size, 1, 1, 0, 0, E);
+      *outputSize = (uint32_t)size;
       tpm_bn_clear(f), tpm_bn_clear(q), tpm_bn_clear(gamma), tpm_bn_clear(w), tpm_bn_clear(E);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
         memcpy(*outputData, scratch, *outputSize);
@@ -3031,7 +3037,8 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       memset(session->DAA_session.DAA_scratch, 0, 
         sizeof(session->DAA_session.DAA_scratch));
       /* Set outputData = E1 */
-      tpm_bn_export(scratch, outputSize, 1, 1, 0, 0, E1);
+      tpm_bn_export(scratch, &size, 1, 1, 0, 0, E1);
+      *outputSize = (uint32_t)size;
       tpm_bn_clear(r0), tpm_bn_clear(r1), tpm_bn_clear(q), tpm_bn_clear(r);
       tpm_bn_clear(gamma), tpm_bn_clear(w), tpm_bn_clear(E1);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
@@ -3261,7 +3268,8 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       tpm_bn_mul(s0, tmp, f0);
       tpm_bn_add(s0, r0, s0);
       /* Set outputData = s0 */
-      tpm_bn_export(scratch, outputSize, 1, 1, 0, 0, s0);
+      tpm_bn_export(scratch, &size, 1, 1, 0, 0, s0);
+      *outputSize = (uint32_t)size;
       tpm_bn_clear(r0), tpm_bn_clear(f), tpm_bn_clear(q), tpm_bn_clear(f0);
       tpm_bn_clear(s0), tpm_bn_clear(tmp);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
@@ -3340,7 +3348,8 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       tpm_bn_mul(s1, tmp, f1);
       tpm_bn_add(s1, r1, s1);
       /* Set outputData = s1 */
-      tpm_bn_export(scratch, outputSize, 1, 1, 0, 0, s1);
+      tpm_bn_export(scratch, &size, 1, 1, 0, 0, s1);
+      *outputSize = (uint32_t)size;
       tpm_bn_clear(r1), tpm_bn_clear(f), tpm_bn_clear(q), tpm_bn_clear(f1);
       tpm_bn_clear(s1), tpm_bn_clear(tmp);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
@@ -3448,7 +3457,8 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         sizeof(session->DAA_session.DAA_scratch));
       tpm_bn_export(session->DAA_session.DAA_scratch, NULL, -1, 1, 0, 0, s2);
       /* Set outputData = s2 */
-      tpm_bn_export(scratch, outputSize, 1, 1, 0, 0, s2);
+      tpm_bn_export(scratch, &size, 1, 1, 0, 0, s2);
+      *outputSize = (uint32_t)size;
       tpm_bn_clear(r2), tpm_bn_clear(s2), tpm_bn_clear(tmp);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
         memcpy(*outputData, scratch, *outputSize);
@@ -3654,7 +3664,8 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       memset(session->DAA_session.DAA_scratch, 0, 
         sizeof(session->DAA_session.DAA_scratch));
       /* Set outputData = s3 */
-      tpm_bn_export(scratch, outputSize, 1, 1, 0, 0, s3);
+      tpm_bn_export(scratch, &size, 1, 1, 0, 0, s3);
+      *outputSize = (uint32_t)size;
       tpm_bn_clear(r4), tpm_bn_clear(s3), tpm_bn_clear(tmp);
       if ((*outputData = tpm_malloc(*outputSize)) != NULL)
         memcpy(*outputData, scratch, *outputSize);
