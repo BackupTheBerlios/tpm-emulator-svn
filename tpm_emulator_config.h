@@ -68,7 +68,7 @@ static inline void tpm_free(const void *ptr)
 
 /* random numbers */
 
-static inline void tpm_get_random_bytes(void *buf, int nbytes)
+static inline void tpm_get_random_bytes(void *buf, size_t nbytes)
 {
   get_random_bytes(buf, nbytes);
 }
