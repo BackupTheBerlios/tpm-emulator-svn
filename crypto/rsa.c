@@ -23,8 +23,8 @@ static int rsa_public(tpm_rsa_public_key_t *key,
   size_t t;
   tpm_bn_t p, c;
 
-  tpm_bn_init2(p, key->size + GMP_NUMB_BITS);
-  tpm_bn_init2(c, key->size + GMP_NUMB_BITS);
+  tpm_bn_init2(p, key->size);
+  tpm_bn_init2(c, key->size);
   tpm_bn_import(p, in_len, 1, 1, 0, 0, in);
   /* c = p ^ d mod n */
   tpm_bn_powm(c, p, key->e, key->n);
@@ -48,8 +48,8 @@ static int rsa_private(tpm_rsa_private_key_t *key,
   size_t t;
   tpm_bn_t p, c, m1, m2, h;
 
-  tpm_bn_init2(p, key->size + GMP_NUMB_BITS);
-  tpm_bn_init2(c, key->size + GMP_NUMB_BITS);
+  tpm_bn_init2(p, key->size);
+  tpm_bn_init2(c, key->size);
   tpm_bn_import(p, in_len, 1, 1, 0, 0, in);
 
   if (!key->p || !key->q || !key->u) {
@@ -58,7 +58,7 @@ static int rsa_private(tpm_rsa_private_key_t *key,
   } else {
     tpm_bn_init2(m1, key->size / 2);
     tpm_bn_init2(m2, key->size / 2);
-    tpm_bn_init2(h, key->size / 2 + GMP_NUMB_BITS);
+    tpm_bn_init2(h, key->size / 2);
     /* m1 = p ^ (d mod (p-1)) mod p */
     tpm_bn_sub_ui(h, key->p, 1);
     tpm_bn_mod(h, key->d, h);
@@ -97,9 +97,9 @@ static int rsa_test_key(tpm_rsa_private_key_t *key)
   tpm_bn_t a, b, t;
   int res = 0;
   
-  tpm_bn_init2(a, key->size + GMP_NUMB_BITS);
-  tpm_bn_init2(b, key->size + GMP_NUMB_BITS);
-  tpm_bn_init2(t, key->size + GMP_NUMB_BITS);
+  tpm_bn_init2(a, key->size);
+  tpm_bn_init2(b, key->size);
+  tpm_bn_init2(t, key->size);
   tpm_bn_set_ui(t, 0xdeadbeef);
   tpm_bn_powm(a, t, key->e, key->n);
   tpm_bn_powm(b, a, key->d, key->n);
@@ -125,17 +125,17 @@ int tpm_rsa_import_key(tpm_rsa_private_key_t *key, int endian,
   if (e == NULL || e_len == 0) {
     tpm_bn_init_set_ui(key->e, 65537);
   } else {
-    tpm_bn_init2(key->e, (e_len << 3) + GMP_NUMB_BITS);
+    tpm_bn_init2(key->e, e_len << 3);
     tpm_bn_import(key->e, e_len, endian, 1, 0, 0, e);
   }
-  tpm_bn_init2(key->n, key->size + GMP_NUMB_BITS);
-  tpm_bn_init2(key->p, key->size / 2 + GMP_NUMB_BITS);
-  tpm_bn_init2(key->q, key->size / 2 + GMP_NUMB_BITS);
-  tpm_bn_init2(key->d, key->size + GMP_NUMB_BITS);
-  tpm_bn_init2(key->u, key->size / 2 + GMP_NUMB_BITS); 
-  tpm_bn_init2(t1, key->size / 2 + GMP_NUMB_BITS);
-  tpm_bn_init2(t2, key->size / 2 + GMP_NUMB_BITS);
-  tpm_bn_init2(phi, key->size + GMP_NUMB_BITS);
+  tpm_bn_init2(key->n, key->size);
+  tpm_bn_init2(key->p, key->size / 2);
+  tpm_bn_init2(key->q, key->size / 2);
+  tpm_bn_init2(key->d, key->size);
+  tpm_bn_init2(key->u, key->size / 2); 
+  tpm_bn_init2(t1, key->size / 2);
+  tpm_bn_init2(t2, key->size / 2);
+  tpm_bn_init2(phi, key->size);
   /* import values */
   tpm_bn_import(key->n, n_len, endian, 1, 0, 0, n);
   if (p != NULL) tpm_bn_import(key->p, n_len / 2, endian, 1, 0, 0, p);
@@ -183,10 +183,10 @@ int tpm_rsa_import_public_key(tpm_rsa_public_key_t *key, int endian,
   if (e == NULL || e_len == 0) {
     tpm_bn_init_set_ui(key->e, 65537);
   } else {
-    tpm_bn_init2(key->e, (e_len << 3) + GMP_NUMB_BITS);
+    tpm_bn_init2(key->e, e_len << 3);
     tpm_bn_import(key->e, e_len, endian, 1, 0, 0, e);
   }
-  tpm_bn_init2(key->n, key->size + GMP_NUMB_BITS);
+  tpm_bn_init2(key->n, key->size);
   /* import values */
   tpm_bn_import(key->n, n_len, endian, 1, 0, 0, n);
   return 0;
@@ -208,14 +208,14 @@ int tpm_rsa_generate_key(tpm_rsa_private_key_t *key, uint16_t key_size)
   while (key_size & 0x07) key_size++;
   /* we use e = 65537 */
   tpm_bn_init_set_ui(e, 65537);
-  tpm_bn_init2(p, key_size / 2 + GMP_NUMB_BITS);
-  tpm_bn_init2(q, key_size / 2 + GMP_NUMB_BITS);
-  tpm_bn_init2(n, key_size + GMP_NUMB_BITS);
-  tpm_bn_init2(t1, key_size / 2 + GMP_NUMB_BITS);
-  tpm_bn_init2(t2, key_size / 2 + GMP_NUMB_BITS);
-  tpm_bn_init2(phi, key_size + GMP_NUMB_BITS);
-  tpm_bn_init2(d, key_size + GMP_NUMB_BITS);
-  tpm_bn_init2(u, key_size / 2 + GMP_NUMB_BITS);
+  tpm_bn_init2(p, key_size / 2);
+  tpm_bn_init2(q, key_size / 2);
+  tpm_bn_init2(n, key_size);
+  tpm_bn_init2(t1, key_size / 2);
+  tpm_bn_init2(t2, key_size / 2);
+  tpm_bn_init2(phi, key_size);
+  tpm_bn_init2(d, key_size);
+  tpm_bn_init2(u, key_size / 2);
   do {  
     /* get prime p */
     rsa_tpm_bn_random(p, key_size / 2);
