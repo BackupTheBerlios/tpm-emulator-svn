@@ -33,6 +33,11 @@ void __attribute__ ((regparm(0))) abort(void)
   panic(KERN_CRIT TPM_MODULE_NAME "GNU MP abort() was called\n");
 }
 
+void __stack_chk_fail(void)
+{
+  error("stack-protector: stack is corrupted\n");
+}
+
 /* GNU MP memory management */
 
 void __attribute__ ((regparm(0))) *kernel_allocate(size_t size)
