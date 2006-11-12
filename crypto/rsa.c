@@ -195,7 +195,7 @@ int tpm_rsa_import_public_key(tpm_rsa_public_key_t *key, int endian,
 static void rsa_tpm_bn_random(tpm_bn_t a, size_t nbits)
 {
   size_t size = nbits >> 3;
-  char buf[size];
+  uint8_t buf[size];
   tpm_get_random_bytes(buf, size);
   tpm_bn_import(a, size, 1, 1, 0, 0, buf);
 }
