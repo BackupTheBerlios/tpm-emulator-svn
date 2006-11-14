@@ -98,7 +98,7 @@ void tpm_init_data(void)
   memcpy(&tpmData.permanent.data.version, 
          &tpm_version, sizeof(TPM_VERSION));
   /* setup PCR attributes */
-  for (i = 0; i < min(16, TPM_NUM_PCR); i++) {
+  for (i = 0; i < tpm_min(16, TPM_NUM_PCR); i++) {
     init_pcr_attr(i, FALSE, 0x00, 0x1f);
   }
   if (TPM_NUM_PCR >= 24) {

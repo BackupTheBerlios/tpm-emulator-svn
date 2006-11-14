@@ -38,6 +38,12 @@ void __stack_chk_fail(void)
   error("stack-protector: stack is corrupted\n");
 }
 
+const unsigned short * __ctype_b_loc (void)
+{
+  static const unsigned short table[384] = {0};
+  return &table[128];
+}
+
 /* GNU MP memory management */
 
 void __attribute__ ((regparm(0))) *kernel_allocate(size_t size)

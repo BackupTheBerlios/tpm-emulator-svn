@@ -54,6 +54,10 @@
 #define alert(fmt, ...) printk(KERN_ALERT "%s %s:%d: Alert: " fmt "\n", \
                         TPM_MODULE_NAME, __FILE__, __LINE__, ## __VA_ARGS__)
 
+/* min and max */
+
+#define tpm_min min
+
 /* memory allocation */
 
 static inline void *tpm_malloc(size_t size) 
