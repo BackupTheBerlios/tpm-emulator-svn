@@ -288,6 +288,7 @@ typedef struct tdTPM_VERSION {
   BYTE revMajor;
   BYTE revMinor;
 } TPM_VERSION;
+#define sizeof_TPM_VERSION(s) (4)
 
 /*
  * TPM_DIGEST ([TPM_Part2], Section 5.4)
@@ -2081,6 +2082,7 @@ typedef struct tdTPM_PERMANENT_FLAGS {
   /* additional, not marshalled flags */
   BOOL selfTestSucceeded;
   BOOL owned;
+  BOOL dataRestored;
 } TPM_PERMANENT_FLAGS;
 #define sizeof_TPM_PERMANENT_FLAGS(s) (2 + 19)
 

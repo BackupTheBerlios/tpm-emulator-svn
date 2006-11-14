@@ -4149,7 +4149,8 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 void tpm_emulator_init(uint32_t startup)
 {
   debug("tpm_emulator_init()");
-  tpm_init_data();
+  /* try to restore data, if it fails use default values */
+  if (tpm_restore_permanent_data() != 0) tpm_init_data();
   TPM_Init(startup);
 }
 

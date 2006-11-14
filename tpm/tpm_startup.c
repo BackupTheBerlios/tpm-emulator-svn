@@ -46,15 +46,13 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
   /* reset STANY_FLAGS */
   SET_TO_ZERO(&tpmData.stany.flags);
   tpmData.stany.flags.tag = TPM_TAG_STANY_FLAGS;
-  /* reset STANY_DATA (invalidates ALL sessions) */
-  SET_TO_ZERO(&tpmData.stany.data);
-  tpmData.stany.data.tag = TPM_TAG_STANY_DATA;
-  /* init session-context nonce */
-  SET_TO_RAND(&tpmData.stany.data.contextNonceSession);
   /* set data and flags according to the given startup type */
   if (startupType == TPM_ST_CLEAR) {
-    /* if available, restore permanent data */
-    tpm_restore_permanent_data();
+    /* reset STANY_DATA (invalidates ALL sessions) */
+    SET_TO_ZERO(&tpmData.stany.data);
+    tpmData.stany.data.tag = TPM_TAG_STANY_DATA;
+    /* init session-context nonce */
+    SET_TO_RAND(&tpmData.stany.data.contextNonceSession);
     /* reset PCR values */
     for (i = 0; i < TPM_NUM_PCR; i++) {
       if (tpmData.permanent.data.pcrAttrib[i].pcrReset)
@@ -81,7 +79,7 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
     /* invalidate counter handle */
     tpmData.stclear.data.countID = TPM_INVALID_HANDLE;
   } else if (startupType == TPM_ST_STATE) {
-    if (tpm_restore_permanent_data()) {
+    if (!tpmData.permanent.flags.dataRestored) {
       error("restoring permanent data failed");
       tpmData.permanent.data.testResult = "tpm_restore_permanent_data() failed";
       tpmData.permanent.flags.selfTestSucceeded = FALSE;
@@ -102,10 +100,10 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
 TPM_RESULT TPM_SaveState()
 {
   info("TPM_SaveState()");
-  if (tpmData.permanent.flags.selfTestSucceeded) { 
+  if (tpmData.permanent.flags.selfTestSucceeded && !tpmData.stclear.flags.deactivated) { 
     return (tpm_store_permanent_data()) ? TPM_FAIL : TPM_SUCCESS;
   } else {
-    debug("TPM is in fail-stop mode and thus the permanent data is not stored");
+    debug("TPM is deactivated or in fail-stop mode, thus the permanent data is not stored");
     return TPM_SUCCESS;
   }
 }

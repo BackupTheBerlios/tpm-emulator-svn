@@ -22,6 +22,8 @@
 
 TPM_DATA tpmData;
 
+static TPM_VERSION tpm_version = { 1, 2, VERSION_MAJOR, VERSION_MINOR };
+
 BOOL tpm_get_physical_presence(void)
 {
   return (tpmData.stclear.flags.physicalPresence || TRUE);
@@ -80,6 +82,7 @@ void tpm_init_data(void)
     "\xec\x86\x43\x0c\x80\x99\x07\x34\x0f";
 #endif
   int i;
+  info("initializing TPM data to default values");
   /* reset all data to NULL, FALSE or 0 */
   memset(&tpmData, 0, sizeof(tpmData));
   tpmData.permanent.data.tag = TPM_TAG_PERMANENT_DATA;
@@ -92,10 +95,8 @@ void tpm_init_data(void)
   tpmData.permanent.flags.allowMaintenance = TRUE;
   tpmData.permanent.flags.enableRevokeEK = TRUE;
   /* set TPM vision */
-  tpmData.permanent.data.version.major = 1;
-  tpmData.permanent.data.version.minor = 2;
-  tpmData.permanent.data.version.revMajor = VERSION_MAJOR;
-  tpmData.permanent.data.version.revMinor = VERSION_MINOR;
+  memcpy(&tpmData.permanent.data.version, 
+         &tpm_version, sizeof(TPM_VERSION));
   /* setup PCR attributes */
   for (i = 0; i < min(16, TPM_NUM_PCR); i++) {
     init_pcr_attr(i, FALSE, 0x00, 0x1f);
@@ -159,17 +160,22 @@ int tpm_store_permanent_data(void)
   uint32_t len;
 
   /* marshal data */
-  buf_length = len = sizeof_TPM_STCLEAR_FLAGS(tpmData.stclear.flags)
+  buf_length = len = sizeof_TPM_VERSION(tpmData.permanent.data.version)
     + sizeof_TPM_PERMANENT_FLAGS(tpmData.permanent.flags) + 2
-    + sizeof_TPM_PERMANENT_DATA(tpmData.permanent.data);
+    + sizeof_TPM_PERMANENT_DATA(tpmData.permanent.data)
+    + sizeof_TPM_STCLEAR_FLAGS(tpmData.stclear.flags)
+    + sizeof_TPM_STCLEAR_DATA(tpmData.stclear.data)
+    + sizeof_TPM_STANY_DATA(tpmData.stany.data);
   buf = ptr = tpm_malloc(buf_length);
   if (buf == NULL
       || tpm_marshal_TPM_VERSION(&ptr, &len, &tpmData.permanent.data.version)
-      || tpm_marshal_TPM_STCLEAR_FLAGS(&ptr, &len, &tpmData.stclear.flags)
       || tpm_marshal_TPM_PERMANENT_FLAGS(&ptr, &len, &tpmData.permanent.flags)
       || tpm_marshal_BOOL(&ptr, &len, tpmData.permanent.flags.selfTestSucceeded)
       || tpm_marshal_BOOL(&ptr, &len, tpmData.permanent.flags.owned)
-      || tpm_marshal_TPM_PERMANENT_DATA(&ptr, &len, &tpmData.permanent.data)) {
+      || tpm_marshal_TPM_PERMANENT_DATA(&ptr, &len, &tpmData.permanent.data)
+      || tpm_marshal_TPM_STCLEAR_FLAGS(&ptr, &len, &tpmData.stclear.flags)
+      || tpm_marshal_TPM_STCLEAR_DATA(&ptr, &len, &tpmData.stclear.data)
+      || tpm_marshal_TPM_STANY_DATA(&ptr, &len, &tpmData.stany.data)) {
     tpm_free(buf);
     return -1;
   }
@@ -194,16 +200,19 @@ int tpm_restore_permanent_data(void)
   len = buf_length;
   /* unmarshal data */
   if (tpm_unmarshal_TPM_VERSION(&ptr, &len, &ver)
-      || memcmp(&ver, &tpmData.permanent.data.version, sizeof(TPM_VERSION))
-      || tpm_unmarshal_TPM_STCLEAR_FLAGS(&ptr, &len, &tpmData.stclear.flags)
+      || memcmp(&ver, &tpm_version, sizeof(TPM_VERSION))
       || tpm_unmarshal_TPM_PERMANENT_FLAGS(&ptr, &len, &tpmData.permanent.flags)
       || tpm_unmarshal_BOOL(&ptr, &len, &tpmData.permanent.flags.selfTestSucceeded)
       || tpm_unmarshal_BOOL(&ptr, &len, &tpmData.permanent.flags.owned)
-      || tpm_unmarshal_TPM_PERMANENT_DATA(&ptr, &len, &tpmData.permanent.data)) {
+      || tpm_unmarshal_TPM_PERMANENT_DATA(&ptr, &len, &tpmData.permanent.data)
+      || tpm_unmarshal_TPM_STCLEAR_FLAGS(&ptr, &len, &tpmData.stclear.flags)      
+      || tpm_unmarshal_TPM_STCLEAR_DATA(&ptr, &len, &tpmData.stclear.data)
+      || tpm_unmarshal_TPM_STANY_DATA(&ptr, &len, &tpmData.stany.data)) {
     tpm_free(buf);
     return -1;
   }
   tpm_free(buf);
+  tpmData.permanent.flags.dataRestored = TRUE;
   return 0;
 }
 

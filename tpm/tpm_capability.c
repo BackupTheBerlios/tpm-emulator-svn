@@ -141,8 +141,7 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_STARTUP_EFFECT:
       debug("[TPM_CAP_PROP_STARTUP_EFFECT]");
-      /* TODO: TPM_CAP_PROP_STARTUP_EFFECT */
-      return TPM_FAIL;
+      return return_UINT32(respSize, resp, 0x4f);
 
     case TPM_CAP_PROP_DELEGATE_ROW:
       debug("[TPM_CAP_PROP_DELEGATE_ROW]");
