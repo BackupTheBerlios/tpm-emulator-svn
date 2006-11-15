@@ -39,9 +39,9 @@ void tpm_bn_swap(tpm_bn_t a, tpm_bn_t b);
 
 uint32_t tpm_bn_bitsize(tpm_bn_t a);
 
-void tpm_bn_import(tpm_bn_t out, size_t count, int order, int size, int endian, size_t nails, const void *in);
+void tpm_bn_import(tpm_bn_t out, size_t count, int order, const void *in);
 
-void tpm_bn_export(void *out, size_t *count, int order, int size, int endian, size_t nails, tpm_bn_t in);
+void tpm_bn_export(void *out, size_t *count, int order, tpm_bn_t in);
 
 int tpm_bn_cmp(tpm_bn_t a, tpm_bn_t b);
 

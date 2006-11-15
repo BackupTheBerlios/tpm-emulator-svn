@@ -25,7 +25,7 @@ static int rsa_public(tpm_rsa_public_key_t *key,
 
   tpm_bn_init2(p, key->size);
   tpm_bn_init2(c, key->size);
-  tpm_bn_import(p, in_len, 1, 1, 0, 0, in);
+  tpm_bn_import(p, in_len, 1, in);
   /* c = p ^ d mod n */
   tpm_bn_powm(c, p, key->e, key->n);
   t = tpm_bn_bitsize(c);
@@ -36,7 +36,7 @@ static int rsa_public(tpm_rsa_public_key_t *key,
   }
   t = (key->size - t) >> 3;
   memset(out, 0, t);
-  tpm_bn_export(&out[t], &t, 1, 1, 0, 0, c);
+  tpm_bn_export(&out[t], &t, 1, c);
   tpm_bn_clear(p);
   tpm_bn_clear(c);
   return 0;
@@ -50,7 +50,7 @@ static int rsa_private(tpm_rsa_private_key_t *key,
 
   tpm_bn_init2(p, key->size);
   tpm_bn_init2(c, key->size);
-  tpm_bn_import(p, in_len, 1, 1, 0, 0, in);
+  tpm_bn_import(p, in_len, 1, in);
 
   if (!key->p || !key->q || !key->u) {
     /* c = p ^ d mod n */
@@ -86,7 +86,7 @@ static int rsa_private(tpm_rsa_private_key_t *key,
   }
   t = (key->size - t) >> 3;
   memset(out, 0, t);
-  tpm_bn_export(&out[t], &t, 1, 1, 0, 0, c);
+  tpm_bn_export(&out[t], &t, 1, c);
   tpm_bn_clear(p);
   tpm_bn_clear(c);
   return 0;
@@ -126,7 +126,7 @@ int tpm_rsa_import_key(tpm_rsa_private_key_t *key, int endian,
     tpm_bn_init_set_ui(key->e, 65537);
   } else {
     tpm_bn_init2(key->e, e_len << 3);
-    tpm_bn_import(key->e, e_len, endian, 1, 0, 0, e);
+    tpm_bn_import(key->e, e_len, endian, e);
   }
   tpm_bn_init2(key->n, key->size);
   tpm_bn_init2(key->p, key->size / 2);
@@ -137,9 +137,9 @@ int tpm_rsa_import_key(tpm_rsa_private_key_t *key, int endian,
   tpm_bn_init2(t2, key->size / 2);
   tpm_bn_init2(phi, key->size);
   /* import values */
-  tpm_bn_import(key->n, n_len, endian, 1, 0, 0, n);
-  if (p != NULL) tpm_bn_import(key->p, n_len / 2, endian, 1, 0, 0, p);
-  if (q != NULL) tpm_bn_import(key->q, n_len / 2, endian, 1, 0, 0, q);
+  tpm_bn_import(key->n, n_len, endian, n);
+  if (p != NULL) tpm_bn_import(key->p, n_len / 2, endian, p);
+  if (q != NULL) tpm_bn_import(key->q, n_len / 2, endian, q);
   if (p == NULL) tpm_bn_tdiv_q(key->p, key->n, key->q);
   if (q == NULL) tpm_bn_tdiv_q(key->q, key->n, key->p);
   /* p shall be smaller than q */
@@ -184,11 +184,11 @@ int tpm_rsa_import_public_key(tpm_rsa_public_key_t *key, int endian,
     tpm_bn_init_set_ui(key->e, 65537);
   } else {
     tpm_bn_init2(key->e, e_len << 3);
-    tpm_bn_import(key->e, e_len, endian, 1, 0, 0, e);
+    tpm_bn_import(key->e, e_len, endian, e);
   }
   tpm_bn_init2(key->n, key->size);
   /* import values */
-  tpm_bn_import(key->n, n_len, endian, 1, 0, 0, n);
+  tpm_bn_import(key->n, n_len, endian, n);
   return 0;
 }
 
@@ -197,7 +197,7 @@ static void rsa_tpm_bn_random(tpm_bn_t a, size_t nbits)
   size_t size = nbits >> 3;
   uint8_t buf[size];
   tpm_get_random_bytes(buf, size);
-  tpm_bn_import(a, size, 1, 1, 0, 0, buf);
+  tpm_bn_import(a, size, 1, buf);
 }
 
 int tpm_rsa_generate_key(tpm_rsa_private_key_t *key, uint16_t key_size)
@@ -293,25 +293,25 @@ void tpm_rsa_release_public_key(tpm_rsa_public_key_t *key)
 void tpm_rsa_export_modulus(tpm_rsa_private_key_t *key, 
                             uint8_t *modulus, size_t *length)
 {
-  tpm_bn_export(modulus, length, 1 , 1, 0, 0, key->n);
+  tpm_bn_export(modulus, length, 1, key->n);
 }
 
 void tpm_rsa_export_exponent(tpm_rsa_private_key_t *key, 
                              uint8_t *exponent, size_t *length)
 {
-  tpm_bn_export(exponent, length, 1 , 1, 0, 0, key->e);
+  tpm_bn_export(exponent, length, 1, key->e);
 }
 
 void tpm_rsa_export_prime1(tpm_rsa_private_key_t *key, 
                            uint8_t *prime, size_t *length)
 {
-  tpm_bn_export(prime, length, 1 , 1, 0, 0, key->p);
+  tpm_bn_export(prime, length, 1, key->p);
 }
 
 void tpm_rsa_export_prime2(tpm_rsa_private_key_t *key, 
                            uint8_t *prime, size_t *length)
 {
-  tpm_bn_export(prime, length, 1 , 1, 0, 0, key->q);
+  tpm_bn_export(prime, length, 1, key->q);
 }
 
 void tpm_rsa_mask_generation(const uint8_t *seed, size_t seed_len, 

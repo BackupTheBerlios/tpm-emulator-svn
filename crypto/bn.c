@@ -57,14 +57,14 @@ uint32_t tpm_bn_bitsize(tpm_bn_t a)
   return mpz_sizeinbase(a, 2);
 }
 
-void tpm_bn_import(tpm_bn_t out, size_t count, int order, int size, int endian, size_t nails, const void *in)
+void tpm_bn_import(tpm_bn_t out, size_t count, int order, const void *in)
 {
-  mpz_import(out, count, order, size, endian, nails, in);
+  mpz_import(out, count, order, 1, 0, 0, in);
 }
 
-void tpm_bn_export(void *out, size_t *count, int order, int size, int endian, size_t nails, tpm_bn_t in)
+void tpm_bn_export(void *out, size_t *count, int order, tpm_bn_t in)
 {
-  mpz_export(out, count, order, size, endian, nails, in);
+  mpz_export(out, count, order, 1, 0, 0, in);
 }
 
 int tpm_bn_cmp(tpm_bn_t a, tpm_bn_t b)
@@ -92,18 +92,15 @@ void tpm_bn_add(tpm_bn_t res, tpm_bn_t a, tpm_bn_t b)
   mpz_add(res, a, b);
 }
 
-
 void tpm_bn_add_ui(tpm_bn_t res, tpm_bn_t a, uint32_t b)
 {
   mpz_add_ui(res, a, b);
 }
 
-
 void tpm_bn_sub(tpm_bn_t res, tpm_bn_t a, tpm_bn_t b)
 {
   mpz_sub(res, a, b);
 }
-
 
 void tpm_bn_sub_ui(tpm_bn_t res, tpm_bn_t a, uint32_t b)
 {
