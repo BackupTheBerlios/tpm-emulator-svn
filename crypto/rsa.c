@@ -58,7 +58,7 @@ static int rsa_private(tpm_rsa_private_key_t *key,
   } else {
     tpm_bn_init2(m1, key->size / 2);
     tpm_bn_init2(m2, key->size / 2);
-    tpm_bn_init2(h, key->size / 2);
+    tpm_bn_init2(h, key->size);
     /* m1 = p ^ (d mod (p-1)) mod p */
     tpm_bn_sub_ui(h, key->p, 1);
     tpm_bn_mod(h, key->d, h);
