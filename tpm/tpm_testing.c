@@ -184,8 +184,8 @@ static int tpm_test_rsa_EK(void)
   /* generate and test key-pair */
   debug("tpm_rsa_generate_key()");
   res = tpm_rsa_generate_key(&priv_key, 512);
-  if (res) return res;
   tpm_rsa_release_private_key(&priv_key);
+  if (res) return res;
   /* test endorsement key */
   debug("testing endorsement key");
   do {
