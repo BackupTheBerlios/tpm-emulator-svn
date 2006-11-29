@@ -1,3 +1,76 @@
+2006-11-14  Mario Strasser <mast@gmx.net>
+	* gmp_kernel_wrapper.c, tpm_data.c: import and export
+		functions simplified
+	* tpm_emulator_config.h: min/max macros renamed
+	* tpm_data.c, tpm_cmd_handler.c, tpm_startup.c:
+		startup/restore behavior adapted according to rev94
+
+
+2006-11-12  Mario Strasser <mast@gmx.net>
+	* gmp_kernel_wrapper.c: __stack_chk_fail() to GNU MP wrapper added
+	* tpm_daa.c: size_t vs. uint32_t issue in DAA routines fixed
+	* rsa.c, tpm_daa.c, tpm_deprecated.c, tpm/tpm_testing.c,
+		tpm_transport.c: pointer signedness warnings fixed
+
+
+2006-11-11  Mario Strasser <mast@gmx.net>
+	* bn.[ch], rsa.[ch], tpm_daa.c, tpm_storage.c, tpm_testing.c:
+		bn wrapper added
+	* gmp_kernel_wrapper.c, linux_module.c: printf format for size_t fixed
+
+
+2006-11-10  Mario Strasser <mast@gmx.net>
+	* all: potential name space conflicts for global symbols solved
+
+
+2006-11-07  Mario Strasser <mast@gmx.net>
+	* sha1.[ch], tpm_*: some issues related to 64bit architecture
+		and size_t fixed
+	* rsa.c: potential bug in key generation fixed
+	* all: advanced compiler warnings and name space collisions fixed
+
+
+2006-10-25  Mario Strasser <mast@gmx.net>
+	* gmp_kernel_wrapper.c, rsa.c: removed all GNU MP random routines
+	* linux_module.c, linux_module.h, tpm_emulator_config.h: moved all host
+		specific functions and configuration parameters from
+		linux_module.h into tpm_emulator_config.h
+	* tpm_audit.c, tpm_identity.c, tpm_marshalling.h, tpm_transport.c:
+		fixed some marshalling statements which cause troubles
+		if memory alignment is mandatory
+
+
+2006-10-20  Mario Strasser <mast@gmx.net>
+	* tpm_capability: inline definition changed due to
+		interoperability reasons
+	* tpm_cmd_handler.c: marshalling bug in TPM_Seal[x] fixed
+
+
+2006-10-17  Mario Strasser <mast@gmx.net>
+	* tpm_cmd_handler.c, tpm_emulator.h: meaning of out/out_size
+		parameter for tpm_handle_command slightly modified
+	* linux_module.c: support for storage_file parameter added
+	* linux_module.[ch], tpm_data.c: file storage functions moved
+		into module
+	* all: some minor typos/bugs fixed
+
+
+2006-10-11  Mario Strasser <mast@gmx.net>
+	* all: redundant includes removed
+
+
+2006-09-03  Heiko Stamer <stamer@gaos.org>
+	* tpm_capability.c: small fixes (TPM_MANUFACTURER)
+
+
+2006-08-14  Mario Strasser <mast@gmx.net>
+	* tpm_storage.c: required key size fixed
+
+
+2006-08-06  Heiko Stamer <stamer@gaos.org>
+	* tpm_error.c: DAA error description added
+
+
 2006-08-01  Heiko Stamer <stamer@gaos.org>
 	* tpm_integrity.c: TPM_Quote2() added
 
@@ -64,7 +137,6 @@
 
 
 2004-10-24  Mario Strasser  <mast@gmx.net>
-	
 	* Makefile: new makefile for Linux kernels > 2.5.0 build system
 	* tpm_testing.c: replacement of some floating-point calculations 
 		with fix-point arithmetic 
@@ -73,6 +145,5 @@
 
 
 2004-07-01  Mario Strasser  <mast@gmx.net>  
-
 	* Initial release based on my semester thesis
 
