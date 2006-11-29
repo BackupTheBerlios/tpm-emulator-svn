@@ -13,6 +13,7 @@ MODULE_NAME    := tpm_emulator
 VERSION_MAJOR  := 0
 VERSION_MINOR  := 4
 VERSION_BUILD  := $(shell date +"%s")
+VERSION_SUFFIX := .1
 
 # enable/disable DEBUG messages
 EXTRA_CFLAGS   += -Wall -DDEBUG -g
@@ -28,7 +29,7 @@ SRCS           := $(foreach dir, $(DIRS), $(wildcard $(src)/$(dir)/*.c))
 OBJS           := $(patsubst %.c, %.o, $(SRCS))
 SRCS           += $(foreach dir, $(DIRS), $(wildcard $(src)/$(dir)/*.h))
 DISTSRC        := ./README ./AUTHORS ./ChangeLog ./Makefile $(SRCS)
-DISTDIR        := tpm_emulator-$(VERSION_MAJOR).$(VERSION_MINOR)
+DISTDIR        := tpm_emulator-$(VERSION_MAJOR).$(VERSION_MINOR)$(VERSION_SUFFIX)
 
 obj-m               := $(MODULE_NAME).o
 $(MODULE_NAME)-objs := $(patsubst $(src)/%.o, %.o, $(OBJS)) crypto/libgmp.a
