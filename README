@@ -85,8 +85,8 @@ bash# modprobe tpm_emulator startup="clear"
 
 Notes
 --------------------------------------------------------------------------
-* The name as well as the format of the persistent-storage file has 
-  changed between release 0.2 and 0.3.
+* The name and format of the persistent-storage file has changed between
+  release 0.2 and 0.3 as well as between release 0.4 and 0.4.1.
 * The DAA support was tested with the IBM DAA Test Suite and should work 
   now as expected. Thanks go to Roger Zimmermann for his kindly help.
 
