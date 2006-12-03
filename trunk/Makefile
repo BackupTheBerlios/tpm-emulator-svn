@@ -34,7 +34,7 @@ all-recursive clean-recursive:
 		$(MAKE) -C $$subdir $$target || exit -1; \
 	done
 
-DIRS    := . tpm crypto tpmd tpmd_dev tddl tpm_dev tpm_dev/tpm tpm_dev/crypto
+DIRS    := . tpm crypto tpmd tpmd_dev tddl #tpm_dev tpm_dev/tpm tpm_dev/crypto
 DISTSRC := $(foreach dir, $(DIRS), $(wildcard $(dir)/*.c))
 DISTSRC += $(foreach dir, $(DIRS), $(wildcard $(dir)/*.h))
 DIRS    := . tpmd tpmd_dev tddl tpm_dev
