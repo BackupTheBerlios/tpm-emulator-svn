@@ -28,6 +28,7 @@ clean:
 	rm -f $(TPMD) $(OBJS)
 
 install: $(TPMD)
+	test -d /var/tpm || mkdir /var/tpm
 	cp $(TPMD) $(BINDIR)
 
 .PHONY: all clean install
