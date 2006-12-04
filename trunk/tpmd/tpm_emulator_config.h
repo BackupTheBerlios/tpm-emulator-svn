@@ -23,9 +23,6 @@
 #include <syslog.h>
 #include <asm/byteorder.h>
 
-//#define size_t uint64_t
-//#define size_t uint16_t
-
 /* TPM emulator configuration */
 
 #undef  TPM_STRONG_PERSISTENCE

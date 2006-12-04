@@ -306,7 +306,7 @@ static void main_loop(void)
             continue;
         }
         /* receive and handle commands */
-	in_len = 0;
+        in_len = 0;
         do {
             debug("waiting for commands...");
             FD_ZERO(&rfds);
