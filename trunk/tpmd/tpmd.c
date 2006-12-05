@@ -132,7 +132,7 @@ int tpm_read_from_file(uint8_t **data, size_t *data_length)
 static void print_usage(char *name)
 {
     printf("usage: %s [-d] [-f] [-h] [startup mode]\n", name);
-    printf("  d : enable debug modus\n");
+    printf("  d : enable debug mode\n");
     printf("  f : forces the application to run in the foreground\n");
     printf("  h : print this help message\n");
     printf("  startup mode : must be 'clear', "
