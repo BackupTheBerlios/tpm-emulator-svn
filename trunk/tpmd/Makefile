@@ -4,9 +4,9 @@
 # $Id$
 
 CC      := gcc
-WFLAGS  := -Wall -Werror -Wextra -Wno-unused -Wpointer-arith -Wcast-align \
+WFLAGS  := -Wall -Werror -Wno-unused -Wpointer-arith -Wcast-align \
            -Wwrite-strings -Wsign-compare -Wno-multichar
-           #WFLAGS  += -Wcast-qual -Wmissing-prototypes -Wmissing-declarations -Wstrict-aliasing
+           #WFLAGS  += -Wextra -Wcast-qual -Wmissing-prototypes -Wmissing-declarations -Wstrict-aliasing
 CFLAGS  := $(WFLAGS) -g -I.. -I. -O2 -fno-strict-aliasing
 LDFLAGS := -lgmp
 

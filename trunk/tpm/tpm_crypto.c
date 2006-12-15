@@ -85,7 +85,7 @@ TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
     }
   } else if (key->sigScheme == TPM_SS_RSASSAPKCS1v15_DER) {
     /* use signature scheme PKCS1_DER */ 
-    if ((areaToSignSize + 11) > (key->key.size >> 3)
+    if ((areaToSignSize + 11) > (UINT32)(key->key.size >> 3)
         || areaToSignSize == 0) return TPM_BAD_PARAMETER;
     *sigSize = key->key.size >> 3;
     *sig = tpm_malloc(*sigSize);
@@ -97,7 +97,7 @@ TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
   } else if (key->sigScheme == TPM_SS_RSASSAPKCS1v15_INFO && !isInfo) {
     /* use signature scheme PKCS1_SHA1 and TPM_SIGN_INFO container */
     BYTE buf[areaToSignSize + 30];
-    if ((areaToSignSize + 30) > (key->key.size >> 3)
+    if ((areaToSignSize + 30) > (UINT32)(key->key.size >> 3)
         || areaToSignSize == 0) return TPM_BAD_PARAMETER;
     *sigSize = key->key.size >> 3;
     *sig = tpm_malloc(*sigSize);
@@ -117,7 +117,7 @@ TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
     }
   } else if (key->sigScheme == TPM_SS_RSASSAPKCS1v15_INFO && isInfo) {
     /* TPM_SIGN_INFO structure is already set up */
-    if (areaToSignSize > (key->key.size >> 3)
+    if (areaToSignSize > (UINT32)(key->key.size >> 3)
         || areaToSignSize == 0) return TPM_BAD_PARAMETER;
     *sigSize = key->key.size >> 3;
     *sig = tpm_malloc(*sigSize);
