@@ -74,8 +74,8 @@ Startup
 --------------------------------------------------------------------------
 In order to use the TPM emulator, one has to start the TPM emulator daemon
 and, if required, load the TPM device forwarding module. The startup mode
-of the TPM (see TPM Spec. Part 1) is defined using by the startup mode
-argument and can either be set to clear, save (default) or deactivated.
+of the TPM (see TPM Spec. Part 1) is defined by the startup mode argument
+and can either be set to clear, save (default) or deactivated.
 
 # modprobe tpmd_dev
 # tpmd save
