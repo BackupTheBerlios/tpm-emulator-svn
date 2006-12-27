@@ -5,7 +5,10 @@
 # $Id$
 
 CC     := gcc
-CFLAGS := -Wall -Werror -O2
+WFLAGS := -Wall -Werror -Wno-unused -Wpointer-arith -Wcast-align \
+           -Wwrite-strings -Wsign-compare -Wno-multichar
+#WFLAGS += -Wextra -Wcast-qual -Wmissing-prototypes -Wmissing-declarations -Wstrict-aliasing
+CFLAGS := $(WFLAGS) -O2
 TDDL   := libtddl.so
 
 LIBDIR := /usr/lib/

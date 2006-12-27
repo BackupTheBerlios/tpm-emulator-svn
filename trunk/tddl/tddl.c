@@ -25,8 +25,8 @@
 #include "tddl.h"
 
 /* device and socket names */
-static char *tpm_device_name = "/dev/tpm";
-static char *tpmd_socket_name = "/var/tpm/tpmd_socket:0";
+static const char *tpm_device_name = "/dev/tpm";
+static const char *tpmd_socket_name = "/var/tpm/tpmd_socket:0";
 
 /* TPM device handle */
 static int tddli_dh = -1;
@@ -38,7 +38,7 @@ static TSS_RESULT tddli_device_status = TDDL_DEVICE_NOT_FOUND;
 /* library lock */
 static pthread_mutex_t tddli_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static TSS_RESULT open_device(char *device_name)
+static TSS_RESULT open_device(const char *device_name)
 {
   tddli_dh = open(device_name, O_RDWR);
   if (tddli_dh < 0) {
@@ -57,7 +57,7 @@ static TSS_RESULT open_device(char *device_name)
   }
 }
 
-static TSS_RESULT open_socket(char *socket_name)
+static TSS_RESULT open_socket(const char *socket_name)
 {
   struct sockaddr_un addr;
   tddli_dh = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -118,20 +118,21 @@ static TSS_RESULT send_to_tpm(BYTE* pTransmitBuf, UINT32 TransmitBufLen)
 {
   ssize_t res;
   res = write(tddli_dh, pTransmitBuf, TransmitBufLen);
-  if (res < TransmitBufLen) return TDDL_E_IOERROR;
+  if (res < 0 || (UINT32)res != TransmitBufLen) return TDDL_E_IOERROR;
   return TDDL_SUCCESS;
 }
 
 static TSS_RESULT receive_from_tpm(BYTE* pReceiveBuf, UINT32* puntReceiveBufLen)
 {
   ssize_t res;
+  uint32_t len;
   if (*puntReceiveBufLen < 10) return TDDL_E_INSUFFICIENT_BUFFER;
   res = read(tddli_dh, pReceiveBuf, *puntReceiveBufLen);
   if (res < 10) return TDDL_E_IOERROR;
   *puntReceiveBufLen = res;
-  res = ((uint32_t)pReceiveBuf[2] << 24) | ((uint32_t)pReceiveBuf[3] << 16)
+  len = ((uint32_t)pReceiveBuf[2] << 24) | ((uint32_t)pReceiveBuf[3] << 16)
         | ((uint32_t)pReceiveBuf[4] << 8) | (uint32_t)pReceiveBuf[5];
-  if (res != *puntReceiveBufLen) return TDDL_E_INSUFFICIENT_BUFFER;
+  if (len != *puntReceiveBufLen) return TDDL_E_INSUFFICIENT_BUFFER;
   return TDDL_SUCCESS;
 }
 
@@ -168,7 +169,7 @@ static TSS_RESULT cap_version(UINT32 SubCap, BYTE* pCapBuf,
     case TDDL_CAP_VER_FW:
       if (*puntCapBufLen < 4) return TDDL_E_INSUFFICIENT_BUFFER;
       *puntCapBufLen = 4;
-      res = send_to_tpm("\x00\xc1\x00\x00\x00\x12\x00\x00\x00\x65"
+      res = send_to_tpm((uint8_t*)"\x00\xc1\x00\x00\x00\x12\x00\x00\x00\x65"
         "\x00\x00\x00\x06\x00\x00\x00\x00", 18);
       if (res != TDDL_SUCCESS) return res;
       res = receive_from_tpm(buf, &len);

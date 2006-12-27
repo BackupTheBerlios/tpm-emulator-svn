@@ -10,7 +10,7 @@ VERSION_MINOR  := 5
 VERSION_BUILD  := $(shell date +"%s")
 VERSION_SUFFIX := rc1
 
-SUBDIRS := tpmd tpmd_dev tddl tpm_dev
+SUBDIRS := tpmd tpmd_dev tddl
 
 all: version all-recursive
 
