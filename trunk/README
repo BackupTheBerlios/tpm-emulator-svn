@@ -80,8 +80,8 @@ and can either be set to clear, save (default) or deactivated.
 # modprobe tpmd_dev
 # tpmd save
 
-Furthermore, the argument -d enables debug mode, -f forces emulator to
-run in the foreground, and -h print the following help message:
+Furthermore, the argument -d enables debug mode, -f forces the emulator
+to run in the foreground, and -h print the following help message:
 
 usage: tpmd/tpmd [-d] [-f] [-h] [startup mode]
   d : enable debug mode
@@ -112,8 +112,8 @@ For backward compatibility with existing applications, the kernel module
 tpmd_dev forwards any command sent to the device /dev/tpm to the tpm
 emulator daemon. In order to access the emulator directly (i.e., without
 using the device driver library or the device dev/tpm) all one has to do
-is include the header files sys/socket.h and sys/un.h and to replace the
-open("/dev/tpm") call with something like:
+is to include the header files sys/socket.h and sys/un.h and to replace
+the open("/dev/tpm") call with something like:
 
 struct sockaddr_un addr;
 fh = socket(PF_UNIX, SOCK_STREAM, 0);
