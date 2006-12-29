@@ -27,7 +27,7 @@ clean: clean-recursive
 
 install: install-recursive
 
-all-recursive clean-recursive:
+all-recursive clean-recursive install-recursive:
 	@target=`echo $@ | sed s/-recursive//`; \
 	for subdir in $(SUBDIRS); do \
 		echo "Making $$target in $$subdir"; \
