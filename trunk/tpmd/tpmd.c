@@ -131,9 +131,12 @@ int tpm_read_from_file(uint8_t **data, size_t *data_length)
 
 static void print_usage(char *name)
 {
-    printf("usage: %s [-d] [-f] [-h] [startup mode]\n", name);
+    printf("usage: %s [-d] [-f] [-s storage file] [-u unix socket name] "
+           "[-h] [startup mode]\n", name);
     printf("  d : enable debug mode\n");
     printf("  f : forces the application to run in the foreground\n");
+    printf("  s : storage file to use (default: %s)\n", opt_storage_file);
+    printf("  u : unix socket name to use (default: %s)\n", opt_socket_name);
     printf("  h : print this help message\n");
     printf("  startup mode : must be 'clear', "
            "'save' (default) or 'deactivated\n");
@@ -143,7 +146,7 @@ static void parse_options(int argc, char **argv)
 {
     char c;
     info("parsing options");
-    while ((c = getopt (argc, argv, "dfh")) != -1) {
+    while ((c = getopt (argc, argv, "dfs:u:h")) != -1) {
         debug("handling option '-%c'", c);
         switch (c) {
             case 'd':
@@ -154,6 +157,14 @@ static void parse_options(int argc, char **argv)
             case 'f':
                 debug("application is forced to run in foreground");
                 opt_foreground = 1;
+                break;
+            case 's':
+                opt_storage_file = optarg;
+                debug("using storage file '%s'", opt_storage_file);
+                break;
+            case 'u':
+                opt_socket_name = optarg;
+                debug("using unix socket '%s'", opt_socket_name);
                 break;
             case '?':
                 error("unknown option '-%c'", optopt);

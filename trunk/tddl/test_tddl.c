@@ -71,7 +71,7 @@ int main()
   BYTE buf[256];
   UINT32 buf_size = sizeof(buf);
   BYTE reset[] = {0, 193, 0, 0, 0, 10, 0, 0, 0, 90};
-  int i;
+  unsigned int i;
   
   res = Tddli_Open();
   if (res != TDDL_SUCCESS) {
