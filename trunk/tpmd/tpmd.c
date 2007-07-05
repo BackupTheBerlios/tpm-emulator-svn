@@ -281,7 +281,8 @@ static int init_socket(const char *name)
 static void main_loop(void)
 {
     int sock, fh, res;
-    uint32_t in_len, out_len;
+    int32_t in_len;
+    uint32_t out_len;
     uint8_t in[TPM_CMD_BUF_SIZE], *out;
     struct sockaddr_un addr;
     socklen_t addr_len;
