@@ -351,7 +351,6 @@ static void main_loop(void)
                         res = write(fh, out, out_len);
                         if (res < 0) {
                             error("write(%d) failed: %s", out_len, strerror(errno));
-                            tpm_free(out);
                             break;
                         }
                         out_len	-= res;
