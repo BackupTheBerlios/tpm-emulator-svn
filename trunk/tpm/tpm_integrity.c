@@ -234,37 +234,45 @@ TPM_RESULT TPM_Quote2(
     res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
     if (res != TPM_SUCCESS) return res;
   }
-  /* 2. The keyHandle->sigScheme MUST use SHA-1,
-   *    return TPM_INAPPROPRIATE_SIG if it does not */
-  if (key->sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1)
+  /* 2. Validate that keyHandle->sigScheme is TPM_SS_RSASSAPKCS1v15_SHA1 or
+        TPM_SS_RSASSAPKCS1v15_INFO, if not return TPM_INAPPROPRIATE_SIG. */
+  if ((key->sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1) && 
+       (key->sigScheme != TPM_SS_RSASSAPKCS1v15_INFO))
     return TPM_INAPPROPRIATE_SIG;
 
 /* WATCH: ??? specification error, missing check for key usage ???
-   A security issue seems to be the (mis)usage of the EK for signing. */
-/*
-  if (key->keyUsage != TPM_KEY_SIGNING && key->keyUsage != TPM_KEY_LEGACY
-      && key->keyUsage != TPM_KEY_IDENTITY)
-    return TPM_INVALID_KEYUSAGE;
-*/
+   A security issue seems to be the (mis)usage of the EK for signing.
+   WATCH: !!! This error has been corrected recently in v1.2 rev 103 !!! */
 
-  /* 3. Validate targetPCR is a valid TPM_PCR_SELECTION structure,
+  /* 3. Validate that keyHandle->keyUsage is TPM_KEY_SIGNING, TPM_KEY_IDENTITY,
+        or TPM_KEY_LEGACY, if not return TPM_INVALID_KEYUSAGE */
+  if ((key->keyUsage != TPM_KEY_SIGNING) && (key->keyUsage != TPM_KEY_LEGACY)
+      && (key->keyUsage != TPM_KEY_IDENTITY))
+    return TPM_INVALID_KEYUSAGE;
+  /* 4. Validate targetPCR is a valid TPM_PCR_SELECTION structure,
    *    on errors return TPM_INVALID_PCR_INFO */
   if (targetPCR->sizeOfSelect > sizeof(targetPCR->pcrSelect))
     return TPM_INVALID_PCR_INFO;
-  /* 4. Create H1 a SHA-1 hash of a TPM_PCR_COMPOSITE using the
+  /* 5. Create H1 a SHA-1 hash of a TPM_PCR_COMPOSITE using the
    *    TPM_STCLEAR_DATA->PCR[] indicated by targetPCR->pcrSelect */
   res = tpm_compute_pcr_digest(targetPCR, &H1, NULL);
   if (res != TPM_SUCCESS) return res;
-  /* 5. Create S1 a TPM_PCR_INFO_SHORT */
-  pcrData->pcrSelection.sizeOfSelect = targetPCR->sizeOfSelect;
-  memcpy(pcrData->pcrSelection.pcrSelect, targetPCR->pcrSelect, targetPCR->sizeOfSelect);
-  pcrData->localityAtRelease = tpmData.stany.flags.localityModifier;
-  memcpy(&pcrData->digestAtRelease, &H1, sizeof(TPM_COMPOSITE_HASH));
-  /* 6. Create Q1 a TPM_QUOTE_INFO2 structure */
+  /* 6. Create S1 a TPM_PCR_INFO_SHORT */
+    /* a. Set S1->pcrSelection to targetPCR */
+    pcrData->pcrSelection.sizeOfSelect = targetPCR->sizeOfSelect;
+    memcpy(pcrData->pcrSelection.pcrSelect, targetPCR->pcrSelect, targetPCR->sizeOfSelect);
+    /* b. Set S1->localityAtRelease to TPM_STANY_DATA -> localityModifier */
+    pcrData->localityAtRelease = tpmData.stany.flags.localityModifier;
+    /* c. Set S1->digestAtRelease to H1 */
+    memcpy(&pcrData->digestAtRelease, &H1, sizeof(TPM_COMPOSITE_HASH));
+  /* 7. Create Q1 a TPM_QUOTE_INFO2 structure */
   Q1.tag = TPM_TAG_QUOTE_INFO2;
-  memcpy(Q1.fixed, "QUT2", 4);
-  memcpy(&Q1.infoShort, pcrData, sizeof_TPM_PCR_INFO_SHORT((*pcrData)));
-  memcpy(&Q1.externalData, externalData, sizeof(TPM_NONCE));
+    /* a. Set Q1->fixed to "QUT2" */
+    memcpy(Q1.fixed, "QUT2", 4);
+    /* b. Set Q1->infoShort to S1 */
+    memcpy(&Q1.infoShort, pcrData, sizeof_TPM_PCR_INFO_SHORT((*pcrData)));
+    /* c. Set Q1->externalData to externalData */
+    memcpy(&Q1.externalData, externalData, sizeof(TPM_NONCE));
   size = len = sizeof_TPM_QUOTE_INFO2(Q1);
   buf = ptr = tpm_malloc(size);
   if (buf == NULL) return TPM_NOSPACE;
@@ -273,7 +281,7 @@ TPM_RESULT TPM_Quote2(
     tpm_free(buf);
     return TPM_FAIL;
   }
-  /* 7. If addVersion is TRUE */
+  /* 8. If addVersion is TRUE */
   if (addVersion == TRUE) {
     /* a. Concatenate to Q1 a TPM_CAP_VERSION_INFO structure */
     res = cap_version_val(&respSize, &resp);
@@ -292,11 +300,12 @@ TPM_RESULT TPM_Quote2(
         return TPM_FAIL;
     }
     *versionInfoSize = respSize;
-   } else { /* 8. Else */
-    /* a. Set versionInfoSize to 0 and return no bytes in versionInfo */
+   } else { /* 9. Else */
+    /* a. Set versionInfoSize to 0 */
     *versionInfoSize = 0;
+    /* b. Return no bytes in versionInfo */
   }
-  /* 9. Sign a SHA-1 hash of Q1 using keyHandle as the signature key */
+  /* 10. Sign a SHA-1 hash of Q1 using keyHandle as the signature key */
   tpm_sha1_init(&ctx);
   tpm_sha1_update(&ctx, buf, size);
   tpm_free(buf);
@@ -315,6 +324,6 @@ TPM_RESULT TPM_Quote2(
       return TPM_FAIL;
   }
   
-  /* 10. Return the signature in sig */
+  /* 11. Return the signature in sig */
   return TPM_SUCCESS;
 }
