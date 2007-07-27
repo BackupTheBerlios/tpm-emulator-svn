@@ -2569,13 +2569,13 @@ TPM_RESULT TPM_DirRead(
  * TPM_ChangeAuthAsymStart - starts the ChangeAuth process
  * @idHandle: [in] Handle of a loaded identity ID key 
  * @antiReplay: [in] The nonce to be inserted into the certifyInfo structure 
- * @inTempKey: [in] All parameters of the ephemeral key
+ * @inTempKey: [in] Structure containing all parameters of the ephemeral key
  * @auth1: [in, out] Authorization protocol parameters
  * @certifyInfo: [out] The certifyInfo structure that is to be signed
  * @sigSize: [out] The used size of the output area for the signature 
  * @sig: [out] The signature of the certifyInfo parameter
- * @ephHandle: [out] Handle to be used by ChangeAuthAsymFinish 
- * @outTempKey: [out] All parameters and public part of the ephemeral key
+ * @ephHandle: [out] Handle to be used by ChangeAuthAsymFinish for ephemeral key
+ * @outTempKey: [out] Structure containing all parameters and public part of ephemeral key
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
  * Description: ([TPM_Part3], Section 28.4.1)

@@ -141,9 +141,32 @@ TPM_RESULT TPM_ChangeAuthAsymStart(
   TPM_KEY *outTempKey 
 )
 {
+  TPM_RESULT res;
+  TPM_KEY_DATA *idKey;
+  
   info("TPM_ChangeAuthAsymStart() not implemented yet");
   /* TODO: implement TPM_ChangeAuthAsymStart() */
   return TPM_FAIL;
+  
+  /* 1. The TPM SHALL verify the AuthData to use the TPM identity key held in
+   *    idHandle. The TPM MUST verify that the key is a TPM identity key. */
+    /* get identity key */
+    idKey = tpm_get_key(idHandle);
+    if (idKey == NULL) return TPM_INVALID_KEYHANDLE;
+    /* verify authorization */
+    res = tpm_verify_auth(auth1, idKey->usageAuth, idHandle);
+    if (res != TPM_SUCCESS) return res;
+    /* verify key parameters */
+    if (idKey->keyUsage != TPM_KEY_IDENTITY) return TPM_INVALID_KEYUSAGE;
+  /* 2. The TPM SHALL validate the algorithm parameters for the key to create
+        from the tempKey parameter. */
+  if (inTempKey->algorithmParms.algorithmID != TPM_ALG_RSA
+      || inTempKey->algorithmParms.parmSize == 0
+      || inTempKey->algorithmParms.parms.rsa.keyLength < 512
+      || inTempKey->algorithmParms.parms.rsa.numPrimes != 2
+      || inTempKey->algorithmParms.parms.rsa.exponentSize != 0)
+    return TPM_BAD_KEY_PROPERTY;
+
 }
 
 TPM_RESULT TPM_ChangeAuthAsymFinish(  

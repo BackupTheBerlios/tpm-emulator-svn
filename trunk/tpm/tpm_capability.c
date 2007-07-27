@@ -581,8 +581,8 @@ TPM_RESULT cap_version_val(UINT32 *respSize, BYTE **resp)
   
   version.tag = TPM_TAG_CAP_VERSION_INFO;
   version.version = tpmData.permanent.data.version;
-  version.specLevel = 2;
-  version.errataRev = 94;
+  version.specLevel = 0x0002; /* see [TPM_Part2], Section 21.6 */
+  version.errataRev = 0x01;   /* 0x01 = rev 94, 0x02 = rev 103 */
   len = 4, ptr = version.tpmVendorID;
   if (tpm_marshal_UINT32(&ptr, &len, TPM_MANUFACTURER))
     return TPM_FAIL;
