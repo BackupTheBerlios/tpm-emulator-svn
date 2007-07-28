@@ -160,11 +160,11 @@ TPM_RESULT TPM_ChangeAuthAsymStart(
     if (idKey->keyUsage != TPM_KEY_IDENTITY) return TPM_INVALID_KEYUSAGE;
   /* 2. The TPM SHALL validate the algorithm parameters for the key to create
         from the tempKey parameter. */
-  if (inTempKey->algorithmParms.algorithmID != TPM_ALG_RSA
-      || inTempKey->algorithmParms.parmSize == 0
-      || inTempKey->algorithmParms.parms.rsa.keyLength < 512
-      || inTempKey->algorithmParms.parms.rsa.numPrimes != 2
-      || inTempKey->algorithmParms.parms.rsa.exponentSize != 0)
+  if (inTempKey->algorithmID != TPM_ALG_RSA
+      || inTempKey->parmSize == 0
+      || inTempKey->parms.rsa.keyLength < 512
+      || inTempKey->parms.rsa.numPrimes != 2
+      || inTempKey->parms.rsa.exponentSize != 0)
     return TPM_BAD_KEY_PROPERTY;
 
 }

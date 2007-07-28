@@ -148,12 +148,12 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
       /* TODO: TPM_CAP_PROP_DELEGATE_ROW */
       return TPM_FAIL;
 
-    case TPM_CAP_PROP_DAA_MAX:
-      debug("[TPM_CAP_PROP_DAA_MAX]");
+    case TPM_CAP_PROP_MAX_DAASESS:
+      debug("[TPM_CAP_PROP_MAX_DAASESS]");
       return return_UINT32(respSize, resp, TPM_MAX_SESSIONS_DAA);
 
-    case TPM_CAP_PROP_SESSION_DAA:
-      debug("[TPM_CAP_PROP_SESSION_DAA]");
+    case TPM_CAP_PROP_DAASESS:
+      debug("[TPM_CAP_PROP_DAASESS]");
       for (i = 0, j = TPM_MAX_SESSIONS_DAA; i < TPM_MAX_SESSIONS_DAA; i++)
         if (tpmData.stany.data.sessionsDAA[i].type != TPM_ST_INVALID) j--;
       return return_UINT32(respSize, resp, j);
