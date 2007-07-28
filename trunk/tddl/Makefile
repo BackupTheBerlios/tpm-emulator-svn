@@ -18,7 +18,7 @@ all: $(TDDL)
 
 $(TDDL): tddl.c tddl.h
 	$(CC) $(CFLAGS) -fPIC -c -o tddl.o tddl.c
-	ld -shared -o $(TDDL) tddl.o
+	ld -soname $(TDDL) -shared -o $(TDDL) tddl.o
 
 test_tddl: test_tddl.c
 	$(CC) $(CFLAGS) -I. -L. test_tddl.c -ltddl -o test_tddl
