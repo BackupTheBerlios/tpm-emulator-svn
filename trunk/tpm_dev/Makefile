@@ -39,7 +39,7 @@ clean:
 
 install:
 	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) modules_install
-	test -d /var/tpm || mkdir /var/tpm
+	test -d /var/lib/tpm || mkdir /var/lib/tpm
 	test -c /dev/tpm || mknod /dev/tpm c 10 224
 	depmod -a
 
