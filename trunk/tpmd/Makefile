@@ -8,7 +8,7 @@ WFLAGS  := -Wall -Werror -Wno-unused -Wpointer-arith -Wcast-align \
            -Wwrite-strings -Wsign-compare -Wno-multichar
            #WFLAGS  += -Wextra -Wcast-qual -Wmissing-prototypes -Wmissing-declarations -Wstrict-aliasing
 CFLAGS  := $(WFLAGS) -g -I.. -I. -O2 -fno-strict-aliasing
-LDFLAGS := -lgmp
+LDFLAGS += -lgmp
 
 BINDIR  := /usr/sbin/
 
@@ -28,7 +28,8 @@ clean:
 	rm -f $(TPMD) $(OBJS)
 
 install: $(TPMD)
-	test -d /var/tpm || mkdir /var/tpm
+	test -d /var/run/tpm || mkdir /var/run/tpm
+	test -d /var/lib/tpm || mkdir /var/lib/tpm
 	cp $(TPMD) $(BINDIR)
 
 .PHONY: all clean install

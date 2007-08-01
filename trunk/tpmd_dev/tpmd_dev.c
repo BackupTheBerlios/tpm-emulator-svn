@@ -50,7 +50,7 @@ MODULE_DESCRIPTION("Trusted Platform Module (TPM) Emulator");
 MODULE_SUPPORTED_DEVICE(TPM_DEVICE_NAME);
 
 /* module parameters */
-char *tpmd_socket_name = "/var/tpm/tpmd_socket:0";
+char *tpmd_socket_name = "/var/run/tpm/tpmd_socket:0";
 module_param(tpmd_socket_name, charp, 0444);
 MODULE_PARM_DESC(tpmd_socket_name, " Sets the name of the TPM daemon socket.");
 

@@ -26,7 +26,7 @@
 
 /* device and socket names */
 static const char *tpm_device_name = "/dev/tpm";
-static const char *tpmd_socket_name = "/var/tpm/tpmd_socket:0";
+static const char *tpmd_socket_name = "/var/run/tpm/tpmd_socket:0";
 
 /* TPM device handle */
 static int tddli_dh = -1;

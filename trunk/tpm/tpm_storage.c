@@ -680,7 +680,7 @@ TPM_RESULT TPM_Sealx(
   TPM_STORED_DATA *sealedData
 )
 {
-  debug("TPM_Sealx() not implemented yet");
+  info("TPM_Sealx() not implemented yet");
   /* TODO: implement TPM_Sealx() */
   return TPM_FAIL;
 }

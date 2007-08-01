@@ -40,8 +40,8 @@ static volatile int stopflag = 0;
 static int is_daemon = 0;
 static int opt_debug = 0;
 static int opt_foreground = 0;
-static const char *opt_socket_name = "/var/tpm/" TPM_DAEMON_NAME "_socket:0";
-static const char *opt_storage_file = "/var/tpm/tpm_emulator-1.2."
+static const char *opt_socket_name = "/var/run/tpm/" TPM_DAEMON_NAME "_socket:0";
+static const char *opt_storage_file = "/var/lib/tpm/tpm_emulator-1.2."
                                       TPM_STR(VERSION_MAJOR) "." TPM_STR(VERSION_MINOR);
 static int tpm_startup = 2;
 static int rand_fh;
@@ -269,6 +269,7 @@ static int init_socket(const char *name)
     }
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, name, sizeof(addr.sun_path));
+    umask(0177);
     if (bind(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
         error("bind(%s) failed: %s", addr.sun_path, strerror(errno));
         close(sock);
