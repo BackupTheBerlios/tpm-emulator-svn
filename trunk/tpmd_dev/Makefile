@@ -25,7 +25,7 @@ clean:
 
 install:
 	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) modules_install
-	test -c /dev/tpm || mknod /dev/tpm c 10 224
+	cp tpmd_dev.rules /etc/udev/rules.d/80-tpmd_dev.rules
 	depmod -a
 
 .PHONY: all clean install
