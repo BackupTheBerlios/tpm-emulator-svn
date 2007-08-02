@@ -9,7 +9,9 @@ WFLAGS := -Wall -Werror -Wno-unused -Wpointer-arith -Wcast-align \
            -Wwrite-strings -Wsign-compare -Wno-multichar
 #WFLAGS += -Wextra -Wcast-qual -Wmissing-prototypes -Wmissing-declarations -Wstrict-aliasing
 CFLAGS := $(WFLAGS) -O2
-TDDL   := libtddl.so
+
+TDDL   := libtddl.so.1.2.0
+TDDLSO := libtddl.so.1.2
 
 LIBDIR := /usr/lib/
 INCDIR := /usr/include/
@@ -18,7 +20,7 @@ all: $(TDDL)
 
 $(TDDL): tddl.c tddl.h
 	$(CC) $(CFLAGS) -fPIC -c -o tddl.o tddl.c
-	ld -soname $(TDDL) -shared -o $(TDDL) tddl.o
+	ld -shared -soname $(TDDLSO) -o $(TDDL) tddl.o
 
 test_tddl: test_tddl.c
 	$(CC) $(CFLAGS) -I. -L. test_tddl.c -ltddl -o test_tddl
