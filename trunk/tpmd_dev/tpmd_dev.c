@@ -26,7 +26,7 @@
 
 #define TPM_DEVICE_MINOR  224
 #define TPM_DEVICE_NAME   "tpm"
-#define TPM_MODULE_NAME   "tpm_dev"
+#define TPM_MODULE_NAME   "tpmd_dev"
 
 #define TPM_RESPONSE_SIZE 4096
 #define TPM_STATE_IS_OPEN 0
