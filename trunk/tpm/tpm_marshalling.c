@@ -271,16 +271,16 @@ int tpm_unmarshal_TPM_PCR_INFO_SHORT(BYTE **ptr, UINT32 *length, TPM_PCR_INFO_SH
 int tpm_marshal_TPM_PCR_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_PCR_ATTRIBUTES *v)
 {
   if (tpm_marshal_BOOL(ptr, length, v->pcrReset)
-      || tpm_marshal_BOOL(ptr, length, v->pcrResetLocal)
-      || tpm_marshal_BOOL(ptr, length, v->pcrExtendLocal)) return -1;
+      || tpm_marshal_TPM_LOCALITY_SELECTION(ptr, length, v->pcrResetLocal)
+      || tpm_marshal_TPM_LOCALITY_SELECTION(ptr, length, v->pcrExtendLocal)) return -1;
   return 0;
 }
 
 int tpm_unmarshal_TPM_PCR_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_PCR_ATTRIBUTES *v)
 {
   if (tpm_unmarshal_BOOL(ptr, length, &v->pcrReset)
-      || tpm_unmarshal_BOOL(ptr, length, &v->pcrResetLocal)
-      || tpm_unmarshal_BOOL(ptr, length, &v->pcrExtendLocal)) return -1;
+      || tpm_unmarshal_TPM_LOCALITY_SELECTION(ptr, length, &v->pcrResetLocal)
+      || tpm_unmarshal_TPM_LOCALITY_SELECTION(ptr, length, &v->pcrExtendLocal)) return -1;
   return 0;
 }
 

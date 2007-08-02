@@ -126,8 +126,8 @@ void tpm_init_data(void)
 #endif
 #ifdef TPM_GENERATE_SEED_DAA
   /* generate the DAA seed (cf. [TPM_Part2], v1.2 rev 94, Section 7.4) */
-  tpm_get_random_bytes(tpmData.permanent.data.tpmDAASeed.digest, 
-    sizeof(tpmData.permanent.data.tpmDAASeed.digest));
+  tpm_get_random_bytes(tpmData.permanent.data.tpmDAASeed.nonce, 
+    sizeof(tpmData.permanent.data.tpmDAASeed.nonce));
 #else
   /* setup DAA seed */
   memcpy(tpmData.permanent.data.tpmDAASeed.nonce, 
