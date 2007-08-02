@@ -228,14 +228,14 @@ TPM_RESULT TPM_CertifyKey(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
       certifyInfo->migrationAuthoritySize = 0;
       memcpy(&certifyInfo->PCRInfo, &key->pcrInfo, sizeof(TPM_PCR_INFO));
       memset(&certifyInfo->PCRInfo.digestAtCreation, 0, sizeof(TPM_DIGEST));
-      certifyInfo->PCRInfoSize = sizeof(certifyInfo->PCRInfo);
+      certifyInfo->PCRInfoSize = sizeof(TPM_PCR_INFO);
     /* ... otherwise use a TPM_CERTIFY_INFO2 structure */
     } else {
       certifyInfo->tag = TPM_TAG_CERTIFY_INFO2;
       certifyInfo->fill = 0x0000;
       certifyInfo->migrationAuthoritySize = 0;
       memcpy(&certifyInfo->PCRInfo, &key->pcrInfo, sizeof(TPM_PCR_INFO));
-      certifyInfo->PCRInfoSize = sizeof(certifyInfo->PCRInfo);
+      certifyInfo->PCRInfoSize = sizeof(TPM_PCR_INFO);
     } 
   } else {
     /* setup TPM_CERTIFY_INFO structure */

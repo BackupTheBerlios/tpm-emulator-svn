@@ -271,16 +271,16 @@ int tpm_unmarshal_TPM_PCR_INFO_SHORT(BYTE **ptr, UINT32 *length, TPM_PCR_INFO_SH
 int tpm_marshal_TPM_PCR_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_PCR_ATTRIBUTES *v)
 {
   if (tpm_marshal_BOOL(ptr, length, v->pcrReset)
-      || tpm_marshal_BOOL_ARRAY(ptr, length, v->pcrResetLocal, TPM_NUM_LOCALITY)
-      || tpm_marshal_BOOL_ARRAY(ptr, length, v->pcrExtendLocal, TPM_NUM_LOCALITY)) return -1;
+      || tpm_marshal_BOOL(ptr, length, v->pcrResetLocal)
+      || tpm_marshal_BOOL(ptr, length, v->pcrExtendLocal)) return -1;
   return 0;
 }
 
 int tpm_unmarshal_TPM_PCR_ATTRIBUTES(BYTE **ptr, UINT32 *length, TPM_PCR_ATTRIBUTES *v)
 {
   if (tpm_unmarshal_BOOL(ptr, length, &v->pcrReset)
-      || tpm_unmarshal_BOOL_ARRAY(ptr, length, v->pcrResetLocal, TPM_NUM_LOCALITY)
-      || tpm_unmarshal_BOOL_ARRAY(ptr, length, v->pcrExtendLocal, TPM_NUM_LOCALITY)) return -1;
+      || tpm_unmarshal_BOOL(ptr, length, &v->pcrResetLocal)
+      || tpm_unmarshal_BOOL(ptr, length, &v->pcrExtendLocal)) return -1;
   return 0;
 }
 
@@ -857,7 +857,7 @@ int tpm_marshal_TPM_DAA_CONTEXT(BYTE **ptr, UINT32 *length, TPM_DAA_CONTEXT *v)
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
       || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digestContext)
       || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_digest)
-      || tpm_marshal_TPM_DIGEST(ptr, length, &v->DAA_contextSeed)
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->DAA_contextSeed)
       || tpm_marshal_BYTE_ARRAY(ptr, length, v->DAA_scratch, sizeof(v->DAA_scratch))
       || tpm_marshal_BYTE(ptr, length, v->DAA_stage))
         return -1;
@@ -869,7 +869,7 @@ int tpm_unmarshal_TPM_DAA_CONTEXT(BYTE **ptr, UINT32 *length, TPM_DAA_CONTEXT *v
   if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
       || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digestContext)
       || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_digest)
-      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DAA_contextSeed)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->DAA_contextSeed)
       || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->DAA_scratch, sizeof(v->DAA_scratch))
       || tpm_unmarshal_BYTE(ptr, length, &v->DAA_stage))
         return -1;
@@ -1434,7 +1434,7 @@ int tpm_marshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DAT
       || tpm_marshal_TPM_DIGEST(ptr, length, &v->DIR)
       || tpm_marshal_BYTE_ARRAY(ptr, length, v->ordinalAuditStatus, sizeof(v->ordinalAuditStatus))
       || tpm_marshal_TPM_ACTUAL_COUNT(ptr, length, v->auditMonotonicCounter)
-      || tpm_marshal_TPM_DIGEST(ptr, length, &v->tpmDAASeed)) return -1;
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->tpmDAASeed)) return -1;
   for (i = 0; i < TPM_MAX_COUNTERS; i++) {
     if (tpm_marshal_TPM_COUNTER_VALUE(ptr, length, &v->counters[i])
         || tpm_marshal_TPM_SECRET(ptr, length, &v->counters[i].usageAuth)
@@ -1469,7 +1469,7 @@ int tpm_unmarshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_D
       || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->DIR)
       || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->ordinalAuditStatus, sizeof(v->ordinalAuditStatus))
       || tpm_unmarshal_TPM_ACTUAL_COUNT(ptr, length, &v->auditMonotonicCounter)
-      || tpm_unmarshal_TPM_DIGEST(ptr, length, &v->tpmDAASeed)) return -1;
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->tpmDAASeed)) return -1;
   for (i = 0; i < TPM_MAX_COUNTERS; i++) {
     if (tpm_unmarshal_TPM_COUNTER_VALUE(ptr, length, &v->counters[i])
         || tpm_unmarshal_TPM_SECRET(ptr, length, &v->counters[i].usageAuth)

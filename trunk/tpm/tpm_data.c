@@ -33,10 +33,8 @@ static inline void init_pcr_attr(int pcr, BOOL reset, BYTE rl, BYTE el)
 {
   unsigned int i;
   tpmData.permanent.data.pcrAttrib[pcr].pcrReset = reset;
-  for (i = 0; i < TPM_NUM_LOCALITY; i++) {
-    tpmData.permanent.data.pcrAttrib[pcr].pcrResetLocal[i] = (rl & (1 << i));
-    tpmData.permanent.data.pcrAttrib[pcr].pcrExtendLocal[i] = (el & (1 << i));
-  }
+  tpmData.permanent.data.pcrAttrib[pcr].pcrResetLocal = rl;
+  tpmData.permanent.data.pcrAttrib[pcr].pcrExtendLocal = el;
 }
 
 void tpm_init_data(void)
@@ -132,9 +130,9 @@ void tpm_init_data(void)
     sizeof(tpmData.permanent.data.tpmDAASeed.digest));
 #else
   /* setup DAA seed */
-  memcpy(tpmData.permanent.data.tpmDAASeed.digest, 
+  memcpy(tpmData.permanent.data.tpmDAASeed.nonce, 
     "\x77\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-    "\x00\x00\x00\x77", 20);
+    "\x00\x00\x00\x77", sizeof(TPM_NONCE));
 #endif
 
   memcpy(tpmData.permanent.data.ekReset.nonce, "\xde\xad\xbe\xef", 4);

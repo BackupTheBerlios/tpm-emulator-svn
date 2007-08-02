@@ -791,6 +791,7 @@ typedef struct tdTPM_PCR_ATTRIBUTES {
 #define sizeof_TPM_PCR_ATTRIBUTES(s) (1 + \
   + sizeof_TPM_PCR_SELECTION(s.pcrExtendLocal) \
   + sizeof_TPM_PCR_SELECTION(s.pcrResetLocal))
+#define sizeof_TPM_PCR_ATTRIBUTES2(s) (1 + 1 + 1)
 
 /*
  * Storage Structures
@@ -807,14 +808,18 @@ typedef struct tdTPM_STORED_DATA {
   TPM_STRUCTURE_TAG tag;
   TPM_ENTITY_TYPE et; /* renamed since v1.2 rev 94 */
   UINT32 sealInfoSize;
-  BYTE* sealInfo; /* type changed since v1.2 rev 103 */
+
+TPM_PCR_INFO sealInfo;
+/* TODO: must be the line below, according to rev 103
+BYTE *sealInfo; */ /* type changed since v1.2 rev 103 */
+
   UINT32 encDataSize;
   BYTE* encData;
 } TPM_STORED_DATA;
 #define sizeof_TPM_STORED_DATA(s) (2 + 2 + 4 + s.sealInfoSize \
   + 4 + s.encDataSize)
 #define free_TPM_STORED_DATA(s) { \
-  if (s.sealInfoSize > 0) tpm_free(s.sealInfo); \
+/*  if (s.sealInfoSize > 0) tpm_free(s.sealInfo); \ */ \
   if (s.encDataSize > 0) tpm_free(s.encData); }
 
 /*
@@ -944,7 +949,11 @@ typedef struct tdTPM_KEY {
   TPM_AUTH_DATA_USAGE authDataUsage;
   TPM_KEY_PARMS algorithmParms;
   UINT32 PCRInfoSize;
-  BYTE *PCRInfo; /* type changed since v1.2 rev 103 */
+
+TPM_PCR_INFO PCRInfo;
+/* TODO: must be the line below, according to rev 103
+BYTE *PCRInfo; */ /* type changed since v1.2 rev 103 */
+
   TPM_STORE_PUBKEY pubKey;
   UINT32 encDataSize;
   BYTE* encData;
@@ -1072,7 +1081,11 @@ typedef struct tdTPM_CERTIFY_INFO {
   TPM_NONCE data;
   BOOL parentPCRStatus;
   UINT32 PCRInfoSize;
-  BYTE* PCRInfo; /* type changed since v1.2 rev 103 */
+
+TPM_PCR_INFO PCRInfo;
+/* TODO: must be the line below, according to rev 103
+BYTE *PCRInfo; */ /* type changed since v1.2 rev 103 */
+
   UINT32 migrationAuthoritySize;
   BYTE* migrationAuthority;
 } TPM_CERTIFY_INFO;
@@ -2274,7 +2287,7 @@ typedef struct tdTPM_PERMANENT_DATA {
 #define sizeof_TPM_PERMANENT_DATA(s) (2 + 4 + 4*20 \
   + sizeof_RSA(s.endorsementKey) + TPM_ORD_MAX/8 \
   + (1+TPM_MAX_KEYS)*sizeof_TPM_KEY_DATA(s.srk) \
-  + TPM_NUM_PCR*(sizeof_TPM_PCR_ATTRIBUTES(x)+20) \
+  + TPM_NUM_PCR*(sizeof_TPM_PCR_ATTRIBUTES2(x)+20) \
   + TPM_MAX_COUNTERS*sizeof_TPM_COUNTER_VALUE2(x) + 1 + 4 + 20)
 
 /*
