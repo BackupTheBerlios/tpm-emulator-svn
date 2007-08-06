@@ -8,7 +8,7 @@ PACKAGE_NAME   := tpm_emulator
 VERSION_MAJOR  := 0
 VERSION_MINOR  := 5
 VERSION_BUILD  := $(shell date +"%s")
-VERSION_SUFFIX := 
+VERSION_SUFFIX := .1
 
 SUBDIRS := tpmd tpmd_dev tddl
 
@@ -34,7 +34,7 @@ all-recursive clean-recursive install-recursive:
 		$(MAKE) -C $$subdir $$target || exit -1; \
 	done
 
-DIRS    := . tpm crypto tpmd tpmd_dev tddl tpm_dev tpm_dev/tpm tpm_dev/crypto
+DIRS    := . tpm crypto tpmd tpmd_dev tddl
 DISTSRC := $(foreach dir, $(DIRS), $(wildcard $(dir)/*.c))
 DISTSRC += $(foreach dir, $(DIRS), $(wildcard $(dir)/*.h))
 DIRS    := . tpmd tpmd_dev tddl tpm_dev

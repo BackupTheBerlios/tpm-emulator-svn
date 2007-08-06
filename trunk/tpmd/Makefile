@@ -27,10 +27,14 @@ $(TPMD): $(OBJS)
 clean:
 	rm -f $(TPMD) $(OBJS)
 
+TPMD_USER  ?= tss
+TPMD_GROUP ?= tss
+INSTALL    ?= install
+
 install: $(TPMD)
-	test -d /var/run/tpm || mkdir /var/run/tpm
-	test -d /var/lib/tpm || mkdir /var/lib/tpm
-	cp $(TPMD) $(BINDIR)
+	$(INSTALL) -m 755 -o $(TPMD_USER) -g $(TPMD_GROUP) -d /var/lib/tpm
+	$(INSTALL) -m 755 -o $(TPMD_USER) -g $(TPMD_GROUP) -d /var/run/tpm
+	$(INSTALL) -m 755 $(TPMD) $(DESTDIR)/$(BINDIR)
 
 .PHONY: all clean install
 

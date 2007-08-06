@@ -23,10 +23,11 @@ clean:
 	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) clean
 	rm -f Modules.symvers
 
+INSTALL ?= install
+
 install:
-	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) modules_install
-	cp tpmd_dev.rules /etc/udev/rules.d/80-tpmd_dev.rules
-	depmod -a
+	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) INSTALL_MOD_PATH=$(DESTDIR) modules_install
+	$(INSTALL) -m 644 tpmd_dev.rules $(DESTDIR)/etc/udev/rules.d/80-tpmd_dev.rules
 
 .PHONY: all clean install
 
