@@ -28,6 +28,8 @@
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <pwd.h>
+#include <grp.h>
 #include "tpm_emulator_config.h"
 #include "tpm/tpm_emulator.h"
 
@@ -43,6 +45,8 @@ static int opt_foreground = 0;
 static const char *opt_socket_name = "/var/run/tpm/" TPM_DAEMON_NAME "_socket:0";
 static const char *opt_storage_file = "/var/lib/tpm/tpm_emulator-1.2."
                                       TPM_STR(VERSION_MAJOR) "." TPM_STR(VERSION_MINOR);
+static uid_t opt_uid = 0;
+static gid_t opt_gid = 0;
 static int tpm_startup = 2;
 static int rand_fh;
 
@@ -132,11 +136,13 @@ int tpm_read_from_file(uint8_t **data, size_t *data_length)
 static void print_usage(char *name)
 {
     printf("usage: %s [-d] [-f] [-s storage file] [-u unix socket name] "
-           "[-h] [startup mode]\n", name);
+           "[-o user name] [-g group name] [-h] [startup mode]\n", name);
     printf("  d : enable debug mode\n");
     printf("  f : forces the application to run in the foreground\n");
     printf("  s : storage file to use (default: %s)\n", opt_storage_file);
     printf("  u : unix socket name to use (default: %s)\n", opt_socket_name);
+    printf("  o : effective user the application should run as\n");
+    printf("  g : effective group the application should run as\n");
     printf("  h : print this help message\n");
     printf("  startup mode : must be 'clear', "
            "'save' (default) or 'deactivated\n");
@@ -145,8 +151,12 @@ static void print_usage(char *name)
 static void parse_options(int argc, char **argv)
 {
     char c;
+    struct passwd *pwd;
+    struct group *grp;
+    opt_uid = getuid();
+    opt_gid = getgid();
     info("parsing options");
-    while ((c = getopt (argc, argv, "dfs:u:h")) != -1) {
+    while ((c = getopt (argc, argv, "dfs:u:o:g:h")) != -1) {
         debug("handling option '-%c'", c);
         switch (c) {
             case 'd':
@@ -165,6 +175,22 @@ static void parse_options(int argc, char **argv)
             case 'u':
                 opt_socket_name = optarg;
                 debug("using unix socket '%s'", opt_socket_name);
+                break;
+            case 'o':
+                pwd  = getpwnam(optarg);
+                if (pwd == NULL) {
+                    error("invalid user name '%s'\n", optarg);
+                    exit(EXIT_FAILURE);
+                }
+                opt_uid = pwd->pw_uid;
+                break;
+            case 'g':
+                grp  = getgrnam(optarg);
+                if (grp == NULL) {
+                    error("invalid group name '%s'\n", optarg);
+                    exit(EXIT_FAILURE);
+                }
+                opt_gid = grp->gr_gid;
                 break;
             case '?':
                 error("unknown option '-%c'", optopt);
@@ -189,6 +215,24 @@ static void parse_options(int argc, char **argv)
                   "'save' (default) or 'deactivated", argv[optind]);
             print_usage(argv[0]);
             exit(EXIT_SUCCESS);
+        }
+    }
+}
+
+static void switch_uid_gid(void)
+{
+    if (opt_gid != getgid()) {
+        info("switching effective group ID to %d", opt_gid);  
+        if (setgid(opt_gid) == -1) {
+            error("switching effective group ID to %d failed: %s", opt_gid, strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+    }
+    if (opt_uid != getuid()) {
+        info("switching effective user ID to %d", opt_uid);
+        if (setuid(opt_uid) == -1) {
+            error("switching effective user ID to %d failed: %s", opt_uid, strerror(errno));
+            exit(EXIT_FAILURE);
         }
     }
 }
@@ -378,6 +422,8 @@ int main(int argc, char **argv)
     syslog(LOG_INFO, "--- separator ---\n");
     info("starting TPM Emulator daemon");
     parse_options(argc, argv);
+    /* switch uid/gid if required */
+    switch_uid_gid();
     /* open random device */
     init_random();
     /* init signal handlers */
