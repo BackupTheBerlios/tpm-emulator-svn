@@ -56,9 +56,9 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
     /* reset PCR values */
     for (i = 0; i < TPM_NUM_PCR; i++) {
       if (tpmData.permanent.data.pcrAttrib[i].pcrReset)
-        SET_TO_ZERO(&tpmData.permanent.data.pcrValue[i].digest);
-      else
         SET_TO_0xFF(&tpmData.permanent.data.pcrValue[i].digest);
+      else
+        SET_TO_ZERO(&tpmData.permanent.data.pcrValue[i].digest);
     }
     /* reset STCLEAR_FLAGS */
     SET_TO_ZERO(&tpmData.stclear.flags);

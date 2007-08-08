@@ -43,7 +43,7 @@ TPM_RESULT TPM_Extend(TPM_PCRINDEX pcrNum, TPM_DIGEST *inDigest,
 
   info("TPM_Extend()");
   if (pcrNum >= TPM_NUM_PCR) return TPM_BADINDEX;
-  if (PCR_ATTRIB[pcrNum].pcrExtendLocal != LOCALITY) return TPM_BAD_LOCALITY;
+  if (!(PCR_ATTRIB[pcrNum].pcrExtendLocal & (1 << LOCALITY))) return TPM_BAD_LOCALITY;
   /* compute new PCR value as SHA-1(old PCR value || inDigest) */
   tpm_sha1_init(&ctx);
   tpm_sha1_update(&ctx, PCR_VALUE[pcrNum].digest, sizeof(PCR_VALUE[pcrNum].digest));
@@ -119,14 +119,14 @@ TPM_RESULT TPM_PCR_Reset(TPM_PCR_SELECTION *pcrSelection)
     /* is PCR number i selected ? */
     if (pcrSelection->pcrSelect[i >> 3] & (1 << (i & 7))) {
       if (!PCR_ATTRIB[i].pcrReset) return TPM_NOTRESETABLE;
-      if (PCR_ATTRIB[i].pcrResetLocal != LOCALITY) return TPM_NOTLOCAL;
+      if (!(PCR_ATTRIB[i].pcrResetLocal & (1 << LOCALITY))) return TPM_NOTLOCAL;
     }
   }
   /* ... then we reset all registers at once */
   for (i = 0; i < pcrSelection->sizeOfSelect * 8; i++) {
     /* is PCR number i selected ? */
     if (pcrSelection->pcrSelect[i >> 3] & (1 << (i & 7))) {
-      memset(PCR_VALUE[i].digest, 0, sizeof(*PCR_VALUE[i].digest));
+      memset(PCR_VALUE[i].digest, 0, sizeof(PCR_VALUE[i].digest));
     }
   }
   return TPM_SUCCESS;
