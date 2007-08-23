@@ -78,11 +78,13 @@ void tpm_get_random_bytes(void *buf, size_t nbytes)
 uint64_t tpm_get_ticks(void)
 {
     static uint64_t old_t = 0;
-    uint64_t new_t;
+    uint64_t new_t, res_t;
     struct timeval tv;
     gettimeofday(&tv, NULL);
     new_t = (uint64_t)tv.tv_sec * 1000000 + (uint64_t)tv.tv_usec;
-    return (old_t > 0) ? new_t - old_t : 0;
+    res_t = (old_t > 0) ? new_t - old_t : 0;
+    old_t = new_t;
+    return res_t;
 }
 
 int tpm_write_to_file(uint8_t *data, size_t data_length)
