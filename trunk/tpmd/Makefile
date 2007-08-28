@@ -7,7 +7,7 @@ CC      := gcc
 WFLAGS  := -Wall -Werror -Wno-unused -Wpointer-arith -Wcast-align \
            -Wwrite-strings -Wsign-compare -Wno-multichar
            #WFLAGS  += -Wextra -Wcast-qual -Wmissing-prototypes -Wmissing-declarations -Wstrict-aliasing
-CFLAGS  := $(WFLAGS) -g -I.. -I. -O2 -fno-strict-aliasing
+CFLAGS  += $(WFLAGS) -g -I.. -I. -O2 -fno-strict-aliasing
 LDFLAGS += -lgmp
 
 BINDIR  := /usr/sbin/
@@ -34,6 +34,7 @@ INSTALL    ?= install
 install: $(TPMD)
 	$(INSTALL) -m 755 -o $(TPMD_USER) -g $(TPMD_GROUP) -d /var/lib/tpm
 	$(INSTALL) -m 755 -o $(TPMD_USER) -g $(TPMD_GROUP) -d /var/run/tpm
+	$(INSTALL) -D -d $(DESTDIR)/$(BINDIR)
 	$(INSTALL) -m 755 $(TPMD) $(DESTDIR)/$(BINDIR)
 
 .PHONY: all clean install

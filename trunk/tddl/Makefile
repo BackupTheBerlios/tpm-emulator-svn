@@ -8,7 +8,7 @@ CC     := gcc
 WFLAGS := -Wall -Werror -Wno-unused -Wpointer-arith -Wcast-align \
            -Wwrite-strings -Wsign-compare -Wno-multichar
 #WFLAGS += -Wextra -Wcast-qual -Wmissing-prototypes -Wmissing-declarations -Wstrict-aliasing
-CFLAGS := $(WFLAGS) -O2
+CFLAGS += $(WFLAGS) -O2
 
 TDDL    := libtddl.so
 TDDLSO1 := $(TDDL).1.2
@@ -34,11 +34,11 @@ clean:
 INSTALL ?= install
 
 install: $(TDDL)
+	$(INSTALL) -D -d $(DESTDIR)/$(INCDIR)
 	$(INSTALL) -m 644 tddl.h $(DESTDIR)/$(INCDIR)
+	$(INSTALL) -D -d $(DESTDIR)/$(LIBDIR)
 	$(INSTALL) -m 644 $(TDDLSO2) $(DESTDIR)/$(LIBDIR)
-	ln -s $(DESTDIR)/$(LIBDIR)/$(TDDLSO2) $(DESTDIR)/$(LIBDIR)/$(TDDLSO1)
-	ln -s $(DESTDIR)/$(LIBDIR)/$(TDDLSO1) $(DESTDIR)/$(LIBDIR)/$(TDDL)
-	ldconfig
+	cd $(DESTDIR)/$(LIBDIR); ln -s $(TDDLSO2) $(TDDLSO1); ln -s $(TDDLSO1) $(TDDL); cd -
 
 test: test_tddl
 	LD_LIBRARY_PATH=. ./test_tddl
