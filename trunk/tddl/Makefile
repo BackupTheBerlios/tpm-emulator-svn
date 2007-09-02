@@ -21,7 +21,7 @@ all: $(TDDL)
 
 $(TDDL): tddl.c tddl.h
 	$(CC) $(CFLAGS) -fPIC -c -o tddl.o tddl.c
-	ld -shared -soname $(TDDLSO1) -o $(TDDLSO2) tddl.o
+	$(CC) -shared -o $(TDDLSO2) -Wl,-soname,$(TDDLSO1) tddl.o
 	test -s $(TDDLSO1) || ln -s $(TDDLSO2) $(TDDLSO1)
 	test -s $(TDDL) || ln -s $(TDDLSO1) $(TDDL)
 
