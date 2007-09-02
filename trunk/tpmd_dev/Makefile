@@ -6,7 +6,7 @@
 # kernel settings
 KERNEL_RELEASE := $(shell uname -r)
 KERNEL_BUILD   := /lib/modules/$(KERNEL_RELEASE)/build
-MOD_SUBDIR     := crypt
+MOD_SUBDIR     := misc
 
 # module settings
 MODULE_NAME    := tpmd_dev
