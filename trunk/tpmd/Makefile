@@ -32,8 +32,8 @@ TPMD_GROUP ?= tss
 INSTALL    ?= install
 
 install: $(TPMD)
-	$(INSTALL) -m 755 -o $(TPMD_USER) -g $(TPMD_GROUP) -d /var/lib/tpm
-	$(INSTALL) -m 755 -o $(TPMD_USER) -g $(TPMD_GROUP) -d /var/run/tpm
+	$(INSTALL) -m 755 -o $(TPMD_USER) -g $(TPMD_GROUP) -d $(DESTDIR)/var/lib/tpm
+	$(INSTALL) -m 755 -o $(TPMD_USER) -g $(TPMD_GROUP) -d $(DESTDIR)/var/run/tpm
 	$(INSTALL) -D -d $(DESTDIR)/$(BINDIR)
 	$(INSTALL) -m 755 $(TPMD) $(DESTDIR)/$(BINDIR)
 
