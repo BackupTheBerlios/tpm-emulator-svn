@@ -22,6 +22,7 @@
 #include "tpm_handles.h"
 #include "tpm_marshalling.h"
 #include "crypto/rsa.h"
+#include "crypto/sha1.h"
 
 #define SAVE_KEY_CONTEXT_LABEL  ((uint8_t*)"SaveKeyContext..")
 #define SAVE_AUTH_CONTEXT_LABEL ((uint8_t*)"SaveAuthContext.")
@@ -131,6 +132,8 @@ TPM_RESULT TPM_DirRead(TPM_DIRINDEX dirIndex, TPM_DIRVALUE *dirContents)
   return TPM_SUCCESS;
 }
 
+extern int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
+
 TPM_RESULT TPM_ChangeAuthAsymStart(  
   TPM_KEY_HANDLE idHandle,
   TPM_NONCE *antiReplay,
@@ -147,6 +150,7 @@ TPM_RESULT TPM_ChangeAuthAsymStart(
   TPM_KEY_DATA *idKey;
   tpm_rsa_private_key_t rsa;
   UINT32 key_length;
+  TPM_STORE_ASYMKEY store;
   
   info("TPM_ChangeAuthAsymStart() not implemented yet");
   /* TODO: implement TPM_ChangeAuthAsymStart() */
@@ -188,12 +192,12 @@ TPM_RESULT TPM_ChangeAuthAsymStart(
     }
    
 
-TODO
+//TODO
 
   /* 8. The TPM SHALL fill in all fields in tempKey using k1 for the
         information. The TPM_KEY->encSize MUST be 0. */
 
-TODO
+//TODO
 
     /* compute the digest of the wrapped key (without encData) */
     if (tpm_compute_key_digest(outTempKey, &store.pubDataDigest)) {
@@ -204,17 +208,17 @@ TODO
         The certifyInfo->data field is supplied by the antiReplay. */
     /* "Version" field is set according to the deprecated TPM_VERSION
        structure from the old v1.1 specification. */
-    memcpy(certifyInfo->tag, tpmData.permanent.data.version[0], 2);
-    memcpy(certifyInfo->fill, tpmData.permanent.data.version[2], 1);
-    memcpy(certifyInfo->payloadType, tpmData.permanent.data.version[3], 1);
+    memcpy(&certifyInfo->tag, &tpmData.permanent.data.version, 2);
+    memcpy(&certifyInfo->fill, &tpmData.permanent.data.version + 2, 1);
+    memcpy(&certifyInfo->payloadType, &tpmData.permanent.data.version + 3, 1);
     /* Other fields are filled according to Section 27.4.1 [TPM, Part 3]. */
     certifyInfo->keyUsage = TPM_KEY_AUTHCHANGE;
     certifyInfo->keyFlags = TPM_KEY_FLAG_VOLATILE;
     certifyInfo->authDataUsage = TPM_AUTH_NEVER;
-    memcpy(certifyInfo->algorithmParms, inTempKey,
-      sizeof_TPM_KEY_PARMS(inTempKey));
-    memcpy(certifyInfo->pubkeyDigest, store.pubDataDigest, sizeof(TPM_DIGEST));
-    memcpy(certifyInfo->data, antiReplay, sizeof(TPM_NONCE));
+    memcpy(&certifyInfo->algorithmParms, inTempKey,
+      sizeof_TPM_KEY_PARMS((*inTempKey)));
+    memcpy(&certifyInfo->pubkeyDigest, &store.pubDataDigest, sizeof(TPM_DIGEST));
+    memcpy(&certifyInfo->data, antiReplay, sizeof(TPM_NONCE));
     certifyInfo->parentPCRStatus = FALSE;
     certifyInfo->PCRInfoSize = 0;
   
@@ -222,7 +226,7 @@ TODO
          pointed to by idHandle. The resulting signed blob is returned
          in sig parameter. */
 
-TODO
+//TODO
 
   return TPM_SUCCESS;
 }
