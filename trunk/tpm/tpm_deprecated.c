@@ -1,6 +1,7 @@
 /* Software-Based Trusted Platform Module (TPM) Emulator for Linux
  * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+ *                    Swiss Federal Institute of Technology (ETH) Zurich,
+ *               2007 Heiko Stamer <stamer@gaos.org>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -20,6 +21,7 @@
 #include "tpm_data.h"
 #include "tpm_handles.h"
 #include "tpm_marshalling.h"
+#include "crypto/rsa.h"
 
 #define SAVE_KEY_CONTEXT_LABEL  ((uint8_t*)"SaveKeyContext..")
 #define SAVE_AUTH_CONTEXT_LABEL ((uint8_t*)"SaveAuthContext.")
@@ -143,13 +145,15 @@ TPM_RESULT TPM_ChangeAuthAsymStart(
 {
   TPM_RESULT res;
   TPM_KEY_DATA *idKey;
+  tpm_rsa_private_key_t rsa;
+  UINT32 key_length;
   
   info("TPM_ChangeAuthAsymStart() not implemented yet");
   /* TODO: implement TPM_ChangeAuthAsymStart() */
   return TPM_FAIL;
   
   /* 1. The TPM SHALL verify the AuthData to use the TPM identity key held in
-   *    idHandle. The TPM MUST verify that the key is a TPM identity key. */
+        idHandle. The TPM MUST verify that the key is a TPM identity key. */
     /* get identity key */
     idKey = tpm_get_key(idHandle);
     if (idKey == NULL) return TPM_INVALID_KEYHANDLE;
@@ -160,13 +164,67 @@ TPM_RESULT TPM_ChangeAuthAsymStart(
     if (idKey->keyUsage != TPM_KEY_IDENTITY) return TPM_INVALID_KEYUSAGE;
   /* 2. The TPM SHALL validate the algorithm parameters for the key to create
         from the tempKey parameter. */
+  /* 3. Recommended key type is RSA */
+  /* 4. Minimum RSA key size MUST is 512 bits, recommended RSA key size 
+        is 1024 */
+  /* 5. For other key types the minimum key size strength MUST be
+        comparable to RSA 512 */
+  /* 6. If the TPM is not designed to create a key of the requested type,
+        return the error code TPM_BAD_KEY_PROPERTY */
   if (inTempKey->algorithmID != TPM_ALG_RSA
       || inTempKey->parmSize == 0
       || inTempKey->parms.rsa.keyLength < 512
       || inTempKey->parms.rsa.numPrimes != 2
       || inTempKey->parms.rsa.exponentSize != 0)
     return TPM_BAD_KEY_PROPERTY;
+  /* 7. The TPM SHALL create a new key (k1) in accordance with the
+        algorithm parameter.
+        The newly created key is pointed to by ephHandle. */
+    /* generate key */
+    key_length = inTempKey->parms.rsa.keyLength;
+    if (tpm_rsa_generate_key(&rsa, key_length)) {
+      debug("TPM_ChangeAuthAsymStart(): tpm_rsa_generate_key() failed.");
+      return TPM_FAIL;
+    }
+   
 
+TODO
+
+  /* 8. The TPM SHALL fill in all fields in tempKey using k1 for the
+        information. The TPM_KEY->encSize MUST be 0. */
+
+TODO
+
+    /* compute the digest of the wrapped key (without encData) */
+    if (tpm_compute_key_digest(outTempKey, &store.pubDataDigest)) {
+      debug("TPM_ChangeAuthAsymStart(): tpm_compute_key_digest() failed.");
+      return TPM_FAIL;
+    }
+  /* 9. The TPM SHALL fill in certifyInfo using k1 for the information.
+        The certifyInfo->data field is supplied by the antiReplay. */
+    /* "Version" field is set according to the deprecated TPM_VERSION
+       structure from the old v1.1 specification. */
+    memcpy(certifyInfo->tag, tpmData.permanent.data.version[0], 2);
+    memcpy(certifyInfo->fill, tpmData.permanent.data.version[2], 1);
+    memcpy(certifyInfo->payloadType, tpmData.permanent.data.version[3], 1);
+    /* Other fields are filled according to Section 27.4.1 [TPM, Part 3]. */
+    certifyInfo->keyUsage = TPM_KEY_AUTHCHANGE;
+    certifyInfo->keyFlags = TPM_KEY_FLAG_VOLATILE;
+    certifyInfo->authDataUsage = TPM_AUTH_NEVER;
+    memcpy(certifyInfo->algorithmParms, inTempKey,
+      sizeof_TPM_KEY_PARMS(inTempKey));
+    memcpy(certifyInfo->pubkeyDigest, store.pubDataDigest, sizeof(TPM_DIGEST));
+    memcpy(certifyInfo->data, antiReplay, sizeof(TPM_NONCE));
+    certifyInfo->parentPCRStatus = FALSE;
+    certifyInfo->PCRInfoSize = 0;
+  
+  /* 10. The TPM then signs the certifyInfo parameter using the key
+         pointed to by idHandle. The resulting signed blob is returned
+         in sig parameter. */
+
+TODO
+
+  return TPM_SUCCESS;
 }
 
 TPM_RESULT TPM_ChangeAuthAsymFinish(  
