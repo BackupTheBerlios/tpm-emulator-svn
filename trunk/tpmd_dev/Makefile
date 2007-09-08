@@ -21,9 +21,14 @@ all:
 
 clean:
 	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) clean
-	rm -f Modules.symvers
+	rm -f Modules.symvers tpmd_dev.rules
 
+TPMD_USER  ?= tss
+TPMD_GROUP ?= tss
 INSTALL ?= install
+
+tpmd_dev.rules: tpmd_dev.rules.in
+	sed -e "s/\$$TPMD_GROUP/$(TPMD_GROUP)/g" tpmd_dev.rules.in > tpmd_dev.rules
 
 install:
 	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) INSTALL_MOD_PATH=$(DESTDIR) modules_install

@@ -34,12 +34,26 @@ all-recursive clean-recursive install-recursive:
 		$(MAKE) -C $$subdir $$target || exit -1; \
 	done
 
+user: version
+	@$(MAKE) -C tpmd all || exit -1
+	@$(MAKE) -C tddl all || exit -1
+
+modules: version
+	@$(MAKE) -C tpmd_dev all || exit -1
+
+user_install: user
+	@$(MAKE) -C tpmd install || exit -1
+	@$(MAKE) -C tddl install || exit -1
+
+modules_install: modules
+	@$(MAKE) -C tpmd_dev install || exit -1
+
 DIRS    := . tpm crypto tpmd tpmd_dev tddl
 DISTSRC := $(foreach dir, $(DIRS), $(wildcard $(dir)/*.c))
 DISTSRC += $(foreach dir, $(DIRS), $(wildcard $(dir)/*.h))
 DIRS    := . tpmd tpmd_dev tddl tpm_dev
 DISTSRC += $(foreach dir, $(DIRS), $(dir)/Makefile)
-DISTSRC += ./README ./AUTHORS ./ChangeLog
+DISTSRC += ./README ./AUTHORS ./ChangeLog tpmd_dev/tpmd_dev.rules.in
 DISTDIR := tpm_emulator-$(VERSION_MAJOR).$(VERSION_MINOR)$(VERSION_SUFFIX)
 
 dist: $(DISTSRC)
