@@ -1,66 +1,58 @@
-%\documentclass[11pt,twocolumn]{article}
-\documentclass[11pt,letterpaper]{article}
+\documentclass[runningheads]{llncs}
+\usepackage{url}
 \usepackage{graphicx}
-\usepackage{times}
-\usepackage[small,compact]{titlesec}
 \usepackage{subfigure}
 \usepackage[footnotesize]{caption}
-
-% setup page layout
-\usepackage{calc}
-\setlength{\hoffset}{-1in}
-\setlength{\voffset}{-1in}
-\setlength{\topmargin}{10mm}
-\setlength{\headheight}{5mm}
-\setlength{\headsep}{5mm}
-\setlength{\evensidemargin}{20mm}
-\setlength{\oddsidemargin}{20mm}
-\setlength{\marginparwidth}{0mm}
-\setlength{\marginparsep}{0mm}
-\setlength{\footskip}{10mm}
-\setlength{\textwidth}{\paperwidth - 40mm}
-\setlength{\textheight}{\paperheight - 45mm}
 
 \newcommand{\file}[1]{\small\texttt{#1}\normalsize}
 \newcommand{\func}[1]{\small\texttt{#1}\normalsize}
 %\newcommand{\module}[1]{\textsf{#1}}
 
-\title{\vspace*{-1cm}\bfseries\textsf{A Software-based Trusted Platform Module Emulator}}
-\author{
-  Mario Strasser\\ETH Zurich, Switzerland
+\title{\bf A Software-based\\ Trusted Platform Module Emulator}
+\titlerunning{Software-based Trusted Platform Module Emulator}
+
+\author{Mario Strasser\inst{1} \and Heiko Stamer\inst{2}}
+\authorrunning{M.~Strasser and H.~Stamer}
+
+\institute{
+	ETH Zurich, Switzerland\\
+	\email{strasser@tik.ee.ethz.ch}\\[3mm]
 \and
-  Heiko Stamer\\University of Kassel, Germany
-%\and
-%  Paul E.~Sevin\c{c}\\ETH Zurich, Switzerland
+	Fachbereich Elektrotechnik/Informatik, Universit\"at Kassel\\
+	34109 Kassel, Germany\\
+	\email{stamer@theory.informatik.uni-kassel.de}\\
 }
 \date{}
 
 \begin{document}
-
 \maketitle
 
 \begin{abstract}
-When developing and researching new technologies such as TPM-based large-scale distributed trusted
-computing systems, means to investigate their behavior and evaluate their performance are of
-paramount importance. In the networking community, test-beds and software simulators are the methods
-of choice in order to conduct network performance analysis and protocol evaluations. We argue that
-these methods would also be valuable tools for evaluating and understanding the behavior of
-TPM-based distributed trusted computing systems. However, due to the security properties of hardware
-TPMs, building such a test-bed is extremely cumbersome and costly, the realistic (hardware-supported)
-simulation of these systems virtually infeasible. In this paper, we therefore advocate the usage of
-software-based TPMs to solve this hardware dependency and present an efficient and portable TPM
-emulator for Unix. Our emulator enables not only the implementation of flexible and low-cost
-test-beds and simulators but, in addition, provides programmers of trusted systems with a powerful
-testing and debugging tool that can also be used for training and educational purposes. Thanks to
-its portability and interoperability, the TPM emulator runs on a variety of platforms and is
-compatible with the most relevant software tools and APIs.
+	When developing and researching new technologies such as TPM-based
+	large-scale distributed trusted computing systems, means to investigate
+	their behavior and to evaluate their performance are of paramount
+	importance. In the networking community, test-beds and software simulators
+	are the methods of choice in order to conduct network performance analysis
+	and protocol evaluations. We argue that these methods would also be valuable
+	tools for evaluating and understanding the behavior of TPM-based distributed
+	trusted computing systems. However, due to the security properties of hardware
+	TPMs, building such a test-bed is extremely cumbersome and costly, the
+	realistic (hardware-supported) simulation of these systems virtually
+	infeasible. In this paper, we therefore advocate the usage of software-based
+	TPMs to solve this hardware dependency and present an efficient and portable
+	TPM emulator for Unix. Our emulator enables not only the implementation of
+	flexible and low-cost test-beds and simulators but, in addition, provides
+	programmers of trusted systems with a powerful testing and debugging tool
+	that can also be used for training and educational purposes. Thanks to its
+	portability and interoperability, the TPM emulator runs on a variety of
+	platforms and is compatible with the most relevant software tools and APIs.
 \end{abstract}
 
 
 \section{Introduction}
-In the area of trusted computing, the Trusted Computing Group (TCG) \cite{TCG} has developed
+In the area of trusted computing, the Trusted Computing Group (TCG)~\cite{TCG} has developed
 various specifications for trusted computing building blocks and software interfaces, among which
-the Trusted Platform Module (TPM) \cite{TCGSpec} is likely to be the most popular one. These
+the Trusted Platform Module (TPM)~\cite{TCGSpec} is likely to be the most popular one. These
 specifications are clearly gaining momentum and the increasing availability of TPMs will soon make
 it a quasi standard component in today's personal and mobile computers. A TPM, as specified by the
 TCG, provides a hardware root of trust for storage as well as for reporting and, together with
@@ -85,7 +77,7 @@ cumbersome and costly, the realistic (hardware-supported) simulation of these sy
 infeasible.
 
 In this paper, we therefore advocate the usage of software-based TPMs to solve this hardware
-dependency, and present an efficient and portable open-source TPM emulator for Unix \cite{TPMEmu}.
+dependency, and present an efficient and portable open-source TPM emulator for Unix~\cite{TPMEmu}.
 The possibility to run more than one TPM emulator instance per platform and to restore previously
 stored or artificially created states allows for the implementation of flexible and low-cost
 test-beds and simulators. Running entirely in software, the TPM emulator can further be used to
@@ -98,13 +90,14 @@ and execution time overhead if the RSA algorithm is replaced with elliptic curve
 and debugging tool that can also be used for training and educational purposes. Thanks to its
 portability and interoperability, the TPM emulator runs on a variety of different computing
 platforms (e.g., Intel, AMD, StrongARM, and PowerPC) and is compatible with the most relevant
-software tools and APIs such as TrouSerS \cite{trousers} and IBM's TPM utilities \cite{IBMtools}.
+software tools and APIs such as TrouSerS \cite{trousers} and IBM's TPM
+utilities~\cite{IBMtools}.
 
 
-\section{Background: Trusted Computing and Trusted Platform Module}\label{sec:background}
+\section{Trusted Computing and Trusted Platform Module}\label{sec:background}
 In this section, we summarize the TCG's definitions regarding trusted computing and provide a brief
 overview of the structure and functionality of the TPM. For a comprehensive description, the reader
-is referred to the TCG architecture overview and specifications \cite{TCGArch, TCGSpec}.
+is referred to the TCG architecture overview and specifications~\cite{TCGArch,TCGSpec}.
 
 Trusted computing is about embedding a trusted computing base (TCB)~\cite{Bishop2003} in a computing
 platform that allows a third party to determine the trustworthiness of the platform, that is,
@@ -492,7 +485,7 @@ be efficiently simulated on a single platform, allowing for the implementation o
 and simulators. In addition, the emulator provides programmers of trusted systems with a powerful
 testing and debugging tool that can also be used for training and educational purposes. Our TPM
 emulator is still a work in progress and future work will include the completion of the missing
-commands as well as the portage of the TPM emulator package to Windows and Mac OS X.
+commands as well as the portage of the TPM emulator package to Windows and Mac~OS~X.
 
 \bibliographystyle{plain}
 \bibliography{biblio}
