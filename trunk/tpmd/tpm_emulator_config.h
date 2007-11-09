@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
-#include <sys/byteorder.h>
+#include <asm/byteorder.h>
 
 /* TPM emulator configuration */
 

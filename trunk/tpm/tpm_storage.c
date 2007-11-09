@@ -521,15 +521,13 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
   parent = tpm_get_key(parentHandle);
   if (parent == NULL) return TPM_INVALID_KEYHANDLE;
   /* verify authorization */
-  if (parent->authDataUsage != TPM_AUTH_NEVER) {
-    if (auth1->authHandle != TPM_INVALID_HANDLE) {
-      debug("[ authDataUsage=%.2x ]", parent->authDataUsage);
-      res = tpm_verify_auth(auth1, parent->usageAuth, parentHandle);
-      if (res != TPM_SUCCESS) return res;
-    } else {
-      debug("TPM_LoadKey(): parent key requires authorization.");
-      return TPM_AUTHFAIL;
-    }
+  if (auth1->authHandle != TPM_INVALID_HANDLE) {
+    debug("[ authDataUsage=%.2x ]", parent->authDataUsage);
+    res = tpm_verify_auth(auth1, parent->usageAuth, parentHandle);
+    if (res != TPM_SUCCESS) return res;
+  } else if (parent->authDataUsage != TPM_AUTH_NEVER) {
+    debug("TPM_LoadKey(): parent key requires authorization.");
+    return TPM_AUTHFAIL;
   }
   if (parent->keyUsage != TPM_KEY_STORAGE) return TPM_INVALID_KEYUSAGE;
   /* verify key properties */
