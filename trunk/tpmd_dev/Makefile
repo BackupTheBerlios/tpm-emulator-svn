@@ -30,7 +30,7 @@ INSTALL ?= install
 tpmd_dev.rules: tpmd_dev.rules.in
 	sed -e "s/\$$TPMD_GROUP/$(TPMD_GROUP)/g" tpmd_dev.rules.in > tpmd_dev.rules
 
-install:
+install: tpmd_dev.rules.in
 	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) INSTALL_MOD_PATH=$(DESTDIR) modules_install
 	$(INSTALL) -m 644 tpmd_dev.rules $(DESTDIR)/etc/udev/rules.d/80-tpmd_dev.rules
 
