@@ -3,6 +3,7 @@
 \usepackage{graphicx}
 \usepackage{subfigure}
 \usepackage[footnotesize]{caption}
+\usepackage[table,svgnames]{xcolor}
 
 \newcommand{\file}[1]{\small\texttt{#1}\normalsize}
 \newcommand{\func}[1]{\small\texttt{#1}\normalsize}
@@ -35,9 +36,9 @@
 	are the methods of choice in order to conduct network performance analysis
 	and protocol evaluations. We argue that these methods would also be valuable
 	tools for evaluating and understanding the behavior of TPM-based distributed
-	trusted computing systems. However, due to the security properties of hardware
-	TPMs, building such a test-bed is extremely cumbersome and costly, the
-	realistic (hardware-supported) simulation of these systems virtually
+	trusted computing systems. However, due to the security properties of
+	hardware TPMs, building such a test-bed is extremely cumbersome and costly,
+	the realistic (hardware-supported) simulation of these systems virtually
 	infeasible. In this paper, we therefore advocate the usage of software-based
 	TPMs to solve this hardware dependency and present an efficient and portable
 	TPM emulator for Unix. Our emulator enables not only the implementation of
@@ -50,48 +51,62 @@
 
 
 \section{Introduction}
-In the area of trusted computing, the Trusted Computing Group (TCG)~\cite{TCG} has developed
-various specifications for trusted computing building blocks and software interfaces, among which
-the Trusted Platform Module (TPM)~\cite{TCGSpec} is likely to be the most popular one. These
-specifications are clearly gaining momentum and the increasing availability of TPMs will soon make
-it a quasi standard component in today's personal and mobile computers. A TPM, as specified by the
-TCG, provides a hardware root of trust for storage as well as for reporting and, together with
-the BIOS as the root of trust for measurement, opens many new possibilities in the field of
-distributed trusted computing.
+In the area of trusted computing, the Trusted Computing Group (TCG)~\cite{TCG}
+has developed various specifications for trusted computing building blocks and
+software interfaces, among which the Trusted Platform Module
+(TPM)~\cite{TCGSpec} is likely to be the most popular one. These specifications
+are clearly gaining momentum and the increasing availability of TPMs will soon
+make it a quasi standard component in today's personal and mobile computers.
+A TPM, as specified by the TCG, provides a hardware root of trust for storage
+as well as for reporting and, together with the BIOS as the root of trust for
+measurement, opens many new possibilities in the field of distributed trusted
+computing.
 
-When developing and researching new technologies, means to investigate their behavior and evaluate
-their performance are of paramount importance. This is particularly true for complex large-scale
-distributed systems comprising thousands of nodes and users.
-% where one has not only to cope with node failures or temporary unavailability but also with
-% communication issues such as packet losses and unpredictable delays.
-In the networking community, test-beds and software simulators are the methods of choice in order
-to conduct network performance analysis and protocol evaluations. We argue that these methods would
-also be valuable tools for evaluating and understanding the behavior of (large-scale) distributed
-trusted computing systems. However, the security properties of hardware TPMs permit only one TPM
-per platform and limit the degree to which the effects of an executed command can be undone as well
-as to what extent the internal state a of TPM can be (re)stored or preset. Moreover, certain actions
-cannot be revoked at all or require the physical presence of an operator. Also, TPMs provide almost
-no feedback in the case of internal or usage errors. Due to these limitations, building a test-bed
-for the execution and evaluation of TPM-based distributed trusted computing systems is extremely
-cumbersome and costly, the realistic (hardware-supported) simulation of these systems virtually
-infeasible.
+When developing and researching new technologies, means to investigate their
+behavior and evaluate their performance are of paramount importance. This is
+particularly true for complex large-scale distributed systems comprising
+thousands of nodes and users.
+% where one has not only to cope with node failures or temporary unavailability
+% but also with communication issues such as packet losses and unpredictable
+% delays.
+In the networking community, test-beds and software simulators are the methods
+of choice in order to conduct network performance analysis and protocol
+evaluations. We argue that these methods would also be valuable tools for
+evaluating and understanding the behavior of (large-scale) distributed trusted
+computing systems. However, the security properties of hardware TPMs permit
+only one TPM per platform and limit the degree to which the effects of an
+executed command can be undone as well as to what extent the internal state
+a of TPM can be (re)stored or preset. Moreover, certain actions cannot be
+revoked at all or require the physical presence of an operator. Also, TPMs
+provide almost no feedback in the case of internal or usage errors. Due to
+these limitations, building a test-bed for the execution and evaluation of
+TPM-based distributed trusted computing systems is extremely cumbersome and
+costly, the realistic (hardware-supported) simulation of these systems
+virtually infeasible.
 
-In this paper, we therefore advocate the usage of software-based TPMs to solve this hardware
-dependency, and present an efficient and portable open-source TPM emulator for Unix~\cite{TPMEmu}.
-The possibility to run more than one TPM emulator instance per platform and to restore previously
-stored or artificially created states allows for the implementation of flexible and low-cost
-test-beds and simulators. Running entirely in software, the TPM emulator can further be used to
-enhance virtual machines, thus enabling the execution of TPM-based software in a trustworthy
-virtualisation environment (see, e.g., \cite{Xen}). The TPM emulator also facilitates the
-evaluation of TPM extensions and enhancements. Researchers from Princeton University, NEC Labs, and
-Texas Instruments R\&D, for instance, used our emulator to evaluate the impact on the TPM's energy
-and execution time overhead if the RSA algorithm is replaced with elliptic curve cryptography (ECC)
-\cite{Aaraj}. Finally, the emulator provides programmers of trusted systems with a powerful testing
-and debugging tool that can also be used for training and educational purposes. Thanks to its
-portability and interoperability, the TPM emulator runs on a variety of different computing
-platforms (e.g., Intel, AMD, StrongARM, and PowerPC) and is compatible with the most relevant
-software tools and APIs such as TrouSerS \cite{trousers} and IBM's TPM
-utilities~\cite{IBMtools}.
+In this paper, we therefore advocate the usage of software-based TPMs to
+solve this hardware dependency, and present an efficient and portable
+open-source TPM emulator for Unix~\cite{TPMEmu}. The possibility to run
+more than one TPM emulator instance per platform and to restore previously
+stored or artificially created states allows for the implementation of
+flexible and low-cost test-beds and simulators. Running entirely in software,
+the TPM emulator can further be used to enhance virtual machines, thus
+enabling the execution of TPM-based software in a trustworthy virtualisation
+environment (see, e.g., \cite{Xen}).
+The TPM emulator also facilitates the evaluation of TPM extensions and
+enhancements. For example, it can be used to simulate new TPM commands
+(see, e.g., \cite{Sarmenta}) and even vendor extensions before including
+them in the specification or in the production process.
+Researchers from Princeton University, NEC Labs, and Texas Instruments R\&D,
+for instance, used our emulator to evaluate the impact on the TPM's energy
+and execution time overhead if the RSA algorithm is replaced with elliptic
+curve cryptography (ECC)~\cite{Aaraj}. Finally, the emulator provides
+programmers of trusted systems with a powerful testing and debugging tool
+that can also be used for training and educational purposes. Thanks to its
+portability and interoperability, the TPM emulator runs on a variety of
+different computing platforms (e.g., Intel, AMD, StrongARM, and PowerPC)
+and is compatible with the most relevant software tools and APIs such as
+TrouSerS~\cite{trousers} and IBM's TPM utilities~\cite{IBMtools}.
 
 
 \section{Trusted Computing and Trusted Platform Module}\label{sec:background}
@@ -489,4 +504,193 @@ commands as well as the portage of the TPM emulator package to Windows and Mac~O
 
 \bibliographystyle{plain}
 \bibliography{biblio}
+
+\appendix
+
+\section{Supported TPM Commands}
+\definecolor{tpmgray}{gray}{0.85}
+\newcommand{\tpmred}{tpmgray!10!red!50!white}
+\newcommand{\tpmyellow}{tpmgray!10!yellow!50!white}
+\newcommand{\tpmgreen}{tpmgray!10!green!50!white}
+\newcommand{\tpmcolor}{tpmgray}
+
+\newcommand{\tpmcmd}[6]{
+	\begin{tabular}{p{4.5cm}|p{0.35cm}|p{0.4cm}|p{0.25cm}|p{2.5cm}|p{2cm}}
+		\rowcolor{\tpmcolor}
+			{\scriptsize\textsf{#1}} &
+			{\scriptsize\textsf{#2}} &
+			{\scriptsize\makebox[0.4cm][r]{#3}} &
+			{\scriptsize\makebox[0.25cm][c]{#4}} &
+			{\scriptsize\texttt{#5}} &
+			{\scriptsize #6}\\
+	\end{tabular}
+}
+\newcommand{\tpmcmdr}[6]{
+	\renewcommand{\tpmcolor}{\tpmred}
+	\tpmcmd{#1}{#2}{#3}{#4}{#5}{#6}
+	\renewcommand{\tpmcolor}{tpmgray}
+}
+\newcommand{\tpmcmdg}[6]{
+	\renewcommand{\tpmcolor}{\tpmgreen}
+	\tpmcmd{#1}{#2}{#3}{#4}{#5}{#6}
+	\renewcommand{\tpmcolor}{tpmgray}
+}
+\newcommand{\tpmcmdy}[6]{
+	\renewcommand{\tpmcolor}{\tpmyellow}
+	\tpmcmd{#1}{#2}{#3}{#4}{#5}{#6}
+	\renewcommand{\tpmcolor}{tpmgray}
+}
+\begin{enumerate}
+	\item Admin Startup and State (pp. 5--10)\\
+\tpmcmdg{TPM\_Init}{1.1}{151}{M}{tpm\_startup.c}{passed \cite{trousers,sirix}}\\
+\tpmcmdg{TPM\_Startup}{1.1}{153}{M}{tpm\_startup.c}{passed \cite{trousers,sirix}}\\
+\tpmcmdg{TPM\_SaveState}{1.1}{152}{M}{tpm\_startup.c}{passed \cite{trousers,sirix}}
+	\item Admin Testing (pp. 11--14)\\
+\tpmcmdg{TPM\_SelfTestFull}{1.1}{80}{M}{tpm\_testing.c}{}\\
+\tpmcmdg{TPM\_ContinueSelfTest}{1.1}{83}{M}{tpm\_testing.c}{}\\
+\tpmcmdg{TPM\_GetTestResult}{1.1}{84}{M}{tpm\_testing.c}{}
+	\item Admin Opt-in (pp. 15--22)\\
+\tpmcmdg{TPM\_SetOwnerInstall}{1.1}{113}{M}{tpm\_owner.c}{}\\
+\tpmcmdg{TPM\_OwnerSetDisable}{1.1}{110}{M}{tpm\_owner.c}{}\\
+\tpmcmdg{TPM\_PhysicalEnable}{1.1}{111}{M}{tpm\_owner.c}{}\\
+\tpmcmdg{TPM\_PhysicalDisable}{1.1}{112}{M}{tpm\_owner.c}{}\\
+\tpmcmdg{TPM\_PhysicalSetDeactivated}{1.1}{114}{M}{tpm\_owner.c}{}\\
+\tpmcmdg{TPM\_SetTempDeactivated}{1.1}{115}{M}{tpm\_owner.c}{}\\
+\tpmcmdg{TPM\_SetOperatorAuth}{1.2}{116}{M}{tpm\_owner.c}{}
+	\item Admin Ownership (pp. 23--36)\\
+\tpmcmdg{TPM\_TakeOwnership}{1.1}{13}{M}{tpm\_owner.c}{}\\
+\tpmcmdg{TPM\_OwnerClear}{1.1}{91}{M}{tpm\_owner.c}{}\\
+\tpmcmdg{TPM\_ForceClear}{1.1}{93}{M}{tpm\_owner.c}{}\\
+\tpmcmdg{TPM\_DisableOwnerClear}{1.1}{92}{M}{tpm\_owner.c}{}\\
+\tpmcmdg{TPM\_DisableForceClear}{1.1}{94}{M}{tpm\_owner.c}{}\\
+\tpmcmdg{TSC\_PhysicalPresence}{1.1}{}{M}{tpm\_owner.c}{}\\
+\tpmcmdg{TSC\_ResetEstablishmentBit}{1.2}{}{M}{tpm\_owner.c}{}
+	\item Capability Commands (pp. 37--42)\\
+\tpmcmdy{TPM\_GetCapability}{1.1}{101}{M}{tpm\_capability.c}{TODO,25\%}\\
+\tpmcmdr{TPM\_SetCapability}{1.2}{63}{M}{tpm\_capability.c}{TODO}\\
+\tpmcmdg{TPM\_GetCapabilityOwner}{1.1}{102}{M}{tpm\_capability.c}{}
+	\item Auditing (pp. 43--51)\\
+\tpmcmdg{TPM\_GetAuditDigest}{1.2}{133}{O}{tpm\_audit.c}{}\\
+\tpmcmdg{TPM\_GetAuditDigestSigned}{1.2}{134}{O}{tpm\_audit.c}{}\\
+\tpmcmdg{TPM\_SetOrdinalAuditStatus}{1.1}{141}{O}{tpm\_.auditc}{}
+	\item Administrative Functions -- Management (pp. 52--57)\\
+\tpmcmdr{TPM\_FieldUpgrade}{1.1}{170}{O}{tpm\_management.c}{TODO}\\
+\tpmcmdr{TPM\_SetRedirection}{1.1}{154}{O}{tpm\_management.c}{TODO}\\
+\tpmcmdr{TPM\_ResetLockValue}{1.2}{64}{M}{tpm\_management.c}{TODO}
+	\item Storage Functions (pp. 58--81)\\
+\tpmcmdg{TPM\_Seal}{1.1}{23}{M}{tpm\_storage.c}{}\\
+\tpmcmdg{TPM\_Unseal}{1.1}{24}{M}{tpm\_storage.c}{}\\
+\tpmcmdg{TPM\_UnBind}{1.1}{30}{M}{tpm\_storage.c}{}\\
+\tpmcmdg{TPM\_CreateWrapKey}{1.1}{31}{M}{tpm\_storage.c}{}\\
+\tpmcmdy{TPM\_LoadKey2}{1.2}{65}{M}{tpm\_storage.c}{emulated}\\
+\tpmcmdg{TPM\_GetPubKey}{1.1}{33}{M}{tpm\_storage.c}{}\\
+\tpmcmdr{TPM\_Sealx}{1.2}{61}{O}{tpm\_storage.c}{TODO}
+	\item Migration (pp. 82--108)\\
+\tpmcmdr{TPM\_CreateMigrationBlob}{1.1}{40}{M}{tpm\_migration.c}{TODO}\\
+\tpmcmdr{TPM\_ConvertMigrationBlob}{1.1}{42}{M}{tpm\_migration.c}{TODO}\\
+\tpmcmdr{TPM\_AuthorizeMigrationKey}{1.1}{43}{M}{tpm\_migration.c}{TODO}\\
+\tpmcmdr{TPM\_MigrateKey}{1.2}{37}{M}{tpm\_migration.c}{TODO}\\
+\tpmcmdr{TPM\_CMK\_SetRestrictions}{1.2}{28}{M}{tpm\_migration.c}{TODO}\\
+\tpmcmdr{TPM\_CMK\_ApproveMA}{1.2}{29}{M}{tpm\_migration.c}{TODO}\\
+\tpmcmdr{TPM\_CMK\_CreateKey}{1.2}{19}{M}{tpm\_migration.c}{TODO}\\
+\tpmcmdr{TPM\_CMK\_CreateTicket}{1.2}{18}{M}{tpm\_migration.c}{TODO}\\
+\tpmcmdr{TPM\_CMK\_CreateBlob}{1.2}{27}{M}{tpm\_migration.c}{TODO}\\
+\tpmcmdr{TPM\_CMK\_ConvertMigration}{1.2}{36}{M}{tpm\_migration.c}{TODO}
+	\item Maintenance Functions (optional, pp. 109--118)\\
+\tpmcmdr{TPM\_CreateMaintenanceArchive}{1.1}{44}{O}{tpm\_maintenance.c}{TODO}\\
+\tpmcmdr{TPM\_LoadMaintenanceArchive}{1.1}{45}{O}{tpm\_maintenance.c}{TODO}\\
+\tpmcmdr{TPM\_KillMaintenanceFeature}{1.1}{46}{O}{tpm\_maintenance.c}{TODO}\\
+\tpmcmdr{TPM\_LoadManuMaintPub}{1.1}{47}{O}{tpm\_maintenance.c}{TODO}\\
+\tpmcmdr{TPM\_ReadManuMaintPub}{1.1}{48}{O}{tpm\_maintenance.c}{TODO}
+	\item Cryptographic Functions (pp. 119--136)\\
+\tpmcmdg{TPM\_SHA1Start}{1.1}{160}{M}{tpm\_crypto.c}{}\\
+\tpmcmdg{TPM\_SHA1Update}{1.1}{161}{M}{tpm\_crypto.c}{}\\
+\tpmcmdg{TPM\_SHA1Complete}{1.1}{162}{M}{tpm\_crypto.c}{}\\
+\tpmcmdg{TPM\_SHA1CompleteExtend}{1.1}{163}{M}{tpm\_crypto.c}{}\\
+\tpmcmdg{TPM\_Sign}{1.1}{60}{M}{tpm\_crypto.c}{}\\
+\tpmcmdg{TPM\_GetRandom}{1.1}{70}{M}{tpm\_crypto.c}{}\\
+\tpmcmdg{TPM\_StirRandom}{1.1}{71}{M}{tpm\_crypto.c}{}\\
+\tpmcmdg{TPM\_CertifyKey}{1.1}{50}{M}{tpm\_crypto.c}{}\\
+\tpmcmdg{TPM\_CertifyKey2}{1.2}{51}{M}{tpm\_crypto.c}{}
+	\item Endorsement Key Handling (pp. 137--145)\\
+\tpmcmdy{TPM\_CreateEndorsementKeyPair}{1.1}{120}{M}{tpm\_credentials.c}{disabled}\\
+\tpmcmdg{TPM\_CreateRevocableEK}{1.2}{127}{O}{tpm\_credentials.c}{}\\
+\tpmcmdg{TPM\_RevokeTrust}{1.2}{128}{O}{tpm\_credentials.c}{}\\
+\tpmcmdg{TPM\_ReadPubek}{1.1}{124}{M}{tpm\_credentials.c}{}\\
+\tpmcmdg{TPM\_OwnerReadInternalPub}{1.2}{129}{M}{tpm\_credentials.c}{}
+	\item Identity Creation and Activation (pp. 146--152)\\
+\tpmcmdg{TPM\_MakeIdentity}{1.1}{121}{M}{tpm\_identity.c}{passed \cite{iaik}}\\
+\tpmcmdg{TPM\_ActivateIdentity}{1.1}{122}{M}{tpm\_identity.c}{passed \cite{iaik}}
+	\item Integrity Collection and Reporting (pp. 153--163)\\
+\tpmcmdg{TPM\_Extend}{1.1}{20}{M}{tpm\_integrity.c}{}\\
+\tpmcmdg{TPM\_PCRRead}{1.1}{21}{M}{tpm\_integrity.c}{}\\
+\tpmcmdg{TPM\_Quote}{1.1}{22}{M}{tpm\_integrity.c}{}\\
+\tpmcmdg{TPM\_PCR\_Reset}{1.2}{200}{M}{tpm\_integrity.c}{}\\
+\tpmcmdg{TPM\_Quote2}{1.2}{62}{M}{tpm\_integrity.c}{}
+	\item Changing AuthData (pp. 164--168)\\
+\tpmcmdg{TPM\_ChangeAuth}{1.1}{12}{M}{tpm\_authorization.c}{}\\
+\tpmcmdg{TPM\_ChangeAuthOwner}{1.1}{16}{M}{tpm\_authorization.c}{}
+	\item Authorization Sessions (pp. 169--181)\\
+\tpmcmdg{TPM\_OIAP}{1.1}{10}{M}{tpm\_authorization.c}{}\\
+\tpmcmdg{TPM\_OSAP}{1.1}{11}{M}{tpm\_authorization.c}{}\\
+\tpmcmdr{TPM\_DSAP}{1.2}{17}{M}{tpm\_authorization.c}{TODO}\\
+\tpmcmdy{TPM\_SetOwnerPointer}{1.2}{117}{M}{tpm\_authorization.c}{disabled}
+	\item Delegation Commands (pp. 182--201)\\
+\tpmcmdr{TPM\_Delegate\_Manage}{1.2}{210}{M}{tpm\_delegation.c}{TODO}\\
+\tpmcmdr{TPM\_Delegate\_CreateKeyDelegation}{1.2}{212}{M}{tpm\_delegation.c}{TODO}\\
+\tpmcmdr{TPM\_Delegate\_CreateOwnerDelegation}{1.2}{213}{M}{tpm\_delegation.c}{TODO}\\
+\tpmcmdr{TPM\_Delegate\_LoadOwnerDelegation}{1.2}{216}{M}{tpm\_delegation.c}{TODO}\\
+\tpmcmdr{TPM\_Delegate\_ReadTable}{1.2}{219}{M}{tpm\_delegation.c}{TODO}\\
+\tpmcmdr{TPM\_Delegate\_UpdateVerification}{1.2}{209}{M}{tpm\_delegation.c}{TODO}\\
+\tpmcmdr{TPM\_Delegate\_VerifyDelegation}{1.2}{214}{M}{tpm\_delegation.c}{TODO}
+	\item Non-volatile Storage (pp. 202--215)\\
+\tpmcmdr{TPM\_NV\_DefineSpace}{1.2}{204}{M}{tpm\_nv\_storage.c}{TODO}\\
+\tpmcmdr{TPM\_NV\_WriteValue}{1.2}{205}{M}{tpm\_nv\_storage.c}{TODO}\\
+\tpmcmdr{TPM\_NV\_WriteValueAuth}{1.2}{206}{M}{tpm\_nv\_storage.c}{TODO}\\
+\tpmcmdr{TPM\_NV\_ReadValue}{1.2}{207}{M}{tpm\_nv\_storage.c}{TODO}\\
+\tpmcmdr{TPM\_NV\_ReadValueAuth}{1.2}{208}{M}{tpm\_nv\_storage.c}{TODO}
+	\item Session Management (pp. 216--223)\\
+\tpmcmdg{TPM\_KeyControlOwner}{1.2}{35}{M}{tpm\_context.c}{}\\
+\tpmcmdg{TPM\_SaveContext}{1.2}{184}{M}{tpm\_context.c}{}\\
+\tpmcmdg{TPM\_LoadContext}{1.2}{185}{M}{tpm\_context.c}{}
+	\item Eviction (pp. 224--226)\\
+\tpmcmdy{TPM\_FlushSpecific}{1.2}{186}{M}{tpm\_eviction.c}{TODO,80\%}
+	\item Timing Ticks (pp. 227--230)\\
+\tpmcmdg{TPM\_GetTicks}{1.2}{241}{M}{tpm\_ticks.c}{}\\
+\tpmcmdg{TPM\_TickStampBlob}{1.2}{242}{M}{tpm\_ticks.c}{}
+	\item Transport Sessions (pp. 231--244)\\
+\tpmcmdg{TPM\_EstablishTransport}{1.2}{230}{M}{tpm\_transport.c}{}\\
+\tpmcmdg{TPM\_ExecuteTransport}{1.2}{231}{M}{tpm\_transport.c}{}\\
+\tpmcmdg{TPM\_ReleaseTransportSigned}{1.2}{232}{M}{tpm\_transport.c}{}
+	\item Monotonic Counter (pp. 245--254)\\
+\tpmcmdg{TPM\_CreateCounter}{1.2}{220}{M}{tpm\_counter.c}{}\\
+\tpmcmdg{TPM\_IncrementCounter}{1.2}{221}{M}{tpm\_counter.c}{}\\
+\tpmcmdg{TPM\_ReadCounter}{1.2}{222}{M}{tpm\_counter.c}{}\\
+\tpmcmdg{TPM\_ReleaseCounter}{1.2}{223}{M}{tpm\_counter.c}{}\\
+\tpmcmdg{TPM\_ReleaseCounterOwner}{1.2}{224}{M}{tpm\_counter.c}{}
+	\item DAA Commands (pp. 255--282)\\
+\tpmcmdg{TPM\_Join}{1.2}{41}{M}{tpm\_daa.c}{passed \cite{daa}}\\
+\tpmcmdg{TPM\_Sign}{1.2}{49}{M}{tpm\_daa.c}{passed \cite{daa}}
+	\item Deprecated Commands (pp. 283--309)\\
+\tpmcmdg{TPM\_EvictKey}{1.1}{34}{D}{tpm\_deprecated.c}{}\\
+\tpmcmdg{TPM\_Terminate\_Handle}{1.1}{150}{D}{tpm\_deprecated.c}{}\\
+\tpmcmdg{TPM\_SaveKeyContext}{1.1}{180}{D}{tpm\_deprecated.c}{}\\
+\tpmcmdg{TPM\_LoadKeyContext}{1.1}{181}{D}{tpm\_deprecated.c}{}\\
+\tpmcmdg{TPM\_SaveAuthContext}{1.1}{182}{D}{tpm\_deprecated.c}{}\\
+\tpmcmdg{TPM\_LoadAuthContext}{1.1}{183}{D}{tpm\_deprecated.c}{}\\
+\tpmcmdg{TPM\_DirWriteAuth}{1.1}{25}{D}{tpm\_deprecated.c}{}\\
+\tpmcmdg{TPM\_DirRead}{1.1}{26}{D}{tpm\_deprecated.c}{}\\
+\tpmcmdr{TPM\_ChangeAuthAsymStart}{1.1}{14}{D}{tpm\_deprecated.c}{TODO}\\
+\tpmcmdr{TPM\_ChangeAuthAsymFinish}{1.1}{15}{D}{tpm\_deprecated.c}{TODO}\\
+\tpmcmdg{TPM\_Reset}{1.1}{90}{D}{tpm\_deprecated.c}{}\\
+\tpmcmdg{TPM\_OwnerReadPubek}{1.1}{125}{D}{tpm\_deprecated.c}{}\\
+\tpmcmdg{TPM\_DisablePubekRead}{1.1}{126}{?}{tpm\_credentials.c}{spec error?}\\
+\tpmcmdg{TPM\_LoadKey}{1.1b}{32}{D}{tpm\_storage.c}{}
+	\item Deleted Commands (pp. 310--314)\\
+\tpmcmdr{TPM\_GetCapabilitySigned}{1.1}{100}{X}{}{}\\
+\tpmcmdr{TPM\_GetOrdinalAuditStatus}{1.1}{140}{X}{}{}\\
+\tpmcmdg{TPM\_CertifySelfTest}{1.1}{82}{X}{tpm\_deprecated.c}{}\\
+\tpmcmdr{TPM\_GetAuditEventSigned}{1.1}{130}{X}{}{}\\
+\tpmcmdr{TPM\_GetAuditEventSigned}{1.1}{131}{X}{}{}
+\end{enumerate}
 \end{document}
