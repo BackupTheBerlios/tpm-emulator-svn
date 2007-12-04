@@ -9,8 +9,8 @@
 \newcommand{\func}[1]{\small\texttt{#1}\normalsize}
 %\newcommand{\module}[1]{\textsf{#1}}
 
-\title{\bf A Software-based\\ Trusted Platform Module Emulator}
-\titlerunning{Software-based Trusted Platform Module Emulator}
+\title{A Software-Based\\ Trusted Platform Module Emulator}
+\titlerunning{Software-Based Trusted Platform Module Emulator}
 
 \author{Mario Strasser\inst{1} \and Heiko Stamer\inst{2}}
 \authorrunning{M.~Strasser and H.~Stamer}
@@ -29,43 +29,43 @@
 \maketitle
 
 \begin{abstract}
-	When developing and researching new technologies such as TPM-based
-	large-scale distributed trusted computing systems, means to investigate
+	When developing and researching new trusted computing technologies, e.g.
+	large-scale TPM-based distributed systems, appropriate tools to investigate
 	their behavior and to evaluate their performance are of paramount
 	importance. In the networking community, test-beds and software simulators
 	are the methods of choice in order to conduct network performance analysis
 	and protocol evaluations. We argue that these methods would also be valuable
 	tools for evaluating and understanding the behavior of TPM-based distributed
 	trusted computing systems. However, due to the security properties of
-	hardware TPMs, building such a test-bed is extremely cumbersome and costly,
-	the realistic (hardware-supported) simulation of these systems virtually
-	infeasible. In this paper, we therefore advocate the usage of software-based
-	TPMs to solve this hardware dependency and present an efficient and portable
-	TPM emulator for Unix. Our emulator enables not only the implementation of
-	flexible and low-cost test-beds and simulators but, in addition, provides
-	programmers of trusted systems with a powerful testing and debugging tool
-	that can also be used for training and educational purposes. Thanks to its
-	portability and interoperability, the TPM emulator runs on a variety of
-	platforms and is compatible with the most relevant software tools and APIs.
+	hardware TPMs, building such a test-bed is extremely cumbersome and costly.
+	Moreover, the realistic (hardware-supported) simulation of such systems is
+	often infeasible. In this paper, we therefore advocate the usage of
+	software-based TPMs to solve this hardware dependency and present an
+	efficient and portable TPM emulator for Unix. Our emulator enables not only
+	the implementation of flexible and low-cost test-beds and simulators but,
+	in addition, provides programmers of trusted systems with a powerful testing
+	and debugging tool that can also be used for training and educational
+	purposes. Thanks to its portability and interoperability, the TPM emulator
+	runs on a variety of platforms and is compatible with the most relevant
+	software packages and interfaces.
 \end{abstract}
 
 
 \section{Introduction}
-In the area of trusted computing, the Trusted Computing Group (TCG)~\cite{TCG}
-has developed various specifications for trusted computing building blocks and
-software interfaces, among which the Trusted Platform Module
-(TPM)~\cite{TCGSpec} is likely to be the most popular one. These specifications
-are clearly gaining momentum and the increasing availability of TPMs will soon
-make it a quasi standard component in today's personal and mobile computers.
-A TPM, as specified by the TCG, provides a hardware root of trust for storage
-as well as for reporting and, together with the BIOS as the root of trust for
-measurement, opens many new possibilities in the field of distributed trusted
-computing.
+In the area of trusted computing, the Trusted Computing Group~(TCG) has
+developed various specifications for trusted computing building blocks and
+software interfaces, among which the Trusted Platform Module~(TPM)~\cite{TPM}
+is likely to be the most popular one. These specifications are of growing
+interest and the increasing availability of TPMs will soon make it a standard
+component in today's personal and mobile computers. A TPM, as specified by the
+TCG, provides a hardware root of trust for storage as well as for reporting
+and, together with the BIOS as the root of trust for measurement. This opens
+many new possibilities in the field of distributed trusted computing.
 
-When developing and researching new technologies, means to investigate their
-behavior and evaluate their performance are of paramount importance. This is
-particularly true for complex large-scale distributed systems comprising
-thousands of nodes and users.
+When developing and researching new technologies, appropriate tools to
+investigate their behavior and evaluate their performance are of paramount
+importance. This is particularly true for complex large-scale distributed
+systems comprising thousands of nodes and users.
 % where one has not only to cope with node failures or temporary unavailability
 % but also with communication issues such as packet losses and unpredictable
 % delays.
@@ -81,8 +81,8 @@ revoked at all or require the physical presence of an operator. Also, TPMs
 provide almost no feedback in the case of internal or usage errors. Due to
 these limitations, building a test-bed for the execution and evaluation of
 TPM-based distributed trusted computing systems is extremely cumbersome and
-costly, the realistic (hardware-supported) simulation of these systems
-virtually infeasible.
+costly. Moreover the realistic (hardware-supported) simulation of such
+systems is often infeasible.
 
 In this paper, we therefore advocate the usage of software-based TPMs to
 solve this hardware dependency, and present an efficient and portable
@@ -95,8 +95,8 @@ enabling the execution of TPM-based software in a trustworthy virtualisation
 environment (see, e.g., \cite{Xen}).
 The TPM emulator also facilitates the evaluation of TPM extensions and
 enhancements. For example, it can be used to simulate new TPM commands
-(see, e.g., \cite{Sarmenta}) and even vendor extensions before including
-them in the specification or in the production process.
+(see, e.g., \cite{Sarmenta}) and vendor extensions before including them
+in the specification or in the production process.
 Researchers from Princeton University, NEC Labs, and Texas Instruments R\&D,
 for instance, used our emulator to evaluate the impact on the TPM's energy
 and execution time overhead if the RSA algorithm is replaced with elliptic
@@ -105,109 +105,134 @@ programmers of trusted systems with a powerful testing and debugging tool
 that can also be used for training and educational purposes. Thanks to its
 portability and interoperability, the TPM emulator runs on a variety of
 different computing platforms (e.g., Intel, AMD, StrongARM, and PowerPC)
-and is compatible with the most relevant software tools and APIs such as
-TrouSerS~\cite{trousers} and IBM's TPM utilities~\cite{IBMtools}.
+and is compatible with the most relevant software stacks,
+e.g., TrouSerS~\cite{trousers} and jTSS~\cite{jTSS}.
 
+%\paragraph{Organization:} In the following section we summarize the
+%main features and capabilities of a TPM. Then we outline the design and
+%implementation of our software-based TPM emulator. In Section~\ref{sec:state}
+%we report on the current state of our implementation.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Trusted Computing and Trusted Platform Module}\label{sec:background}
-In this section, we summarize the TCG's definitions regarding trusted computing and provide a brief
-overview of the structure and functionality of the TPM. For a comprehensive description, the reader
-is referred to the TCG architecture overview and specifications~\cite{TCGArch,TCGSpec}.
+In this section, we summarize the TCG's definitions regarding trusted
+computing and provide a brief overview of the structure and functionality of
+the TPM. For a comprehensive description, the reader is referred to the TCG
+architecture overview and specifications~\cite{TCGArch,TPM} or
+recently published books (e.g.~\cite{Mitchell2005}).
 
-Trusted computing is about embedding a trusted computing base (TCB)~\cite{Bishop2003} in a computing
-platform that allows a third party to determine the trustworthiness of the platform, that is,
-whether or not the platform is a \emph{trusted platform}.
-% Therefore, a relationship of trust must
-% be established between the third party and the computing platform so that the third party believes
-% that an expected boot process, a selected operating system, and a set of selected security
-% functions in the computing platform have been properly installed and operate correctly.
-The Trusted
-Computing Group (TCG) has specified a TCB for trusted computing in the form of three so-called roots
-of trust~\cite{TCGArch}: the \emph{Root of Trust for Storage} (RTS), the \emph{Root of Trust for
-Reporting} (RTR), and the \emph{Root of Trust for Measurement} (RTM). The \emph{Trusted Platform
-Module} (TPM) as specified by the TCG is a hardware component that acts as a root of trust for
-storage and reporting. More precisely, it provides four major classes of functions: (1) secure
-storage and reporting of platform configurations, (2) protected key and data storage, (3)
-cryptographic functions, and (4) initialization and management functions. TPMs which comply with
-the TPM specification 1.2 additionally include monotonic counters, timing-ticks, non-volatile
-storage, auditing functions, and authorization delegation.
+Trusted computing is about embedding a trusted computing base
+(TCB)~\cite{Bishop2003} in a computing platform that allows a third party
+to determine the trustworthiness of the platform, that is, whether or not
+the platform is a \emph{trusted platform}.
+% Therefore, a relationship of trust must be established between the third
+% party and the computing platform so that the third party believes that an
+% expected boot process, a selected operating system, and a set of selected
+% security functions in the computing platform have been properly installed
+% and operate correctly.
+The TCG has specified a TCB for trusted computing by three so-called roots
+of trust~\cite{TCGArch}: the \emph{Root of Trust for Storage}~(RTS), the
+\emph{Root of Trust for Reporting}~(RTR), and the \emph{Root of Trust for
+Measurement}~(RTM). The \emph{Trusted Platform
+Module} (TPM) as specified by the TCG is a hardware component that acts as a
+root of trust for storage and reporting. More precisely, it provides four
+major classes of functions: (1) secure storage and reporting of platform
+configurations, (2) protected key and data storage, (3) cryptographic
+functions, and (4) initialization and management functions.
 
 \subsection{Root of Trust for Measurement}
-When a computer is booted, control passes between different subsystems. First the BIOS is given
-control of the computer, followed by the boot loader, the operating system loader, and finally the
-operating system. In an \emph{authenticated boot}, there is a bootstrapping process in which,
-starting with the BIOS, one subsystem measures the next in the boot sequence and records the
-obtained value before executing its successor. More precisely, the BIOS measures (i.e.,
-cryptographically hashes) the boot loader prior to handing over control. The boot loader, in turn,
-measures the operating system loader, and the operating system loader measures the operating system.
-These measurements reflect what software stack is in control of the computer at the end of the boot
-sequence; in other words, they reflect the platform configuration. Hence the name \emph{Platform
-Configuration Register} (PCR) for the TPM registers where such measurements are stored and which
-are initialized at startup and extended at every step of the boot sequence. In order to allow the
-storage of an unlimited number of measurements in a specific PCR register, its new value is
-dependent on both its old value and the new value to be added. Consequently, updates to PCRs are
-not commutative and cannot be be undone until the platform is rebooted. The philosophy behind this
-process of integrity measurement and storage is that a platform may be permitted to enter any
-state, including undesirable or insecure states, but that it cannot lie about states that it was
-or was not in.
+When a computer is booted, control passes between different subsystems. First
+the BIOS is given control of the computer, followed by the boot loader, the
+operating system loader, and finally the operating system. In an
+\emph{authenticated boot}, there is a bootstrapping process in which, starting
+with the BIOS, one subsystem measures the next in the boot sequence and records
+the obtained value before executing its successor. More precisely, the BIOS
+measures (i.e., cryptographically hashes) the boot loader prior to handing
+over control. The boot loader, in turn, measures the operating system loader,
+and the operating system loader measures the operating system.
+These measurements reflect what software stack is in control of the computer
+at the end of the boot sequence; in other words, they reflect the platform
+configuration. Hence the name \emph{Platform Configuration Register}~(PCR)
+for the TPM registers where such measurements are stored and which are
+initialized at startup and extended at every step of the boot sequence. In
+order to allow the storage of an unlimited number of measurements in a
+specific PCR register, its new value is dependent on both its old value and
+the new value to be added. Consequently, updates to PCRs are not commutative
+and cannot be be undone until the platform is rebooted. The philosophy behind
+this process of integrity measurement and storage is that a platform may be
+permitted to enter any state, including undesirable or insecure states, but
+that it cannot lie about states that it was or was not in.
 
 \subsection{Root of Trust for Reporting}
-Each TPM has an \emph{endorsement key} (EK) which is a signing key whose public key is certified by
-a trusted third party, such as the TPM manufacturer. For privacy reasons, the EK is only used to
-obtain a key certificate from a certificate authority (CA) for an \emph{attestation identity key}
-(AIK), which the TPM generates itself. In order to avoid a possible linkage of the several AIK by
-the CA, direct anonymous attestation (DAA)~\cite{BrickellEtAl2004,Camenisch2004} can be used
-for certifying AIKs. Moreover, the CA-based solution is faced with the disadvantage that the CA
-needs to be involved in every transaction and thus becomes a communication bottleneck. AIKs are
-signing keys whose private key is only used for signing data that has originated in the TPM. For
-example, a remote party interested in learning what software stack is in control of the computer
-can query the TPM for PCR values. The query contains the set of PCRs to look up and a nonce (in
-order for the remote party to check for replay attacks). The TPM answers with the respective PCR
-values and the signature generated by signing the values as well as the nonce with one of its AIKs.
-Put differently, the TPM \emph{attests} to, or \emph{reports} on, the platform configuration.
+Each TPM has an unique \emph{Endorsement Key} (EK) which is a signing key
+whose public key is certified by a trusted third party, such as the TPM
+manufacturer. For privacy reasons, the EK is only used to obtain certificates
+from a certification authority (Privacy CA) for an \emph{Attestation Identity
+Key}~(AIK), which the TPM generates itself.
+%In order to avoid the Privacy CA,
+%direct anonymous attestation~(DAA)~\cite{BrickellEtAl2004,Camenisch2004} was
+%introduced in version~1.2 of the TPM specification.
+These are signing keys whose private key is only used for signing data that
+has originated from the TPM. For example, a remote party interested in
+learning what soft- and hardware configuration is in control of the computer
+can query the TPM for PCR values. The query contains the set of PCRs to look
+up and a nonce (in order for the remote party to check for replay attacks).
+The TPM answers with the requested PCR values and a signature generated by
+signing the values as well as the nonce by one of its AIKs. Consequently,
+the TPM \emph{attests} to, or \emph{reports} on, the platform configuration.
 
 \subsection{Root of Trust for Storage}
-The protected storage feature of a TPM allows for the secure storage of sensitive objects such
-as TPM keys and confidential data. However, storage and cost constraints require that only the
-necessary (i.e., currently used) objects can reside inside a TPM; the remaining objects must
-be stored outside in unprotected memory and are revealed to the user or loaded into the TPM on
-demand. To this end, externally stored objects are encrypted (or \emph{wrapped} in TCG terminology)
-with an asymmetric \emph{storage key}, which is referred to as the parent key of the object. A
-parent key can again be stored outside the TPM and (possibly along with other keys) be protected by
-another storage key. The thereby induced storage tree is rooted at the so called \emph{storage root
-key} (SRK), which is created upon initialization of the TPM and cannot be unloaded. Consequently,
-a parent key has to be loaded into the TPM before the data it protects can be revealed or a key
-decrypted (or \emph{unwrapped} in TCG terminology) and loaded into the TPM. Note that protected keys
-are only used inside the TPM and thus (in contrast to arbitrary data) are never disclosed to the
-user. Furthermore, each key is either marked as being \emph{migrateable} or \emph{non-migrateable}.
-In the former case, the key might be replicated and moved to other platforms whereas in the latter
-case the key is bound to an individual TPM and is never duplicated. Note further that owing to the
-limited data size that can be directly protected by the TPM, not the objects themselves but a
-symmetric key which is used to (de-)encrypt the objects is typically protected. Regarding the
-actual protection of objects, the TPM specification differentiates between between \emph{binding}
-and \emph{sealing}:
-Binding is the operation of encrypting an object with the public key of a \emph{binding key}. If
-the binding key is non-migratable, only the TPM that created the key can use its private key;
-hence, the encrypted object is effectively bound to a particular TPM. Sealing takes binding one
-step further: the object is not only bound to a particular TPM, but in addition can only be
-decrypted if the current platform configuration matches the values associated with the protected
+The protected storage feature of a TPM allows for the secure storage of
+sensitive objects such as TPM keys and confidential data. However, storage
+and cost constraints require that only the necessary (i.e., currently used)
+objects can reside inside a TPM; the remaining objects must be stored outside
+in unprotected memory and are revealed to the user or loaded into the TPM on
+demand. To this end, externally stored objects are encrypted (or \emph{wrapped}
+in TCG terminology) with an asymmetric \emph{storage key}, which is referred
+to as the parent key of the object. A parent key can again be stored outside
+the TPM and (possibly along with other keys) be protected by another storage
+key. The thereby induced storage tree is rooted at the so called \emph{storage
+root key} (SRK), which is created upon initialization of the TPM and cannot
+be unloaded. Consequently, a parent key has to be loaded into the TPM before
+the data it protects can be revealed or a key decrypted (or \emph{unwrapped}
+in TCG terminology) and loaded into the TPM. Note that protected keys are
+only used inside the TPM and thus (in contrast to arbitrary data) are never
+disclosed to the user. Furthermore, each key is either marked as being
+\emph{migrateable} or \emph{non-migrateable}.
+In the former case, the key might be replicated and moved to other platforms
+whereas in the latter case the key is bound to an individual TPM and is never
+duplicated. Note further that owing to the limited data size that can be
+directly protected by the TPM, not the objects themselves but a symmetric key
+which is used to (de-)encrypt the objects is typically protected. Regarding
+the actual protection of objects, the TPM specification distinguishes between
+\emph{binding} and \emph{sealing}: Binding is the operation of encrypting an
+object with the public key of a \emph{binding key}. If the binding key is
+non-migratable, only the TPM that created the key can use the corresponding
+private key; hence, the encrypted object is effectively bound to a particular
+TPM. Sealing takes binding one step further: the object is not only bound to
+a particular TPM, but in addition can only be decrypted, if the current
+platform configuration matches the PCR values associated with the protected
 object at the time of encryption.
 
 \subsection{Cryptographic Functions}
-In order to be functional and to meet the TCG specifications, a TPM must support a minimum set of
-cryptographic algorithms and operations. However, a TPM is not supposed to be a cryptographic
-accelerator; there are no specified minimum throughput requirements for any of the cryptographic
-functions. The mandatory cryptographic functions are: a) An either true hardware-based or
-algorithmic pseudo random-number generator as the source of randomness for the generation of nonces,
-keys, and the randomness in signatures; b) a SHA-1 message digest function and a SHA-1-based
-message authentication code (HMAC) engine; and c) a RSA signing, encryption and key-generation
-unit for key lengths of up to 2048-bits.
+In order to be functional and to meet the TCG specifications, a TPM must
+support a minimum set of cryptographic algorithms and operations. However, a
+TPM is not supposed to be a cryptographic accelerator; there are no specified
+minimum throughput requirements for any of the cryptographic functions. The
+mandatory cryptographic functions are: a) An either true hardware-based or
+algorithmic pseudo random-number generator as the source of randomness for the
+generation of nonces, keys, and the randomness in signatures; b) a SHA-1
+message digest function and a SHA-1-based message authentication code (HMAC)
+engine; and c) a RSA signing, encryption and key-generation unit for key
+lengths of up to 2048-bits.
 
 \subsection{Startup}
-A TPM can be started in three different modes: \emph{clear}, \emph{state}, and \emph{deactivated}.
-In mode clear, the platform starts in a cleared state where (almost) all data is reset to
-its default value. In mode state, which is the default mode, a previously saved state is
-restored and the TPM continues operation from the restored state. In mode deactivated, the TPM
+A TPM can be started in three different modes: \emph{clear}, \emph{state},
+and \emph{deactivated}. In mode clear, the platform starts in a cleared state
+where (almost) all data is reset to its default value. In mode state, which
+is the default mode, a previously saved state is restored and the TPM
+continues operation from the restored state. In mode deactivated, the TPM
 deactivates itself and disallows any further operations.
 
 % \subsubsection{TPM Ownership}
@@ -224,12 +249,13 @@ deactivates itself and disallows any further operations.
 % not be inherited by the new owner and must (if still needed) be explicitly transferred.
 
 \subsubsection{Command Authorization}
-The purpose of the authorization protocols and mechanisms is to prove to the TPM that the
-initiator of a command has permission to execute it and to access the involved data objects.
-For instance, they are used to establish platform ownership, restrict key usage, and to
-apply access control to (protected) objects. The proof comes from the knowledge of a shared
-secret, the so called authorization data. The TPM treats knowledge of the authorization data
-as complete proof, no other checks are necessary.
+The purpose of the authorization protocols and mechanisms is to prove to the
+TPM that the initiator of a command has permission to execute it and to access
+the involved data objects. For instance, they are used to establish platform
+ownership, restrict key usage, and to apply access control to (protected)
+objects. The proof comes from the knowledge of a shared secret, the so called
+authorization data. The TPM treats knowledge of the authorization data as a
+complete proof, i.e. no other checks are necessary.
 
 % There are three protocols to proof the knowledge of a specific piece of authorization data. The
 % \textit{Object-Independent Authorization Protocol} (OIAP) supports multiple authorization
@@ -248,15 +274,19 @@ as complete proof, no other checks are necessary.
 % reply as well as man-in-the-middle attacks.
 
 \subsection{Auxiliary Functions}
-TPMs which conform to the TPM specification 1.2 additionally include the following auxiliary
-functions: \emph{Monotonic counters} implement an ever-increasing incremental value which is
-designed to not wear out in the first 7 years of operation (with an increment once every 5 seconds).
-\emph{Non volatile storage} provides the manufacturers and owners of a TPM with a protected and
-shielded non-volatile storage area for storing sensitive or confidential information.
-\emph{Auditing} gives the TPM owner the ability to determine that certain operations on the TPM
-have been executed. \emph{Authorization delegation} allows for the delegation of individual TPM
-owner privileges (i.e., the right to use individual owner authorized TPM commands) to individual
-entities.
+TPMs which conform to the TPM specification version 1.2 additionally provide
+the following auxiliary functions:
+\emph{Monotonic counters} implement an ever-increasing incremental value which
+is designed to not wear out in the first 7 years of operation (with an
+increment once every 5 seconds).
+\emph{Non volatile storage} provides the manufacturers and owners of a TPM
+with a protected and shielded non-volatile storage area for storing sensitive
+or confidential information.
+\emph{Auditing} gives the TPM owner the ability to determine that certain
+operations on the TPM have been executed.
+\emph{Authorization delegation} allows for the delegation of individual TPM
+owner privileges (i.e., the right to use individual owner authorized TPM
+commands) to individual entities.
 
 % \paragraph{Monotonic Counters}
 % Monotonic counters provide an ever-increasing incremental value which is designed to not wear
@@ -289,41 +319,40 @@ entities.
 % right to use individual owner authorized TPM commands) to individual entities.
 
 \subsection{TPM Command Structure}
-TPM commands (responses) are byte arrays which consist of three main parts: a request (response)
-header, some command-specific input (output) parameters, and an optional authorization trailer
-(see Figure~\ref{fig:tpm_command}). Presence or absence of the authorization trailer depends on the
-used command (response) tag field . Integer values which are larger than one byte are encoded
-in network byte-order and might have to be converted into the local byte-order of the host platform
-as part of the unmarshaling process. Since version 1.2 of the TPM specification, commands can
-also be sent from and to the TPM in an encrypted form using the transport encryption command.
+TPM commands (responses) are byte arrays which consist of three main parts:
+a request (response) header, some command-specific input (output) parameters,
+and an optional authorization trailer (see Figure~\ref{fig:tpm_command}).
+Presence or absence of the authorization trailer depends on the used command
+(response) tag field. Integer values which are larger than one byte are
+encoded in network byte-order and might have to be converted into the local
+byte-order of the host platform as part of the unmarshaling process. Since
+version 1.2 of the TPM specification, commands can also be sent from and to
+the TPM in an encrypted form using the transport encryption command.
 
-\begin{figure}[h]
-\centering
-\includegraphics[height=25mm]{figures/tpm_command_structure}
-\caption{TPM command structure.}
-\label{fig:tpm_command}
+\begin{figure}
+	\begin{center}
+		\includegraphics[height=25mm]{figures/tpm_command_structure}
+		\caption{TPM command structure.}
+		\label{fig:tpm_command}
+	\end{center}
 \end{figure}
 
-\section{System Design and Implementation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{System Design and Implementation}\label{sec:design}
 The TPM emulator package comprises three main parts (see Figure~\ref{fig:system_overview}):
 a user-space daemon (tpmd) that implements the actual TPM emulator, a TPM Software Stack (TSS)
 conform TPM device driver library (tddl) as the regular interface to access the emulator, and a
 kernel module (tpmd\_dev) that provides the device \file{/dev/tpm} for low-level compatibility
 with TPM device drivers.
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=.5\textwidth]{figures/system_overview}
-\caption{Overview of the TPM emulator package.}
-\label{fig:system_overview}
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=.5\textwidth]{figures/system_overview}
+		\caption{Overview of the TPM emulator package.}
+		\label{fig:system_overview}
+	\end{center}
 \end{figure}
-
-% \begin{figure}[ht]
-% \centering
-% \vspace*{50mm}
-% \caption{TPM command execution.}
-% \label{fig:command_execution}
-% \end{figure}
 
 \subsection{TPM Device Driver Library and Kernel Module}
 The most correct and convenient way to access a TPM is by means of the so-called TPM Device Driver
@@ -355,10 +384,11 @@ instance has to be started), an alternative name can be specified as a command-l
 % the key, data, and state storage entity. Each part interacts with the others over a small set of
 % well-defined functions.
 
-The public API of the TPM emulator engine consists of only three functions. The first function
-to be called is \func{tpm\_emulator\_init()} which initializes the emulator. The function
-\func{tpm\_\-handle\_\-command()} can then be used to execute an arbitrary number of TPM commands,
-before a call of \func{tpm\_emulator\_shutdown()} shuts down the emulator.
+The public API of the TPM emulator engine consists of only three functions.
+The first function to be called is \func{tpm\_emulator\_init()} which
+initializes the emulator. The function \func{tpm\_\-handle\_\-command()} can
+then be used to execute an arbitrary number of TPM commands, before a call of
+the function \func{tpm\_emulator\_shutdown()} shuts down the emulator.
 
 \paragraph{Initialization and Self-Test}
 The initialization of the TPM emulator proceeds in three steps:
@@ -410,49 +440,56 @@ but does not make any further assumptions regarding their implementation. This a
 replacement of individual function blocks, for instance in the case of (partly) available hardware
 support.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Evaluation}
-In order to investigate the scalability of our TPM emulator in relation to the number of
-concurrently executed emulator instances on the same platform, a number of TPM emulator daemons was
-started and a series of TPM command executions was initiated on each instance in parallel. All
-experiments were conducted on a IBM ThinkPad T43p (Pentium M @ 2\,GHz and 1\,GByte RAM) using Linux
-kernel 2.6.19. The measured duration between sending the commands and receiving all corresponding
-responses is shown in Figure~\ref{plot:execution_time}. One can see that for light-weight
-(Figure~\ref{plot:execution_time}(a)) as well as for computation-intensive commands
-(Figure~\ref{plot:execution_time}(b)) the required time increases linearly with the number of
-concurrently running emulator instances. This shows that except for the unavoidable slowdown due
-to the availability of only one single CPU, no significant overhead is introduced by concurrently
+\section{Evaluation and Compliance Tests}\label{sec:state}
+In order to investigate the scalability of our TPM emulator in relation to
+the number of concurrently executed emulator instances on the same platform,
+a number of TPM emulator daemons was started and a series of TPM command
+executions was initiated on each instance in parallel. All experiments were
+conducted on a IBM ThinkPad T43p (Pentium M @ 2\,GHz and 1\,GByte RAM) using
+Linux kernel~2.6.19. The measured duration between sending the commands and
+receiving all corresponding responses is shown in
+Figure~\ref{plot:execution_time}. One can see that for light-weight
+(Figure~\ref{plot:execution_time}(a)) as well as for computation-intensive
+commands (Figure~\ref{plot:execution_time}(b)) the required time increases
+linearly with the number of concurrently running emulator instances. This
+shows that except for the unavoidable slowdown due to the availability of
+only one single CPU, no significant overhead is introduced by concurrently
 executing more than one emulator instance.
 
-\begin{figure}[h]
-\centering
-\subfigure[]{\includegraphics[width=.33\textwidth]{plots/duration_extend}}\quad%
-\subfigure[]{\includegraphics[width=.33\textwidth]{plots/duration_self_test}}
-\vspace*{-3mm}
-\caption{Duration for the execution of the commands TPM\_Extend (a) and TPM\_SelfTest (b) on each
-TPM emulator instance.}
+\begin{figure}
+	\begin{center}
+		\subfigure[]{\includegraphics[width=.4\textwidth]{plots/duration_extend}}\quad%
+		\subfigure[]{\includegraphics[width=.4\textwidth]{plots/duration_self_test}}
+		\vspace*{-3mm}
+		\caption{Duration for the execution of the commands TPM\_Extend (a) and
+			TPM\_SelfTest (b) on each TPM emulator instance.}
 % The TPM command executions was initiated on each instance in parallel. One
 % can observe that for light-weight (a) as well as computation-intensive commands (b) the required
 % time increases linearly with the number of concurrently running emulator instances. This shows that
 % except for the unavoidable slowdown due to the availability of only one single CPU, no significant
 % overhead is introduced by concurrently running more than one emulator instance.}
-\label{plot:execution_time}
+		\label{plot:execution_time}
+	\end{center}
 \end{figure}
 
-The results of several TPM compliance and functionality tests, in particular those provided by
-\cite{trousers,ibmdaatest} and \cite{Sadeghi}, are summarized in Figure~\ref{plot:compliance}.
-%Table~\ref{tab:compliance}.
-We observe that, even though the emulator still lacks some functionality, the most important and
-frequently used commands are already supported and are compliant with the TPM specification 1.2.
-% As a result, our TPM emulator is compatible with the most relevant software APIs and works
-% perfectly well with almost all available TPM-enabled Unix applications.
+The results of several TPM compliance and functionality tests, in particular
+those provided by TrouSerS~\cite{trousers}, IBM DAA Test Suite~\cite{ibmdaatest}
+and \cite{Sadeghi}, are summarized in Figure~\ref{plot:compliance}.
+Note that, even though the emulator still lacks some functionality,
+the most important and frequently used commands are already supported and
+are compliant with the TPM specification 1.2.
+A detailed list can be found in Appendix~\ref{app:commands}.
 
-\begin{figure}[h]
-\centering
-\includegraphics[angle=-90,scale=0.8]{plots/compliance}
-\includegraphics[origin=br,angle=90,scale=0.8]{plots/compliance_key}
-\caption{Summarized results of several TPM compliance and functionality tests.}
-\label{plot:compliance}
+\begin{figure}
+	\begin{center}
+		\includegraphics[angle=-90,scale=0.6]{plots/compliance}
+		\includegraphics[origin=br,angle=90,scale=0.6]{plots/compliance_key}
+		\caption{Summarized results of several TPM compliance and functionality
+			tests.}
+		\label{plot:compliance}
+	\end{center}
 \end{figure}
 
 % \begin{table}[h]\footnotesize\centering
@@ -490,24 +527,28 @@ frequently used commands are already supported and are compliant with the TPM sp
 % \label{tab:compliance}
 % \end{table}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Conclusions and Future Work}
-In this paper, we presented a software-based TPM emulator for Unix. Even though the emulator still
-lacks some functionality, it is compatible with the most relevant software APIs and works perfectly
-well with almost all available TPM-enabled Unix applications, as the most important and frequently
-used commands are already supported. We showed that hundreds of (concurrently running) TPM's can
-be efficiently simulated on a single platform, allowing for the implementation of low-cost test-beds
-and simulators. In addition, the emulator provides programmers of trusted systems with a powerful
-testing and debugging tool that can also be used for training and educational purposes. Our TPM
-emulator is still a work in progress and future work will include the completion of the missing
-commands as well as the portage of the TPM emulator package to Windows and Mac~OS~X.
+In this paper, we presented a software-based TPM emulator for Unix. Even
+though the emulator still lacks some functionality, it is compatible with
+the most relevant software tools and works perfectly well with almost all
+available TPM-enabled Unix applications, as the most important and frequently
+used commands are already supported. We showed that hundreds of (concurrently
+running) TPM's can be efficiently simulated on a single platform, allowing for
+the implementation of low-cost test-beds and simulators. In addition, the
+emulator provides programmers of trusted systems with a powerful testing and
+debugging tool that can also be used for training and educational purposes.
+Our TPM emulator is still a work in progress and future work will include the
+completion of the missing commands as well as the portage of the TPM emulator
+package to Windows and Mac~OS~X operating systems.
 
 \bibliographystyle{plain}
 \bibliography{biblio}
 
 \appendix
 
-\section{Supported TPM Commands}
+\section{Supported TPM Commands}\label{app:commands}
 \definecolor{tpmgray}{gray}{0.85}
 \newcommand{\tpmred}{tpmgray!10!red!50!white}
 \newcommand{\tpmyellow}{tpmgray!10!yellow!50!white}
@@ -542,9 +583,9 @@ commands as well as the portage of the TPM emulator package to Windows and Mac~O
 }
 \begin{enumerate}
 	\item Admin Startup and State (pp. 5--10)\\
-\tpmcmdg{TPM\_Init}{1.1}{151}{M}{tpm\_startup.c}{passed \cite{trousers,sirix}}\\
-\tpmcmdg{TPM\_Startup}{1.1}{153}{M}{tpm\_startup.c}{passed \cite{trousers,sirix}}\\
-\tpmcmdg{TPM\_SaveState}{1.1}{152}{M}{tpm\_startup.c}{passed \cite{trousers,sirix}}
+\tpmcmdg{TPM\_Init}{1.1}{151}{M}{tpm\_startup.c}{passed \cite{trousers,Sadeghi}}\\
+\tpmcmdg{TPM\_Startup}{1.1}{153}{M}{tpm\_startup.c}{passed \cite{trousers,Sadeghi}}\\
+\tpmcmdg{TPM\_SaveState}{1.1}{152}{M}{tpm\_startup.c}{passed \cite{trousers,Sadeghi}}
 	\item Admin Testing (pp. 11--14)\\
 \tpmcmdg{TPM\_SelfTestFull}{1.1}{80}{M}{tpm\_testing.c}{}\\
 \tpmcmdg{TPM\_ContinueSelfTest}{1.1}{83}{M}{tpm\_testing.c}{}\\
@@ -619,8 +660,8 @@ commands as well as the portage of the TPM emulator package to Windows and Mac~O
 \tpmcmdg{TPM\_ReadPubek}{1.1}{124}{M}{tpm\_credentials.c}{}\\
 \tpmcmdg{TPM\_OwnerReadInternalPub}{1.2}{129}{M}{tpm\_credentials.c}{}
 	\item Identity Creation and Activation (pp. 146--152)\\
-\tpmcmdg{TPM\_MakeIdentity}{1.1}{121}{M}{tpm\_identity.c}{passed \cite{iaik}}\\
-\tpmcmdg{TPM\_ActivateIdentity}{1.1}{122}{M}{tpm\_identity.c}{passed \cite{iaik}}
+\tpmcmdg{TPM\_MakeIdentity}{1.1}{121}{M}{tpm\_identity.c}{passed \cite{jTSS}}\\
+\tpmcmdg{TPM\_ActivateIdentity}{1.1}{122}{M}{tpm\_identity.c}{passed \cite{jTSS}}
 	\item Integrity Collection and Reporting (pp. 153--163)\\
 \tpmcmdg{TPM\_Extend}{1.1}{20}{M}{tpm\_integrity.c}{}\\
 \tpmcmdg{TPM\_PCRRead}{1.1}{21}{M}{tpm\_integrity.c}{}\\
@@ -669,8 +710,8 @@ commands as well as the portage of the TPM emulator package to Windows and Mac~O
 \tpmcmdg{TPM\_ReleaseCounter}{1.2}{223}{M}{tpm\_counter.c}{}\\
 \tpmcmdg{TPM\_ReleaseCounterOwner}{1.2}{224}{M}{tpm\_counter.c}{}
 	\item DAA Commands (pp. 255--282)\\
-\tpmcmdg{TPM\_Join}{1.2}{41}{M}{tpm\_daa.c}{passed \cite{daa}}\\
-\tpmcmdg{TPM\_Sign}{1.2}{49}{M}{tpm\_daa.c}{passed \cite{daa}}
+\tpmcmdg{TPM\_Join}{1.2}{41}{M}{tpm\_daa.c}{passed \cite{ibmdaatest}}\\
+\tpmcmdg{TPM\_Sign}{1.2}{49}{M}{tpm\_daa.c}{passed \cite{ibmdaatest}}
 	\item Deprecated Commands (pp. 283--309)\\
 \tpmcmdg{TPM\_EvictKey}{1.1}{34}{D}{tpm\_deprecated.c}{}\\
 \tpmcmdg{TPM\_Terminate\_Handle}{1.1}{150}{D}{tpm\_deprecated.c}{}\\
