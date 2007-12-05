@@ -37,6 +37,7 @@
 #define TPM_CMD_BUF_SIZE    4096
 #define TPM_COMMAND_TIMEOUT 30
 #define TPM_RANDOM_DEVICE   "/dev/urandom"
+#undef  TPM_MKDIRS
 
 static volatile int stopflag = 0;
 static int is_daemon = 0;
@@ -303,6 +304,23 @@ static void daemonize(void)
     info("process was successfully daemonized: pid=%d sid=%d", pid, sid);
 }
 
+static int mkdirs(const char *path)
+{
+    char *copy = strdup(path);
+    char *p = strchr(copy + 1, '/');
+    while (p != NULL) {
+        *p = '\0';
+        if ((mkdir(copy, 0755) == -1) && (errno != EEXIST)) {
+            free(copy);
+            return errno;
+        }
+        *p = '/';
+        p = strchr(p + 1, '/');
+    }
+    free(copy);
+    return 0;
+}
+
 static int init_socket(const char *name)
 {
     int sock;
@@ -313,6 +331,9 @@ static int init_socket(const char *name)
         error("socket(AF_UNIX) failed: %s", strerror(errno));
         return -1;
     }
+#ifdef TPM_MKDIRS
+    mkdirs(name);
+#endif
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, name, sizeof(addr.sun_path));
     umask(0177);
