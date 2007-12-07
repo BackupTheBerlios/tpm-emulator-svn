@@ -71,7 +71,8 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
       if (key == NULL) return TPM_INVALID_KEYHANDLE;
       if (key->keyControl & TPM_KEY_CONTROL_OWNER_EVICT)
         return TPM_KEY_OWNER_CONTROL;
-/* WATCH temporarily inserted due to TSS test suite */
+/* WATCH: temporarily inserted due to TSS test suite
+          (SRK was evicted by one of the tests) */
       if (handle == TPM_KH_SRK)
         return TPM_FAIL;
 /**/
