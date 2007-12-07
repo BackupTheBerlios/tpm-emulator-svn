@@ -84,19 +84,25 @@ TPM-based distributed trusted computing systems is extremely cumbersome and
 costly. Moreover, the realistic (hardware-supported) simulation of such
 systems is often infeasible.
 
-In this paper, we advocate the usage of software-based TPMs to
-solve this hardware dependency, and present an efficient and portable
-open-source TPM emulator for Unix~\cite{TPMEmu}. The possibility to run
-more than one TPM emulator instance per platform and to restore previously
-stored or artificially created states allows for the implementation of
-flexible and low-cost test-beds and simulators. Running entirely in software,
+In this paper, we advocate the usage of software-based TPMs to solve this
+hardware dependency, and present an efficient and portable open-source TPM
+emulator for Unix~\cite{TPMEmu}. The possibility to run more than one TPM
+emulator instance per platform and to restore previously stored or
+artificially created states allows for the implementation of flexible and
+low-cost test-beds and simulators. Running entirely in software,
 the TPM emulator can further be used to enhance virtual machines, thus
 enabling the execution of TPM-based software in a trustworthy virtualisation
 environment (see, e.g., \cite{Xen}).
+
 The TPM emulator also facilitates the evaluation of TPM extensions and
 enhancements. For example, it can be used to simulate new TPM commands
-(see, e.g., \cite{Sarmenta}) and vendor extensions before including them
-in a specification or even in the production process.
+(see, e.g., those from~\cite{Sarmenta}) and vendor extensions before
+including them in a hardware specification or even before the real
+development process starts. Due to the fast simulation in software, e.g.
+by using sophisticated algorithms from third party libraries like
+GMP~\cite{GMP}, extensive preliminary tests can be performed much more
+efficiently.
+
 Researchers from Princeton University, NEC Labs, and Texas Instruments R\&D,
 for instance, used our emulator to evaluate the impact on the TPM's energy
 and execution time overhead if the RSA algorithm is replaced with elliptic
@@ -473,6 +479,8 @@ linearly with the number of concurrently running emulator instances. This
 shows that except for the unavoidable slowdown due to the availability of
 only one single CPU, no significant overhead is introduced by concurrently
 executing more than one emulator instance.
+
+\marginpar{TODO: DAA on hardware TPM vs. emulator}
 
 \begin{figure}
 	\begin{center}
