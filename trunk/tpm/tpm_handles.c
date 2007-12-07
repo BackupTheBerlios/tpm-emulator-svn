@@ -55,6 +55,7 @@ TPM_KEY_DATA *tpm_get_key(TPM_KEY_HANDLE handle)
     case TPM_KH_ADMIN:
       return NULL;
     case TPM_KH_SRK:
+      debug("SRK valid? %.4x", tpmData.permanent.data.srk.valid);
       return (tpmData.permanent.data.srk.valid) ?
         &tpmData.permanent.data.srk : NULL;
   }

@@ -201,6 +201,7 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
   *authHandle = tpm_get_free_session(TPM_ST_OSAP);
   session = tpm_get_auth(*authHandle);
   if (session == NULL) return TPM_RESOURCES;
+  debug("[ entityType=%.4x entityValue=%.4x ]", entityType, entityValue);
   /* check whether ADIP encryption scheme is supported */
   switch (entityType & 0xFF00) {
     case TPM_ET_XOR:
@@ -215,6 +216,8 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
       if (session->handle == TPM_KH_OPERATOR) return TPM_BAD_HANDLE;
       if (tpm_get_key(session->handle) != NULL)
         secret = &tpm_get_key(session->handle)->usageAuth;
+      else
+        debug("TPM_OSAP failed(): tpm_get_key(handle) == NULL");
       break;
     case TPM_ET_OWNER:
       session->handle = TPM_KH_OWNER;
@@ -240,6 +243,7 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
       return TPM_BAD_PARAMETER;
   }
   if (secret == NULL) {
+    debug("TPM_OSAP failed(): secret == NULL");
     memset(session, 0, sizeof(*session));
     return TPM_BAD_PARAMETER;
   }
