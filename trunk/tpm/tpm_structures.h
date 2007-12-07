@@ -2316,6 +2316,8 @@ typedef struct tdTPM_STCLEAR_DATA {
 #define TPM_ST_OIAP       1
 #define TPM_ST_OSAP       2
 #define TPM_ST_TRANSPORT  4
+#define TPM_ST_DAA        8
+#define TPM_ST_DSAP      16
 typedef struct tdTPM_SESSION_DATA {
   BYTE type;
   TPM_NONCE nonceEven;
@@ -2333,7 +2335,6 @@ typedef struct tdTPM_SESSION_DATA {
  * TPM_DAA_SESSION_DATA
  * This structure contains the data for DAA sessions.
  */
-#define TPM_ST_DAA        8
 typedef UINT32 TPM_DAAHANDLE;
 typedef struct tdTPM_DAA_SESSION_DATA {
   BYTE type;
