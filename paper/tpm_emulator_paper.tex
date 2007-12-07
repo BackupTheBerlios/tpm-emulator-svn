@@ -710,18 +710,19 @@ removed (X);
 the source file, where the command is implemented;
 and some space for additional notes.
 These notes include the result of the performed compliance tests and the
-percentage of work done, if the command is only partially implemented.
+percentage of work to do, if the command is not yet or only partially
+implemented.
 
 
 \begin{enumerate}
 	\item Admin Startup and State (pp. 5--10)\\
-\tpmcmdg{TPM\_Init}{1.1}{151}{M}{tpm\_startup.c}{passed \cite{trousers,Sadeghi}}\\
-\tpmcmdg{TPM\_Startup}{1.1}{153}{M}{tpm\_startup.c}{passed \cite{trousers,Sadeghi}}\\
-\tpmcmdg{TPM\_SaveState}{1.1}{152}{M}{tpm\_startup.c}{passed \cite{trousers,Sadeghi}}
+\tpmcmdg{TPM\_Init}{1.1}{151}{M}{tpm\_startup.c}{}\\
+\tpmcmdg{TPM\_Startup}{1.1}{153}{M}{tpm\_startup.c}{}\\
+\tpmcmdg{TPM\_SaveState}{1.1}{152}{M}{tpm\_startup.c}{}
 	\item Admin Testing (pp. 11--14)\\
-\tpmcmdg{TPM\_SelfTestFull}{1.1}{80}{M}{tpm\_testing.c}{}\\
+\tpmcmdg{TPM\_SelfTestFull}{1.1}{80}{M}{tpm\_testing.c}{passed \cite{trousers}}\\
 \tpmcmdg{TPM\_ContinueSelfTest}{1.1}{83}{M}{tpm\_testing.c}{}\\
-\tpmcmdg{TPM\_GetTestResult}{1.1}{84}{M}{tpm\_testing.c}{}
+\tpmcmdg{TPM\_GetTestResult}{1.1}{84}{M}{tpm\_testing.c}{passed \cite{trousers}}
 	\item Admin Opt-in (pp. 15--22)\\
 \tpmcmdg{TPM\_SetOwnerInstall}{1.1}{113}{M}{tpm\_owner.c}{}\\
 \tpmcmdg{TPM\_OwnerSetDisable}{1.1}{110}{M}{tpm\_owner.c}{}\\
@@ -731,7 +732,7 @@ percentage of work done, if the command is only partially implemented.
 \tpmcmdg{TPM\_SetTempDeactivated}{1.1}{115}{M}{tpm\_owner.c}{}\\
 \tpmcmdg{TPM\_SetOperatorAuth}{1.2}{116}{M}{tpm\_owner.c}{}
 	\item Admin Ownership (pp. 23--36)\\
-\tpmcmdg{TPM\_TakeOwnership}{1.1}{13}{M}{tpm\_owner.c}{}\\
+\tpmcmdg{TPM\_TakeOwnership}{1.1}{13}{M}{tpm\_owner.c}{passed \cite{trousers}}\\
 \tpmcmdg{TPM\_OwnerClear}{1.1}{91}{M}{tpm\_owner.c}{}\\
 \tpmcmdg{TPM\_ForceClear}{1.1}{93}{M}{tpm\_owner.c}{}\\
 \tpmcmdg{TPM\_DisableOwnerClear}{1.1}{92}{M}{tpm\_owner.c}{}\\
@@ -739,7 +740,7 @@ percentage of work done, if the command is only partially implemented.
 \tpmcmdg{TSC\_PhysicalPresence}{1.1}{}{M}{tpm\_owner.c}{}\\
 \tpmcmdg{TSC\_ResetEstablishmentBit}{1.2}{}{M}{tpm\_owner.c}{}
 	\item Capability Commands (pp. 37--42)\\
-\tpmcmdy{TPM\_GetCapability}{1.1}{101}{M}{tpm\_capability.c}{TODO: 25\,\%}\\
+\tpmcmdy{TPM\_GetCapability}{1.1}{101}{M}{tpm\_capability.c}{TODO: 45\,\%}\\
 \tpmcmdr{TPM\_SetCapability}{1.2}{63}{M}{tpm\_capability.c}{TODO: 100\,\%}\\
 \tpmcmdg{TPM\_GetCapabilityOwner}{1.1}{102}{M}{tpm\_capability.c}{}
 	\item Auditing (pp. 43--51)\\
@@ -751,12 +752,12 @@ percentage of work done, if the command is only partially implemented.
 \tpmcmdr{TPM\_SetRedirection}{1.1}{154}{O}{tpm\_management.c}{TODO: 100\,\%}\\
 \tpmcmdr{TPM\_ResetLockValue}{1.2}{64}{M}{tpm\_management.c}{TODO: 100\,\%}
 	\item Storage Functions (pp. 58--81)\\
-\tpmcmdg{TPM\_Seal}{1.1}{23}{M}{tpm\_storage.c}{}\\
+\tpmcmdg{TPM\_Seal}{1.1}{23}{M}{tpm\_storage.c}{passed \cite{trousers,Sadeghi}}\\
 \tpmcmdg{TPM\_Unseal}{1.1}{24}{M}{tpm\_storage.c}{}\\
-\tpmcmdg{TPM\_UnBind}{1.1}{30}{M}{tpm\_storage.c}{}\\
-\tpmcmdg{TPM\_CreateWrapKey}{1.1}{31}{M}{tpm\_storage.c}{}\\
+\tpmcmdg{TPM\_UnBind}{1.1}{30}{M}{tpm\_storage.c}{passed \cite{trousers,Sadeghi}}\\
+\tpmcmdg{TPM\_CreateWrapKey}{1.1}{31}{M}{tpm\_storage.c}{passed \cite{trousers,Sadeghi}}\\
 \tpmcmdy{TPM\_LoadKey2}{1.2}{65}{M}{tpm\_storage.c}{emulated by 32}\\
-\tpmcmdg{TPM\_GetPubKey}{1.1}{33}{M}{tpm\_storage.c}{}\\
+\tpmcmdg{TPM\_GetPubKey}{1.1}{33}{M}{tpm\_storage.c}{passed \cite{trousers}}\\
 \tpmcmdr{TPM\_Sealx}{1.2}{61}{O}{tpm\_storage.c}{TODO: 100\,\%}
 	\item Migration (pp. 82--108)\\
 \tpmcmdr{TPM\_CreateMigrationBlob}{1.1}{40}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
@@ -776,36 +777,36 @@ percentage of work done, if the command is only partially implemented.
 \tpmcmdr{TPM\_LoadManuMaintPub}{1.1}{47}{O}{tpm\_maintenance.c}{TODO: 100\,\%}\\
 \tpmcmdr{TPM\_ReadManuMaintPub}{1.1}{48}{O}{tpm\_maintenance.c}{TODO: 100\,\%}
 	\item Cryptographic Functions (pp. 119--136)\\
-\tpmcmdg{TPM\_SHA1Start}{1.1}{160}{M}{tpm\_crypto.c}{}\\
-\tpmcmdg{TPM\_SHA1Update}{1.1}{161}{M}{tpm\_crypto.c}{}\\
-\tpmcmdg{TPM\_SHA1Complete}{1.1}{162}{M}{tpm\_crypto.c}{}\\
-\tpmcmdg{TPM\_SHA1CompleteExtend}{1.1}{163}{M}{tpm\_crypto.c}{}\\
-\tpmcmdg{TPM\_Sign}{1.1}{60}{M}{tpm\_crypto.c}{}\\
-\tpmcmdg{TPM\_GetRandom}{1.1}{70}{M}{tpm\_crypto.c}{}\\
-\tpmcmdg{TPM\_StirRandom}{1.1}{71}{M}{tpm\_crypto.c}{}\\
-\tpmcmdg{TPM\_CertifyKey}{1.1}{50}{M}{tpm\_crypto.c}{}\\
+\tpmcmdg{TPM\_SHA1Start}{1.1}{160}{M}{tpm\_crypto.c}{passed \cite{trousers}}\\
+\tpmcmdg{TPM\_SHA1Update}{1.1}{161}{M}{tpm\_crypto.c}{passed \cite{trousers}}\\
+\tpmcmdg{TPM\_SHA1Complete}{1.1}{162}{M}{tpm\_crypto.c}{passed \cite{trousers}}\\
+\tpmcmdg{TPM\_SHA1CompleteExtend}{1.1}{163}{M}{tpm\_crypto.c}{passed \cite{trousers}}\\
+\tpmcmdg{TPM\_Sign}{1.1}{60}{M}{tpm\_crypto.c}{passed \cite{trousers,Sadeghi}}\\
+\tpmcmdg{TPM\_GetRandom}{1.1}{70}{M}{tpm\_crypto.c}{passed \cite{trousers,Sadeghi}}\\
+\tpmcmdg{TPM\_StirRandom}{1.1}{71}{M}{tpm\_crypto.c}{passed \cite{trousers}}\\
+\tpmcmdg{TPM\_CertifyKey}{1.1}{50}{M}{tpm\_crypto.c}{passed \cite{trousers}}\\
 \tpmcmdg{TPM\_CertifyKey2}{1.2}{51}{M}{tpm\_crypto.c}{}
 	\item Endorsement Key Handling (pp. 137--145)\\
 \tpmcmdy{TPM\_CreateEndorsementKeyPair}{1.1}{120}{M}{tpm\_credentials.c}{disabled}\\
 \tpmcmdg{TPM\_CreateRevocableEK}{1.2}{127}{O}{tpm\_credentials.c}{}\\
 \tpmcmdg{TPM\_RevokeTrust}{1.2}{128}{O}{tpm\_credentials.c}{}\\
-\tpmcmdg{TPM\_ReadPubek}{1.1}{124}{M}{tpm\_credentials.c}{}\\
+\tpmcmdg{TPM\_ReadPubek}{1.1}{124}{M}{tpm\_credentials.c}{passed \cite{trousers}}\\
 \tpmcmdg{TPM\_OwnerReadInternalPub}{1.2}{129}{M}{tpm\_credentials.c}{}
 	\item Identity Creation and Activation (pp. 146--152)\\
-\tpmcmdg{TPM\_MakeIdentity}{1.1}{121}{M}{tpm\_identity.c}{passed \cite{jTSS}}\\
-\tpmcmdg{TPM\_ActivateIdentity}{1.1}{122}{M}{tpm\_identity.c}{passed \cite{jTSS}}
+\tpmcmdg{TPM\_MakeIdentity}{1.1}{121}{M}{tpm\_identity.c}{passed \cite{trousers,jTSS}}\\
+\tpmcmdg{TPM\_ActivateIdentity}{1.1}{122}{M}{tpm\_identity.c}{passed \cite{trousers,jTSS}}
 	\item Integrity Collection and Reporting (pp. 153--163)\\
-\tpmcmdg{TPM\_Extend}{1.1}{20}{M}{tpm\_integrity.c}{}\\
-\tpmcmdg{TPM\_PCRRead}{1.1}{21}{M}{tpm\_integrity.c}{}\\
-\tpmcmdg{TPM\_Quote}{1.1}{22}{M}{tpm\_integrity.c}{}\\
+\tpmcmdg{TPM\_Extend}{1.1}{20}{M}{tpm\_integrity.c}{passed \cite{trousers}}\\
+\tpmcmdg{TPM\_PCRRead}{1.1}{21}{M}{tpm\_integrity.c}{passed \cite{trousers,Sadeghi}}\\
+\tpmcmdg{TPM\_Quote}{1.1}{22}{M}{tpm\_integrity.c}{passed \cite{trousers}}\\
 \tpmcmdg{TPM\_PCR\_Reset}{1.2}{200}{M}{tpm\_integrity.c}{}\\
 \tpmcmdg{TPM\_Quote2}{1.2}{62}{M}{tpm\_integrity.c}{}
 	\item Changing AuthData (pp. 164--168)\\
-\tpmcmdg{TPM\_ChangeAuth}{1.1}{12}{M}{tpm\_authorization.c}{}\\
+\tpmcmdg{TPM\_ChangeAuth}{1.1}{12}{M}{tpm\_authorization.c}{passed \cite{trousers}}\\
 \tpmcmdg{TPM\_ChangeAuthOwner}{1.1}{16}{M}{tpm\_authorization.c}{}
 	\item Authorization Sessions (pp. 169--181)\\
-\tpmcmdg{TPM\_OIAP}{1.1}{10}{M}{tpm\_authorization.c}{}\\
-\tpmcmdg{TPM\_OSAP}{1.1}{11}{M}{tpm\_authorization.c}{}\\
+\tpmcmdg{TPM\_OIAP}{1.1}{10}{M}{tpm\_authorization.c}{not random \cite{Sadeghi}}\\
+\tpmcmdg{TPM\_OSAP}{1.1}{11}{M}{tpm\_authorization.c}{not random \cite{Sadeghi}}\\
 \tpmcmdr{TPM\_DSAP}{1.2}{17}{M}{tpm\_authorization.c}{TODO: 100\,\%}\\
 \tpmcmdy{TPM\_SetOwnerPointer}{1.2}{117}{M}{tpm\_authorization.c}{disabled}
 	\item Delegation Commands (pp. 182--201)\\
@@ -851,18 +852,18 @@ percentage of work done, if the command is only partially implemented.
 \tpmcmdg{TPM\_LoadKeyContext}{1.1}{181}{D}{tpm\_deprecated.c}{}\\
 \tpmcmdg{TPM\_SaveAuthContext}{1.1}{182}{D}{tpm\_deprecated.c}{}\\
 \tpmcmdg{TPM\_LoadAuthContext}{1.1}{183}{D}{tpm\_deprecated.c}{}\\
-\tpmcmdg{TPM\_DirWriteAuth}{1.1}{25}{D}{tpm\_deprecated.c}{}\\
-\tpmcmdg{TPM\_DirRead}{1.1}{26}{D}{tpm\_deprecated.c}{}\\
+\tpmcmdg{TPM\_DirWriteAuth}{1.1}{25}{D}{tpm\_deprecated.c}{passed \cite{trousers}}\\
+\tpmcmdg{TPM\_DirRead}{1.1}{26}{D}{tpm\_deprecated.c}{passed \cite{trousers}}\\
 \tpmcmdr{TPM\_ChangeAuthAsymStart}{1.1}{14}{D}{tpm\_deprecated.c}{TODO: 95\,\%}\\
 \tpmcmdr{TPM\_ChangeAuthAsymFinish}{1.1}{15}{D}{tpm\_deprecated.c}{TODO: 100\,\%}\\
 \tpmcmdg{TPM\_Reset}{1.1}{90}{D}{tpm\_deprecated.c}{}\\
 \tpmcmdg{TPM\_OwnerReadPubek}{1.1}{125}{D}{tpm\_deprecated.c}{}\\
 \tpmcmdg{TPM\_DisablePubekRead}{1.1}{126}{?}{tpm\_credentials.c}{spec error?}\\
-\tpmcmdg{TPM\_LoadKey}{1.1b}{32}{D}{tpm\_storage.c}{}
+\tpmcmdg{TPM\_LoadKey}{1.1b}{32}{D}{tpm\_storage.c}{passed \cite{trousers}}
 	\item Deleted Commands (pp. 310--314)\\
 \tpmcmdr{TPM\_GetCapabilitySigned}{1.1}{100}{X}{}{}\\
 \tpmcmdr{TPM\_GetOrdinalAuditStatus}{1.1}{140}{X}{}{}\\
-\tpmcmdg{TPM\_CertifySelfTest}{1.1}{82}{X}{tpm\_deprecated.c}{}\\
+\tpmcmdg{TPM\_CertifySelfTest}{1.1}{82}{X}{tpm\_deprecated.c}{bad ordinal~\cite{trousers}}\\
 \tpmcmdr{TPM\_GetAuditEventSigned}{1.1}{130}{X}{}{}\\
 \tpmcmdr{TPM\_GetAuditEventSigned}{1.1}{131}{X}{}{}
 \end{enumerate}
