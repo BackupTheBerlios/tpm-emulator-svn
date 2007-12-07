@@ -2796,7 +2796,7 @@ static TPM_RESULT execute_TPM_CreateCounter(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   res = TPM_CreateCounter(&authData, label, &req->auth1, &countID, &counterValue);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
-  rsp->paramSize = len = 4 + 10;
+  rsp->paramSize = len = 4 + sizeof_TPM_COUNTER_VALUE(counterValue);
   rsp->param = ptr = tpm_malloc(len);
   if (ptr == NULL
       || tpm_marshal_TPM_COUNT_ID(&ptr, &len, countID)
