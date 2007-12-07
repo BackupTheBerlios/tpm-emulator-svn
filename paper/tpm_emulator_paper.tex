@@ -95,13 +95,14 @@ enabling the execution of TPM-based software in a trustworthy virtualisation
 environment (see, e.g., \cite{Xen}).
 
 The TPM emulator also facilitates the evaluation of TPM extensions and
-enhancements. For example, it can be used to simulate new TPM commands
-(see, e.g., those from~\cite{Sarmenta}) and vendor extensions before
-including them in a hardware specification or even before the real
-development process starts. Due to the fast simulation in software, e.g.
-by using sophisticated algorithms from third party libraries like
-GMP~\cite{GMP}, extensive preliminary tests can be performed much more
-efficiently.
+firmware enhancements. For example, it can be used to simulate new TPM
+commands (e.g., \textsf{TPM\_ExecuteHashTree} from~\cite{Sarmenta})
+and vendor extensions before including them in a hardware specification
+or even before the real development process starts. Due to the fast
+simulation in software, extensive preliminary tests can be performed much
+more efficiently. This speed-up can be achieved by using sophisticated
+algorithms from third party libraries, e.g. GNU Multiple Precision Arithmetic
+Library~\cite{GMP}.
 
 Researchers from Princeton University, NEC Labs, and Texas Instruments R\&D,
 for instance, used our emulator to evaluate the impact on the TPM's energy
@@ -499,13 +500,15 @@ executing more than one emulator instance.
 \end{figure}
 
 The results of several TPM compliance and functionality tests, in particular
-those provided by TrouSerS~\cite{trousers} (package testsuite),
-jTSS~\cite{jTSS} (), IBM DAA Test Suite~\cite{ibmdaatest} and
+those provided by TrouSerS~\cite{trousers} (package testsuite and package
+tpm-tools), jTSS~\cite{jTSS} (package jTpmTools),
+IBM DAA Test Suite~\cite{ibmdaatest} and
 RUB/Sirrix~\cite{Sadeghi}, are summarized in Figure~\ref{plot:compliance}.
 Note that, even though the emulator still lacks some functionality,
 the most important and frequently used commands are already supported and
 are compliant with the most recent TPM specification~\cite{TPM}.
-A detailed list can be found in Appendix~\ref{app:commands}.
+A detailed list of the supported commands can be found in
+Appendix~\ref{app:commands}.
 
 \begin{figure}
 	\begin{center}
@@ -592,6 +595,11 @@ Matt Bishop.
 \newblock {\em {Computer Security: Art and Science}}.
 \newblock Addison Wesley, 2003.
 
+\bibitem{GMP}
+Torbj{\"o}rn Granlund et~al.
+\newblock {GNU Multiple Precision Arithmetic Library}.
+\newblock \newline\url{http://gmplib.org/}.
+
 \bibitem{Mitchell2005}
 Chris Mitchell et~al.
 \newblock {\em {Trusted Computing}}.
@@ -651,6 +659,7 @@ erview.html}.
 \end{thebibliography}
 
 \appendix
+\newpage
 
 \section{Supported TPM Commands}\label{app:commands}
 \definecolor{tpmgray}{gray}{0.85}
@@ -685,9 +694,9 @@ erview.html}.
 	\tpmcmd{#1}{#2}{#3}{#4}{#5}{#6}
 	\renewcommand{\tpmcolor}{tpmgray}
 }
-The following table shows the current state of the emulator implementation
-for each command from the TPM specification~\cite{TPM}. The background color
-of each row corresponds to the states:
+The following table shows the current state of implementation for each
+command from the most recent TPM specification~\cite{TPM}. The background
+color of each row corresponds to the states:
 \colorbox{\tpmgreen}{\emph{completed}},
 \colorbox{\tpmyellow}{\emph{partially implemented}}, or
 \colorbox{\tpmred}{\emph{missing}}.
@@ -730,42 +739,42 @@ percentage of work done, if the command is only partially implemented.
 \tpmcmdg{TSC\_PhysicalPresence}{1.1}{}{M}{tpm\_owner.c}{}\\
 \tpmcmdg{TSC\_ResetEstablishmentBit}{1.2}{}{M}{tpm\_owner.c}{}
 	\item Capability Commands (pp. 37--42)\\
-\tpmcmdy{TPM\_GetCapability}{1.1}{101}{M}{tpm\_capability.c}{TODO,25\%}\\
-\tpmcmdr{TPM\_SetCapability}{1.2}{63}{M}{tpm\_capability.c}{TODO}\\
+\tpmcmdy{TPM\_GetCapability}{1.1}{101}{M}{tpm\_capability.c}{TODO: 25\,\%}\\
+\tpmcmdr{TPM\_SetCapability}{1.2}{63}{M}{tpm\_capability.c}{TODO: 100\,\%}\\
 \tpmcmdg{TPM\_GetCapabilityOwner}{1.1}{102}{M}{tpm\_capability.c}{}
 	\item Auditing (pp. 43--51)\\
 \tpmcmdg{TPM\_GetAuditDigest}{1.2}{133}{O}{tpm\_audit.c}{}\\
 \tpmcmdg{TPM\_GetAuditDigestSigned}{1.2}{134}{O}{tpm\_audit.c}{}\\
 \tpmcmdg{TPM\_SetOrdinalAuditStatus}{1.1}{141}{O}{tpm\_.auditc}{}
 	\item Administrative Functions -- Management (pp. 52--57)\\
-\tpmcmdr{TPM\_FieldUpgrade}{1.1}{170}{O}{tpm\_management.c}{TODO}\\
-\tpmcmdr{TPM\_SetRedirection}{1.1}{154}{O}{tpm\_management.c}{TODO}\\
-\tpmcmdr{TPM\_ResetLockValue}{1.2}{64}{M}{tpm\_management.c}{TODO}
+\tpmcmdr{TPM\_FieldUpgrade}{1.1}{170}{O}{tpm\_management.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_SetRedirection}{1.1}{154}{O}{tpm\_management.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_ResetLockValue}{1.2}{64}{M}{tpm\_management.c}{TODO: 100\,\%}
 	\item Storage Functions (pp. 58--81)\\
 \tpmcmdg{TPM\_Seal}{1.1}{23}{M}{tpm\_storage.c}{}\\
 \tpmcmdg{TPM\_Unseal}{1.1}{24}{M}{tpm\_storage.c}{}\\
 \tpmcmdg{TPM\_UnBind}{1.1}{30}{M}{tpm\_storage.c}{}\\
 \tpmcmdg{TPM\_CreateWrapKey}{1.1}{31}{M}{tpm\_storage.c}{}\\
-\tpmcmdy{TPM\_LoadKey2}{1.2}{65}{M}{tpm\_storage.c}{emulated}\\
+\tpmcmdy{TPM\_LoadKey2}{1.2}{65}{M}{tpm\_storage.c}{emulated by 32}\\
 \tpmcmdg{TPM\_GetPubKey}{1.1}{33}{M}{tpm\_storage.c}{}\\
-\tpmcmdr{TPM\_Sealx}{1.2}{61}{O}{tpm\_storage.c}{TODO}
+\tpmcmdr{TPM\_Sealx}{1.2}{61}{O}{tpm\_storage.c}{TODO: 100\,\%}
 	\item Migration (pp. 82--108)\\
-\tpmcmdr{TPM\_CreateMigrationBlob}{1.1}{40}{M}{tpm\_migration.c}{TODO}\\
-\tpmcmdr{TPM\_ConvertMigrationBlob}{1.1}{42}{M}{tpm\_migration.c}{TODO}\\
-\tpmcmdr{TPM\_AuthorizeMigrationKey}{1.1}{43}{M}{tpm\_migration.c}{TODO}\\
-\tpmcmdr{TPM\_MigrateKey}{1.2}{37}{M}{tpm\_migration.c}{TODO}\\
-\tpmcmdr{TPM\_CMK\_SetRestrictions}{1.2}{28}{M}{tpm\_migration.c}{TODO}\\
-\tpmcmdr{TPM\_CMK\_ApproveMA}{1.2}{29}{M}{tpm\_migration.c}{TODO}\\
-\tpmcmdr{TPM\_CMK\_CreateKey}{1.2}{19}{M}{tpm\_migration.c}{TODO}\\
-\tpmcmdr{TPM\_CMK\_CreateTicket}{1.2}{18}{M}{tpm\_migration.c}{TODO}\\
-\tpmcmdr{TPM\_CMK\_CreateBlob}{1.2}{27}{M}{tpm\_migration.c}{TODO}\\
-\tpmcmdr{TPM\_CMK\_ConvertMigration}{1.2}{36}{M}{tpm\_migration.c}{TODO}
+\tpmcmdr{TPM\_CreateMigrationBlob}{1.1}{40}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_ConvertMigrationBlob}{1.1}{42}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_AuthorizeMigrationKey}{1.1}{43}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_MigrateKey}{1.2}{37}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_CMK\_SetRestrictions}{1.2}{28}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_CMK\_ApproveMA}{1.2}{29}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_CMK\_CreateKey}{1.2}{19}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_CMK\_CreateTicket}{1.2}{18}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_CMK\_CreateBlob}{1.2}{27}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_CMK\_ConvertMigration}{1.2}{36}{M}{tpm\_migration.c}{TODO: 100\,\%}
 	\item Maintenance Functions (optional, pp. 109--118)\\
-\tpmcmdr{TPM\_CreateMaintenanceArchive}{1.1}{44}{O}{tpm\_maintenance.c}{TODO}\\
-\tpmcmdr{TPM\_LoadMaintenanceArchive}{1.1}{45}{O}{tpm\_maintenance.c}{TODO}\\
-\tpmcmdr{TPM\_KillMaintenanceFeature}{1.1}{46}{O}{tpm\_maintenance.c}{TODO}\\
-\tpmcmdr{TPM\_LoadManuMaintPub}{1.1}{47}{O}{tpm\_maintenance.c}{TODO}\\
-\tpmcmdr{TPM\_ReadManuMaintPub}{1.1}{48}{O}{tpm\_maintenance.c}{TODO}
+\tpmcmdr{TPM\_CreateMaintenanceArchive}{1.1}{44}{O}{tpm\_maintenance.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_LoadMaintenanceArchive}{1.1}{45}{O}{tpm\_maintenance.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_KillMaintenanceFeature}{1.1}{46}{O}{tpm\_maintenance.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_LoadManuMaintPub}{1.1}{47}{O}{tpm\_maintenance.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_ReadManuMaintPub}{1.1}{48}{O}{tpm\_maintenance.c}{TODO: 100\,\%}
 	\item Cryptographic Functions (pp. 119--136)\\
 \tpmcmdg{TPM\_SHA1Start}{1.1}{160}{M}{tpm\_crypto.c}{}\\
 \tpmcmdg{TPM\_SHA1Update}{1.1}{161}{M}{tpm\_crypto.c}{}\\
@@ -797,28 +806,28 @@ percentage of work done, if the command is only partially implemented.
 	\item Authorization Sessions (pp. 169--181)\\
 \tpmcmdg{TPM\_OIAP}{1.1}{10}{M}{tpm\_authorization.c}{}\\
 \tpmcmdg{TPM\_OSAP}{1.1}{11}{M}{tpm\_authorization.c}{}\\
-\tpmcmdr{TPM\_DSAP}{1.2}{17}{M}{tpm\_authorization.c}{TODO}\\
+\tpmcmdr{TPM\_DSAP}{1.2}{17}{M}{tpm\_authorization.c}{TODO: 100\,\%}\\
 \tpmcmdy{TPM\_SetOwnerPointer}{1.2}{117}{M}{tpm\_authorization.c}{disabled}
 	\item Delegation Commands (pp. 182--201)\\
-\tpmcmdr{TPM\_Delegate\_Manage}{1.2}{210}{M}{tpm\_delegation.c}{TODO}\\
-\tpmcmdr{TPM\_Delegate\_CreateKeyDelegation}{1.2}{212}{M}{tpm\_delegation.c}{TODO}\\
-\tpmcmdr{TPM\_Delegate\_CreateOwnerDelegation}{1.2}{213}{M}{tpm\_delegation.c}{TODO}\\
-\tpmcmdr{TPM\_Delegate\_LoadOwnerDelegation}{1.2}{216}{M}{tpm\_delegation.c}{TODO}\\
-\tpmcmdr{TPM\_Delegate\_ReadTable}{1.2}{219}{M}{tpm\_delegation.c}{TODO}\\
-\tpmcmdr{TPM\_Delegate\_UpdateVerification}{1.2}{209}{M}{tpm\_delegation.c}{TODO}\\
-\tpmcmdr{TPM\_Delegate\_VerifyDelegation}{1.2}{214}{M}{tpm\_delegation.c}{TODO}
+\tpmcmdr{TPM\_Delegate\_Manage}{1.2}{210}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_Delegate\_CreateKeyDelegation}{1.2}{212}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_Delegate\_CreateOwnerDelegation}{1.2}{213}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_Delegate\_LoadOwnerDelegation}{1.2}{216}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_Delegate\_ReadTable}{1.2}{219}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_Delegate\_UpdateVerification}{1.2}{209}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_Delegate\_VerifyDelegation}{1.2}{214}{M}{tpm\_delegation.c}{TODO: 100\,\%}
 	\item Non-volatile Storage (pp. 202--215)\\
-\tpmcmdr{TPM\_NV\_DefineSpace}{1.2}{204}{M}{tpm\_nv\_storage.c}{TODO}\\
-\tpmcmdr{TPM\_NV\_WriteValue}{1.2}{205}{M}{tpm\_nv\_storage.c}{TODO}\\
-\tpmcmdr{TPM\_NV\_WriteValueAuth}{1.2}{206}{M}{tpm\_nv\_storage.c}{TODO}\\
-\tpmcmdr{TPM\_NV\_ReadValue}{1.2}{207}{M}{tpm\_nv\_storage.c}{TODO}\\
-\tpmcmdr{TPM\_NV\_ReadValueAuth}{1.2}{208}{M}{tpm\_nv\_storage.c}{TODO}
+\tpmcmdr{TPM\_NV\_DefineSpace}{1.2}{204}{M}{tpm\_nv\_storage.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_NV\_WriteValue}{1.2}{205}{M}{tpm\_nv\_storage.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_NV\_WriteValueAuth}{1.2}{206}{M}{tpm\_nv\_storage.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_NV\_ReadValue}{1.2}{207}{M}{tpm\_nv\_storage.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_NV\_ReadValueAuth}{1.2}{208}{M}{tpm\_nv\_storage.c}{TODO: 100\,\%}
 	\item Session Management (pp. 216--223)\\
 \tpmcmdg{TPM\_KeyControlOwner}{1.2}{35}{M}{tpm\_context.c}{}\\
 \tpmcmdg{TPM\_SaveContext}{1.2}{184}{M}{tpm\_context.c}{}\\
 \tpmcmdg{TPM\_LoadContext}{1.2}{185}{M}{tpm\_context.c}{}
 	\item Eviction (pp. 224--226)\\
-\tpmcmdy{TPM\_FlushSpecific}{1.2}{186}{M}{tpm\_eviction.c}{TODO,80\%}
+\tpmcmdy{TPM\_FlushSpecific}{1.2}{186}{M}{tpm\_eviction.c}{TODO: 75\,\%}
 	\item Timing Ticks (pp. 227--230)\\
 \tpmcmdg{TPM\_GetTicks}{1.2}{241}{M}{tpm\_ticks.c}{}\\
 \tpmcmdg{TPM\_TickStampBlob}{1.2}{242}{M}{tpm\_ticks.c}{}
@@ -844,8 +853,8 @@ percentage of work done, if the command is only partially implemented.
 \tpmcmdg{TPM\_LoadAuthContext}{1.1}{183}{D}{tpm\_deprecated.c}{}\\
 \tpmcmdg{TPM\_DirWriteAuth}{1.1}{25}{D}{tpm\_deprecated.c}{}\\
 \tpmcmdg{TPM\_DirRead}{1.1}{26}{D}{tpm\_deprecated.c}{}\\
-\tpmcmdr{TPM\_ChangeAuthAsymStart}{1.1}{14}{D}{tpm\_deprecated.c}{TODO}\\
-\tpmcmdr{TPM\_ChangeAuthAsymFinish}{1.1}{15}{D}{tpm\_deprecated.c}{TODO}\\
+\tpmcmdr{TPM\_ChangeAuthAsymStart}{1.1}{14}{D}{tpm\_deprecated.c}{TODO: 95\,\%}\\
+\tpmcmdr{TPM\_ChangeAuthAsymFinish}{1.1}{15}{D}{tpm\_deprecated.c}{TODO: 100\,\%}\\
 \tpmcmdg{TPM\_Reset}{1.1}{90}{D}{tpm\_deprecated.c}{}\\
 \tpmcmdg{TPM\_OwnerReadPubek}{1.1}{125}{D}{tpm\_deprecated.c}{}\\
 \tpmcmdg{TPM\_DisablePubekRead}{1.1}{126}{?}{tpm\_credentials.c}{spec error?}\\
