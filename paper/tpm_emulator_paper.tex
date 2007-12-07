@@ -29,25 +29,24 @@
 \maketitle
 
 \begin{abstract}
-	When developing and researching new trusted computing technologies, e.g.
-	large-scale TPM-based distributed systems, appropriate tools to investigate
-	their behavior and to evaluate their performance are of paramount
-	importance. In the networking community, test-beds and software simulators
-	are the methods of choice in order to conduct network performance analysis
-	and protocol evaluations. We argue that these methods would also be valuable
-	tools for evaluating and understanding the behavior of TPM-based distributed
-	trusted computing systems. However, due to the security properties of
-	hardware TPMs, building such a test-bed is extremely cumbersome and costly.
-	Moreover, the realistic (hardware-supported) simulation of such systems is
-	often infeasible. In this paper, we therefore advocate the usage of
-	software-based TPMs to solve this hardware dependency and present an
-	efficient and portable TPM emulator for Unix. Our emulator enables not only
-	the implementation of flexible and low-cost test-beds and simulators but,
-	in addition, provides programmers of trusted systems with a powerful testing
-	and debugging tool that can also be used for training and educational
-	purposes. Thanks to its portability and interoperability, the TPM emulator
-	runs on a variety of platforms and is compatible with the most relevant
-	software packages and interfaces.
+    When developing and researching new trusted computing technologies,
+    appropriate tools to investigate their behavior and to evaluate their
+    performance are of paramount importance. In the networking community,
+    test-beds and software simulators are the methods of choice in order to
+    conduct network performance analysis and protocol evaluations. We argue
+    that these methods would also be valuable tools for evaluating and
+    understanding the behavior of TPM-based distributed trusted computing
+    systems. However, due to the security properties of hardware TPMs, building
+    such a test-bed is extremely cumbersome and costly. Moreover, the realistic
+    (hardware-supported) simulation of such systems is often infeasible. In this
+    paper, we therefore advocate the usage of software-based TPMs to solve this
+    hardware dependency and present an efficient and portable TPM emulator for
+    Unix. Our emulator enables not only the implementation of flexible and
+    low-cost test-beds and simulators but, in addition, provides programmers of
+    trusted systems with a powerful testing and debugging tool that can also be
+    used for training and educational purposes. Thanks to its portability and
+    interoperability, the TPM emulator runs on a variety of platforms and is
+    compatible with the most relevant software packages and interfaces.
 \end{abstract}
 
 
@@ -115,10 +114,11 @@ variety of different computing platforms (e.g., Intel, AMD, StrongARM, and
 PowerPC) and is compatible with the most relevant software stacks (e.g.,
 TrouSerS~\cite{trousers} and jTSS~\cite{jTSS}).
 
-%\paragraph{Organization:} In the following section we summarize the
-%main features and capabilities of a TPM. Then we outline the design and
-%implementation of our software-based TPM emulator. In Section~\ref{sec:state}
-%we report on the current state of our implementation.
+The remainder of this paper is organized as follows: In Section~%
+\ref{sec:background} we summarize the main features and capabilities of a TPM.
+We outline the design and implementation of our TPM emulator in Section~%
+\ref{sec:design}, report on the current state of the implementation in
+Section~\ref{sec:state}, and conclude the paper in Section~\ref{sec:conclusion}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -557,7 +557,7 @@ Appendix~\ref{app:commands}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Conclusions and Future Work}
+\section{Conclusions and Future Work}\label{sec:conclusion}
 In this paper, we presented a software-based TPM emulator for Unix. Even
 though the emulator still lacks some functionality, it is compatible with
 the most relevant software tools and works very well with almost all
