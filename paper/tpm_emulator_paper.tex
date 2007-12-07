@@ -35,7 +35,7 @@
     test-beds and software simulators are the methods of choice in order to
     conduct network performance analysis and protocol evaluations. We argue
     that these methods would also be valuable tools for evaluating and
-    understanding the behavior of TPM-based distributed trusted computing
+    understanding the behavior of TPM-based (distributed) trusted computing
     systems. However, due to the security properties of hardware TPMs, building
     such a test-bed is extremely cumbersome and costly. Moreover, the realistic
     (hardware-supported) simulation of such systems is often infeasible. In this
@@ -71,7 +71,7 @@ systems comprising thousands of nodes and users.
 In the networking community, test-beds and software simulators are the methods
 of choice in order to conduct network performance analysis and protocol
 evaluations. We argue that these methods would also be valuable tools for
-evaluating and understanding the behavior of (large-scale) distributed trusted
+evaluating and understanding the behavior of (distributed) trusted
 computing systems. However, the security properties of hardware TPMs permit
 only one TPM per platform and limit the degree to which the effects of an
 executed command can be undone as well as to what extent the internal state
@@ -91,17 +91,17 @@ artificially created states allows for the implementation of flexible and
 low-cost test-beds and simulators. Running entirely in software,
 the TPM emulator can further be used to enhance virtual machines, thus
 enabling the execution of TPM-based software in a trustworthy virtualisation
-environment (see, e.g., \cite{Xen}).
+environment~\cite{Xen}.
 
 The TPM emulator also facilitates the evaluation of TPM extensions and
 firmware enhancements. For example, it can be used to simulate new TPM
-commands (e.g., \textsf{TPM\_ExecuteHashTree} from~\cite{Sarmenta})
+commands (e.g., \textsf{TPM\_ExecuteHashTree} \cite{Sarmenta})
 and vendor extensions before including them in a hardware specification
 or even before the real development process starts. Due to the fast
 simulation in software, extensive preliminary tests can be performed much
 more efficiently. This speed-up can be achieved by using sophisticated
-algorithms from third party libraries, e.g. GNU Multiple Precision Arithmetic
-Library~\cite{GMP}.
+algorithms from third party libraries (e.g., the GNU Multiple Precision
+Arithmetic Library~\cite{GMP}).
 
 Researchers from Princeton University, NEC Labs, and Texas Instruments R\&D,
 for instance, used our emulator to evaluate the impact on the TPM's energy
