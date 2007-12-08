@@ -58,20 +58,20 @@ These specifications are of growing interest and the increasing availability
 of TPMs will soon make it a standard component in today's personal and mobile
 computers. A TPM, as specified by the TCG, provides a hardware root of trust
 for storage, for reporting, and, together with the BIOS, a root of trust for
-measurement. This opens many new possibilities in the field of distributed
-trusted computing.
+measurement. In combination, these three roots of trust open many new
+possibilities in the field of (distributed) trusted computing.
 
 When developing and researching new technologies, appropriate tools to
 investigate their behavior and evaluate their performance are of paramount
 importance. This is particularly true for complex large-scale distributed
-systems comprising thousands of nodes and users.
+systems comprising hundreds of nodes and users.
 % where one has not only to cope with node failures or temporary unavailability
 % but also with communication issues such as packet losses and unpredictable
 % delays.
 In the networking community, test-beds and software simulators are the methods
 of choice in order to conduct network performance analysis and protocol
 evaluations. We argue that these methods would also be valuable tools for
-evaluating and understanding the behavior of (distributed) trusted
+evaluating and understanding the behavior of trusted
 computing systems. However, the security properties of hardware TPMs permit
 only one TPM per platform and limit the degree to which the effects of an
 executed command can be undone as well as to what extent the internal state
@@ -94,19 +94,21 @@ enabling the execution of TPM-based software in a trustworthy virtualisation
 environment~\cite{Xen}.
 
 The TPM emulator also facilitates the evaluation of TPM extensions and
-firmware enhancements. For example, it can be used to simulate new TPM
+firmware enhancements. In particular, it can be used to simulate new TPM
 commands (e.g., \textsf{TPM\_ExecuteHashTree} \cite{Sarmenta})
 and vendor extensions before including them in a hardware specification
 or even before the real development process starts. Due to the fast
 simulation in software, extensive preliminary tests can be performed much
-more efficiently. This speed-up can be achieved by using sophisticated
-algorithms from third party libraries (e.g., the GNU Multiple Precision
-Arithmetic Library~\cite{GMP}).
-
+more efficiently.
+% This speed-up can be achieved by using sophisticated
+% algorithms from third party libraries (e.g., the GNU Multiple Precision
+% Arithmetic Library~\cite{GMP}).
 Researchers from Princeton University, NEC Labs, and Texas Instruments R\&D,
 for instance, used our emulator to evaluate the impact on the TPM's energy
 and execution time overhead if the RSA algorithm is replaced with elliptic
-curve cryptography (ECC)~\cite{Aaraj}. Finally, the emulator provides
+curve cryptography (ECC)~\cite{Aaraj}.
+
+Finally, the emulator provides
 programmers of trusted computing systems with a powerful testing and
 debugging tool that can also be used for training and educational purposes.
 Thanks to its portability and interoperability, the TPM emulator runs on a
@@ -126,8 +128,7 @@ Section~\ref{sec:state}, and conclude the paper in Section~\ref{sec:conclusion}.
 In this section, we summarize the basic definitions regarding trusted
 computing and provide a brief overview of the structure and functionality of
 the TPM. For a comprehensive description, the reader is referred to the TCG
-documents~\cite{TCGArch,TPM} and recently published books (see, 
-e.g.,~\cite{Mitchell2005}).
+documents~\cite{TCGArch,TPM} and recently published books \cite{Mitchell2005}.
 
 Trusted computing is about embedding a trusted computing base
 (TCB)~\cite{Bishop2003} in a computing platform that allows a third party
