@@ -206,8 +206,8 @@ be unloaded. Consequently, a parent key has to be loaded into the TPM before
 the data it protects can be decrypted (or \emph{unwrapped} in TCG terminology).
 Note that protected keys are only used inside the TPM and thus (opposite to
 arbitrary data) are never disclosed to the user. Furthermore, each key is
-either marked as being \emph{migrateable} or \emph{non-migrateable}.
-If the key is migrateable, it might be replicated and moved to other
+either marked as being \emph{migratable} or \emph{non-migratable}.
+If the key is migratable, it might be replicated and moved to other
 TPM-protected platforms. Otherwise, it is bound to an individual TPM and
 is never duplicated. Due to the limited size of data that can be directly
 protected by the TPM, not the objects themselves but a symmetric key is
@@ -383,14 +383,14 @@ indistinguishable from the interaction with a real TPM.
 
 \subsection{TPM Emulator Daemon}
 The TPM emulator daemon implements the actual TPM emulator and consists of
-the daemon application, the TPM emulator engine, and the crypto module. After
-initializing the TPM emulator engine, the daemon application opens a Unix
-domain socket and listens on it for incoming TPM commands. Upon the reception
-of a valid command, the request is processed by the TPM emulator engine and
-the corresponding response returned to the sender of the command. Per default
-the socket name \file{/var/tpm/tpmd\_socket:0} is used but, if required (e.g.,
-if more than one TPM emulator instance has to be started), an alternative name
-can be specified as a command-line argument.
+the daemon application, the TPM emulator engine, and the cryptographic module.
+After initializing the TPM emulator engine, the daemon application opens a
+Unix domain socket and listens on it for incoming TPM commands. Upon the
+reception of a valid command, the request is processed by the TPM emulator
+engine and the corresponding response returned to the sender of the command.
+Per default the socket name \file{/var/tpm/tpmd\_socket:0} is used but, if
+required (e.g., if more than one TPM emulator instance has to be started),
+an alternative name can be specified as a command-line argument.
 
 \paragraph{TPM Emulator Engine.}
 From a functional point of view, the TPM emulator engine is further divided
@@ -706,8 +706,8 @@ Each row contains several information about the command:
 the name;
 the version of the TPM specification, where the command was defined at first;
 the ordinal;
-a letter indicating, whether the command is mandatory (M), optional (O) or
-removed (X);
+a letter indicating, whether the command is mandatory (M), optional (O),
+deprecated (D), or removed (X);
 the source file, where the command is implemented;
 and some space for additional notes.
 These notes include the result of the performed compliance tests and the
