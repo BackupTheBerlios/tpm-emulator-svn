@@ -1,3 +1,7 @@
+2007-12-07  Heiko Stamer <stamer@gaos.org>
+	* tpm_deprecated.c: DIR index value bug fixed
+
+
 2006-12-03  Mario Strasser <mast@gmx.net>
 	* Makefile: tpm_dev excluded from standard distribution
 
