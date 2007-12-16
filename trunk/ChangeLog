@@ -1,3 +1,6 @@
+2007-12-16  Heiko Stamer <stamer@gaos.org>
+	* tpm_transport.c: missing ptr initialization fixed
+
 2007-12-07  Heiko Stamer <stamer@gaos.org>
 	* tpm_deprecated.c: DIR index value bug fixed
 
