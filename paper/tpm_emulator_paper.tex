@@ -670,7 +670,7 @@ erview.html}.
 \newcommand{\tpmcolor}{tpmgray}
 
 \newcommand{\tpmcmd}[6]{
-	\begin{tabular}{p{4.5cm}|p{0.35cm}|p{0.4cm}|p{0.25cm}|p{2.5cm}|p{2cm}}
+	\begin{tabular}{p{4.5cm}|p{0.46cm}|p{0.4cm}|p{0.25cm}|p{2.5cm}|p{2.5cm}}
 		\rowcolor{\tpmcolor}
 			{\scriptsize\textsf{#1}} &
 			{\scriptsize\textsf{#2}} &
@@ -697,7 +697,7 @@ erview.html}.
 }
 The following table shows the current state of implementation for each
 command from the most recent TPM specification~\cite{TPM}. The background
-color of each row corresponds to the states:
+color of a row corresponds to the state, i.e.,
 \colorbox{\tpmgreen}{\emph{completed}},
 \colorbox{\tpmyellow}{\emph{partially implemented}}, or
 \colorbox{\tpmred}{\emph{missing}}.
@@ -705,9 +705,9 @@ color of each row corresponds to the states:
 Each row contains several information about the command:
 the name;
 the version of the TPM specification, where the command was defined at first;
-the ordinal;
-a letter indicating, whether the command is mandatory (M), optional (O),
-deprecated (D), or removed (X);
+the assigned ordinal;
+a letter indicating, whether the command is mandatory~(M), optional~(O),
+deprecated~(D), or removed~(X);
 the source file, where the command is implemented;
 and some space for additional notes.
 These notes include the result of the performed compliance tests and the
@@ -747,7 +747,7 @@ implemented.
 	\item Auditing (pp. 43--51)\\
 \tpmcmdg{TPM\_GetAuditDigest}{1.2}{133}{O}{tpm\_audit.c}{}\\
 \tpmcmdg{TPM\_GetAuditDigestSigned}{1.2}{134}{O}{tpm\_audit.c}{}\\
-\tpmcmdg{TPM\_SetOrdinalAuditStatus}{1.1}{141}{O}{tpm\_.auditc}{}
+\tpmcmdg{TPM\_SetOrdinalAuditStatus}{1.1}{141}{O}{tpm\_audit.c}{}
 	\item Administrative Functions -- Management (pp. 52--57)\\
 \tpmcmdr{TPM\_FieldUpgrade}{1.1}{170}{O}{tpm\_management.c}{TODO: 100\,\%}\\
 \tpmcmdr{TPM\_SetRedirection}{1.1}{154}{O}{tpm\_management.c}{TODO: 100\,\%}\\
@@ -800,8 +800,8 @@ implemented.
 \tpmcmdg{TPM\_Extend}{1.1}{20}{M}{tpm\_integrity.c}{passed \cite{trousers,jTSS}}\\
 \tpmcmdg{TPM\_PCRRead}{1.1}{21}{M}{tpm\_integrity.c}{passed \cite{trousers,jTSS,Sadeghi}}\\
 \tpmcmdg{TPM\_Quote}{1.1}{22}{M}{tpm\_integrity.c}{passed \cite{trousers,jTSS}}\\
-\tpmcmdg{TPM\_PCR\_Reset}{1.2}{200}{M}{tpm\_integrity.c}{no support \cite{jTSS}}\\
-\tpmcmdg{TPM\_Quote2}{1.2}{62}{M}{tpm\_integrity.c}{no support \cite{jTSS}}
+\tpmcmdg{TPM\_PCR\_Reset}{1.2}{200}{M}{tpm\_integrity.c}{not supported \cite{jTSS}}\\
+\tpmcmdg{TPM\_Quote2}{1.2}{62}{M}{tpm\_integrity.c}{not supported \cite{jTSS}}
 	\item Changing AuthData (pp. 164--168)\\
 \tpmcmdg{TPM\_ChangeAuth}{1.1}{12}{M}{tpm\_authorization.c}{passed \cite{trousers}}\\
 \tpmcmdg{TPM\_ChangeAuthOwner}{1.1}{16}{M}{tpm\_authorization.c}{}
@@ -831,17 +831,17 @@ implemented.
 	\item Eviction (pp. 224--226)\\
 \tpmcmdy{TPM\_FlushSpecific}{1.2}{186}{M}{tpm\_eviction.c}{TODO: 75\,\%}
 	\item Timing Ticks (pp. 227--230)\\
-\tpmcmdg{TPM\_GetTicks}{1.2}{241}{M}{tpm\_ticks.c}{no support \cite{jTSS}}\\
-\tpmcmdg{TPM\_TickStampBlob}{1.2}{242}{M}{tpm\_ticks.c}{no support \cite{jTSS}}
+\tpmcmdg{TPM\_GetTicks}{1.2}{241}{M}{tpm\_ticks.c}{not supported \cite{jTSS}}\\
+\tpmcmdg{TPM\_TickStampBlob}{1.2}{242}{M}{tpm\_ticks.c}{not supported \cite{jTSS}}
 	\item Transport Sessions (pp. 231--244)\\
 \tpmcmdg{TPM\_EstablishTransport}{1.2}{230}{M}{tpm\_transport.c}{}\\
 \tpmcmdg{TPM\_ExecuteTransport}{1.2}{231}{M}{tpm\_transport.c}{}\\
 \tpmcmdg{TPM\_ReleaseTransportSigned}{1.2}{232}{M}{tpm\_transport.c}{}
 	\item Monotonic Counter (pp. 245--254)\\
-\tpmcmdg{TPM\_CreateCounter}{1.2}{220}{M}{tpm\_counter.c}{}\\
-\tpmcmdg{TPM\_IncrementCounter}{1.2}{221}{M}{tpm\_counter.c}{}\\
-\tpmcmdg{TPM\_ReadCounter}{1.2}{222}{M}{tpm\_counter.c}{}\\
-\tpmcmdg{TPM\_ReleaseCounter}{1.2}{223}{M}{tpm\_counter.c}{}\\
+\tpmcmdg{TPM\_CreateCounter}{1.2}{220}{M}{tpm\_counter.c}{passed \cite{Sadeghi}}\\
+\tpmcmdg{TPM\_IncrementCounter}{1.2}{221}{M}{tpm\_counter.c}{passed \cite{Sadeghi}}\\
+\tpmcmdg{TPM\_ReadCounter}{1.2}{222}{M}{tpm\_counter.c}{passed \cite{Sadeghi}}\\
+\tpmcmdg{TPM\_ReleaseCounter}{1.2}{223}{M}{tpm\_counter.c}{passed \cite{Sadeghi}}\\
 \tpmcmdg{TPM\_ReleaseCounterOwner}{1.2}{224}{M}{tpm\_counter.c}{}
 	\item DAA Commands (pp. 255--282)\\
 \tpmcmdg{TPM\_Join}{1.2}{41}{M}{tpm\_daa.c}{passed \cite{ibmdaatest}}\\
