@@ -56,10 +56,10 @@ trusted computing building blocks and software interfaces, among which the
 Trusted Platform Module~(TPM)~\cite{TPM} is likely to be the most popular one.
 These specifications are of growing interest and the increasing availability
 of TPMs will soon make it a standard component in today's personal and mobile
-computers. A TPM, as specified by the TCG, provides a hardware root of trust
-for storage, for reporting, and, together with the BIOS, a root of trust for
-measurement. In combination, these three roots of trust open many new
-possibilities in the field of (distributed) trusted computing.
+computers. A TPM, as specified by the TCG, provides a (hardware) root of trust
+for storage, a root of trust for reporting, and, together with the BIOS, a root
+of trust for measurement. In combination, these three roots of trust open many
+new possibilities in the field of (distributed) trusted computing.
 
 When developing and researching new technologies, appropriate tools to
 investigate their behavior and evaluate their performance are of paramount
@@ -165,7 +165,7 @@ configuration. A \emph{Platform Configuration Register}~(PCR) is a TPM
 register where such measurements are stored and which is initialized at
 startup and extended at every step of the boot sequence. In order to allow
 the storage of an unlimited number of measurements in a specific PCR register,
-the new value dependents on both, the old value and the new value to be added.
+the new value depends on both, the old value and the new value to be added.
 Consequently, updates to PCRs are noncommutative and cannot be undone until
 the platform is rebooted. The idea behind this process of integrity measurement
 and storage is that a platform may be permitted to enter any state, including
@@ -394,8 +394,8 @@ an alternative name can be specified as a command-line argument.
 
 \paragraph{TPM Emulator Engine.}
 From a functional point of view, the TPM emulator engine is further divided
-in the parameter (un)marshaling and (de)coding entity, the command execution
-engine, the cryptographic engine and the key, data, and state storage entity.
+in the parameter (un)marshaling and (de)coding entity; the command execution
+engine; the cryptographic engine; and the key, data, and state storage entity.
 Each part interacts with each other over a small set of well-defined functions.
 
 The public API of the TPM emulator engine consists of only three functions.
@@ -570,7 +570,7 @@ and simulators. In addition, the emulator provides programmers of trusted
 computing systems with a powerful testing and debugging tool that can also
 be used for training and educational purposes.
 The emulator is still a work in progress and our future attention will
-focus the completion of the missing commands. A further step is the portage
+focus on the completion of the missing commands. A further step is the portage
 of the TPM emulator package to Windows and Mac~OS~X operating systems.
 
 %%\bibliographystyle{plain}
