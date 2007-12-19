@@ -1,7 +1,7 @@
 /* Software-Based Trusted Platform Module (TPM) Emulator for Linux
  * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
  *                    Swiss Federal Institute of Technology (ETH) Zurich,
- *               2006 Heiko Stamer <stamer@gaos.org>
+ *               2006, 2007 Heiko Stamer <stamer@gaos.org>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -26,6 +26,9 @@
 
 /* import functions from tpm_capability.c */
 extern TPM_RESULT cap_version_val(UINT32 *respSize, BYTE **resp);
+/* import functions from tpm_crypto.c */
+extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
+  BYTE *areaToSign, UINT32 areaToSignSize, BYTE **sig, UINT32 *sigSize);
 
 /*
  * Integrity Collection and Reporting ([TPM_Part3], Section 16)
@@ -241,8 +244,9 @@ TPM_RESULT TPM_Quote2(
     return TPM_INAPPROPRIATE_SIG;
 
 /* WATCH: ??? specification error, missing check for key usage ???
-   A security issue seems to be the (mis)usage of the EK for signing.
-   WATCH: !!! This error has been corrected recently in v1.2 rev 103 !!! */
+   A security issue may be the (mis)usage of the EK for signing.
+   WATCH: !!! This error has been corrected recently in v1.2 rev 103,
+              thus it might occur in some TPM v1.2 chip designs. !!! */
 
   /* 3. Validate that keyHandle->keyUsage is TPM_KEY_SIGNING, TPM_KEY_IDENTITY,
         or TPM_KEY_LEGACY, if not return TPM_INVALID_KEYUSAGE */
@@ -268,9 +272,14 @@ TPM_RESULT TPM_Quote2(
   /* 7. Create Q1 a TPM_QUOTE_INFO2 structure */
   Q1.tag = TPM_TAG_QUOTE_INFO2;
     /* a. Set Q1->fixed to "QUT2" */
-    memcpy(Q1.fixed, "QUT2", 4);
+    Q1.fixed[0] = 'Q', Q1.fixed[1] = 'U', Q1.fixed[2] = 'T', Q1.fixed[3] = '2';
     /* b. Set Q1->infoShort to S1 */
-    memcpy(&Q1.infoShort, pcrData, sizeof_TPM_PCR_INFO_SHORT((*pcrData)));
+    Q1.infoShort.pcrSelection.sizeOfSelect = pcrData->pcrSelection.sizeOfSelect;
+    memcpy(Q1.infoShort.pcrSelection.pcrSelect,
+      pcrData->pcrSelection.pcrSelect, pcrData->pcrSelection.sizeOfSelect);
+    Q1.infoShort.localityAtRelease = pcrData->localityAtRelease;
+    memcpy(Q1.infoShort.digestAtRelease.digest, 
+      pcrData->digestAtRelease.digest, sizeof(TPM_COMPOSITE_HASH));
     /* c. Set Q1->externalData to externalData */
     memcpy(&Q1.externalData, externalData, sizeof(TPM_NONCE));
   size = len = sizeof_TPM_QUOTE_INFO2(Q1);
@@ -283,6 +292,7 @@ TPM_RESULT TPM_Quote2(
   }
   /* 8. If addVersion is TRUE */
   if (addVersion == TRUE) {
+    debug("TPM_Quote2(): addVersion == TRUE");
     /* a. Concatenate to Q1 a TPM_CAP_VERSION_INFO structure */
     res = cap_version_val(&respSize, &resp);
     if (res != TPM_SUCCESS) {
@@ -301,6 +311,7 @@ TPM_RESULT TPM_Quote2(
     }
     *versionInfoSize = respSize;
    } else { /* 9. Else */
+    debug("TPM_Quote2(): addVersion == FALSE");
     /* a. Set versionInfoSize to 0 */
     *versionInfoSize = 0;
     /* b. Return no bytes in versionInfo */
@@ -314,16 +325,6 @@ TPM_RESULT TPM_Quote2(
     tpm_free(resp);
   }
   tpm_sha1_final(&ctx, digest.digest);
-  *sigSize = key->key.size >> 3;
-  *sig = tpm_malloc(*sigSize);
-  if (*sig == NULL) return TPM_NOSPACE;
-  if (tpm_rsa_sign(&key->key, RSA_SSA_PKCS1_SHA1, digest.digest, 
-    sizeof(TPM_DIGEST), *sig)) {
-      debug("TPM_Quote2(): tpm_rsa_sign() failed.");
-      tpm_free(*sig);
-      return TPM_FAIL;
-  }
-  
   /* 11. Return the signature in sig */
-  return TPM_SUCCESS;
+  return tpm_sign(key, auth1, FALSE, digest.digest, sizeof(TPM_DIGEST), sig, sigSize);
 }

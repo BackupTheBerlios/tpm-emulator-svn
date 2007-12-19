@@ -49,6 +49,7 @@ UINT32 tpm_get_in_param_offset(TPM_COMMAND_CODE ordinal)
     case TPM_ORD_OwnerReadInternalPub:
 */
     case TPM_ORD_Quote:
+    case TPM_ORD_Quote2:
     case TPM_ORD_ReleaseTransportSigned:
     case TPM_ORD_SaveKeyContext:
     case TPM_ORD_Seal:
