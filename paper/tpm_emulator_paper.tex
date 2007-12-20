@@ -48,7 +48,7 @@
     enables not only the implementation of flexible and low-cost test-beds
     and simulators but, in addition, provides programmers of trusted systems
     with a powerful testing and debugging tool that can also be used for
-    %training and
+    % training and
     educational purposes. Thanks to its portability and interoperability,
     the TPM emulator runs on a variety of platforms and is compatible with
     the most relevant software packages and interfaces.
@@ -319,9 +319,9 @@ the TPM in an encrypted form using the transport encryption command.
 
 \begin{figure}[!h]
 	\centering
-	\includegraphics[height=24mm]{figures/tpm_command_structure}
+	\includegraphics[width=.9\textwidth]{figures/tpm_command_structure}
 	\caption{TPM command structure.}
-	\label{fig:tpm_command}\vspace*{-2mm}
+	\label{fig:tpm_command}\vspace*{-5mm}
 \end{figure}
 
 %\paragraph{Command Authorization.}
@@ -363,7 +363,7 @@ with TPM device drivers.
 	\centering
 	\includegraphics[width=.5\textwidth]{figures/system_overview}
 	\caption{Overview of the TPM emulator package.}
-	\label{fig:system_overview}
+	\label{fig:system_overview}\vspace*{-5mm}
 \end{figure}
 
 \subsection{TPM Device Driver Library and Kernel Module}
@@ -478,72 +478,65 @@ evaluation, all experiments were conducted on a IBM ThinkPad T43p (Pentium M @
 2\,GHz and 1\,GByte RAM) using Linux kernel~2.6.23 and a hardware TPM v1.1b
 from the National Semiconductors Corporation.
 
-Figure~\ref{plot:performance} shows the average execution time for some
-light-weight and com\-pu\-ta\-tion-intensive TPM commands. One can observe
-that on average, the emulator is about ten times faster than the hardware-based
-TPM for computation-intensive commands. In the case of the light-weight
-command \textsf{TPM\_Extend}, the performance advantage is even three orders
-of magnitude (i.e., factor $10^3$). This difference shows that the
-communication with a hardware TPM constitutes a non negligible overhead.
+Figure~\ref{plot:performance} shows the average execution time for a set of
+light-weight and computation-intensive TPM commands. One can observe that for
+computation-intensive commands the emulator is on average about ten times
+faster than the hardware-based TPM. In the case of the light-weight command
+\textsf{TPM\_Extend}, the performance advantage is even three orders of
+magnitude (i.e., factor thousand). This difference shows that --- other than
+for our TPM emulator --- the communication with a hardware TPM constitutes a
+non negligible overhead with respect to the overall command execution time.
 
-\begin{figure}[ht]
+\begin{figure}
     \centering
     \includegraphics[width=.8\textwidth]{plots/performance_comparison}
+    \vspace*{-2mm}
     \caption{Performance comparison of the emulator with a hardware
              TPM from NSC.}
-    \label{plot:performance}
+    \label{plot:performance}\vspace*{-5mm}
 \end{figure}
 
 In order to investigate the scalability of our TPM emulator in relation to
 the number of concurrently executed emulator instances on the same platform,
 a number of TPM emulator daemons was started and a series of TPM command
-executions was initiated on each instance in parallel.
-The measured duration between sending the commands and
-receiving all corresponding responses is shown in
-Figure~\ref{plot:execution_time}. One can see that for light-weight
+executions was initiated on each instance in parallel. The measured duration
+between sending the commands and receiving all corresponding responses is shown
+in Figure~\ref{plot:execution_time}. One can see that for light-weight
 (Figure~\ref{plot:execution_time}(a)) as well as for computation-intensive
 commands (Figure~\ref{plot:execution_time}(b)) the required time increases
 linearly with the number of concurrently running emulator instances. This
 shows that except for the unavoidable slowdown due to the availability of
 only one single CPU, no significant overhead is introduced by concurrently
 executing more than one emulator instance. This is of particular importance
-if one intends to simulate a whole network on a single host.
+if one needs to simulate a whole distributed system on a single host.
 
 \begin{figure}
-	\begin{center}
-		\subfigure[\textsf{TPM\_Extend}]{\includegraphics[width=.4\textwidth]{plots/duration_extend}}\quad%
-		\subfigure[\textsf{TPM\_SelfTest}]{\includegraphics[width=.4\textwidth]{plots/duration_self_test}}
-		\vspace*{-3mm}
-		\caption{Duration for the execution of two commands on each TPM emulator
-			instance.}
-% The TPM command executions was initiated on each instance in parallel. One
-% can observe that for light-weight (a) as well as computation-intensive commands (b) the required
-% time increases linearly with the number of concurrently running emulator instances. This shows that
-% except for the unavoidable slowdown due to the availability of only one single CPU, no significant
-% overhead is introduced by concurrently running more than one emulator instance.}
-		\label{plot:execution_time}
-	\end{center}
+  \centering
+  \subfigure[\textsf{TPM\_Extend}]{\includegraphics[width=.4\textwidth]{plots/duration_extend}}\quad%
+  \subfigure[\textsf{TPM\_SelfTest}]{\includegraphics[width=.4\textwidth]{plots/duration_self_test}}
+  \vspace*{-2mm}
+  \caption{Duration for the execution of two commands on each TPM emulator
+           instance.}
+  \label{plot:execution_time}\vspace*{-5mm}
 \end{figure}
 
 The results of several TPM compliance and functionality tests, in particular
 those provided by TrouSerS~\cite{trousers} (package testsuite and package
-tpm-tools), jTSS~\cite{jTSS} (package jTSS and package jTpmTools),
-IBM DAA Test Suite~\cite{ibmdaatest} and
-RUB/Sirrix~\cite{Sadeghi}, are summarized in Figure~\ref{plot:compliance}.
-Note that, even though the emulator still lacks some functionality,
-the most important and frequently used commands are already supported and
-are compliant with the most recent TPM specification~\cite{TPM}.
-A detailed list of the supported commands can be found in
-Appendix~\ref{app:commands}.
+tpm-tools), jTSS~\cite{jTSS} (package jTSS and package jTpmTools), IBM DAA Test
+Suite~\cite{ibmdaatest} and RUB/Sirrix~\cite{Sadeghi}, are summarized in
+Figure~\ref{plot:compliance}. Note that, although the emulator still lacks some
+functionality, the most important and frequently used commands are already
+supported and are compliant with the most recent TPM specification~\cite{TPM}.
+A detailed list of the supported commands can be found in Appendix~%
+\ref{app:commands}.
 
 \begin{figure}
-	\begin{center}
-		\includegraphics[angle=-90,scale=0.6]{plots/compliance}
-		\includegraphics[origin=br,angle=90,scale=0.6]{plots/compliance_key}
-		\caption{Summarized results of several TPM compliance and functionality
+	\vspace*{-3mm}\centering
+	\includegraphics[angle=-90,scale=0.6]{plots/compliance}
+	\includegraphics[origin=br,angle=90,scale=0.6]{plots/compliance_key}
+	\caption{Summarized results of several TPM compliance and functionality
 			tests.}
-		\label{plot:compliance}
-	\end{center}
+	\label{plot:compliance}\vspace*{-5mm}
 \end{figure}
 
 % \begin{table}[h]\footnotesize\centering
@@ -679,8 +672,7 @@ Kent Yoder et~al.
 Roger Zimmermann.
 \newblock {IBM Direct Anonymous Attestation Tools -- TPM Test Suite}.
 \newblock
-  \newline\url{http://www.zurich.ibm.com/security/daa/IBM-DAA-TPM-TestSuite-Ov%
-erview.html}.
+  \newline\url{http://www.zurich.ibm.com/security/daa/}.
 
 \end{thebibliography}
 

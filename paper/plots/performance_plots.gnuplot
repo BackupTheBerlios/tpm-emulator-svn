@@ -13,6 +13,7 @@ set style line 9 lt -1 lw 1
 max(a,b) = a > b ? a : b
 min(a,b) = a < b ? a : b
 
+#set size 0.65, 0.65
 set size 0.65, 0.65
 set lmargin 6
 set tmargin 2
@@ -20,20 +21,24 @@ set rmargin 6
 set bmargin 3
 
 set output "duration_self_test.eps"
-set title "Duration (in sec) to execute TPM_SelfTest on each TPM emulator instance"
+set title "Duration (in sec) to execute TPM\\_SelfTest on each TPM emulator instance"
 set xlabel "Number of concurrently executed TPM emulator instances."
 set yrange [0:*]
 set xrange [1:500]
+set ytics 20
 set style data points
 plot "data_self_test.txt" using 1:2 with linespoints ls 1 notitle
+set ytics auto
 
 set output "duration_extend.eps"
-set title "Duration (in sec) to execute TPM_Extend on each TPM emulator instance"
+set title "Duration (in sec) to execute TPM\\_Extend on each TPM emulator instance"
 set xlabel "Number of concurrently executed TPM emulator instances."
 set yrange [0:*]
 set xrange [1:500]
+set ytics 0.005
 set style data points
 plot "data_extend.txt" using 1:2 with linespoints ls 1 notitle
+set ytics auto
 
 set size 1, 0.66
 set lmargin 6
