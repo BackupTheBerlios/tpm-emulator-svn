@@ -311,12 +311,11 @@ byte-order of the host platform as part of the unmarshaling process. Since
 version 1.2 of the TPM specification, commands can also be sent from and to
 the TPM in an encrypted form using the transport encryption command.
 
-\begin{figure}
-	\begin{center}
-		\includegraphics[height=24mm]{figures/tpm_command_structure}
-		\caption{TPM command structure.}
-		\label{fig:tpm_command}
-	\end{center}
+\begin{figure}[!h]
+	\centering
+	\includegraphics[height=24mm]{figures/tpm_command_structure}
+	\caption{TPM command structure.}
+	\label{fig:tpm_command}\vspace*{-2mm}
 \end{figure}
 
 \paragraph{Command Authorization.}
@@ -355,11 +354,10 @@ provides the character device \file{/dev/tpm} for low-level compatibility
 with TPM device drivers.
 
 \begin{figure}
-	\begin{center}
-		\includegraphics[width=.5\textwidth]{figures/system_overview}
-		\caption{Overview of the TPM emulator package.}
-		\label{fig:system_overview}
-	\end{center}
+	\centering
+	\includegraphics[width=.5\textwidth]{figures/system_overview}
+	\caption{Overview of the TPM emulator package.}
+	\label{fig:system_overview}
 \end{figure}
 
 \subsection{TPM Device Driver Library and Kernel Module}
@@ -466,13 +464,35 @@ blocks, e.g. in the case of (partly) available hardware support.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Evaluation and Compliance Tests}\label{sec:state}
+\section{Performance Evaluation and Compliance Tests}\label{sec:state}
+The two main criteria for evaluating the the presented software-based TPM
+emulator are (i) its performance compared to existing hardware-based TPMs and
+(ii) its compliance to the current TPM specification. For the performance
+evaluation, all experiments were conducted on a IBM ThinkPad T43p (Pentium M @
+2\,GHz and 1\,GByte RAM) using Linux kernel~2.6.23 and a hardware TPM v1.1b
+from the National Semiconductors Corporation.
+
+Figure~\ref{plot:performance} shows the average execution time for a set of
+light-weight and computation-intensive TPM commands. One can observe that on
+average, the emulator is about ten times faster than the hardware-based TPM for
+computation-intensive commands. In the case of the light-weight command
+TPM\_Extend, the performance advantage is even three orders of magnitude (i.e.,
+factor $10^3$). This difference shows that the communication with a hardware
+TPM constitutes a non negligible overhead.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=.8\textwidth]{plots/performance_comparison}
+    \caption{Performance comparison of the emulator with a hardware
+             TPM from NSC.}
+    \label{plot:performance}
+\end{figure}
+
 In order to investigate the scalability of our TPM emulator in relation to
 the number of concurrently executed emulator instances on the same platform,
 a number of TPM emulator daemons was started and a series of TPM command
-executions was initiated on each instance in parallel. All experiments were
-conducted on a IBM ThinkPad T43p (Pentium M @ 2\,GHz and 1\,GByte RAM) using
-Linux kernel~2.6.19. The measured duration between sending the commands and
+executions was initiated on each instance in parallel.
+The measured duration between sending the commands and
 receiving all corresponding responses is shown in
 Figure~\ref{plot:execution_time}. One can see that for light-weight
 (Figure~\ref{plot:execution_time}(a)) as well as for computation-intensive
@@ -480,9 +500,8 @@ commands (Figure~\ref{plot:execution_time}(b)) the required time increases
 linearly with the number of concurrently running emulator instances. This
 shows that except for the unavoidable slowdown due to the availability of
 only one single CPU, no significant overhead is introduced by concurrently
-executing more than one emulator instance.
-
-\marginpar{TODO: DAA on hardware TPM vs. emulator}
+executing more than one emulator instance. This is of particular importance
+if one intends to simulate a whole network on a single host.
 
 \begin{figure}
 	\begin{center}

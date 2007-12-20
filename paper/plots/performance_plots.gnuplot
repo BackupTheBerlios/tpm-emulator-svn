@@ -35,7 +35,7 @@ set xrange [1:500]
 set style data points
 plot "data_extend.txt" using 1:2 with linespoints ls 1 notitle
 
-set size 1, 1
+set size 1, 0.66
 set lmargin 6
 set tmargin 2
 set rmargin 2
