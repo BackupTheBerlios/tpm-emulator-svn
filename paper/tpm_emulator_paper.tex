@@ -31,22 +31,27 @@
 \begin{abstract}
     When developing and researching new trusted computing technologies,
     appropriate tools to investigate their behavior and to evaluate their
-    performance are of paramount importance. In the networking community,
-    test-beds and software simulators are the methods of choice in order to
-    conduct network performance analysis and protocol evaluations. We argue
-    that these methods would also be valuable tools for evaluating and
-    understanding the behavior of TPM-based (distributed) trusted computing
-    systems. However, due to the security properties of hardware TPMs, building
-    such a test-bed is extremely cumbersome and costly. Moreover, the realistic
-    (hardware-supported) simulation of such systems is often infeasible. In this
-    paper, we therefore advocate the usage of software-based TPMs to solve this
-    hardware dependency and present an efficient and portable TPM emulator for
-    Unix. Our emulator enables not only the implementation of flexible and
-    low-cost test-beds and simulators but, in addition, provides programmers of
-    trusted systems with a powerful testing and debugging tool that can also be
-    used for training and educational purposes. Thanks to its portability and
-    interoperability, the TPM emulator runs on a variety of platforms and is
-    compatible with the most relevant software packages and interfaces.
+    performance are of paramount importance.
+    %In the networking community, test-beds and software simulators are the
+    % methods of choice in order to conduct network performance analysis and
+    % protocol evaluations.
+    % We argue that
+    %These methods can also be used for evaluating and understanding the
+    %behavior of TPM-based (distributed) trusted computing systems. However,
+    %due to the security properties of hardware TPMs, building such a
+    %test-bed is extremely cumbersome and costly. Moreover, the realistic
+    %(hardware-supported) simulation of such systems is often infeasible.
+    In this paper, we
+    % therefore advocate the usage of software-based TPMs to solve this
+    % hardware dependency and 
+    present an efficient and portable TPM emulator for Unix. Our emulator
+    enables not only the implementation of flexible and low-cost test-beds
+    and simulators but, in addition, provides programmers of trusted systems
+    with a powerful testing and debugging tool that can also be used for
+    %training and
+    educational purposes. Thanks to its portability and interoperability,
+    the TPM emulator runs on a variety of platforms and is compatible with
+    the most relevant software packages and interfaces.
 \end{abstract}
 
 
@@ -56,10 +61,11 @@ trusted computing building blocks and software interfaces, among which the
 Trusted Platform Module~(TPM)~\cite{TPM} is likely to be the most popular one.
 These specifications are of growing interest and the increasing availability
 of TPMs will soon make it a standard component in today's personal and mobile
-computers. A TPM, as specified by the TCG, provides a (hardware) root of trust
-for storage, a root of trust for reporting, and, together with the BIOS, a root
-of trust for measurement. In combination, these three roots of trust open many
-new possibilities in the field of (distributed) trusted computing.
+computers.
+%A TPM, as specified by the TCG, provides a (hardware) root of trust
+%for storage, a root of trust for reporting, and, together with the BIOS, a root
+%of trust for measurement. In combination, these three roots of trust open many
+%new possibilities in the field of (distributed) trusted computing.
 
 When developing and researching new technologies, appropriate tools to
 investigate their behavior and evaluate their performance are of paramount
@@ -318,14 +324,14 @@ the TPM in an encrypted form using the transport encryption command.
 	\label{fig:tpm_command}\vspace*{-2mm}
 \end{figure}
 
-\paragraph{Command Authorization.}
-The purpose of several authorization protocols (e.g., OIAP and OSAP) is to
-prove that the initiator of a command has permission to execute and to
-access the involved data objects. For instance, they are used to establish
-platform ownership, restrict key usage, and to apply access control to
-(protected) objects. The proof comes from the knowledge of a shared secret,
-the so called authorization data. The TPM treats knowledge of the corresponding
-authorization data as a complete proof, i.e. no other checks are necessary.
+%\paragraph{Command Authorization.}
+%The purpose of several authorization protocols (e.g., OIAP and OSAP) is to
+%prove that the initiator of a command has permission to execute and to
+%access the involved data objects. For instance, they are used to establish
+%platform ownership, restrict key usage, and to apply access control to
+%(protected) objects. The proof comes from the knowledge of a shared secret,
+%the so called authorization data. The TPM treats knowledge of the corresponding
+%authorization data as a complete proof, i.e. no other checks are necessary.
 
 % There are three protocols to proof the knowledge of a specific piece of authorization data. The
 % \textit{Object-Independent Authorization Protocol} (OIAP) supports multiple authorization
@@ -465,20 +471,20 @@ blocks, e.g. in the case of (partly) available hardware support.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Performance Evaluation and Compliance Tests}\label{sec:state}
-The two main criteria for evaluating the the presented software-based TPM
+The two main criteria for evaluating the presented software-based TPM
 emulator are (i) its performance compared to existing hardware-based TPMs and
 (ii) its compliance to the current TPM specification. For the performance
 evaluation, all experiments were conducted on a IBM ThinkPad T43p (Pentium M @
 2\,GHz and 1\,GByte RAM) using Linux kernel~2.6.23 and a hardware TPM v1.1b
 from the National Semiconductors Corporation.
 
-Figure~\ref{plot:performance} shows the average execution time for a set of
-light-weight and computation-intensive TPM commands. One can observe that on
-average, the emulator is about ten times faster than the hardware-based TPM for
-computation-intensive commands. In the case of the light-weight command
-TPM\_Extend, the performance advantage is even three orders of magnitude (i.e.,
-factor $10^3$). This difference shows that the communication with a hardware
-TPM constitutes a non negligible overhead.
+Figure~\ref{plot:performance} shows the average execution time for some
+light-weight and com\-pu\-ta\-tion-intensive TPM commands. One can observe
+that on average, the emulator is about ten times faster than the hardware-based
+TPM for computation-intensive commands. In the case of the light-weight
+command \textsf{TPM\_Extend}, the performance advantage is even three orders
+of magnitude (i.e., factor $10^3$). This difference shows that the
+communication with a hardware TPM constitutes a non negligible overhead.
 
 \begin{figure}[ht]
     \centering
@@ -505,8 +511,8 @@ if one intends to simulate a whole network on a single host.
 
 \begin{figure}
 	\begin{center}
-		\subfigure[TPM\_Extend]{\includegraphics[width=.4\textwidth]{plots/duration_extend}}\quad%
-		\subfigure[TPM\_SelfTest]{\includegraphics[width=.4\textwidth]{plots/duration_self_test}}
+		\subfigure[\textsf{TPM\_Extend}]{\includegraphics[width=.4\textwidth]{plots/duration_extend}}\quad%
+		\subfigure[\textsf{TPM\_SelfTest}]{\includegraphics[width=.4\textwidth]{plots/duration_self_test}}
 		\vspace*{-3mm}
 		\caption{Duration for the execution of two commands on each TPM emulator
 			instance.}
