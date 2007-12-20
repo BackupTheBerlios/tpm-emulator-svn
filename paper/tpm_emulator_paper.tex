@@ -392,8 +392,8 @@ After initializing the TPM emulator engine, the daemon application opens a
 Unix domain socket and listens on it for incoming TPM commands. Upon the
 reception of a valid command, the request is processed by the TPM emulator
 engine and the corresponding response returned to the sender of the command.
-Per default the socket name \file{/var/tpm/tpmd\_socket:0} is used but, if
-required (e.g., if more than one TPM emulator instance has to be started),
+Per default the socket name \file{/var/run/tpm/tpmd\_socket:0} is used but,
+if required (e.g., if more than one TPM emulator instance has to be started),
 an alternative name can be specified as a command-line argument.
 
 \paragraph{TPM Emulator Engine.}
@@ -826,7 +826,7 @@ implemented.
 \tpmcmdg{TPM\_PCRRead}{1.1}{21}{M}{tpm\_integrity.c}{passed \cite{trousers,jTSS,Sadeghi}}\\
 \tpmcmdg{TPM\_Quote}{1.1}{22}{M}{tpm\_integrity.c}{passed \cite{trousers,jTSS}}\\
 \tpmcmdg{TPM\_PCR\_Reset}{1.2}{200}{M}{tpm\_integrity.c}{not supported \cite{jTSS}}\\
-\tpmcmdg{TPM\_Quote2}{1.2}{62}{M}{tpm\_integrity.c}{passed \cite{trousers,jTSS}}
+\tpmcmdg{TPM\_Quote2}{1.2}{62}{M}{tpm\_integrity.c}{passed \cite{trousers}}
 	\item Changing AuthData (pp. 164--168)\\
 \tpmcmdg{TPM\_ChangeAuth}{1.1}{12}{M}{tpm\_authorization.c}{passed \cite{trousers}}\\
 \tpmcmdg{TPM\_ChangeAuthOwner}{1.1}{16}{M}{tpm\_authorization.c}{}
