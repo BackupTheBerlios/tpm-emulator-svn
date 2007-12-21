@@ -68,7 +68,7 @@ computers.
 %new possibilities in the field of (distributed) trusted computing.
 
 When developing and researching new technologies, appropriate tools to
-investigate their behavior and evaluate their performance are of paramount
+investigate their behavior and to evaluate their performance are of paramount
 importance. This is particularly true for complex large-scale distributed
 systems comprising hundreds of nodes and users.
 % where one has not only to cope with node failures or temporary unavailability
@@ -81,7 +81,7 @@ evaluating and understanding the behavior of trusted
 computing systems. However, the security properties of hardware TPMs permit
 only one TPM per platform and limit the degree to which the effects of an
 executed command can be undone as well as to what extent the internal state
-a of TPM can be (re)stored or preset. Moreover, certain actions cannot be
+of a TPM can be (re)stored or preset. Moreover, certain actions cannot be
 revoked at all or require the physical presence of an operator. Also, TPMs
 provide almost no feedback in the case of internal or usage errors. Due to
 these limitations, building a test-bed for the execution and evaluation of
@@ -422,7 +422,7 @@ if all tests succeeded, the emulator starts in the specified startup mode and
 the remaining internal data is initialized accordingly. In the particular case
 of startup mode \emph{save} this includes the restoration of all persistent
 data from the persistent data storage file
-(\file{/var/tpm/tpm\_emulator-1.2.x.y} as default).
+(\file{/var/lib/tpm/tpm\_emulator-1.2.x.y} as default).
 Whenever the restoration of a previously stored state fails, the emulator
 also switches to fail-stop mode.
 
