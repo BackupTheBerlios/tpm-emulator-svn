@@ -180,7 +180,7 @@ undesirable or insecure states, but that it cannot lie about states that it
 was or was not in.
 
 \subsection{Root of Trust for Reporting}
-Each TPM has an unique \emph{Endorsement Key}~(EK) which is a signing key
+Each TPM has an unique \emph{Endorsement Key}~(EK) which is a encryption key
 whose public key is certified by a trusted third party, such as the TPM
 manufacturer. For privacy reasons, the EK is only used to obtain credentials
 from a certification authority (Privacy CA) for an \emph{Attestation Identity
@@ -417,7 +417,7 @@ First, all data elements are set to their default values.
 % true. This is done because starting the emulator can be seen as the users indication to use (i.e.,
 % enable and activate) the TPM.
 Next, an internal self-test of all cryptographic functions
-is preformed. If one of the tests fails, the emulator goes into a fail-stop
+is performed. If one of the tests fails, the emulator goes into a fail-stop
 mode and returns a corresponding error message on each command call. Finally,
 if all tests succeeded, the emulator starts in the specified startup mode and
 the remaining internal data is initialized accordingly. In the particular case
