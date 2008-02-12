@@ -129,6 +129,8 @@ expected.
 
 Notes
 --------------------------------------------------------------------------
+* Since release 0.5.1 the emulator supports Free- and OpenBSD; thanks go
+  to Sebastian Schuetz.
 * Since release 0.5 the kernel-based emulator (tpm_dev) is obsolete.
 * The name and format of the persistent-storage file has changed between
   release 0.2 and 0.3 as well as between release 0.4 and 0.4.1.

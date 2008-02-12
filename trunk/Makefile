@@ -48,10 +48,10 @@ user_install: user
 modules_install: modules
 	@$(MAKE) -C tpmd_dev install || exit -1
 
-DIRS    := . tpm crypto tpmd tpmd_dev tddl
+DIRS    := . tpm crypto tpmd tpmd_dev tddl tpmd_dev_openbsd
 DISTSRC := $(foreach dir, $(DIRS), $(wildcard $(dir)/*.c))
 DISTSRC += $(foreach dir, $(DIRS), $(wildcard $(dir)/*.h))
-DIRS    := . tpmd tpmd_dev tddl tpm_dev
+DIRS    := . tpmd tpmd_dev tddl tpmd_dev_openbsd
 DISTSRC += $(foreach dir, $(DIRS), $(dir)/Makefile)
 DISTSRC += ./README ./AUTHORS ./ChangeLog tpmd_dev/tpmd_dev.rules.in
 DISTDIR := tpm_emulator-$(VERSION_MAJOR).$(VERSION_MINOR)$(VERSION_SUFFIX)

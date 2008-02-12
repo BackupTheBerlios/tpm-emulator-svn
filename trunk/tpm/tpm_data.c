@@ -92,6 +92,7 @@ void tpm_init_data(void)
   tpmData.permanent.flags.readPubek = TRUE;
   tpmData.permanent.flags.allowMaintenance = TRUE;
   tpmData.permanent.flags.enableRevokeEK = TRUE;
+  tpmData.permanent.flags.readSRKPub = TRUE;
   /* set TPM vision */
   memcpy(&tpmData.permanent.data.version, 
          &tpm_version, sizeof(TPM_VERSION));
