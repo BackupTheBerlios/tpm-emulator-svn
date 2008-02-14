@@ -470,6 +470,16 @@ interfaces, but does not make any further assumptions regarding their
 implementation. This allows for an easy replacement of individual function
 blocks, e.g. in the case of (partly) available hardware support.
 
+\subsection{Implementation Issues}
+Some technical issues and questions that have arisen during implementation
+are worth to be noted here:
+\begin{enumerate}
+	\item Kernel space vs. user space
+	\item Typographic errors in the specs and missing changelog
+	\item Alignment of data structures
+\end{enumerate}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Performance Evaluation and Compliance Tests}\label{sec:state}
@@ -529,8 +539,8 @@ Suite~\cite{ibmdaatest} and RUB/Sirrix~\cite{Sadeghi}, are summarized in
 Figure~\ref{plot:compliance}. Note that, although the emulator still lacks some
 functionality, the most important and frequently used commands are already
 supported and are compliant with the most recent TPM specification~\cite{TPM}.
-A detailed list of the supported commands can be found in Appendix~%
-\ref{app:commands}.
+%A detailed list of the supported commands can be found in Appendix~%
+%\ref{app:commands}.
 
 \begin{figure}
 	\vspace*{-3mm}\centering
@@ -541,7 +551,7 @@ A detailed list of the supported commands can be found in Appendix~%
 	\label{plot:compliance}\vspace*{-5mm}
 \end{figure}
 
-\noindent Currently, the following functions or commands are still missing:
+\noindent Currently, the following functions or commands are missing:
 \begin{itemize}
 	\item some capability commands,
 	\item all migration functions,
@@ -687,213 +697,4 @@ Roger Zimmermann.
 
 \end{thebibliography}
 
-\appendix
-\newpage
-
-\section{Appendix: Supported TPM Commands}\label{app:commands}
-\definecolor{tpmgray}{gray}{0.85}
-\newcommand{\tpmred}{tpmgray!10!red!50!white}
-\newcommand{\tpmyellow}{tpmgray!10!yellow!50!white}
-\newcommand{\tpmgreen}{tpmgray!10!green!50!white}
-\newcommand{\tpmcolor}{tpmgray}
-
-\newcommand{\tpmcmd}[6]{
-	\begin{tabular}{p{4.5cm}|p{0.46cm}|p{0.4cm}|p{0.25cm}|p{2.5cm}|p{2.5cm}}
-		\rowcolor{\tpmcolor}
-			{\scriptsize\textsf{#1}} &
-			{\scriptsize\textsf{#2}} &
-			{\scriptsize\makebox[0.4cm][r]{#3}} &
-			{\scriptsize\makebox[0.25cm][c]{#4}} &
-			{\scriptsize\texttt{#5}} &
-			{\scriptsize #6}\\
-	\end{tabular}
-}
-\newcommand{\tpmcmdr}[6]{
-	\renewcommand{\tpmcolor}{\tpmred}
-	\tpmcmd{#1}{#2}{#3}{#4}{#5}{#6}
-	\renewcommand{\tpmcolor}{tpmgray}
-}
-\newcommand{\tpmcmdg}[6]{
-	\renewcommand{\tpmcolor}{\tpmgreen}
-	\tpmcmd{#1}{#2}{#3}{#4}{#5}{#6}
-	\renewcommand{\tpmcolor}{tpmgray}
-}
-\newcommand{\tpmcmdy}[6]{
-	\renewcommand{\tpmcolor}{\tpmyellow}
-	\tpmcmd{#1}{#2}{#3}{#4}{#5}{#6}
-	\renewcommand{\tpmcolor}{tpmgray}
-}
-The following table shows the current state of implementation for each
-command from the most recent TPM specification~\cite{TPM}. The background
-color of a row corresponds to the state, i.e.,
-\colorbox{\tpmgreen}{\emph{completed}},
-\colorbox{\tpmyellow}{\emph{partially implemented}}, or
-\colorbox{\tpmred}{\emph{missing}}.
-
-Each row contains several information about the command:
-the name;
-the version of the TPM specification, where the command was defined at first;
-the assigned ordinal;
-a letter indicating, whether the command is mandatory~(M), optional~(O),
-deprecated~(D), or removed~(X);
-the source file, where the command is implemented;
-and some space for additional notes.
-These notes include the result of the performed compliance tests and the
-percentage of work to do, if the command is not yet or only partially
-implemented.
-
-
-\begin{enumerate}
-	\item Admin Startup and State (pp. 5--10)\\
-\tpmcmdg{TPM\_Init}{1.1}{151}{M}{tpm\_startup.c}{}\\
-\tpmcmdg{TPM\_Startup}{1.1}{153}{M}{tpm\_startup.c}{}\\
-\tpmcmdg{TPM\_SaveState}{1.1}{152}{M}{tpm\_startup.c}{}
-	\item Admin Testing (pp. 11--14)\\
-\tpmcmdg{TPM\_SelfTestFull}{1.1}{80}{M}{tpm\_testing.c}{passed \cite{trousers,jTSS}}\\
-\tpmcmdg{TPM\_ContinueSelfTest}{1.1}{83}{M}{tpm\_testing.c}{}\\
-\tpmcmdg{TPM\_GetTestResult}{1.1}{84}{M}{tpm\_testing.c}{passed \cite{trousers,jTSS}}
-	\item Admin Opt-in (pp. 15--22)\\
-\tpmcmdg{TPM\_SetOwnerInstall}{1.1}{113}{M}{tpm\_owner.c}{}\\
-\tpmcmdg{TPM\_OwnerSetDisable}{1.1}{110}{M}{tpm\_owner.c}{}\\
-\tpmcmdg{TPM\_PhysicalEnable}{1.1}{111}{M}{tpm\_owner.c}{}\\
-\tpmcmdg{TPM\_PhysicalDisable}{1.1}{112}{M}{tpm\_owner.c}{}\\
-\tpmcmdg{TPM\_PhysicalSetDeactivated}{1.1}{114}{M}{tpm\_owner.c}{}\\
-\tpmcmdg{TPM\_SetTempDeactivated}{1.1}{115}{M}{tpm\_owner.c}{}\\
-\tpmcmdg{TPM\_SetOperatorAuth}{1.2}{116}{M}{tpm\_owner.c}{}
-	\item Admin Ownership (pp. 23--36)\\
-\tpmcmdg{TPM\_TakeOwnership}{1.1}{13}{M}{tpm\_owner.c}{passed \cite{trousers,jTSS}}\\
-\tpmcmdg{TPM\_OwnerClear}{1.1}{91}{M}{tpm\_owner.c}{}\\
-\tpmcmdg{TPM\_ForceClear}{1.1}{93}{M}{tpm\_owner.c}{}\\
-\tpmcmdg{TPM\_DisableOwnerClear}{1.1}{92}{M}{tpm\_owner.c}{}\\
-\tpmcmdg{TPM\_DisableForceClear}{1.1}{94}{M}{tpm\_owner.c}{}\\
-\tpmcmdg{TSC\_PhysicalPresence}{1.1}{}{M}{tpm\_owner.c}{}\\
-\tpmcmdg{TSC\_ResetEstablishmentBit}{1.2}{}{M}{tpm\_owner.c}{}
-	\item Capability Commands (pp. 37--42)\\
-\tpmcmdy{TPM\_GetCapability}{1.1}{101}{M}{tpm\_capability.c}{TODO: 45\,\%}\\
-\tpmcmdr{TPM\_SetCapability}{1.2}{63}{M}{tpm\_capability.c}{TODO: 100\,\%}\\
-\tpmcmdg{TPM\_GetCapabilityOwner}{1.1}{102}{M}{tpm\_capability.c}{}
-	\item Auditing (pp. 43--51)\\
-\tpmcmdg{TPM\_GetAuditDigest}{1.2}{133}{O}{tpm\_audit.c}{failed \cite{trousers}}\\
-\tpmcmdg{TPM\_GetAuditDigestSigned}{1.2}{134}{O}{tpm\_audit.c}{}\\
-\tpmcmdg{TPM\_SetOrdinalAuditStatus}{1.1}{141}{O}{tpm\_audit.c}{}
-	\item Administrative Functions -- Management (pp. 52--57)\\
-\tpmcmdr{TPM\_FieldUpgrade}{1.1}{170}{O}{tpm\_management.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_SetRedirection}{1.1}{154}{O}{tpm\_management.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_ResetLockValue}{1.2}{64}{M}{tpm\_management.c}{TODO: 100\,\%}
-	\item Storage Functions (pp. 58--81)\\
-\tpmcmdg{TPM\_Seal}{1.1}{23}{M}{tpm\_storage.c}{passed \cite{trousers,jTSS,Sadeghi}}\\
-\tpmcmdg{TPM\_Unseal}{1.1}{24}{M}{tpm\_storage.c}{passed \cite{jTSS}}\\
-\tpmcmdg{TPM\_UnBind}{1.1}{30}{M}{tpm\_storage.c}{passed \cite{trousers,jTSS,Sadeghi}}\\
-\tpmcmdg{TPM\_CreateWrapKey}{1.1}{31}{M}{tpm\_storage.c}{passed \cite{trousers,jTSS,Sadeghi}}\\
-\tpmcmdy{TPM\_LoadKey2}{1.2}{65}{M}{tpm\_storage.c}{emulated by 32}\\
-\tpmcmdg{TPM\_GetPubKey}{1.1}{33}{M}{tpm\_storage.c}{passed \cite{trousers}}\\
-\tpmcmdr{TPM\_Sealx}{1.2}{61}{O}{tpm\_storage.c}{TODO: 100\,\%}
-	\item Migration (pp. 82--108)\\
-\tpmcmdr{TPM\_CreateMigrationBlob}{1.1}{40}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_ConvertMigrationBlob}{1.1}{42}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_AuthorizeMigrationKey}{1.1}{43}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_MigrateKey}{1.2}{37}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_CMK\_SetRestrictions}{1.2}{28}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_CMK\_ApproveMA}{1.2}{29}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_CMK\_CreateKey}{1.2}{19}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_CMK\_CreateTicket}{1.2}{18}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_CMK\_CreateBlob}{1.2}{27}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_CMK\_ConvertMigration}{1.2}{36}{M}{tpm\_migration.c}{TODO: 100\,\%}
-	\item Maintenance Functions (optional, pp. 109--118)\\
-\tpmcmdr{TPM\_CreateMaintenanceArchive}{1.1}{44}{O}{tpm\_maintenance.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_LoadMaintenanceArchive}{1.1}{45}{O}{tpm\_maintenance.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_KillMaintenanceFeature}{1.1}{46}{O}{tpm\_maintenance.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_LoadManuMaintPub}{1.1}{47}{O}{tpm\_maintenance.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_ReadManuMaintPub}{1.1}{48}{O}{tpm\_maintenance.c}{TODO: 100\,\%}
-	\item Cryptographic Functions (pp. 119--136)\\
-\tpmcmdg{TPM\_SHA1Start}{1.1}{160}{M}{tpm\_crypto.c}{passed \cite{trousers,jTSS}}\\
-\tpmcmdg{TPM\_SHA1Update}{1.1}{161}{M}{tpm\_crypto.c}{passed \cite{trousers,jTSS}}\\
-\tpmcmdg{TPM\_SHA1Complete}{1.1}{162}{M}{tpm\_crypto.c}{passed \cite{trousers,jTSS}}\\
-\tpmcmdg{TPM\_SHA1CompleteExtend}{1.1}{163}{M}{tpm\_crypto.c}{passed \cite{trousers}}\\
-\tpmcmdg{TPM\_Sign}{1.1}{60}{M}{tpm\_crypto.c}{passed \cite{trousers,jTSS,Sadeghi}}\\
-\tpmcmdg{TPM\_GetRandom}{1.1}{70}{M}{tpm\_crypto.c}{passed \cite{trousers,jTSS,Sadeghi}}\\
-\tpmcmdg{TPM\_StirRandom}{1.1}{71}{M}{tpm\_crypto.c}{passed \cite{trousers,jTSS}}\\
-\tpmcmdg{TPM\_CertifyKey}{1.1}{50}{M}{tpm\_crypto.c}{passed \cite{trousers,jTSS}}\\
-\tpmcmdg{TPM\_CertifyKey2}{1.2}{51}{M}{tpm\_crypto.c}{}
-	\item Endorsement Key Handling (pp. 137--145)\\
-\tpmcmdy{TPM\_CreateEndorsementKeyPair}{1.1}{120}{M}{tpm\_credentials.c}{disabled}\\
-\tpmcmdg{TPM\_CreateRevocableEK}{1.2}{127}{O}{tpm\_credentials.c}{}\\
-\tpmcmdg{TPM\_RevokeTrust}{1.2}{128}{O}{tpm\_credentials.c}{}\\
-\tpmcmdg{TPM\_ReadPubek}{1.1}{124}{M}{tpm\_credentials.c}{passed \cite{trousers,jTSS}}\\
-\tpmcmdg{TPM\_OwnerReadInternalPub}{1.2}{129}{M}{tpm\_credentials.c}{}
-	\item Identity Creation and Activation (pp. 146--152)\\
-\tpmcmdg{TPM\_MakeIdentity}{1.1}{121}{M}{tpm\_identity.c}{passed \cite{trousers,jTSS}}\\
-\tpmcmdg{TPM\_ActivateIdentity}{1.1}{122}{M}{tpm\_identity.c}{passed \cite{trousers,jTSS}}
-	\item Integrity Collection and Reporting (pp. 153--163)\\
-\tpmcmdg{TPM\_Extend}{1.1}{20}{M}{tpm\_integrity.c}{passed \cite{trousers,jTSS}}\\
-\tpmcmdg{TPM\_PCRRead}{1.1}{21}{M}{tpm\_integrity.c}{passed \cite{trousers,jTSS,Sadeghi}}\\
-\tpmcmdg{TPM\_Quote}{1.1}{22}{M}{tpm\_integrity.c}{passed \cite{trousers,jTSS}}\\
-\tpmcmdg{TPM\_PCR\_Reset}{1.2}{200}{M}{tpm\_integrity.c}{not supported \cite{jTSS}}\\
-\tpmcmdg{TPM\_Quote2}{1.2}{62}{M}{tpm\_integrity.c}{passed \cite{trousers}}
-	\item Changing AuthData (pp. 164--168)\\
-\tpmcmdg{TPM\_ChangeAuth}{1.1}{12}{M}{tpm\_authorization.c}{passed \cite{trousers}}\\
-\tpmcmdg{TPM\_ChangeAuthOwner}{1.1}{16}{M}{tpm\_authorization.c}{}
-	\item Authorization Sessions (pp. 169--181)\\
-\tpmcmdg{TPM\_OIAP}{1.1}{10}{M}{tpm\_authorization.c}{not random \cite{Sadeghi}}\\
-\tpmcmdg{TPM\_OSAP}{1.1}{11}{M}{tpm\_authorization.c}{not random \cite{Sadeghi}}\\
-\tpmcmdr{TPM\_DSAP}{1.2}{17}{M}{tpm\_authorization.c}{TODO: 100\,\%}\\
-\tpmcmdy{TPM\_SetOwnerPointer}{1.2}{117}{M}{tpm\_authorization.c}{disabled}
-	\item Delegation Commands (pp. 182--201)\\
-\tpmcmdr{TPM\_Delegate\_Manage}{1.2}{210}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_Delegate\_CreateKeyDelegation}{1.2}{212}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_Delegate\_CreateOwnerDelegation}{1.2}{213}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_Delegate\_LoadOwnerDelegation}{1.2}{216}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_Delegate\_ReadTable}{1.2}{219}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_Delegate\_UpdateVerification}{1.2}{209}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_Delegate\_VerifyDelegation}{1.2}{214}{M}{tpm\_delegation.c}{TODO: 100\,\%}
-	\item Non-volatile Storage (pp. 202--215)\\
-\tpmcmdr{TPM\_NV\_DefineSpace}{1.2}{204}{M}{tpm\_nv\_storage.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_NV\_WriteValue}{1.2}{205}{M}{tpm\_nv\_storage.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_NV\_WriteValueAuth}{1.2}{206}{M}{tpm\_nv\_storage.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_NV\_ReadValue}{1.2}{207}{M}{tpm\_nv\_storage.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_NV\_ReadValueAuth}{1.2}{208}{M}{tpm\_nv\_storage.c}{TODO: 100\,\%}
-	\item Session Management (pp. 216--223)\\
-\tpmcmdg{TPM\_KeyControlOwner}{1.2}{35}{M}{tpm\_context.c}{failed \cite{trousers}}\\
-\tpmcmdg{TPM\_SaveContext}{1.2}{184}{M}{tpm\_context.c}{}\\
-\tpmcmdg{TPM\_LoadContext}{1.2}{185}{M}{tpm\_context.c}{}
-	\item Eviction (pp. 224--226)\\
-\tpmcmdy{TPM\_FlushSpecific}{1.2}{186}{M}{tpm\_eviction.c}{TODO: 75\,\%}
-	\item Timing Ticks (pp. 227--230)\\
-\tpmcmdg{TPM\_GetTicks}{1.2}{241}{M}{tpm\_ticks.c}{failed \cite{trousers,jTSS}}\\
-\tpmcmdg{TPM\_TickStampBlob}{1.2}{242}{M}{tpm\_ticks.c}{failed \cite{trousers,jTSS}}
-	\item Transport Sessions (pp. 231--244)\\
-\tpmcmdg{TPM\_EstablishTransport}{1.2}{230}{M}{tpm\_transport.c}{failed \cite{trousers}}\\
-\tpmcmdg{TPM\_ExecuteTransport}{1.2}{231}{M}{tpm\_transport.c}{failed \cite{trousers}}\\
-\tpmcmdg{TPM\_ReleaseTransportSigned}{1.2}{232}{M}{tpm\_transport.c}{failed \cite{trousers}}
-	\item Monotonic Counter (pp. 245--254)\\
-\tpmcmdg{TPM\_CreateCounter}{1.2}{220}{M}{tpm\_counter.c}{passed \cite{Sadeghi}}\\
-\tpmcmdg{TPM\_IncrementCounter}{1.2}{221}{M}{tpm\_counter.c}{passed \cite{Sadeghi}}\\
-\tpmcmdg{TPM\_ReadCounter}{1.2}{222}{M}{tpm\_counter.c}{passed \cite{Sadeghi}, failed \cite{trousers}}\\
-\tpmcmdg{TPM\_ReleaseCounter}{1.2}{223}{M}{tpm\_counter.c}{passed \cite{Sadeghi}}\\
-\tpmcmdg{TPM\_ReleaseCounterOwner}{1.2}{224}{M}{tpm\_counter.c}{}
-	\item DAA Commands (pp. 255--282)\\
-\tpmcmdg{TPM\_Join}{1.2}{41}{M}{tpm\_daa.c}{passed \cite{ibmdaatest}}\\
-\tpmcmdg{TPM\_Sign}{1.2}{49}{M}{tpm\_daa.c}{passed \cite{ibmdaatest}}
-	\item Deprecated Commands (pp. 283--309)\\
-\tpmcmdg{TPM\_EvictKey}{1.1}{34}{D}{tpm\_deprecated.c}{}\\
-\tpmcmdg{TPM\_Terminate\_Handle}{1.1}{150}{D}{tpm\_deprecated.c}{}\\
-\tpmcmdg{TPM\_SaveKeyContext}{1.1}{180}{D}{tpm\_deprecated.c}{}\\
-\tpmcmdg{TPM\_LoadKeyContext}{1.1}{181}{D}{tpm\_deprecated.c}{}\\
-\tpmcmdg{TPM\_SaveAuthContext}{1.1}{182}{D}{tpm\_deprecated.c}{}\\
-\tpmcmdg{TPM\_LoadAuthContext}{1.1}{183}{D}{tpm\_deprecated.c}{}\\
-\tpmcmdg{TPM\_DirWriteAuth}{1.1}{25}{D}{tpm\_deprecated.c}{passed \cite{trousers,jTSS}}\\
-\tpmcmdg{TPM\_DirRead}{1.1}{26}{D}{tpm\_deprecated.c}{passed \cite{trousers,jTSS}}\\
-\tpmcmdr{TPM\_ChangeAuthAsymStart}{1.1}{14}{D}{tpm\_deprecated.c}{TODO: 95\,\%}\\
-\tpmcmdr{TPM\_ChangeAuthAsymFinish}{1.1}{15}{D}{tpm\_deprecated.c}{TODO: 100\,\%}\\
-\tpmcmdg{TPM\_Reset}{1.1}{90}{D}{tpm\_deprecated.c}{}\\
-\tpmcmdg{TPM\_OwnerReadPubek}{1.1}{125}{D}{tpm\_deprecated.c}{}\\
-\tpmcmdg{TPM\_DisablePubekRead}{1.1}{126}{?}{tpm\_credentials.c}{spec error?}\\
-\tpmcmdg{TPM\_LoadKey}{1.1b}{32}{D}{tpm\_storage.c}{passed \cite{trousers,jTSS}}
-	\item Deleted Commands (pp. 310--314)\\
-\tpmcmdr{TPM\_GetCapabilitySigned}{1.1}{100}{X}{}{}\\
-\tpmcmdr{TPM\_GetOrdinalAuditStatus}{1.1}{140}{X}{}{}\\
-\tpmcmdg{TPM\_CertifySelfTest}{1.1}{82}{X}{tpm\_deprecated.c}{bad ordinal~\cite{trousers}}\\
-\tpmcmdr{TPM\_GetAuditEventSigned}{1.1}{130}{X}{}{}\\
-\tpmcmdr{TPM\_GetAuditEventSigned}{1.1}{131}{X}{}{}
-\end{enumerate}
 \end{document}
