@@ -176,8 +176,8 @@ the new value depends on both, the old value and the new value to be added.
 Consequently, updates to PCRs are noncommutative and cannot be undone until
 the platform is rebooted. The idea behind this process of integrity measurement
 and storage is that a platform may be permitted to enter any state, including
-undesirable or insecure states, but that it cannot lie about states that it
-was or was not in.
+undesirable or insecure states. However, such a odd state can be detected
+by the operating software, whenever some reference measurements are available.
 
 \subsection{Root of Trust for Reporting}
 Each TPM has an unique \emph{Endorsement Key}~(EK) which is a encryption key
