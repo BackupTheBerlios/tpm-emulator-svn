@@ -246,7 +246,7 @@ the following auxiliary functions:
 \emph{Monotonic counters} implement an ever-increasing incremental value which
 is designed to not wear out in the first 7 years of operation (with an
 increment once every 5 seconds).
-\emph{Non volatile storage} provides the manufacturers and owners of a TPM
+\emph{Non-volatile storage} provides the manufacturers and owners of a TPM
 with a protected and shielded non-volatile storage area for storing sensitive
 or confidential information.
 \emph{Auditing} gives the TPM owner the ability to determine that certain
@@ -286,12 +286,12 @@ commands) to individual entities.
 % right to use individual owner authorized TPM commands) to individual entities.
 
 \subsection{Startup}
-A TPM can be started in three different modes: \emph{clear}, \emph{state},
+A TPM has three different startup modes: \emph{clear}, \emph{state},
 and \emph{deactivated}. In mode clear, the platform starts in a cleared state
 where (almost) all data is reset to its default value. In mode state, which
 is the default mode, a previously saved state is restored and the TPM
 continues its operation from the restored state. In mode deactivated, the
-TPM deactivates itself and disallows any further operations.
+TPM deactivates itself and rejects any further operations.
 
 % \subsubsection{TPM Ownership}
 % Taking ownership of a TPM is the process of inserting a shared secret into a TPM's shielded-location.
@@ -316,7 +316,7 @@ Presence or absence of the authorization trailer depends on the used command
 encoded in network byte-order and might have to be converted into the local
 byte-order of the host platform as part of the unmarshaling process. Since
 version 1.2 of the TPM specification, commands can also be sent from and to
-the TPM in an encrypted form using the transport encryption command.
+the TPM in an encrypted form using the transport encryption commands.
 
 \begin{figure}[!h]
 	\centering
@@ -403,11 +403,12 @@ in the parameter (un)marshaling and (de)coding entity; the command execution
 engine; the cryptographic engine; and the key, data, and state storage entity.
 Each part interacts with each other over a small set of well-defined functions.
 
-The public API of the TPM emulator engine consists of only three functions.
-The first function to be called is \func{tpm\_emulator\_init()} which
-initializes the emulator. The function \func{tpm\_\-handle\_\-command()} can
-then be used to execute an arbitrary number of TPM commands, before a call of
-the function \func{tpm\_emulator\_shutdown()} shuts down the emulator.
+The public API of the TPM emulator engine consists of only three main
+functions. The first function to be called is \func{tpm\_emulator\_init()}
+which initializes the emulator. Afterwards the function
+\func{tpm\_\-handle\_\-command()} can be used to execute an arbitrary number
+of TPM commands, before a call of the function \func{tpm\_emulator\_shutdown()}
+shuts down the emulator.
 
 \paragraph{Initialization and Self-Test.}
 The initialization of the TPM emulator proceeds in three steps:
@@ -542,7 +543,7 @@ A detailed list of the supported commands can be found in Appendix~%
 
 \noindent Currently, the following functions or commands are still missing:
 \begin{itemize}
-	\item some capability functions,
+	\item some capability commands,
 	\item all migration functions,
 	\item all delegation functions,
 	\item all non-volatile storage functions, and
