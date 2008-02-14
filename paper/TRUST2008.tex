@@ -112,7 +112,7 @@ more efficiently.
 % Arithmetic Library~\cite{GMP}).
 Researchers from Princeton University, NEC Labs, and Texas Instruments R\&D,
 for instance, used our emulator to evaluate the impact on the TPM's energy
-and execution time overhead if the RSA algorithm is replaced with elliptic
+and execution time overhead, if the RSA algorithm is replaced with elliptic
 curve cryptography (ECC)~\cite{Aaraj}.
 
 Finally, the emulator provides
@@ -541,6 +541,9 @@ functionality, the most important and frequently used commands are already
 supported and are compliant with the most recent TPM specification~\cite{TPM}.
 %A detailed list of the supported commands can be found in Appendix~%
 %\ref{app:commands}.
+However, currently the following functions or commands are still missing:
+some capability commands, all migration functions, all delegation functions,
+all non-volatile storage functions, and many optional commands.
 
 \begin{figure}
 	\vspace*{-3mm}\centering
@@ -550,15 +553,6 @@ supported and are compliant with the most recent TPM specification~\cite{TPM}.
 			tests.}
 	\label{plot:compliance}\vspace*{-5mm}
 \end{figure}
-
-\noindent Currently, the following functions or commands are missing:
-\begin{itemize}
-	\item some capability commands,
-	\item all migration functions,
-	\item all delegation functions,
-	\item all non-volatile storage functions, and
-	\item many optional commands.
-\end{itemize}
 
 % \begin{table}[h]\footnotesize\centering
 % \begin{tabular}{l|ccc}
@@ -600,7 +594,7 @@ supported and are compliant with the most recent TPM specification~\cite{TPM}.
 \section{Conclusions and Future Work}\label{sec:conclusion}
 In this paper, we presented a software-based TPM emulator for Unix. Even
 though the emulator still lacks some functionality, it is compatible with
-the most relevant software tools and works very well with almost all
+the most relevant software stacks and works very well with almost all
 available TPM-enabled Unix applications. In fact, the most important and
 frequently used commands are already supported. We showed that hundreds of
 (concurrently running) emulator instances can be efficiently simulated on
