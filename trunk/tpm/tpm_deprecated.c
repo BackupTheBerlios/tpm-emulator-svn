@@ -132,8 +132,11 @@ TPM_RESULT TPM_DirRead(TPM_DIRINDEX dirIndex, TPM_DIRVALUE *dirContents)
   return TPM_SUCCESS;
 }
 
-/* import functions from tpm_crypto.c */
+/* import functions from tpm_storage.c */
 extern int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
+extern int tpm_encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
+  BYTE *enc, UINT32 *enc_size);
+extern TPM_RESULT internal_LoadKey(TPM_KEY *inKey, TPM_KEY_HANDLE *inkeyHandle);
 /* import functions from tpm_crypto.c */
 extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
   BYTE *areaToSign, UINT32 areaToSignSize, BYTE **sig, UINT32 *sigSize);
@@ -152,16 +155,14 @@ TPM_RESULT TPM_ChangeAuthAsymStart(
 {
   TPM_RESULT res;
   TPM_KEY_DATA *idKey;
-  tpm_rsa_private_key_t rsa;
+  tpm_rsa_private_key_t k1;
   UINT32 key_length;
   TPM_STORE_ASYMKEY store;
+  TPM_KEY ephKey;
   UINT32 len, size;
   BYTE *ptr, *buf;
   
-  info("TPM_ChangeAuthAsymStart() not implemented yet");
-  /* TODO: implement TPM_ChangeAuthAsymStart() */
-  return TPM_FAIL;
-  
+  info("TPM_ChangeAuthAsymStart()");
   /* 1. The TPM SHALL verify the AuthData to use the TPM identity key held in
         idHandle. The TPM MUST verify that the key is a TPM identity key. */
     /* get identity key */
@@ -182,6 +183,7 @@ TPM_RESULT TPM_ChangeAuthAsymStart(
   /* 6. If the TPM is not designed to create a key of the requested type,
         return the error code TPM_BAD_KEY_PROPERTY */
   if (inTempKey->algorithmID != TPM_ALG_RSA
+      || inTempKey->encScheme != TPM_ES_RSAESOAEP_SHA1_MGF1
       || inTempKey->parmSize == 0
       || inTempKey->parms.rsa.keyLength < 512
       || inTempKey->parms.rsa.numPrimes != 2
@@ -192,24 +194,112 @@ TPM_RESULT TPM_ChangeAuthAsymStart(
         The newly created key is pointed to by ephHandle. */
     /* generate key */
     key_length = inTempKey->parms.rsa.keyLength;
-    if (tpm_rsa_generate_key(&rsa, key_length)) {
+    if (tpm_rsa_generate_key(&k1, key_length)) {
       debug("TPM_ChangeAuthAsymStart(): tpm_rsa_generate_key() failed.");
       return TPM_FAIL;
     }
-   
-
-//TODO
-
-  /* 8. The TPM SHALL fill in all fields in tempKey using k1 for the
-        information. The TPM_KEY->encSize MUST be 0. */
-
-//TODO
-
-    /* compute the digest of the wrapped key (without encData) */
-    if (tpm_compute_key_digest(outTempKey, &store.pubDataDigest)) {
+    /* setup private key store */
+    store.payload = TPM_PT_ASYM;
+    memcpy(store.usageAuth, tpmData.permanent.data.tpmProof.nonce, 
+      sizeof(TPM_SECRET));
+    memcpy(store.migrationAuth, tpmData.permanent.data.tpmProof.nonce, 
+      sizeof(TPM_SECRET));
+    store.privKey.keyLength = key_length >> 4;
+    store.privKey.key = tpm_malloc(store.privKey.keyLength);
+    if (store.privKey.key == NULL) {
+      tpm_rsa_release_private_key(&k1);
+      return TPM_NOSPACE;
+    }
+    tpm_rsa_export_prime1(&k1, store.privKey.key, NULL);
+    /* setup ephKey */
+    ephKey.tag = 0x0101;
+    ephKey.fill = 0x0000;
+    ephKey.keyUsage = TPM_KEY_AUTHCHANGE;
+    ephKey.keyFlags = TPM_KEY_FLAG_VOLATILE;
+    ephKey.authDataUsage = TPM_AUTH_NEVER;
+    ephKey.algorithmParms.algorithmID = inTempKey->algorithmID;
+    ephKey.algorithmParms.encScheme = inTempKey->encScheme;
+    ephKey.algorithmParms.sigScheme = inTempKey->sigScheme;
+    ephKey.algorithmParms.parmSize = inTempKey->parmSize;
+    switch (ephKey.algorithmParms.algorithmID) {
+      case TPM_ALG_RSA:
+        ephKey.algorithmParms.parms.rsa.keyLength =
+          inTempKey->parms.rsa.keyLength;
+        ephKey.algorithmParms.parms.rsa.numPrimes =
+          inTempKey->parms.rsa.numPrimes;
+        ephKey.algorithmParms.parms.rsa.exponentSize =
+          inTempKey->parms.rsa.exponentSize;
+        break;
+      default:
+        tpm_rsa_release_private_key(&k1);
+        return TPM_BAD_KEY_PROPERTY;
+    }
+    ephKey.PCRInfoSize = 0;
+    ephKey.pubKey.keyLength = key_length >> 3;
+    ephKey.pubKey.key = tpm_malloc(ephKey.pubKey.keyLength);
+    if (ephKey.pubKey.key == NULL) {
+      tpm_rsa_release_private_key(&k1);
+      tpm_free(store.privKey.key);
+      return TPM_NOSPACE;
+    }
+    tpm_rsa_export_modulus(&k1, ephKey.pubKey.key, NULL);
+    tpm_rsa_release_private_key(&k1);
+    ephKey.encDataSize = key_length >> 3;
+    ephKey.encData = tpm_malloc(ephKey.encDataSize);
+    if (ephKey.encData == NULL) {
+      tpm_free(store.privKey.key);
+      tpm_free(ephKey.pubKey.key);
+      return TPM_NOSPACE;
+    }
+    if (tpm_compute_key_digest(&ephKey, &store.pubDataDigest)) {
+      tpm_free(store.privKey.key);
+      tpm_free(ephKey.pubKey.key);
+      tpm_free(ephKey.encData);
       debug("TPM_ChangeAuthAsymStart(): tpm_compute_key_digest() failed.");
       return TPM_FAIL;
     }
+    if (tpm_encrypt_private_key(&tpmData.permanent.data.srk, &store, 
+      ephKey.encData, &ephKey.encDataSize)) {
+      tpm_free(store.privKey.key);
+      tpm_free(ephKey.pubKey.key);
+      tpm_free(ephKey.encData);
+      debug("TPM_ChangeAuthAsymStart(): tpm_encrypt_private_key() failed.");
+      return TPM_ENCRYPT_ERROR;
+    }
+    tpm_free(store.privKey.key);
+    /* assign a handle and store ephKey by calling TPM_LoadKey() */
+    res = internal_LoadKey(&ephKey, ephHandle);
+    if (res != TPM_SUCCESS) {
+      tpm_free(ephKey.pubKey.key);
+      tpm_free(ephKey.encData);
+      return res;
+    }
+    tpm_free(ephKey.pubKey.key);
+    tpm_free(ephKey.encData);
+  /* 8. The TPM SHALL fill in all fields in tempKey using k1 for the
+        information. The TPM_KEY->encSize MUST be 0. */
+  outTempKey->tag = ephKey.tag;
+  outTempKey->fill = ephKey.fill;
+  outTempKey->keyUsage = ephKey.keyUsage;
+  outTempKey->keyFlags = ephKey.keyFlags;
+  outTempKey->authDataUsage = ephKey.authDataUsage;
+  outTempKey->algorithmParms.algorithmID = ephKey.algorithmParms.algorithmID;
+  outTempKey->algorithmParms.encScheme = ephKey.algorithmParms.encScheme;
+  outTempKey->algorithmParms.sigScheme = ephKey.algorithmParms.sigScheme;
+  outTempKey->algorithmParms.parmSize = ephKey.algorithmParms.parmSize;
+  outTempKey->algorithmParms.parms.rsa.keyLength = 
+    ephKey.algorithmParms.parms.rsa.keyLength;
+  outTempKey->algorithmParms.parms.rsa.numPrimes = 
+    ephKey.algorithmParms.parms.rsa.numPrimes;
+  outTempKey->algorithmParms.parms.rsa.exponentSize = 
+    ephKey.algorithmParms.parms.rsa.exponentSize;
+  outTempKey->PCRInfoSize = ephKey.PCRInfoSize;
+  outTempKey->pubKey.keyLength = ephKey.pubKey.keyLength;
+  outTempKey->pubKey.key = tpm_malloc(outTempKey->pubKey.keyLength);
+  if (outTempKey->pubKey.key == NULL) return TPM_NOSPACE;
+  memcpy(outTempKey->pubKey.key, ephKey.pubKey.key, outTempKey->pubKey.keyLength);
+  outTempKey->encDataSize = 0;
+  outTempKey->encData = NULL;
   /* 9. The TPM SHALL fill in certifyInfo using k1 for the information.
         The certifyInfo->data field is supplied by the antiReplay. */
     /* "Version" field is set according to the deprecated TPM_VERSION
@@ -218,11 +308,19 @@ TPM_RESULT TPM_ChangeAuthAsymStart(
     memcpy(&certifyInfo->fill, &tpmData.permanent.data.version + 2, 1);
     memcpy(&certifyInfo->payloadType, &tpmData.permanent.data.version + 3, 1);
     /* Other fields are filled according to Section 27.4.1 [TPM, Part 3]. */
-    certifyInfo->keyUsage = TPM_KEY_AUTHCHANGE;
-    certifyInfo->keyFlags = TPM_KEY_FLAG_VOLATILE;
-    certifyInfo->authDataUsage = TPM_AUTH_NEVER;
-    memcpy(&certifyInfo->algorithmParms, inTempKey,
-      sizeof_TPM_KEY_PARMS((*inTempKey)));
+    certifyInfo->keyUsage = ephKey.keyUsage;
+    certifyInfo->keyFlags = ephKey.keyFlags;
+    certifyInfo->authDataUsage = ephKey.authDataUsage;
+    certifyInfo->algorithmParms.algorithmID = ephKey.algorithmParms.algorithmID;
+    certifyInfo->algorithmParms.encScheme = ephKey.algorithmParms.encScheme;
+    certifyInfo->algorithmParms.sigScheme = ephKey.algorithmParms.sigScheme;
+    certifyInfo->algorithmParms.parmSize = ephKey.algorithmParms.parmSize;
+    certifyInfo->algorithmParms.parms.rsa.keyLength = 
+      ephKey.algorithmParms.parms.rsa.keyLength;
+    certifyInfo->algorithmParms.parms.rsa.numPrimes = 
+      ephKey.algorithmParms.parms.rsa.numPrimes;
+    certifyInfo->algorithmParms.parms.rsa.exponentSize = 
+      ephKey.algorithmParms.parms.rsa.exponentSize;
     memcpy(&certifyInfo->pubkeyDigest, &store.pubDataDigest, sizeof(TPM_DIGEST));
     memcpy(&certifyInfo->data, antiReplay, sizeof(TPM_NONCE));
     certifyInfo->parentPCRStatus = FALSE;
@@ -232,7 +330,9 @@ TPM_RESULT TPM_ChangeAuthAsymStart(
          in sig parameter. */
   size = len = sizeof_TPM_CERTIFY_INFO((*certifyInfo));
   buf = ptr = tpm_malloc(size);
-  if (buf == NULL) return TPM_NOSPACE;
+  if (buf == NULL) {
+    return TPM_NOSPACE;
+  }
   if (tpm_marshal_TPM_CERTIFY_INFO(&ptr, &len, certifyInfo) || (len != 0)) {
     debug("TPM_ChangeAuthAsymStart(): tpm_marshal_TPM_CERTIFY_INFO() failed.");
     tpm_free(buf);

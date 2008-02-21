@@ -1,3 +1,6 @@
+2008-02-21  Heiko Stamer <stamer@gaos.org>
+	* tpm_deprecated.c, tpm_storage.c: TPM_ChangeAuthAsymStart() added
+
 2008-02-12  Mario Strasser <mast@gmx.net>
 	* ChangeLog: changes updated for release 0.5.1
 

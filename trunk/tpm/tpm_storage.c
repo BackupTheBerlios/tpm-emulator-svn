@@ -461,7 +461,10 @@ TPM_RESULT TPM_CreateWrapKey(TPM_KEY_HANDLE parentHandle,
   }
   /* generate key and store it */
   key_length = keyInfo->algorithmParms.parms.rsa.keyLength;
-  if (tpm_rsa_generate_key(&rsa, key_length)) return TPM_FAIL;
+  if (tpm_rsa_generate_key(&rsa, key_length)) {
+    debug("TPM_CreateWrapKey(): tpm_rsa_generate_key() failed.");
+    return TPM_FAIL;
+  }
   wrappedKey->pubKey.keyLength = key_length >> 3;
   wrappedKey->pubKey.key = tpm_malloc(wrappedKey->pubKey.keyLength);
   store.privKey.keyLength = key_length >> 4;
@@ -551,7 +554,7 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
   /* decrypt private key */
   if (tpm_decrypt_private_key(parent, inKey->encData, inKey->encDataSize,
                               &store, &key_buf)) return TPM_DECRYPT_ERROR;
-  /* get a free key-slot if any is left */
+  /* get a free key-slot, if any free slot is left */
   *inkeyHandle = tpm_get_free_key();
   key = tpm_get_key(*inkeyHandle);
   if (key == NULL) {
@@ -681,4 +684,62 @@ TPM_RESULT TPM_Sealx(
   info("TPM_Sealx() not implemented yet");
   /* TODO: implement TPM_Sealx() */
   return TPM_FAIL;
+}
+
+TPM_RESULT internal_LoadKey(TPM_KEY *inKey, TPM_KEY_HANDLE *inkeyHandle)
+{
+  TPM_RESULT res;
+  TPM_KEY_DATA *parent, *key;
+  BYTE *key_buf;
+  TPM_STORE_ASYMKEY store;
+  info("internal_LoadKey()");
+  /* get SRK */
+  parent = tpm_get_key(TPM_KH_SRK);
+  if (parent == NULL) return TPM_FAIL;
+  /* verify key properties */
+  if (inKey->algorithmParms.algorithmID != TPM_ALG_RSA
+      || inKey->algorithmParms.parmSize == 0
+      || inKey->algorithmParms.parms.rsa.keyLength > 2048
+      || inKey->algorithmParms.parms.rsa.numPrimes != 2)
+    return TPM_BAD_KEY_PROPERTY;
+  /* decrypt private key */
+  if (tpm_decrypt_private_key(parent, inKey->encData, inKey->encDataSize,
+                              &store, &key_buf)) return TPM_DECRYPT_ERROR;
+  /* get a free key-slot, if any free slot is left */
+  *inkeyHandle = tpm_get_free_key();
+  key = tpm_get_key(*inkeyHandle);
+  if (key == NULL) {
+    tpm_free(key_buf);
+    return TPM_NOSPACE;
+  }
+  /* import key */
+  if (tpm_verify_key_digest(inKey, &store.pubDataDigest)
+      || inKey->pubKey.keyLength != (store.privKey.keyLength * 2)
+      || tpm_rsa_import_key(&key->key, RSA_MSB_FIRST,
+                        inKey->pubKey.key, inKey->pubKey.keyLength,
+                        inKey->algorithmParms.parms.rsa.exponent,
+                        inKey->algorithmParms.parms.rsa.exponentSize,
+                        store.privKey.key, NULL)) {
+    debug("internal_LoadKey(): tpm_verify_key_digest() or tpm_rsa_import_key() failed.");
+    memset(key, 0, sizeof(TPM_KEY_DATA));
+    tpm_free(key_buf);
+    return TPM_FAIL;
+  }
+  key->keyUsage = inKey->keyUsage;
+  key->keyFlags = inKey->keyFlags;
+  key->authDataUsage = inKey->authDataUsage;
+  key->encScheme = inKey->algorithmParms.encScheme;
+  key->sigScheme = inKey->algorithmParms.sigScheme;
+  memcpy(key->usageAuth, store.usageAuth, sizeof(TPM_SECRET));
+  /* setup PCR info */
+  if (inKey->PCRInfoSize > 0) {
+    memcpy(&key->pcrInfo, &inKey->PCRInfo, sizeof(TPM_PCR_INFO));
+    key->keyFlags |= TPM_KEY_FLAG_HAS_PCR;
+  } else {
+    key->keyFlags |= TPM_KEY_FLAG_PCR_IGNORE;
+    key->keyFlags &= ~TPM_KEY_FLAG_HAS_PCR;
+  }
+  key->parentPCRStatus = parent->parentPCRStatus;
+  tpm_free(key_buf);
+  return TPM_SUCCESS;
 }
