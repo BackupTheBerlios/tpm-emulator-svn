@@ -132,18 +132,22 @@ TPM_RESULT TPM_DirRead(TPM_DIRINDEX dirIndex, TPM_DIRVALUE *dirContents)
   return TPM_SUCCESS;
 }
 
+/* import functions from tpm_crypto.c */
 extern int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
+/* import functions from tpm_crypto.c */
+extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
+  BYTE *areaToSign, UINT32 areaToSignSize, BYTE **sig, UINT32 *sigSize);
 
 TPM_RESULT TPM_ChangeAuthAsymStart(  
   TPM_KEY_HANDLE idHandle,
   TPM_NONCE *antiReplay,
   TPM_KEY_PARMS *inTempKey,
-  TPM_AUTH *auth1,  
+  TPM_AUTH *auth1,
   TPM_CERTIFY_INFO *certifyInfo,
   UINT32 *sigSize,
-  BYTE **sig ,
+  BYTE **sig,
   TPM_KEY_HANDLE *ephHandle,
-  TPM_KEY *outTempKey 
+  TPM_KEY *outTempKey
 )
 {
   TPM_RESULT res;
@@ -151,6 +155,8 @@ TPM_RESULT TPM_ChangeAuthAsymStart(
   tpm_rsa_private_key_t rsa;
   UINT32 key_length;
   TPM_STORE_ASYMKEY store;
+  UINT32 len, size;
+  BYTE *ptr, *buf;
   
   info("TPM_ChangeAuthAsymStart() not implemented yet");
   /* TODO: implement TPM_ChangeAuthAsymStart() */
@@ -221,14 +227,20 @@ TPM_RESULT TPM_ChangeAuthAsymStart(
     memcpy(&certifyInfo->data, antiReplay, sizeof(TPM_NONCE));
     certifyInfo->parentPCRStatus = FALSE;
     certifyInfo->PCRInfoSize = 0;
-  
   /* 10. The TPM then signs the certifyInfo parameter using the key
          pointed to by idHandle. The resulting signed blob is returned
          in sig parameter. */
-
-//TODO
-
-  return TPM_SUCCESS;
+  size = len = sizeof_TPM_CERTIFY_INFO((*certifyInfo));
+  buf = ptr = tpm_malloc(size);
+  if (buf == NULL) return TPM_NOSPACE;
+  if (tpm_marshal_TPM_CERTIFY_INFO(&ptr, &len, certifyInfo) || (len != 0)) {
+    debug("TPM_ChangeAuthAsymStart(): tpm_marshal_TPM_CERTIFY_INFO() failed.");
+    tpm_free(buf);
+    return TPM_FAIL;
+  }
+  res = tpm_sign(idKey, auth1, FALSE, buf, size, sig, sigSize);
+  tpm_free(buf);
+  return res;
 }
 
 TPM_RESULT TPM_ChangeAuthAsymFinish(  
@@ -265,9 +277,6 @@ TPM_RESULT TPM_Reset()
   /* TODO: invalidate AuthContextSave structures */
   return TPM_SUCCESS;
 }
-
-extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
-  BYTE *areaToSign, UINT32 areaToSignSize, BYTE **sig, UINT32 *sigSize);
 
 TPM_RESULT TPM_CertifySelfTest(TPM_KEY_HANDLE keyHandle, TPM_NONCE *antiReplay,
                                TPM_AUTH *auth1, UINT32 *sigSize, BYTE **sig)
