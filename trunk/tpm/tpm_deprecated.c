@@ -368,7 +368,27 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(
   info("TPM_ChangeAuthAsymFinish() not implemented yet");
   /* TODO: implement TPM_ChangeAuthAsymFinish() */
   return TPM_FAIL;
-  
+
+  /* 1. The TPM SHALL validate that the authHandle parameter authorizes
+        use of the key in parentHandle. */
+  /* 2. The encData field MUST be the encData field from TPM_STORED_DATA
+        or TPM_KEY. */
+  /* 3. The TPM SHALL create e1 by decrypting the entity held in the
+        encData parameter. */
+  /* 4. The TPM SHALL create a1 by decrypting encNewAuth using the
+        ephHandle->TPM_KEY_AUTHCHANGE private key. a1 is a structure
+        of type TPM_CHANGEAUTH_VALIDATE. */
+  /* 5. The TPM SHALL create b1 by performing the following HMAC
+        calculation: b1 = HMAC(a1->newAuthSecret). The secret for
+        this calculation is encData->currentAuth. This means that
+        b1 is a value built from the current AuthData value
+        (encData->currentAuth) and the new AuthData value
+        (a1->newAuthSecret). */
+  /* 6. The TPM SHALL compare b1 with newAuthLink. The TPM SHALL
+        indicate a failure if the values do not match. */
+  /* 7. The TPM SHALL replace e1->authData with a1->newAuthSecret */
+  /* 8. The TPM SHALL encrypt e1 using the appropriate functions for
+        the entity type. The key to encrypt with is parentHandle. */
   /* 9. The TPM SHALL create slatNonce by taking the next 20 bytes
         from the TPM RNG. */
   tpm_get_random_bytes(saltNonce->nonce, sizeof(TPM_NONCE));
