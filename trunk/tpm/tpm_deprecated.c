@@ -23,6 +23,7 @@
 #include "tpm_marshalling.h"
 #include "crypto/rsa.h"
 #include "crypto/sha1.h"
+#include "crypto/hmac.h"
 
 #define SAVE_KEY_CONTEXT_LABEL  ((uint8_t*)"SaveKeyContext..")
 #define SAVE_AUTH_CONTEXT_LABEL ((uint8_t*)"SaveAuthContext.")
@@ -352,16 +353,35 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(
   BYTE *encNewAuth,
   UINT32 encDataSize,
   BYTE *encData,
-  TPM_AUTH *auth1,  
+  TPM_AUTH *auth1,
   UINT32 *outDataSize,
-  BYTE **outData ,
+  BYTE **outData,
   TPM_NONCE *saltNonce,
-  TPM_DIGEST *changeProof 
+  TPM_DIGEST *changeProof
 )
 {
+  TPM_CHANGEAUTH_VALIDATE a1;
+  tpm_hmac_ctx_t hmac_ctx;
+  
+  
   info("TPM_ChangeAuthAsymFinish() not implemented yet");
   /* TODO: implement TPM_ChangeAuthAsymFinish() */
   return TPM_FAIL;
+  
+  /* 9. The TPM SHALL create slatNonce by taking the next 20 bytes
+        from the TPM RNG. */
+  tpm_get_random_bytes(saltNonce->nonce, sizeof(TPM_NONCE));
+  /* 10. The TPM SHALL create changeProof a HMAC of (saltNonce
+         concatenated with a1->n1) using a1->newAuthSecret as the
+         HMAC secret. */
+  tpm_hmac_init(&hmac_ctx, a1.newAuthSecret, sizeof(a1.newAuthSecret));
+  tpm_hmac_update(&hmac_ctx, saltNonce->nonce, sizeof(TPM_NONCE));
+  tpm_hmac_update(&hmac_ctx, a1.n1.nonce, sizeof(TPM_NONCE));
+  tpm_hmac_final(&hmac_ctx, changeProof->digest);
+  /* 11. The TPM MUST destroy the TPM_KEY_AUTHCHANGE key associated
+         with the authorization session. */
+  
+  return TPM_SUCCESS;
 }
 
 TPM_RESULT TPM_Reset()
