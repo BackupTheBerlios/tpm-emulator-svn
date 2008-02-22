@@ -137,7 +137,8 @@ TPM_RESULT TPM_DirRead(TPM_DIRINDEX dirIndex, TPM_DIRVALUE *dirContents)
 extern int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
 extern int tpm_encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
   BYTE *enc, UINT32 *enc_size);
-extern TPM_RESULT internal_LoadKey(TPM_KEY *inKey, TPM_KEY_HANDLE *inkeyHandle);
+extern TPM_RESULT internal_TPM_LoadKey(TPM_KEY *inKey, 
+  TPM_KEY_HANDLE *inkeyHandle);
 /* import functions from tpm_crypto.c */
 extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
   BYTE *areaToSign, UINT32 areaToSignSize, BYTE **sig, UINT32 *sigSize);
@@ -268,8 +269,8 @@ TPM_RESULT TPM_ChangeAuthAsymStart(
       return TPM_ENCRYPT_ERROR;
     }
     tpm_free(store.privKey.key);
-    /* assign a handle and store ephKey by calling TPM_LoadKey() */
-    res = internal_LoadKey(&ephKey, ephHandle);
+    /* assign a handle and store ephKey by calling internal_TPM_LoadKey() */
+    res = internal_TPM_LoadKey(&ephKey, ephHandle);
     if (res != TPM_SUCCESS) {
       tpm_free(ephKey.pubKey.key);
       tpm_free(ephKey.encData);

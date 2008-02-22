@@ -686,13 +686,13 @@ TPM_RESULT TPM_Sealx(
   return TPM_FAIL;
 }
 
-TPM_RESULT internal_LoadKey(TPM_KEY *inKey, TPM_KEY_HANDLE *inkeyHandle)
+TPM_RESULT internal_TPM_LoadKey(TPM_KEY *inKey, TPM_KEY_HANDLE *inkeyHandle)
 {
   TPM_RESULT res;
   TPM_KEY_DATA *parent, *key;
   BYTE *key_buf;
   TPM_STORE_ASYMKEY store;
-  info("internal_LoadKey()");
+  info("internal_TPM_LoadKey()");
   /* get SRK */
   parent = tpm_get_key(TPM_KH_SRK);
   if (parent == NULL) return TPM_FAIL;
