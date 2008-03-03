@@ -139,6 +139,10 @@ extern int tpm_encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
   BYTE *enc, UINT32 *enc_size);
 extern TPM_RESULT internal_TPM_LoadKey(TPM_KEY *inKey, 
   TPM_KEY_HANDLE *inkeyHandle);
+extern int tpm_decrypt_sealed_data(TPM_KEY_DATA *key, 
+  BYTE *enc, UINT32 enc_size, TPM_SEALED_DATA *seal, BYTE **buf);
+extern int tpm_decrypt_private_key(TPM_KEY_DATA *key, 
+  BYTE *enc, UINT32 enc_size, TPM_STORE_ASYMKEY *store, BYTE **buf);
 /* import functions from tpm_crypto.c */
 extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
   BYTE *areaToSign, UINT32 areaToSignSize, BYTE **sig, UINT32 *sigSize);
@@ -361,6 +365,12 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(
   TPM_DIGEST *changeProof
 )
 {
+  TPM_RESULT res;
+  TPM_KEY_DATA *parentKey;
+  TPM_SEALED_DATA seal;
+  TPM_STORE_ASYMKEY store;
+  BYTE *e1_seal_buf, *e1_key_buf;
+  
   TPM_CHANGEAUTH_VALIDATE a1;
   tpm_hmac_ctx_t hmac_ctx;
   
@@ -371,13 +381,36 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(
 
   /* 1. The TPM SHALL validate that the authHandle parameter authorizes
         use of the key in parentHandle. */
+    /* get parent key */
+    parentKey = tpm_get_key(parentHandle);
+    if (parentKey == NULL) return TPM_INVALID_KEYHANDLE;
+    /* verify authorization */
+    res = tpm_verify_auth(auth1, parentKey->usageAuth, parentHandle);
+    if (res != TPM_SUCCESS) return res;
   /* 2. The encData field MUST be the encData field from TPM_STORED_DATA
         or TPM_KEY. */
+    if (encDataSize != (parentKey->key.size >> 3))
+      return TPM_BAD_PARAMETER;
   /* 3. The TPM SHALL create e1 by decrypting the entity held in the
         encData parameter. */
+  switch (entityType) {
+    TPM_ET_DATA:
+      /* decrypt seal data */
+      if (tpm_decrypt_sealed_data(parentKey, encData, encDataSize,
+        &seal, &e1_seal_buf)) return TPM_DECRYPT_ERROR;
+      break;
+    TPM_ET_KEY:
+      /* decrypt key data */
+      if (tpm_decrypt_private_key(parenKey, encData, encDataSize,
+        &store, &e1_key_buf)) return TPM_DECRYPT_ERROR;
+      break;
+    default:
+      return TPM_BAD_PARAMETER;
+  }
   /* 4. The TPM SHALL create a1 by decrypting encNewAuth using the
         ephHandle->TPM_KEY_AUTHCHANGE private key. a1 is a structure
         of type TPM_CHANGEAUTH_VALIDATE. */
+  
   /* 5. The TPM SHALL create b1 by performing the following HMAC
         calculation: b1 = HMAC(a1->newAuthSecret). The secret for
         this calculation is encData->currentAuth. This means that
