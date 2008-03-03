@@ -94,17 +94,49 @@
 \section{Introduction}
 
 \begin{frame}
-	\frametitle{Trusted Platform Module}
+	\frametitle{Software-Based Trusted Platform Module}
+	Emulating a TPM in software has been proved to be useful in various ways.
+	For example, to
+	\begin{itemize}
+		\item run more than one TPM instance per platform (virtualisation),
+			\begin{itemize}
+				\item Hewlett-Packard: Trustworthy Virtualisation Environment
+					(HPL-2007-69)
+			\end{itemize}
+		\item restore previously stored or artificially created states\\
+			(testing, debugging, and educational purposes),
+			\begin{itemize}
+				\item TU Graz: class AK IT-Sicherheit 1 / Trusted Computing
+				\item VMKnoppix
+			\end{itemize}
+		\item simulate new TPM commands and test vendor extensions
+			(research and development)
+			\begin{itemize}
+				\item Princeton University, NEC, TI: energy and execution time
+					analysis of ECC algorithms (DATE 2007)
+				\item Nokia: MTM spec. validation (NRC-TR-2007-015)
+			\end{itemize}
+	\end{itemize}
 \end{frame}
 
 \section{Design and Implementation}
 
 \begin{frame}
 	\frametitle{Design and Implementation}
-	Emulator implemented as user-space daemon (since version 0.5)
-	\begin{center}
-		\includegraphics[width=.95\textwidth]{figures/system_overview}
-	\end{center}
+	\begin{description}[]
+		\item[New Design:] User-space daemon \texttt{tpmd}
+			(since version 0.5)\\
+			\begin{center}
+				\includegraphics[width=.95\textwidth]{figures/system_overview}
+			\end{center}
+		\item[Interfaces:]\hfill\\
+			{\small\begin{enumerate}
+				\item Direct (Unix domain sockets)
+				\item Recommended (TDDL interface)
+				\item Legacy (Linux/BSD kernel modul \texttt{tmpd\_dev},
+					\texttt{/dev/tmp})
+			\end{enumerate}}
+	\end{description}
 \end{frame}
 
 \section{Performance Evaluation}
