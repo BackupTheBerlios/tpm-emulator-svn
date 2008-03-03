@@ -162,8 +162,8 @@ int tpm_marshal_TPM_KEY_HANDLE_LIST(BYTE **ptr, UINT32 *length, TPM_KEY_HANDLE_L
 
 int tpm_marshal_TPM_CHANGEAUTH_VALIDATE(BYTE **ptr, UINT32 *length, TPM_CHANGEAUTH_VALIDATE *v)
 {
-  if (tpm_marshal_TPM_SECRET(ptr, length, v->newAuthSecret)
-      || tpm_marshal_TPM_NONCE(ptr, length, v->n1)) return -1;
+  if (tpm_marshal_TPM_SECRET(ptr, length, &v->newAuthSecret)
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->n1)) return -1;
   return 0;
 }
 

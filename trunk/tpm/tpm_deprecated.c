@@ -1,7 +1,7 @@
 /* Software-Based Trusted Platform Module (TPM) Emulator for Linux
  * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
  *                    Swiss Federal Institute of Technology (ETH) Zurich,
- *               2007 Heiko Stamer <stamer@gaos.org>
+ *               2007, 2008 Heiko Stamer <stamer@gaos.org>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -152,7 +152,7 @@ extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
 extern int tpm_rsa_decrypt(tpm_rsa_private_key_t *key, int type,
   const uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len);
 /* import functions from tpm_eviction.c */
-extern static void invalidate_sessions(TPM_HANDLE handle);
+extern void invalidate_sessions(TPM_HANDLE handle);
 
 TPM_RESULT TPM_ChangeAuthAsymStart(  
   TPM_KEY_HANDLE idHandle,
@@ -405,18 +405,18 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(
   /* 3. The TPM SHALL create e1 by decrypting the entity held in the
         encData parameter. */
   switch (entityType) {
-    TPM_ET_DATA:
+    case TPM_ET_DATA:
       /* decrypt seal data */
       if (tpm_decrypt_sealed_data(parentKey, encData, encDataSize,
         &e1_seal, &e1_seal_buf)) return TPM_DECRYPT_ERROR;
       memcpy(oldAuthSecret, e1_seal.authData, sizeof(TPM_SECRET));
       tpm_free(e1_seal_buf);
       break;
-    TPM_ET_KEY:
+    case TPM_ET_KEY:
       /* decrypt key data */
-      if (tpm_decrypt_private_key(parenKey, encData, encDataSize,
+      if (tpm_decrypt_private_key(parentKey, encData, encDataSize,
         &e1_store, &e1_key_buf)) return TPM_DECRYPT_ERROR;
-      memcpy(oldAuthSecret, e1_store.authData, sizeof(TPM_SECRET));
+      memcpy(oldAuthSecret, e1_store.usageAuth, sizeof(TPM_SECRET));
       tpm_free(e1_key_buf);
       break;
     default:
@@ -431,10 +431,10 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(
     default: return TPM_BAD_PARAMETER;
   }
   len = newAuthSize;
-  *buf = ptr = tpm_malloc(len);
-  if (*buf == NULL) return TPM_NOSPACE;
+  buf = ptr = tpm_malloc(len);
+  if (buf == NULL) return TPM_NOSPACE;
   if (tpm_rsa_decrypt(&ephKey->key, scheme, encNewAuth, newAuthSize, 
-    *buf, &size)
+    buf, &size)
     || (len = size) == 0
     || tpm_unmarshal_TPM_CHANGEAUTH_VALIDATE(&ptr, &len, &a1)) {
     debug("TPM_ChangeAuthAsymFinish(): tpm_rsa_decrypt() failed.");
@@ -453,32 +453,32 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(
   tpm_hmac_final(&hmac_ctx, b1.digest);
   /* 6. The TPM SHALL compare b1 with newAuthLink. The TPM SHALL
         indicate a failure if the values do not match. */
-  if (memcmp(b1.digest, newAuthLink.digest, sizeof(TPM_HMAC))) {
+  if (memcmp(&b1, &newAuthLink, sizeof(TPM_HMAC))) {
     debug("TPM_ChangeAuthAsymFinish(): newAuthLink value does not match.");
     return TPM_FAIL;
   }
   /* 7. The TPM SHALL replace e1->authData with a1->newAuthSecret */
   switch (entityType) {
-    TPM_ET_DATA:
+    case TPM_ET_DATA:
       memcpy(e1_seal.authData, a1.newAuthSecret, sizeof(TPM_SECRET));
       break;
-    TPM_ET_KEY:
-      memcpy(e1_store.authData, a1.newAuthSecret, sizeof(TPM_SECRET));
+    case TPM_ET_KEY:
+      memcpy(e1_store.usageAuth, a1.newAuthSecret, sizeof(TPM_SECRET));
       break;
   }
   /* 8. The TPM SHALL encrypt e1 using the appropriate functions for
         the entity type. The key to encrypt with is parentHandle. */
   switch (entityType) {
-    TPM_ET_DATA:
+    case TPM_ET_DATA:
       if (tpm_encrypt_sealed_data(parentKey, &e1_seal, 
-        outData, &outDataSize)) {
+        *outData, outDataSize)) {
           tpm_free(outData);
           return TPM_ENCRYPT_ERROR;
       }
       break;
-    TPM_ET_KEY:
+    case TPM_ET_KEY:
       if (tpm_encrypt_private_key(parentKey, &e1_store, 
-        outData, &outDataSize)) {
+        *outData, outDataSize)) {
           tpm_free(outData);
           return TPM_ENCRYPT_ERROR;
       }

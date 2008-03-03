@@ -32,7 +32,7 @@
  */
 
 /* invalidate all associated authorization and transport sessions */
-static void invalidate_sessions(TPM_HANDLE handle)
+void invalidate_sessions(TPM_HANDLE handle)
 {
   TPM_SESSION_DATA *session;
   int i;

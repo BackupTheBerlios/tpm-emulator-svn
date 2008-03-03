@@ -20,4 +20,3 @@ Completely Missing:
     TPM_SetRedirection
     TPM_Sealx
     All Maintenance Functions
-    TPM_ChangeAuthAsymFinish (deprecated since v1.2)
