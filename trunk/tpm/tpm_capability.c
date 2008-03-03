@@ -1,7 +1,7 @@
 /* Software-Based Trusted Platform Module (TPM) Emulator for Linux
  * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
  *                    Swiss Federal Institute of Technology (ETH) Zurich,
- *               2006 Heiko Stamer <stamer@gaos.org>
+ *               2006, 2008 Heiko Stamer <stamer@gaos.org>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -449,10 +449,8 @@ static TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
     case TPM_ORD_LoadAuthContext:
     case TPM_ORD_DirWriteAuth:
     case TPM_ORD_DirRead:
-/* WATCH: not yet implemented
     case TPM_ORD_ChangeAuthAsymStart:
     case TPM_ORD_ChangeAuthAsymFinish:
-*/
     case TPM_ORD_Reset:
     case TPM_ORD_OwnerReadPubek:
     case TPM_ORD_DisablePubekRead:
