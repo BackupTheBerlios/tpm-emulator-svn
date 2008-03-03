@@ -310,7 +310,7 @@ int tpm_unmarshal_TPM_NONCE(BYTE **ptr, UINT32 *length, TPM_NONCE *v);
 int tpm_marshal_TPM_AUTHDATA(BYTE **ptr, UINT32 *length, TPM_AUTHDATA *v);
 int tpm_unmarshal_TPM_AUTHDATA(BYTE **ptr, UINT32 *length, TPM_AUTHDATA *v);
 
-#define tpm_marshal_TPM_SECRET                 tpm_marshal_TPM_AUTHDATA 
+#define tpm_marshal_TPM_SECRET                 tpm_marshal_TPM_AUTHDATA
 #define tpm_unmarshal_TPM_SECRET               tpm_unmarshal_TPM_AUTHDATA
 #define tpm_marshal_TPM_ENCAUTH                tpm_marshal_TPM_AUTHDATA
 #define tpm_unmarshal_TPM_ENCAUTH              tpm_unmarshal_TPM_AUTHDATA
@@ -319,6 +319,9 @@ int tpm_marshal_TPM_AUTH(BYTE **ptr, UINT32 *length, TPM_AUTH *v);
 int tpm_unmarshal_TPM_AUTH(BYTE **ptr, UINT32 *length, TPM_AUTH *v);
 
 int tpm_marshal_TPM_KEY_HANDLE_LIST(BYTE **ptr, UINT32 *length, TPM_KEY_HANDLE_LIST *v);
+
+int tpm_marshal_TPM_CHANGEAUTH_VALIDATE(BYTE **ptr, UINT32 *length, TPM_CHANGEAUTH_VALIDATE *v);
+int tpm_unmarshal_TPM_CHANGEAUTH_VALIDATE(BYTE **ptr, UINT32 *length, TPM_CHANGEAUTH_VALIDATE *v);
 
 int tpm_marshal_TPM_COUNTER_VALUE(BYTE **ptr, UINT32 *length, TPM_COUNTER_VALUE *v);
 int tpm_unmarshal_TPM_COUNTER_VALUE(BYTE **ptr, UINT32 *length, TPM_COUNTER_VALUE *v);

@@ -160,6 +160,20 @@ int tpm_marshal_TPM_KEY_HANDLE_LIST(BYTE **ptr, UINT32 *length, TPM_KEY_HANDLE_L
   return 0;
 }
 
+int tpm_marshal_TPM_CHANGEAUTH_VALIDATE(BYTE **ptr, UINT32 *length, TPM_CHANGEAUTH_VALIDATE *v)
+{
+  if (tpm_marshal_TPM_SECRET(ptr, length, v->newAuthSecret)
+      || tpm_marshal_TPM_NONCE(ptr, length, v->n1)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_CHANGEAUTH_VALIDATE(BYTE **ptr, UINT32 *length, TPM_CHANGEAUTH_VALIDATE *v)
+{
+  if (tpm_unmarshal_TPM_SECRET(ptr, length, &v->newAuthSecret)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->n1)) return -1;
+  return 0;
+}
+
 int tpm_marshal_TPM_COUNTER_VALUE(BYTE **ptr, UINT32 *length, TPM_COUNTER_VALUE *v)
 {
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)

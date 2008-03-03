@@ -135,6 +135,8 @@ TPM_RESULT TPM_DirRead(TPM_DIRINDEX dirIndex, TPM_DIRVALUE *dirContents)
 
 /* import functions from tpm_storage.c */
 extern int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
+extern int tpm_encrypt_sealed_data(TPM_KEY_DATA *key, TPM_SEALED_DATA *seal,
+  BYTE *enc, UINT32 *enc_size);
 extern int tpm_encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
   BYTE *enc, UINT32 *enc_size);
 extern TPM_RESULT internal_TPM_LoadKey(TPM_KEY *inKey, 
@@ -146,6 +148,11 @@ extern int tpm_decrypt_private_key(TPM_KEY_DATA *key,
 /* import functions from tpm_crypto.c */
 extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
   BYTE *areaToSign, UINT32 areaToSignSize, BYTE **sig, UINT32 *sigSize);
+/* import functions from rsa.c */
+extern int tpm_rsa_decrypt(tpm_rsa_private_key_t *key, int type,
+  const uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len);
+/* import functions from tpm_eviction.c */
+extern static void invalidate_sessions(TPM_HANDLE handle);
 
 TPM_RESULT TPM_ChangeAuthAsymStart(  
   TPM_KEY_HANDLE idHandle,
@@ -366,19 +373,20 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(
 )
 {
   TPM_RESULT res;
-  TPM_KEY_DATA *parentKey;
-  TPM_SEALED_DATA seal;
-  TPM_STORE_ASYMKEY store;
+  TPM_KEY_DATA *parentKey, *ephKey;
+  TPM_SEALED_DATA e1_seal;
+  TPM_STORE_ASYMKEY e1_store;
   BYTE *e1_seal_buf, *e1_key_buf;
-  
+  int scheme;
   TPM_CHANGEAUTH_VALIDATE a1;
   tpm_hmac_ctx_t hmac_ctx;
+  UINT32 len, size;
+  BYTE *ptr, *buf;
+  TPM_SECRET oldAuthSecret;
+  TPM_HMAC b1;
   
   
-  info("TPM_ChangeAuthAsymFinish() not implemented yet");
-  /* TODO: implement TPM_ChangeAuthAsymFinish() */
-  return TPM_FAIL;
-
+  info("TPM_ChangeAuthAsymFinish()");
   /* 1. The TPM SHALL validate that the authHandle parameter authorizes
         use of the key in parentHandle. */
     /* get parent key */
@@ -387,6 +395,9 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(
     /* verify authorization */
     res = tpm_verify_auth(auth1, parentKey->usageAuth, parentHandle);
     if (res != TPM_SUCCESS) return res;
+    /* get ephemeral key */
+    ephKey = tpm_get_key(ephHandle);
+    if (ephKey == NULL) return TPM_INVALID_KEYHANDLE;
   /* 2. The encData field MUST be the encData field from TPM_STORED_DATA
         or TPM_KEY. */
     if (encDataSize != (parentKey->key.size >> 3))
@@ -397,12 +408,16 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(
     TPM_ET_DATA:
       /* decrypt seal data */
       if (tpm_decrypt_sealed_data(parentKey, encData, encDataSize,
-        &seal, &e1_seal_buf)) return TPM_DECRYPT_ERROR;
+        &e1_seal, &e1_seal_buf)) return TPM_DECRYPT_ERROR;
+      memcpy(oldAuthSecret, e1_seal.authData, sizeof(TPM_SECRET));
+      tpm_free(e1_seal_buf);
       break;
     TPM_ET_KEY:
       /* decrypt key data */
       if (tpm_decrypt_private_key(parenKey, encData, encDataSize,
-        &store, &e1_key_buf)) return TPM_DECRYPT_ERROR;
+        &e1_store, &e1_key_buf)) return TPM_DECRYPT_ERROR;
+      memcpy(oldAuthSecret, e1_store.authData, sizeof(TPM_SECRET));
+      tpm_free(e1_key_buf);
       break;
     default:
       return TPM_BAD_PARAMETER;
@@ -410,18 +425,65 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(
   /* 4. The TPM SHALL create a1 by decrypting encNewAuth using the
         ephHandle->TPM_KEY_AUTHCHANGE private key. a1 is a structure
         of type TPM_CHANGEAUTH_VALIDATE. */
-  
+  switch (ephKey->encScheme) {
+    case TPM_ES_RSAESOAEP_SHA1_MGF1: scheme = RSA_ES_OAEP_SHA1; break;
+    case TPM_ES_RSAESPKCSv15: scheme = RSA_ES_PKCSV15; break;
+    default: return TPM_BAD_PARAMETER;
+  }
+  len = newAuthSize;
+  *buf = ptr = tpm_malloc(len);
+  if (*buf == NULL) return TPM_NOSPACE;
+  if (tpm_rsa_decrypt(&ephKey->key, scheme, encNewAuth, newAuthSize, 
+    *buf, &size)
+    || (len = size) == 0
+    || tpm_unmarshal_TPM_CHANGEAUTH_VALIDATE(&ptr, &len, &a1)) {
+    debug("TPM_ChangeAuthAsymFinish(): tpm_rsa_decrypt() failed.");
+    tpm_free(buf);
+    return TPM_DECRYPT_ERROR;
+  }
+  tpm_free(buf);
   /* 5. The TPM SHALL create b1 by performing the following HMAC
         calculation: b1 = HMAC(a1->newAuthSecret). The secret for
         this calculation is encData->currentAuth. This means that
         b1 is a value built from the current AuthData value
         (encData->currentAuth) and the new AuthData value
         (a1->newAuthSecret). */
+  tpm_hmac_init(&hmac_ctx, oldAuthSecret, sizeof(TPM_SECRET));
+  tpm_hmac_update(&hmac_ctx, a1.newAuthSecret, sizeof(TPM_SECRET));
+  tpm_hmac_final(&hmac_ctx, b1.digest);
   /* 6. The TPM SHALL compare b1 with newAuthLink. The TPM SHALL
         indicate a failure if the values do not match. */
+  if (memcmp(b1.digest, newAuthLink.digest, sizeof(TPM_HMAC))) {
+    debug("TPM_ChangeAuthAsymFinish(): newAuthLink value does not match.");
+    return TPM_FAIL;
+  }
   /* 7. The TPM SHALL replace e1->authData with a1->newAuthSecret */
+  switch (entityType) {
+    TPM_ET_DATA:
+      memcpy(e1_seal.authData, a1.newAuthSecret, sizeof(TPM_SECRET));
+      break;
+    TPM_ET_KEY:
+      memcpy(e1_store.authData, a1.newAuthSecret, sizeof(TPM_SECRET));
+      break;
+  }
   /* 8. The TPM SHALL encrypt e1 using the appropriate functions for
         the entity type. The key to encrypt with is parentHandle. */
+  switch (entityType) {
+    TPM_ET_DATA:
+      if (tpm_encrypt_sealed_data(parentKey, &e1_seal, 
+        outData, &outDataSize)) {
+          tpm_free(outData);
+          return TPM_ENCRYPT_ERROR;
+      }
+      break;
+    TPM_ET_KEY:
+      if (tpm_encrypt_private_key(parentKey, &e1_store, 
+        outData, &outDataSize)) {
+          tpm_free(outData);
+          return TPM_ENCRYPT_ERROR;
+      }
+      break;
+  }
   /* 9. The TPM SHALL create slatNonce by taking the next 20 bytes
         from the TPM RNG. */
   tpm_get_random_bytes(saltNonce->nonce, sizeof(TPM_NONCE));
@@ -434,6 +496,9 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(
   tpm_hmac_final(&hmac_ctx, changeProof->digest);
   /* 11. The TPM MUST destroy the TPM_KEY_AUTHCHANGE key associated
          with the authorization session. */
+  tpm_rsa_release_private_key(&ephKey->key);
+  memset(ephKey, 0, sizeof(*ephKey));
+  invalidate_sessions(ephHandle);
   
   return TPM_SUCCESS;
 }

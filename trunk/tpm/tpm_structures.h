@@ -405,6 +405,7 @@ typedef struct tdTPM_CHANGEAUTH_VALIDATE {
   TPM_SECRET newAuthSecret;
   TPM_NONCE n1;
 } TPM_CHANGEAUTH_VALIDATE;
+#define sizeof_TPM_CHANGEAUTH_VALIDATE(s) (20 + 20)
 
 /*
  * TPM_COUNTER_VALUE ([TPM_Part2], Section 5.13)
