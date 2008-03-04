@@ -94,29 +94,40 @@
 \section{Introduction}
 
 \begin{frame}
-	\frametitle{Software-Based Trusted Platform Module}
-	Emulating a TPM in software has been proved to be useful in various ways.
-	For example, to
+	\frametitle{Why emulating a TPM in software?}
+	TPM emulator has been proved to be useful in various ways, e.g.,
 	\begin{itemize}
-		\item run more than one TPM instance per platform (virtualisation),
+		\item to run more than one TPM instance per platform (virtualisation),
 			\begin{itemize}
 				\item Hewlett-Packard: Trustworthy Virtualisation Environment
-					(HPL-2007-69)
 			\end{itemize}
-		\item restore previously stored or artificially created states\\
+		\item to restore previously stored or artificially created states\\
 			(testing, debugging, and educational purposes),
 			\begin{itemize}
-				\item TU Graz: class AK IT-Sicherheit 1 / Trusted Computing
-				\item VMKnoppix
+				\item TU Graz: class ``AK IT-Sicherheit 1 / Trusted Computing''
+				\item VMKnoppix (Xen Hypervisor)
 			\end{itemize}
-		\item simulate new TPM commands and test vendor extensions
+		\item to simulate new TPM commands and vendor extensions\\
 			(research and development)
 			\begin{itemize}
 				\item Princeton University, NEC, TI: energy and execution time
 					analysis of ECC algorithms (DATE 2007)
-				\item Nokia: MTM spec. validation (NRC-TR-2007-015)
+				\item Nokia: Validation of MTM specification
 			\end{itemize}
 	\end{itemize}
+	Of course, a software-based TPM cannot provide the same security
+	guarantees (tamper-resistance, trust anchor) like a TPM chip.
+\end{frame}
+
+\begin{frame}
+	\frametitle{Current state of the TPM emulator}
+	\begin{description}[]
+		\item[Supported Operating Systems:] Linux, OpenBSD, FreeBSD, \ldots\\
+			Packages for Gentoo Linux available
+		\item[Last Stable Version:] 0.5.1 (2008-02-12), GNU GPL v2
+		\item[Third-Party Libraries:] GNU Multiple Precision Arithmetic Library
+			(for bignum support)
+	\end{description}
 \end{frame}
 
 \section{Design and Implementation}
@@ -131,9 +142,9 @@
 			\end{center}
 		\item[Interfaces:]\hfill\\
 			{\small\begin{enumerate}
-				\item Direct (Unix domain sockets)
-				\item Recommended (TDDL interface)
-				\item Legacy (Linux/BSD kernel modul \texttt{tmpd\_dev},
+				\item Direct (Unix domain socket \texttt{/var/run/tpm/tpmd\_socket:0})
+				\item Recommended (TDDL interface according to TSS spec.)
+				\item Legacy (Linux/BSD kernel modul \texttt{tmpd\_dev} provides
 					\texttt{/dev/tmp})
 			\end{enumerate}}
 	\end{description}
@@ -155,6 +166,14 @@
 
 \begin{frame}
 	\frametitle{Conclusion}
+	\begin{description}[]
+		\item[Roadmap:]\hfill\\
+			\begin{enumerate}
+				\item Provide autoconf/automake support
+				\item Complete missing mandatory TPM commands
+				\item Support other operating systems
+			\end{enumerate}
+	\end{description}
 \end{frame}
 
 \begin{frame}
@@ -187,7 +206,7 @@
 			Trusted Computing Group.
 			\newblock TPM Specification, Version 1.2, Revision 103.
 			\newblock
-			\Keyboard\hspace{3mm}\url{https://www.trustedcomputinggroup.org/specs/TPM/}.
+			{\large\Keyboard}\hspace{2mm}\url{https://www.trustedcomputinggroup.org/specs/TPM/}.
 	\beamertemplatearticlebibitems
 		\bibitem{Sadeghi}
 			Ahmad-Reza Sadeghi, Marcel Selhorst, Christian St\"{u}ble,
@@ -199,22 +218,22 @@
 			Mario Strasser et~al.
 			\newblock Software-Based Trusted Platform Module Emulator.
 			\newblock
-			\Keyboard\hspace{3mm}\url{http://tpm-emulator.berlios.de/}.
+			{\large\Keyboard}\hspace{2mm}\url{http://tpm-emulator.berlios.de/}.
 		\bibitem{jTSS}
 			TU Graz, IAIK.
 			\newblock jTSS -- Java TCG Software Stack.
 			\newblock
-			\Keyboard\hspace{3mm}\url{http://trustedjava.sourceforge.net/}.
+			{\large\Keyboard}\hspace{2mm}\url{http://trustedjava.sourceforge.net/}.
 		\bibitem{trousers}
 			Kent Yoder et~al.
 			\newblock TrouSerS -- Open-source TCG Software Stack.
 			\newblock
-			\Keyboard\hspace{3mm}\url{http://trousers.sourceforge.net/}.
+			{\large\Keyboard}\hspace{2mm}\url{http://trousers.sourceforge.net/}.
 		\bibitem{ibmdaatest}
 			Roger Zimmermann.
 			\newblock IBM Direct Anonymous Attestation Tools -- TPM Test Suite.
 			\newblock
-			\Keyboard\hspace{3mm}\url{http://www.zurich.ibm.com/security/daa/}.
+			{\large\Keyboard}\hspace{2mm}\url{http://www.zurich.ibm.com/security/daa/}.
 	\end{thebibliography}}
 \end{frame}
 
