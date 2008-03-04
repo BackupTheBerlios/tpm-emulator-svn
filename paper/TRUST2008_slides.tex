@@ -97,18 +97,20 @@
 	\frametitle{Why emulating a TPM in software?}
 	TPM emulator has been proved to be useful in various ways, e.g.,
 	\begin{itemize}
-		\item to run more than one TPM instance per platform (virtualisation),
+		\item to run more than one TPM instance per platform\\
+			(\alert{\emph{virtualisation}}),
 			\begin{itemize}
 				\item Hewlett-Packard: Trustworthy Virtualisation Environment
 			\end{itemize}
 		\item to restore previously stored or artificially created states\\
-			(testing, debugging, and educational purposes),
+			(\alert{\emph{testing}}, \alert{\emph{debugging}}, and 
+			\alert{\emph{educational purposes}}),
 			\begin{itemize}
 				\item TU Graz: class ``AK IT-Sicherheit 1 / Trusted Computing''
 				\item VMKnoppix (Xen Hypervisor)
 			\end{itemize}
 		\item to simulate new TPM commands and vendor extensions\\
-			(research and development)
+			(\alert{\emph{research}} and \alert{\emph{development}})
 			\begin{itemize}
 				\item Princeton University, NEC, TI: energy and execution time
 					analysis of ECC algorithms (DATE 2007)
@@ -116,17 +118,25 @@
 			\end{itemize}
 	\end{itemize}
 	Of course, a software-based TPM cannot provide the same security
-	guarantees (tamper-resistance, trust anchor) like a TPM chip.
+	guarantees (tamper-resistance, trust anchor) like a hardware chip.
 \end{frame}
 
 \begin{frame}
-	\frametitle{Current state of the TPM emulator}
+	\frametitle{Basic Facts}
 	\begin{description}[]
 		\item[Supported Operating Systems:] Linux, OpenBSD, FreeBSD, \ldots\\
-			Packages for Gentoo Linux available
-		\item[Last Stable Version:] 0.5.1 (2008-02-12), GNU GPL v2
+			(packages for Gentoo Linux are available)
+		\item[Last Stable Version:] 0.5.1 (2008-02-12), GPL v2,
+			${}\approx 25$k LOC
+		\item[Development Site:] \url{https://tpm-emulator.berlios.de/}
 		\item[Third-Party Libraries:] GNU Multiple Precision Arithmetic Library
 			(for bignum support)
+		\item[History and Milestones:]\hfill\\
+			\begin{itemize}
+				\item 2004: Started by Mario Strasser as a semester thesis
+				\item 2005: Identity functions and DAA support added
+				\item 2006, December: Milestone version 0.5 released
+			\end{itemize}
 	\end{description}
 \end{frame}
 
@@ -140,7 +150,7 @@
 			\begin{center}
 				\includegraphics[width=.95\textwidth]{figures/system_overview}
 			\end{center}
-		\item[Interfaces:]\hfill\\
+		\item[Accessing the Emulator:]\hfill\\
 			{\small\begin{enumerate}
 				\item Direct (Unix domain socket \texttt{/var/run/tpm/tpmd\_socket:0})
 				\item Recommended (TDDL interface according to TSS spec.)
