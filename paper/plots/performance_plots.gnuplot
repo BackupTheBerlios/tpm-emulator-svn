@@ -62,5 +62,24 @@ plot 'execution_time.data' using (2*$2-0.25):3:(0.5) with boxes fill solid 0.25 
 # set pointsize 0.1
 # plot 'execution_time.data' using (2*$2-0.25):3:4 with yerrorbars notitle ls 9, \
 #      'execution_time.data' using (2*$2+0.25):5:6 with yerrorbars notitle ls 9
-set nomultiplot
+unset multiplot
 
+set size 1, 0.66
+set lmargin 6
+set tmargin 2
+set rmargin 2
+set bmargin 2
+
+set output "performance_comparison2.eps"
+set multiplot
+set title "Duration (in sec) to execute a TPM command"
+set xlabel ""
+set yrange [1e-4:20]
+set xrange [-1:9]
+set logscale y
+set format y "10^{%L}"
+set style fill solid border -1
+set xtics ("TPM\\_SelfTestFull" 0, "TPM\\_Extend" 2, "TPM\\_DAA\\_Join" 4)
+plot 'execution_time2.data' using (2*$2-0.25):3:(0.5) with boxes fill solid 0.25 lt 2 title "Hardware TPM", \
+     'execution_time2.data' using (2*$2+0.25):5:(0.5) with boxes fill pattern 10 lt 1 title "TPM Emulator"
+unset multiplot
