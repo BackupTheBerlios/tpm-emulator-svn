@@ -46,7 +46,7 @@
 
 \institute[ETH Zurich, Uni Kassel]{
 	\inst{1}
-		ETH Zurich, Switzerland\\
+		ETH Z{\"u}rich, Switzerland\\
 		\texttt{strasser@tik.ee.ethz.ch}
 	\and
 	\inst{2}
@@ -64,8 +64,9 @@
 % ist, wobei xxx ein von latex bzw. pdflatex lesbares Graphikformat
 % ist, so kann man wie folgt ein Logo einfügen:
 
-\pgfdeclareimage[height=0.5cm]{university-logo}{uniklogo}
-\logo{\pgfuseimage{university-logo}}
+\pgfdeclareimage[height=0.5cm]{unik-logo}{uniklogo}
+\pgfdeclareimage[height=1cm]{ethz-logo}{ethlogo_black}
+\logo{\raisebox{-2mm}{\pgfuseimage{ethz-logo}}\hspace{6.5cm}\pgfuseimage{unik-logo}}
 
 % Falls Aufzählungen immer schrittweise gezeigt werden sollen, kann
 % folgendes Kommando benutzt werden:
@@ -87,7 +88,7 @@
 
 \renewcommand{\pause}{}
 
-\section{Introduction}
+\section{Motivation}
 
 \begin{frame}
 	\frametitle{Why emulating a TPM in software?}
@@ -120,6 +121,8 @@
 \begin{frame}
 	\frametitle{Basic Facts}
 	\begin{description}[]
+		\item[Project Goal:] Create a working software-based TPM emulator
+			that is compliant with TCG TPM specification version 1.2
 		\item[Supported Operating Systems:] Linux, OpenBSD, FreeBSD, \ldots\\
 			(packages for Gentoo Linux are available)
 		\item[Last Stable Version:] 0.5.1 (2008-02-12), GPL v2,
@@ -130,7 +133,7 @@
 		\item[History and Milestones:]\hfill\\
 			\begin{itemize}
 				\item 2004: Started by Mario Strasser as semester thesis
-				\item 2005, ???.: ???
+				\item 2005, Apr.: Session management and RC4 encryption added
 				\item 2005, Dec.: Identity functions and DAA support added
 				\item 2006, Dec.: Milestone version 0.5 released
 			\end{itemize}
@@ -154,6 +157,41 @@
 				\item Legacy (Linux/BSD kernel modul \texttt{tmpd\_dev} provides
 					\texttt{/dev/tmp})
 			\end{enumerate}}
+	\end{description}
+\end{frame}
+
+\begin{frame}[fragile]
+	\frametitle{Design and Implementation}
+	\begin{description}[]
+		\item[Implementation Issues:]\hfill\\
+			{\small\begin{itemize}
+				\item Up to version 0.4.1 the TPM emulator was a Linux kernel module:
+				\begin{itemize}
+					\item Kernel stack size is very limited (4 KB resp. 8 KB on x86)
+					\item Debugging was very difficult (call paths with stack overflows)
+					\item Persistent storage needed for executing \textsf{TPM\_SaveState}
+					\item Command serialization and synchronization by semaphores
+				\end{itemize}
+				\item Alignment of structures and bignums in combination with hashing
+				\item Typographical errors and ambiguity in the TPM specification:
+				\begin{itemize}
+					\item
+{\tiny ``\verb|TPM computes a TPM-specific secret f0 (104-bit) = f mod 2104|''
+(Part 1, rev 94)}
+				\item
+{\tiny ``\verb|#define DAA_SIZE_r3 158|'' (Part 2, rev 62) \hspace{3mm}
+``\verb|#define DAA_SIZE_r3 168|'' (Part 2, rev 85)}
+				\item
+{\tiny ``\verb|obtain DAA_SIZE_NT bits from RNG|'' (20 bits vs. 20 bytes)
+(Part 3, rev 94)}
+			\end{itemize}
+			\end{itemize}}
+		\item[Tools and Helpers:]\hfill\\
+			{\small\begin{itemize}
+				\item Automatically generated (un)marshalling code (Perl, awk, sed)
+				\item Testing TPM command request structures by using IBM's
+					\texttt{buildbuff}-function from \texttt{tpm-3.2.0/libtpm/tpmutil.c}
+			\end{itemize}}
 	\end{description}
 \end{frame}
 
@@ -190,6 +228,19 @@
 
 \begin{frame}
 	\frametitle{Compliance Tests}
+	\begin{description}[]
+		\item[Compliance and Functionality Tests:]\hfill
+			{\small\begin{itemize}
+				\item IBM: TrouSerS (package \texttt{testsuite} and package \texttt{tpm-tools})
+				\item TU Graz: jTSS (package \texttt{jTSS} and package \texttt{jTpmTools})
+				\item IBM: DAA Test Suite (thanks to Roger Zimmermann)
+				\item Ruhr-Uni Bochum, Sirrix: Test Suite (thanks to Marcel Selhorst)
+			\end{itemize}}
+	\end{description}
+	\begin{center}
+		\includegraphics[angle=-90,scale=0.55]{plots/compliance}
+		\includegraphics[origin=br,angle=90,scale=0.6]{plots/compliance_key}
+	\end{center}
 \end{frame}
 
 \section{Conclusion}
@@ -202,6 +253,7 @@
 				\item Provide autoconf/automake support
 				\item Complete missing mandatory TPM commands
 				\item Support other operating systems
+				\item Add optional commands and algorithms (e.g. AES)
 			\end{enumerate}
 	\end{description}
 \end{frame}

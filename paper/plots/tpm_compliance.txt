@@ -7,7 +7,7 @@
 "Cryptograpic Functions"	9	9	9
 "DAA Commands"			2	2	2
 "Delegation Commands"		7	0	0
-"Deprecated Commands"		15	13	10
+"Deprecated Commands"		15	15	10
 "Eviction"			1	1	1
 "Identity Management"		2	2	2
 "Integrity Reporting"		5	5	5
