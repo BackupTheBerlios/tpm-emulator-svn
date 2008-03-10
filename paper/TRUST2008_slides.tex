@@ -104,13 +104,13 @@
 			\alert{\emph{educational purposes}}),
 			\begin{itemize}
 				\item TU Graz: class ``AK IT-Sicherheit 1 / Trusted Computing''
-				\item VMKnoppix (Xen Hypervisor)
+				\item VMKnoppix (Xen Hypervisor), patch for \textsc{QEMU}, \ldots
 			\end{itemize}
 		\item to simulate new TPM commands and vendor extensions\\
 			(\alert{\emph{research}} and \alert{\emph{development}})
 			\begin{itemize}
-				\item Princeton University, NEC, TI: energy and execution time
-					analysis of ECC algorithms (DATE 2007)
+				\item Princeton University, NEC, Texas Instruments: energy and
+					execution time analysis of ECC algorithms (DATE 2007)
 				\item Nokia: Validation of MTM specification
 			\end{itemize}
 	\end{itemize}
@@ -248,12 +248,22 @@
 \begin{frame}
 	\frametitle{Conclusion}
 	\begin{description}[]
+%		\item[Summary:]\hfill\\
+%			\begin{itemize}
+%				\item Software-based TPM emulator 
+%			\end{itemize}
 		\item[Roadmap:]\hfill\\
 			\begin{enumerate}
-				\item Provide autoconf/automake support
-				\item Complete missing mandatory TPM commands
-				\item Support other operating systems
+				\item Include changes from MTM Emulator (Nokia)
+				\item Provide autoconf/automake build support
+				\item Complete missing (mandatory) TPM commands
+					\begin{itemize}
+						\item Some capability areas and \textsf{TPM\_SetCapability}
+						\item NV storage functions (Mario: next weeks)
+						\item Migration and delegation functions
+					\end{itemize}
 				\item Add optional commands and algorithms (e.g. AES)
+				\item Native support for other operating systems
 			\end{enumerate}
 	\end{description}
 \end{frame}
