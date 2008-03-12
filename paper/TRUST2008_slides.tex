@@ -34,6 +34,8 @@
 	\setbeamercolor{block body}{parent=normal text,bg=gray!10}%
 	\setbeamercolor{block title example}{bg=gray!30!green!30}%
 	\setbeamercolor{block body example}{parent=normal text,bg=gray!15!green!15}%
+  
+  \setbeamercovered{transparent}
 }
 
 \title[TPM Emulator]{A Software-Based\\
@@ -86,7 +88,7 @@
 	\tableofcontents
 \end{frame}
 
-\renewcommand{\pause}{}
+%\renewcommand{\pause}{}
 
 \section{Motivation}
 
@@ -98,21 +100,21 @@
 			(\alert{\emph{virtualisation}}),
 			\begin{itemize}
 				\item Hewlett-Packard: Trustworthy Virtualisation Environment
-			\end{itemize}
+				\item VMKnoppix (Xen Hypervisor), patch for \textsc{QEMU}, \ldots
+			\end{itemize}\pause
 		\item to restore previously stored or artificially created states\\
 			(\alert{\emph{testing}}, \alert{\emph{debugging}}, and 
 			\alert{\emph{educational purposes}}),
 			\begin{itemize}
 				\item TU Graz: class ``AK IT-Sicherheit 1 / Trusted Computing''
-				\item VMKnoppix (Xen Hypervisor), patch for \textsc{QEMU}, \ldots
-			\end{itemize}
+			\end{itemize}\pause
 		\item to simulate new TPM commands and vendor extensions\\
 			(\alert{\emph{research}} and \alert{\emph{development}})
 			\begin{itemize}
 				\item Princeton University, NEC, Texas Instruments: energy and
 					execution time analysis of ECC algorithms (DATE 2007)
-				\item Nokia: Validation of MTM specification
-			\end{itemize}
+				\item Nokia: Validation of MTM specification (MTM Emulator)
+			\end{itemize}\pause
 	\end{itemize}
 	Of course, a software-based TPM cannot provide the same security
 	guarantees (tamper-resistance, trust anchor) like a hardware chip.
@@ -123,13 +125,14 @@
 	\begin{description}[]
 		\item[Project Goal:] Create a working software-based TPM emulator
 			that is compliant with TCG TPM specification version 1.2
-		\item[Supported Operating Systems:] Linux, OpenBSD, FreeBSD, \ldots\\
-			(packages for Gentoo Linux are available)
+		\item[Supported Operating Systems:] GNU/Linux, Open/FreeBSD, \ldots
+			(ebuild script for Gentoo Linux available)
 		\item[Last Stable Version:] 0.5.1 (2008-02-12), GPL v2,
 			${}\approx 25$k LOC
 		\item[Development Site:] \url{https://tpm-emulator.berlios.de/}
+    \item[Prerequisites:] \texttt{/dev/urandom} or similar, Unix domain sockets
 		\item[Third-Party Libraries:] GNU Multiple Precision Arithmetic Library
-			(for bignum support)
+			(bignum support for RSA and DAA)
 		\item[History and Milestones:]\hfill\\
 			\begin{itemize}
 				\item 2004: Started by Mario Strasser as semester thesis
@@ -149,13 +152,13 @@
 			(since version 0.5)\\
 			\begin{center}
 				\includegraphics[width=.95\textwidth]{figures/system_overview}
-			\end{center}
+			\end{center}\pause
 		\item[Accessing the Emulator:]\hfill\\
 			{\small\begin{enumerate}
 				\item Direct (Unix domain socket \texttt{/var/run/tpm/tpmd\_socket:0})
 				\item Recommended (TDDL interface according to TSS spec.)
-				\item Legacy (Linux/BSD kernel modul \texttt{tmpd\_dev} provides
-					\texttt{/dev/tmp})
+				\item Legacy (Linux/BSD kernel module \texttt{tmpd\_dev} provides
+					\texttt{/dev/tpm})
 			\end{enumerate}}
 	\end{description}
 \end{frame}
@@ -185,7 +188,7 @@
 {\tiny ``\verb|obtain DAA_SIZE_NT bits from RNG|'' (20 bits vs. 20 bytes)
 (Part 3, rev 94)}
 			\end{itemize}
-			\end{itemize}}
+			\end{itemize}}\pause
 		\item[Tools and Helpers:]\hfill\\
 			{\small\begin{itemize}
 				\item Automatically generated (un)marshalling code (Perl, awk, sed)
@@ -248,10 +251,11 @@
 \begin{frame}
 	\frametitle{Conclusion}
 	\begin{description}[]
-%		\item[Summary:]\hfill\\
-%			\begin{itemize}
-%				\item Software-based TPM emulator 
-%			\end{itemize}
+		\item[Open Questions:]\hfill\\
+			\begin{itemize}
+				\item Performance evaluation: influence of LPC bus overhead
+        \item Design and implement an interface for locality selection
+			\end{itemize}\pause
 		\item[Roadmap:]\hfill\\
 			\begin{enumerate}
 				\item Include changes from MTM Emulator (Nokia)
@@ -270,7 +274,6 @@
 
 \begin{frame}
 	\frametitle{}
-	\pause
 	\begin{center}
 		\begin{Huge}
 			\textbf{Thank you! Questions?}
