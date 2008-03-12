@@ -77,6 +77,7 @@ static int rsa_private(tpm_rsa_private_key_t *key,
     tpm_bn_add(c, m1, h);
     tpm_bn_clear(m1);
     tpm_bn_clear(m2);
+    tpm_bn_clear(h);
   }
   t = tpm_bn_bitsize(c);
   if (t > key->size) {
