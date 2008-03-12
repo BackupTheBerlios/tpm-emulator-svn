@@ -37,6 +37,28 @@ static inline void init_pcr_attr(int pcr, BOOL reset, BYTE rl, BYTE el)
   tpmData.permanent.data.pcrAttrib[pcr].pcrExtendLocal = el;
 }
 
+static void init_nv_storage()
+{
+    TPM_NV_DATA_SENSITIVE *nv;
+    memset(tpmData.permanent.data.nvData, 0xff, TPM_MAX_NV_SIZE);
+    /* init TPM_NV_INDEX_DIR */
+    nv = &tpmData.permanent.data.nvStorage[0];
+    memset(nv, 0, sizeof(TPM_NV_DATA_SENSITIVE));
+    nv->tag = TPM_TAG_NV_DATA_SENSITIVE;
+    nv->pubInfo.tag = TPM_TAG_NV_DATA_PUBLIC;
+    nv->pubInfo.nvIndex = TPM_NV_INDEX_DIR;
+    nv->pubInfo.pcrInfoRead.localityAtRelease = 0x1f;
+    nv->pubInfo.pcrInfoWrite.localityAtRelease = 0x1f;
+    nv->pubInfo.permission.tag = TPM_TAG_NV_ATTRIBUTES;
+    nv->pubInfo.permission.attributes = TPM_NV_PER_OWNERWRITE 
+                                        | TPM_NV_PER_WRITEALL;
+    nv->pubInfo.dataSize = 20;
+    nv->dataIndex = 0;
+    nv->valid = TRUE;
+    /* set NV data size */
+    tpmData.permanent.data.nvDataSize = 20;
+}
+
 void tpm_init_data(void)
 {
 #ifndef TPM_GENERATE_EK
@@ -93,6 +115,7 @@ void tpm_init_data(void)
   tpmData.permanent.flags.allowMaintenance = TRUE;
   tpmData.permanent.flags.enableRevokeEK = TRUE;
   tpmData.permanent.flags.readSRKPub = TRUE;
+  tpmData.permanent.flags.nvLocked = TRUE;
   /* set TPM vision */
   memcpy(&tpmData.permanent.data.version, 
          &tpm_version, sizeof(TPM_VERSION));
@@ -135,8 +158,9 @@ void tpm_init_data(void)
     "\x77\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
     "\x00\x00\x00\x77", sizeof(TPM_NONCE));
 #endif
-
   memcpy(tpmData.permanent.data.ekReset.nonce, "\xde\xad\xbe\xef", 4);
+  /* initialize predefined non-volatile storage */
+  init_nv_storage();
 }
 
 void tpm_release_data(void)
@@ -206,7 +230,8 @@ int tpm_restore_permanent_data(void)
       || tpm_unmarshal_TPM_PERMANENT_DATA(&ptr, &len, &tpmData.permanent.data)
       || tpm_unmarshal_TPM_STCLEAR_FLAGS(&ptr, &len, &tpmData.stclear.flags)      
       || tpm_unmarshal_TPM_STCLEAR_DATA(&ptr, &len, &tpmData.stclear.data)
-      || tpm_unmarshal_TPM_STANY_DATA(&ptr, &len, &tpmData.stany.data)) {
+      || tpm_unmarshal_TPM_STANY_DATA(&ptr, &len, &tpmData.stany.data)
+      || len > 0) {
     tpm_free(buf);
     return -1;
   }

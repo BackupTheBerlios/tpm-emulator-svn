@@ -78,6 +78,11 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
     SET_TO_RAND(&tpmData.stclear.data.contextNonceKey);
     /* invalidate counter handle */
     tpmData.stclear.data.countID = TPM_INVALID_HANDLE;
+    /* reset NV read and write flags */
+    for (i = 0; i < TPM_MAX_NVS; i++) {
+        tpmData.permanent.data.nvStorage[i].pubInfo.bReadSTClear = FALSE;
+        tpmData.permanent.data.nvStorage[i].pubInfo.bWriteSTClear = FALSE;
+    }
   } else if (startupType == TPM_ST_STATE) {
     if (!tpmData.permanent.flags.dataRestored) {
       error("restoring permanent data failed");

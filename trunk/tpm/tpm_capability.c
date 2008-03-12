@@ -199,8 +199,8 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_MAX_NV_AVAILABLE:
       debug("[TPM_CAP_PROP_MAX_NV_AVAILABLE]");
-      /* TODO: TPM_CAP_PROP_MAX_NV_AVAILABLE */
-      return TPM_FAIL;
+      return return_UINT32(respSize, resp, TPM_MAX_NV_SIZE
+                           - tpmData.permanent.data.nvDataSize);
 
     case TPM_CAP_PROP_INPUT_BUFFER:
       debug("[TPM_CAP_PROP_INPUT_BUFFER]");
@@ -248,6 +248,51 @@ static TPM_RESULT cap_mfr(UINT32 subCapSize, BYTE *subCap,
       }
       return TPM_SUCCESS;
   }
+}
+
+static TPM_RESULT cap_nv_list(UINT32 *respSize, BYTE **resp)
+{
+  UINT32 i, len;
+  BYTE *ptr = *resp = tpm_malloc(TPM_MAX_NVS * sizeof(TPM_NV_INDEX));
+  
+  if (ptr == NULL) return TPM_FAIL;
+  *respSize = 0;
+  for (i = 0; i < TPM_MAX_NVS; i++) {
+    if (tpmData.permanent.data.nvStorage[i].valid) {
+      len = sizeof(TPM_NV_INDEX);
+      ptr = (*resp) + *respSize;
+      *respSize += len;
+      if (tpm_marshal_UINT32(&ptr, &len, 
+          tpmData.permanent.data.nvStorage[i].pubInfo.nvIndex)) {
+        tpm_free(*resp);
+        return TPM_FAIL;
+      }
+    }
+  }
+  return TPM_SUCCESS;
+}
+
+static TPM_RESULT cap_nv_index(UINT32 subCapSize, BYTE *subCap,
+                               UINT32 *respSize, BYTE **resp)
+{
+  TPM_NV_INDEX nvIndex;
+  TPM_NV_DATA_SENSITIVE *nv;
+  UINT32 len;
+  BYTE *ptr;
+
+  if (tpm_unmarshal_TPM_NV_INDEX(&subCap, &subCapSize, &nvIndex))
+    return TPM_BAD_MODE;
+  nv = tpm_get_nvs(nvIndex);
+  if (nv == NULL) return TPM_BADINDEX;
+  len = *respSize = sizeof_TPM_NV_DATA_PUBLIC(nv->pubInfo);
+  ptr = *resp = tpm_malloc(len);
+  if (ptr == NULL 
+      || tpm_marshal_TPM_NV_DATA_PUBLIC(&ptr, &len, &nv->pubInfo)) {
+    tpm_free(*resp);
+    return TPM_FAIL;
+  }
+  *respSize -= len;
+  return TPM_SUCCESS;
 }
 
 static TPM_RESULT cap_handle(UINT32 subCapSize, BYTE *subCap,
@@ -418,12 +463,12 @@ static TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
     case TPM_ORD_Delegate_ReadTable:
     case TPM_ORD_Delegate_UpdateVerification:
     case TPM_ORD_Delegate_VerifyDelegation:
+*/
     case TPM_ORD_NV_DefineSpace:
     case TPM_ORD_NV_WriteValue:
     case TPM_ORD_NV_WriteValueAuth:
     case TPM_ORD_NV_ReadValue:
     case TPM_ORD_NV_ReadValueAuth:
-*/
     case TPM_ORD_KeyControlOwner:
     case TPM_ORD_SaveContext:
     case TPM_ORD_LoadContext:
@@ -648,8 +693,7 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
 
     case TPM_CAP_NV_LIST:
       debug("[TPM_CAP_NV_LIST]");
-      /* TODO: TPM_CAP_NV_LIST */
-      return TPM_FAIL;
+      return cap_nv_list(respSize, resp);
 
     case TPM_CAP_MFR:
       debug("[TPM_CAP_MFR]");
@@ -657,8 +701,7 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
 
     case TPM_CAP_NV_INDEX:
       debug("[TPM_CAP_NV_INDEX]");
-      /* TODO: TPM_CAP_NV_INDEX */
-      return TPM_FAIL;
+      return cap_nv_index(subCapSize, subCap, respSize, resp);
 
     case TPM_CAP_TRANS_ALG:
       debug("[TPM_CAP_TRANS_ALG]");

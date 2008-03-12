@@ -2379,6 +2379,8 @@ static TPM_RESULT execute_TPM_NV_WriteValue(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   UINT32 len;
   TPM_NV_INDEX nvIndex;
   UINT32 offset;
+  UINT32 dataSize;
+  BYTE *data;
   /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
@@ -2386,9 +2388,11 @@ static TPM_RESULT execute_TPM_NV_WriteValue(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   len = req->paramSize;
   if (tpm_unmarshal_TPM_NV_INDEX(&ptr, &len, &nvIndex)
       || tpm_unmarshal_UINT32(&ptr, &len, &offset)
+      || tpm_unmarshal_UINT32(&ptr, &len, &dataSize)
+      || tpm_unmarshal_BLOB(&ptr, &len, &data, dataSize)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
-  return TPM_NV_WriteValue(nvIndex, offset, &req->auth1);
+  return TPM_NV_WriteValue(nvIndex, offset, dataSize, data, &req->auth1);
 }
 
 static TPM_RESULT execute_TPM_NV_WriteValueAuth(TPM_REQUEST *req, TPM_RESPONSE *rsp)

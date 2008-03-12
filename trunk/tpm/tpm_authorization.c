@@ -201,7 +201,7 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
   *authHandle = tpm_get_free_session(TPM_ST_OSAP);
   session = tpm_get_auth(*authHandle);
   if (session == NULL) return TPM_RESOURCES;
-  debug("[ entityType=%.4x entityValue=%.4x ]", entityType, entityValue);
+  debug("entityType = %04x, entityValue = %04x", entityType, entityValue);
   /* check whether ADIP encryption scheme is supported */
   switch (entityType & 0xFF00) {
     case TPM_ET_XOR:
@@ -235,9 +235,9 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
         secret = &tpm_get_counter(session->handle)->usageAuth;
       break;
     case TPM_ET_NV:
-      /* TODO: session->handle = entityValue;
-      if (tpm_get_nvdata(session->handle) != NULL)
-        secret = &tpm_get_nvdata(session->handle)->usageAuth;*/
+      session->handle = entityValue;
+      if (tpm_get_nvs(session->handle) != NULL)
+        secret = &tpm_get_nvs(session->handle)->authValue;
       break;
     default:
       return TPM_BAD_PARAMETER;
@@ -290,7 +290,7 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
   UINT32 auth_handle = CPU_TO_BE32(auth->authHandle);
   
   info("tpm_verify_auth()");
-  debug("[ handle=%.8x ]", auth->authHandle);
+  debug("handle = %08x", auth->authHandle);
   /* get dedicated authorization or transport session */
   session = tpm_get_auth(auth->authHandle);
   if (session == NULL) session = tpm_get_transport(auth->authHandle);

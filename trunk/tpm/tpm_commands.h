@@ -1936,6 +1936,8 @@ TPM_RESULT TPM_NV_DefineSpace(
  * TPM_NV_WriteValue - writes a value to a defined NV area
  * @nvIndex: [in] The index of the area to set
  * @offset: [in] The offset into the NV Area
+ * @dataSize: [in] The size of the data area
+ * @data: [in] The data to set the area to
  * @auth1: [in, out] Authorization protocol parameters
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
@@ -1947,6 +1949,8 @@ TPM_RESULT TPM_NV_DefineSpace(
 TPM_RESULT TPM_NV_WriteValue(  
   TPM_NV_INDEX nvIndex,
   UINT32 offset,
+  UINT32 dataSize,
+  BYTE *data,
   TPM_AUTH *auth1
 );
 

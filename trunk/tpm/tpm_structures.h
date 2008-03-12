@@ -1491,6 +1491,11 @@ typedef struct tdTPM_AUDIT_EVENT_OUT {
 #define TPM_NV_INDEX0                   0x00000000
 #define TPM_NV_INDEX_DIR                0x10000001
 
+#define TPM_NV_INDEX_T                  (1 << 31)
+#define TPM_NV_INDEX_P                  (1 << 30)
+#define TPM_NV_INDEX_U                  (1 << 29)
+#define TPM_NV_INDEX_D                  (1 << 28)
+
 /*
  * Reserved Index values ([TPM_Part2], Section 19.1.2)
  * The reserved values are defined to avoid index collisions. These
@@ -1557,14 +1562,15 @@ typedef struct tdTPM_NV_DATA_SENSITIVE {
   TPM_STRUCTURE_TAG tag;
   TPM_NV_DATA_PUBLIC pubInfo;
   TPM_AUTHDATA authValue;
-  BYTE* data;
-  /* next is only internally used to build a linked list */
-  struct tdTPM_NV_DATA_SENSITIVE *next;
+  UINT32 dataIndex;
+  /* additional data */
+  BOOL valid;
 } TPM_NV_DATA_SENSITIVE;
 #define sizeof_TPM_NV_DATA_SENSITIVE(s) (2 + 20 + \
   sizeof_TPM_NV_DATA_PUBLIC(s.pubInfo) + s.pubInfo.dataSize)
+#define sizeof_TPM_NV_DATA_SENSITIVE2(s) \
+  (sizeof_TPM_NV_DATA_SENSITIVE(s) + 1)
 #define free_TPM_NV_DATA_SENSITIVE(s) { tpm_free(s.data); }
-
 
 /*
  * Max NV Size ([TPM_Part2], Section 19.5)
@@ -1572,15 +1578,7 @@ typedef struct tdTPM_NV_DATA_SENSITIVE {
  * specific specification. The TPM vendor can design a TPM with a
  * size that is larger than the minimum.
  */
-#define TPM_MAX_NV_SIZE 64
-
-/*
- * TPM_NV_DATA_AREA ([TPM_Part2], Section 19.6)
- * TPM_NV_DATA_AREA is an indication of the internal structure the
- * TPM uses to track NV areas. The structure definition is TPM vendor
- * specific and never leaves the TPM. The structure would contain
- * both the TPM_NV_DATA_PUBLIC and TPM_NV_DATA_SENSITIVE areas.
- */
+#define TPM_MAX_NV_SIZE 4096
 
 /*
  * Delegate Structures
@@ -2250,11 +2248,12 @@ typedef struct tdTPM_KEY_DATA {
 #define TPM_MAX_NV_WRITE_NOOWNER        64
 #define TPM_MAX_KEYS                    10
 #define TPM_CONTEXT_KEY_SIZE            32
+#define TPM_MAX_NV_BUF_SIZE             1024
+#define TPM_MAX_NVS                     20
 typedef struct tdTPM_PERMANENT_DATA {
   TPM_STRUCTURE_TAG tag;
   TPM_VERSION version;
   TPM_NONCE tpmProof;
-  //TPM_NONCE ekReset;
   TPM_SECRET ownerAuth;
   TPM_SECRET operatorAuth;
   //TPM_SECRET adminAuth;
@@ -2266,18 +2265,21 @@ typedef struct tdTPM_PERMANENT_DATA {
   //TPM_KEY delegateKey;
   TPM_ACTUAL_COUNT auditMonotonicCounter;
   TPM_COUNTER_VALUE counters[TPM_MAX_COUNTERS];
-  //TPM_TICKTYPE tickType;
+/* removed since v1.2 rev 94
+  TPM_TICKTYPE tickType;
+*/
   TPM_PCR_ATTRIBUTES pcrAttrib[TPM_NUM_PCR];
   TPM_PCRVALUE pcrValue[TPM_NUM_PCR];
   BYTE ordinalAuditStatus[TPM_ORD_MAX / 8];
   //BYTE* rngState;
   //TPM_FAMILY_TABLE familyTable;
   //TPM_DELEGATE_TABLE delegateTable;
-  //UINT32 maxNVBufSize;
+  UINT32 maxNVBufSize;
   //UINT32 lastFamilyID;
   UINT32 noOwnerNVWrite;
-  TPM_DIRVALUE DIR;
-  TPM_NV_DATA_SENSITIVE *nvStorage;
+  UINT32 nvDataSize;
+  BYTE nvData[TPM_MAX_NV_SIZE];
+  TPM_NV_DATA_SENSITIVE nvStorage[TPM_MAX_NVS];
   //TPM_CMK_DELEGATE restrictDelegate;
   TPM_DAA_TPM_SEED tpmDAASeed;
   //TPM_NONCE daaProof;
@@ -2289,7 +2291,9 @@ typedef struct tdTPM_PERMANENT_DATA {
   + sizeof_RSA(s.endorsementKey) + TPM_ORD_MAX/8 \
   + (1+TPM_MAX_KEYS)*sizeof_TPM_KEY_DATA(s.srk) \
   + TPM_NUM_PCR*(sizeof_TPM_PCR_ATTRIBUTES2(x)+20) \
-  + TPM_MAX_COUNTERS*sizeof_TPM_COUNTER_VALUE2(x) + 1 + 4 + 20)
+  + TPM_MAX_COUNTERS*sizeof_TPM_COUNTER_VALUE2(x) \
+  + 4 + 4 + sizeof(s.nvData) \
+  + 1 + 4 + 20)
 
 /*
  * TPM_STCLEAR_DATA ([TPM_Part2], Section 7.5)

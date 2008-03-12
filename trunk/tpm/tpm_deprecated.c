@@ -121,7 +121,9 @@ TPM_RESULT TPM_DirWriteAuth(TPM_DIRINDEX dirIndex,
   res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
   if (res != TPM_SUCCESS) return res;
   if (dirIndex != 0) return TPM_BADINDEX;
-  memcpy(&tpmData.permanent.data.DIR, newContents, sizeof(TPM_DIRVALUE));
+  memcpy(tpmData.permanent.data.nvData
+         + tpmData.permanent.data.nvStorage[0].dataIndex,
+         newContents, sizeof(TPM_DIRVALUE));
   return TPM_SUCCESS;
 }
 
@@ -129,7 +131,9 @@ TPM_RESULT TPM_DirRead(TPM_DIRINDEX dirIndex, TPM_DIRVALUE *dirContents)
 {
   info("TPM_DirRead()");
   if (dirIndex != 0) return TPM_BADINDEX;
-  memcpy(dirContents, &tpmData.permanent.data.DIR, sizeof(TPM_DIRVALUE));
+  memcpy(dirContents, tpmData.permanent.data.nvData
+         + tpmData.permanent.data.nvStorage[0].dataIndex,
+         sizeof(TPM_DIRVALUE));
   return TPM_SUCCESS;
 }
 

@@ -156,18 +156,23 @@ TPM_RESULT tpm_compute_pcr_digest(TPM_PCR_SELECTION *pcrSelection,
   }
   memcpy(&comp.select, pcrSelection, sizeof(TPM_PCR_SELECTION));
   comp.valueSize = j * sizeof(TPM_PCRVALUE);
-  /* marshal composite and compute hash */
-  len = sizeof_TPM_PCR_COMPOSITE(comp);
-  buf = ptr = tpm_malloc(len);
-  if (buf == NULL
-      || tpm_marshal_TPM_PCR_COMPOSITE(&ptr, &len, &comp)) {
-     tpm_free(buf);
-     return TPM_FAIL;
+  debug("comp.valueSize = %d", comp.valueSize);
+  if (comp.valueSize > 0) {
+    /* marshal composite and compute hash */
+    len = sizeof_TPM_PCR_COMPOSITE(comp);
+    buf = ptr = tpm_malloc(len);
+    if (buf == NULL
+        || tpm_marshal_TPM_PCR_COMPOSITE(&ptr, &len, &comp)) {
+       tpm_free(buf);
+       return TPM_FAIL;
+    }
+    tpm_sha1_init(&ctx);
+    tpm_sha1_update(&ctx, buf, sizeof_TPM_PCR_COMPOSITE(comp));
+    tpm_sha1_final(&ctx, digest->digest);
+    tpm_free(buf);
+  } else {
+    memset(digest, 0, sizeof(TPM_COMPOSITE_HASH));
   }
-  tpm_sha1_init(&ctx);
-  tpm_sha1_update(&ctx, buf, sizeof_TPM_PCR_COMPOSITE(comp));
-  tpm_sha1_final(&ctx, digest->digest);
-  tpm_free(buf);
   /* copy composite if requested */
   if (composite != NULL)
     memcpy(composite, &comp, sizeof(TPM_PCR_COMPOSITE));
