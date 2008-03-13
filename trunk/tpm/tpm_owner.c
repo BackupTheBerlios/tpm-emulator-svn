@@ -190,6 +190,8 @@ void tpm_owner_clear()
   /* invalidate stany and stclear data */
   memset(&tpmData.stany.data, 0 , sizeof(tpmData.stany.data));
   memset(&tpmData.stclear.data, 0 , sizeof(tpmData.stclear.data));
+  /* release SRK */
+  tpm_rsa_release_private_key(&tpmData.permanent.data.srk.key);
   /* invalidate permanent data */
   memset(&tpmData.permanent.data.ownerAuth, 0, 
     sizeof(tpmData.permanent.data.ownerAuth));

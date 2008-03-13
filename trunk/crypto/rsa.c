@@ -166,11 +166,11 @@ int tpm_rsa_import_key(tpm_rsa_private_key_t *key, int endian,
 void tpm_rsa_copy_key(tpm_rsa_private_key_t *dst, tpm_rsa_private_key_t *src)
 {
   tpm_bn_init_set(dst->n, src->n);
-  tpm_bn_init_set(dst->e, src->n);
-  tpm_bn_init_set(dst->d, src->n);
-  tpm_bn_init_set(dst->p, src->n);
-  tpm_bn_init_set(dst->q, src->n);
-  tpm_bn_init_set(dst->u, src->n);
+  tpm_bn_init_set(dst->e, src->e);
+  tpm_bn_init_set(dst->d, src->d);
+  tpm_bn_init_set(dst->p, src->p);
+  tpm_bn_init_set(dst->q, src->q);
+  tpm_bn_init_set(dst->u, src->u);
   dst->size = src->size;
 }
 
