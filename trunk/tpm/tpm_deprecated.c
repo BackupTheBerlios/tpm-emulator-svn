@@ -186,8 +186,11 @@ TPM_RESULT TPM_ChangeAuthAsymStart(
     idKey = tpm_get_key(idHandle);
     if (idKey == NULL) return TPM_INVALID_KEYHANDLE;
     /* verify authorization */
-    res = tpm_verify_auth(auth1, idKey->usageAuth, idHandle);
-    if (res != TPM_SUCCESS) return res;
+    if (auth1->authHandle != TPM_INVALID_HANDLE 
+      || idKey->authDataUsage != TPM_AUTH_NEVER) {
+        res = tpm_verify_auth(auth1, idKey->usageAuth, idHandle);
+        if (res != TPM_SUCCESS) return res;
+    }
     /* verify key parameters */
     if (idKey->keyUsage != TPM_KEY_IDENTITY) return TPM_INVALID_KEYUSAGE;
   /* 2. The TPM SHALL validate the algorithm parameters for the key to create
@@ -397,8 +400,11 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(
     parentKey = tpm_get_key(parentHandle);
     if (parentKey == NULL) return TPM_INVALID_KEYHANDLE;
     /* verify authorization */
-    res = tpm_verify_auth(auth1, parentKey->usageAuth, parentHandle);
-    if (res != TPM_SUCCESS) return res;
+    if (auth1->authHandle != TPM_INVALID_HANDLE 
+      || parentKey->authDataUsage != TPM_AUTH_NEVER) {
+        res = tpm_verify_auth(auth1, parentKey->usageAuth, parentHandle);
+        if (res != TPM_SUCCESS) return res;
+    }
     /* get ephemeral key */
     ephKey = tpm_get_key(ephHandle);
     if (ephKey == NULL) return TPM_INVALID_KEYHANDLE;
