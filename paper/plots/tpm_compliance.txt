@@ -17,7 +17,7 @@
 "Management"			3	0	0
 "Migration"			10	0	0
 "Monotonic Counters"		5	5	4
-"Non-volatile Storage"		5	0	0
+"Non-volatile Storage"		5	5	5
 "Ownership/Opt-In"		12	12	12
 "Session Management"		3	3	3
 "Storage Functions"		7	7	6
