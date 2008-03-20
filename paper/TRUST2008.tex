@@ -327,14 +327,14 @@ the TPM in an encrypted form using the transport encryption commands.
 	\label{fig:tpm_command}\vspace*{-5mm}
 \end{figure}
 
-%\paragraph{Command Authorization.}
-%The purpose of several authorization protocols (e.g., OIAP and OSAP) is to
-%prove that the initiator of a command has permission to execute and to
-%access the involved data objects. For instance, they are used to establish
-%platform ownership, restrict key usage, and to apply access control to
-%(protected) objects. The proof comes from the knowledge of a shared secret,
-%the so called authorization data. The TPM treats knowledge of the corresponding
-%authorization data as a complete proof, i.e. no other checks are necessary.
+\paragraph{Command Authorization.}
+The purpose of several authorization protocols (e.g., OIAP and OSAP) is to
+prove that the initiator of a command has permission to execute and to
+access the involved data objects. For instance, they are used to establish
+platform ownership, restrict key usage, and to apply access control to
+(protected) objects. The proof comes from the knowledge of a shared secret,
+the so called authorization data. The TPM treats knowledge of the corresponding
+authorization data as a complete proof, i.e. no other checks are necessary.
 
 % There are three protocols to proof the knowledge of a specific piece of authorization data. The
 % \textit{Object-Independent Authorization Protocol} (OIAP) supports multiple authorization
@@ -366,7 +366,7 @@ with TPM device drivers.
 	\centering
 	\includegraphics[width=.5\textwidth]{figures/system_overview}
 	\caption{Overview of the TPM emulator package.}
-	\label{fig:system_overview}
+	\label{fig:system_overview}\vspace*{-5mm}
 \end{figure}
 
 \subsection{TPM Device Driver Library and Kernel Module}
@@ -474,14 +474,15 @@ blocks, e.g. in the case of (partly) available hardware support.
 
 \subsection{Implementation Issues}
 Some technical issues that have been occurred during implementation
-are worth to be noted here. They will be explained in more detail in the
-talk:\marginpar{TODO}
-\begin{enumerate}
-	\item Kernel space vs. user space (solved since version 0.5),
-	\item typographical errors in the specs and incomplete changelog,
-	\item alignment of data structures (native/network byte order).
-\end{enumerate}
-
+are worth to be noted here: First of all, initially the TPM emulator
+was designed as a sole kernel module. Thus implementation and debugging
+of the most functions was not straightforward due to the limited kernel
+stack size (4~KByte resp. 8~KByte on~x86). Moreover, the persistent storage
+needed for saving the internal state of the TPM was obtained by using
+some technical tricks. This issues have been solved in our new design
+by introducing a user-space daemon. Finally, the typographical errors
+and ambiguities in early revisions of the TPM specification~\cite{TPM}
+often turned out to be additional stumbling blocks during development.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -567,7 +568,7 @@ some capability commands, all migration functions, all delegation functions,
 all non-volatile storage functions, and many optional commands.
 
 \begin{figure}
-	\vspace*{-3mm}\centering
+	\centering
 	\includegraphics[angle=-90,scale=0.6]{plots/compliance}
 	\includegraphics[origin=br,angle=90,scale=0.6]{plots/compliance_key}
 	\caption{Summarized results of several TPM compliance and functionality
