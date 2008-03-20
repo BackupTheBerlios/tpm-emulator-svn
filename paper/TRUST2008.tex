@@ -320,7 +320,7 @@ byte-order of the host platform as part of the unmarshaling process. Since
 version 1.2 of the TPM specification, commands can also be sent from and to
 the TPM in an encrypted form using the transport encryption commands.
 
-\begin{figure}[!h]
+\begin{figure}
 	\centering
 	\includegraphics[width=.9\textwidth]{figures/tpm_command_structure}
 	\caption{TPM command structure.}
@@ -366,7 +366,7 @@ with TPM device drivers.
 	\centering
 	\includegraphics[width=.5\textwidth]{figures/system_overview}
 	\caption{Overview of the TPM emulator package.}
-	\label{fig:system_overview}\vspace*{-5mm}
+	\label{fig:system_overview}
 \end{figure}
 
 \subsection{TPM Device Driver Library and Kernel Module}
@@ -475,7 +475,7 @@ blocks, e.g. in the case of (partly) available hardware support.
 \subsection{Implementation Issues}
 Some technical issues that have been occurred during implementation
 are worth to be noted here. They will be explained in more detail in the
-talk:
+talk:\marginpar{TODO}
 \begin{enumerate}
 	\item Kernel space vs. user space (solved since version 0.5),
 	\item typographical errors in the specs and incomplete changelog,
@@ -507,8 +507,26 @@ non negligible overhead with respect to the overall command execution time.
     \includegraphics[width=.8\textwidth]{plots/performance_comparison}
     \vspace*{-2mm}
     \caption{Performance comparison of the emulator with a hardware
-             TPM from NSC.}
-    \label{plot:performance}\vspace*{-5mm}
+             TPM v1.1b.}
+    \label{plot:performance}
+\end{figure}
+
+The above results have been confirmed on a Lenovo ThinkPad X61s
+(Core 2 Duo @ 1.6\,GHz and 2 GByte RAM) using Linux kernel~2.6.24
+and a hardware TPM v1.2 from Atmel Corporation
+(see Figure~\ref{plot:performance2}). Even the computation-intensive
+commands like \textsf{TPM\_DAA\_Join} are up to hundred times faster.
+This is not really surprising because the TPM emulator can use sophisticated
+algorithms from third party libraries (e.g., the GNU Multiple Precision
+Arithmetic Library~\cite{GMP}) and a considerably faster general-purpose CPU.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.8\textwidth]{plots/performance_comparison2}
+    \vspace*{-2mm}
+    \caption{Performance comparison of the emulator with a hardware
+             TPM v1.2.}
+    \label{plot:performance2}
 \end{figure}
 
 In order to investigate the scalability of our TPM emulator in relation to
@@ -532,7 +550,7 @@ if one needs to simulate a whole distributed system on a single host.
   \vspace*{-2mm}
   \caption{Duration for the execution of two commands on each TPM emulator
            instance.}
-  \label{plot:execution_time}\vspace*{-5mm}
+  \label{plot:execution_time}
 \end{figure}
 
 The results of several TPM compliance and functionality tests, in particular
@@ -554,7 +572,7 @@ all non-volatile storage functions, and many optional commands.
 	\includegraphics[origin=br,angle=90,scale=0.6]{plots/compliance_key}
 	\caption{Summarized results of several TPM compliance and functionality
 			tests.}
-	\label{plot:compliance}\vspace*{-5mm}
+	\label{plot:compliance}
 \end{figure}
 
 % \begin{table}[h]\footnotesize\centering
@@ -632,10 +650,9 @@ Matt Bishop.
 \newblock {\em {Computer Security: Art and Science}}.
 \newblock Addison Wesley, 2003.
 
-%\bibitem{GMP}
-%Torbj{\"o}rn Granlund et~al.
-%\newblock {GNU Multiple Precision Arithmetic Library}.
-%\newblock \newline\url{http://gmplib.org/}.
+\bibitem{GMP}
+Torbj{\"o}rn Granlund et~al.
+\newblock {GNU Multiple Precision Arithmetic Library}.
 
 \bibitem{Challener2007}
 David Challener et~al.
@@ -700,7 +717,6 @@ Roger Zimmermann.
 \end{thebibliography}
 
 \appendix
-\newpage
 
 \section{Appendix: Supported TPM Commands}\label{app:commands}
 \definecolor{tpmgray}{gray}{0.85}
@@ -782,16 +798,16 @@ implemented.
 \tpmcmdg{TSC\_ResetEstablishmentBit}{1.2}{}{M}{tpm\_owner.c}{}
 	\item Capability Commands (pp. 37--42)\\
 \tpmcmdy{TPM\_GetCapability}{1.1}{101}{M}{tpm\_capability.c}{TODO: 45\,\%}\\
-\tpmcmdr{TPM\_SetCapability}{1.2}{63}{M}{tpm\_capability.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_SetCapability}{1.2}{63}{M}{tpm\_capability.c}{}\\
 \tpmcmdg{TPM\_GetCapabilityOwner}{1.1}{102}{M}{tpm\_capability.c}{}
 	\item Auditing (pp. 43--51)\\
 \tpmcmdg{TPM\_GetAuditDigest}{1.2}{133}{O}{tpm\_audit.c}{failed \cite{trousers}}\\
 \tpmcmdg{TPM\_GetAuditDigestSigned}{1.2}{134}{O}{tpm\_audit.c}{}\\
 \tpmcmdg{TPM\_SetOrdinalAuditStatus}{1.1}{141}{O}{tpm\_audit.c}{}
 	\item Administrative Functions -- Management (pp. 52--57)\\
-\tpmcmdr{TPM\_FieldUpgrade}{1.1}{170}{O}{tpm\_management.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_SetRedirection}{1.1}{154}{O}{tpm\_management.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_ResetLockValue}{1.2}{64}{M}{tpm\_management.c}{TODO: 100\,\%}
+\tpmcmdr{TPM\_FieldUpgrade}{1.1}{170}{O}{tpm\_management.c}{}\\
+\tpmcmdr{TPM\_SetRedirection}{1.1}{154}{O}{tpm\_management.c}{}\\
+\tpmcmdr{TPM\_ResetLockValue}{1.2}{64}{M}{tpm\_management.c}{}
 	\item Storage Functions (pp. 58--81)\\
 \tpmcmdg{TPM\_Seal}{1.1}{23}{M}{tpm\_storage.c}{passed \cite{trousers,jTSS,Sadeghi}}\\
 \tpmcmdg{TPM\_Unseal}{1.1}{24}{M}{tpm\_storage.c}{passed \cite{jTSS}}\\
@@ -799,24 +815,24 @@ implemented.
 \tpmcmdg{TPM\_CreateWrapKey}{1.1}{31}{M}{tpm\_storage.c}{passed \cite{trousers,jTSS,Sadeghi}}\\
 \tpmcmdy{TPM\_LoadKey2}{1.2}{65}{M}{tpm\_storage.c}{emulated by 32}\\
 \tpmcmdg{TPM\_GetPubKey}{1.1}{33}{M}{tpm\_storage.c}{passed \cite{trousers}}\\
-\tpmcmdr{TPM\_Sealx}{1.2}{61}{O}{tpm\_storage.c}{TODO: 100\,\%}
+\tpmcmdr{TPM\_Sealx}{1.2}{61}{O}{tpm\_storage.c}{}
 	\item Migration (pp. 82--108)\\
-\tpmcmdr{TPM\_CreateMigrationBlob}{1.1}{40}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_ConvertMigrationBlob}{1.1}{42}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_AuthorizeMigrationKey}{1.1}{43}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_MigrateKey}{1.2}{37}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_CMK\_SetRestrictions}{1.2}{28}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_CMK\_ApproveMA}{1.2}{29}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_CMK\_CreateKey}{1.2}{19}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_CMK\_CreateTicket}{1.2}{18}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_CMK\_CreateBlob}{1.2}{27}{M}{tpm\_migration.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_CMK\_ConvertMigration}{1.2}{36}{M}{tpm\_migration.c}{TODO: 100\,\%}
+\tpmcmdr{TPM\_CreateMigrationBlob}{1.1}{40}{M}{tpm\_migration.c}{}\\
+\tpmcmdr{TPM\_ConvertMigrationBlob}{1.1}{42}{M}{tpm\_migration.c}{}\\
+\tpmcmdr{TPM\_AuthorizeMigrationKey}{1.1}{43}{M}{tpm\_migration.c}{}\\
+\tpmcmdr{TPM\_MigrateKey}{1.2}{37}{M}{tpm\_migration.c}{}\\
+\tpmcmdr{TPM\_CMK\_SetRestrictions}{1.2}{28}{M}{tpm\_migration.c}{}\\
+\tpmcmdr{TPM\_CMK\_ApproveMA}{1.2}{29}{M}{tpm\_migration.c}{}\\
+\tpmcmdr{TPM\_CMK\_CreateKey}{1.2}{19}{M}{tpm\_migration.c}{}\\
+\tpmcmdr{TPM\_CMK\_CreateTicket}{1.2}{18}{M}{tpm\_migration.c}{}\\
+\tpmcmdr{TPM\_CMK\_CreateBlob}{1.2}{27}{M}{tpm\_migration.c}{}\\
+\tpmcmdr{TPM\_CMK\_ConvertMigration}{1.2}{36}{M}{tpm\_migration.c}{}
 	\item Maintenance Functions (optional, pp. 109--118)\\
-\tpmcmdr{TPM\_CreateMaintenanceArchive}{1.1}{44}{O}{tpm\_maintenance.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_LoadMaintenanceArchive}{1.1}{45}{O}{tpm\_maintenance.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_KillMaintenanceFeature}{1.1}{46}{O}{tpm\_maintenance.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_LoadManuMaintPub}{1.1}{47}{O}{tpm\_maintenance.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_ReadManuMaintPub}{1.1}{48}{O}{tpm\_maintenance.c}{TODO: 100\,\%}
+\tpmcmdr{TPM\_CreateMaintenanceArchive}{1.1}{44}{O}{tpm\_maintenance.c}{}\\
+\tpmcmdr{TPM\_LoadMaintenanceArchive}{1.1}{45}{O}{tpm\_maintenance.c}{}\\
+\tpmcmdr{TPM\_KillMaintenanceFeature}{1.1}{46}{O}{tpm\_maintenance.c}{}\\
+\tpmcmdr{TPM\_LoadManuMaintPub}{1.1}{47}{O}{tpm\_maintenance.c}{}\\
+\tpmcmdr{TPM\_ReadManuMaintPub}{1.1}{48}{O}{tpm\_maintenance.c}{}
 	\item Cryptographic Functions (pp. 119--136)\\
 \tpmcmdg{TPM\_SHA1Start}{1.1}{160}{M}{tpm\_crypto.c}{passed \cite{trousers,jTSS}}\\
 \tpmcmdg{TPM\_SHA1Update}{1.1}{161}{M}{tpm\_crypto.c}{passed \cite{trousers,jTSS}}\\
@@ -848,22 +864,22 @@ implemented.
 	\item Authorization Sessions (pp. 169--181)\\
 \tpmcmdg{TPM\_OIAP}{1.1}{10}{M}{tpm\_authorization.c}{not random \cite{Sadeghi}}\\
 \tpmcmdg{TPM\_OSAP}{1.1}{11}{M}{tpm\_authorization.c}{not random \cite{Sadeghi}}\\
-\tpmcmdr{TPM\_DSAP}{1.2}{17}{M}{tpm\_authorization.c}{TODO: 100\,\%}\\
+\tpmcmdr{TPM\_DSAP}{1.2}{17}{M}{tpm\_authorization.c}{}\\
 \tpmcmdy{TPM\_SetOwnerPointer}{1.2}{117}{M}{tpm\_authorization.c}{disabled}
 	\item Delegation Commands (pp. 182--201)\\
-\tpmcmdr{TPM\_Delegate\_Manage}{1.2}{210}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_Delegate\_CreateKeyDelegation}{1.2}{212}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_Delegate\_CreateOwnerDelegation}{1.2}{213}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_Delegate\_LoadOwnerDelegation}{1.2}{216}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_Delegate\_ReadTable}{1.2}{219}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_Delegate\_UpdateVerification}{1.2}{209}{M}{tpm\_delegation.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_Delegate\_VerifyDelegation}{1.2}{214}{M}{tpm\_delegation.c}{TODO: 100\,\%}
+\tpmcmdr{TPM\_Delegate\_Manage}{1.2}{210}{M}{tpm\_delegation.c}{}\\
+\tpmcmdr{TPM\_Delegate\_CreateKeyDelegation}{1.2}{212}{M}{tpm\_delegation.c}{}\\
+\tpmcmdr{TPM\_Delegate\_CreateOwnerDelegation}{1.2}{213}{M}{tpm\_delegation.c}{}\\
+\tpmcmdr{TPM\_Delegate\_LoadOwnerDelegation}{1.2}{216}{M}{tpm\_delegation.c}{}\\
+\tpmcmdr{TPM\_Delegate\_ReadTable}{1.2}{219}{M}{tpm\_delegation.c}{}\\
+\tpmcmdr{TPM\_Delegate\_UpdateVerification}{1.2}{209}{M}{tpm\_delegation.c}{}\\
+\tpmcmdr{TPM\_Delegate\_VerifyDelegation}{1.2}{214}{M}{tpm\_delegation.c}{}
 	\item Non-volatile Storage (pp. 202--215)\\
-\tpmcmdr{TPM\_NV\_DefineSpace}{1.2}{204}{M}{tpm\_nv\_storage.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_NV\_WriteValue}{1.2}{205}{M}{tpm\_nv\_storage.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_NV\_WriteValueAuth}{1.2}{206}{M}{tpm\_nv\_storage.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_NV\_ReadValue}{1.2}{207}{M}{tpm\_nv\_storage.c}{TODO: 100\,\%}\\
-\tpmcmdr{TPM\_NV\_ReadValueAuth}{1.2}{208}{M}{tpm\_nv\_storage.c}{TODO: 100\,\%}
+\tpmcmdr{TPM\_NV\_DefineSpace}{1.2}{204}{M}{tpm\_nv\_storage.c}{}\\
+\tpmcmdr{TPM\_NV\_WriteValue}{1.2}{205}{M}{tpm\_nv\_storage.c}{}\\
+\tpmcmdr{TPM\_NV\_WriteValueAuth}{1.2}{206}{M}{tpm\_nv\_storage.c}{}\\
+\tpmcmdr{TPM\_NV\_ReadValue}{1.2}{207}{M}{tpm\_nv\_storage.c}{}\\
+\tpmcmdr{TPM\_NV\_ReadValueAuth}{1.2}{208}{M}{tpm\_nv\_storage.c}{}
 	\item Session Management (pp. 216--223)\\
 \tpmcmdg{TPM\_KeyControlOwner}{1.2}{35}{M}{tpm\_context.c}{failed \cite{trousers}}\\
 \tpmcmdg{TPM\_SaveContext}{1.2}{184}{M}{tpm\_context.c}{}\\
