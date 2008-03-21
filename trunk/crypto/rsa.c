@@ -315,6 +315,18 @@ void tpm_rsa_export_prime2(tpm_rsa_private_key_t *key,
   tpm_bn_export(prime, length, 1, key->q);
 }
 
+void tpm_rsa_export_public_modulus(tpm_rsa_public_key_t *key,
+                                   uint8_t *modulus, size_t *length)
+{
+  tpm_bn_export(modulus, length, 1, key->n);
+}
+
+void tpm_rsa_export_public_exponent(tpm_rsa_public_key_t *key,
+                                    uint8_t *exponent, size_t *length)
+{
+  tpm_bn_export(exponent, length, 1, key->e);
+}
+
 void tpm_rsa_mask_generation(const uint8_t *seed, size_t seed_len, 
                              uint8_t *data, size_t data_len)
 {
@@ -402,7 +414,12 @@ static int encode_message(int type, const uint8_t *data, size_t data_len,
         &msg[1 + SHA1_DIGEST_LENGTH], msg_len - SHA1_DIGEST_LENGTH - 1);
       tpm_rsa_mask_generation(&msg[1 + SHA1_DIGEST_LENGTH], 
         msg_len - SHA1_DIGEST_LENGTH - 1, &msg[1], SHA1_DIGEST_LENGTH);
-      break; 
+      break;
+    case RSA_ES_PLAIN:
+        /* EM = data */
+        if (msg_len != data_len) return -1;
+        if (msg != data) memcpy(msg, data, data_len);
+        break;
     default:
       /* unsupported encoding method */
       return -1;

@@ -1409,6 +1409,41 @@ int tpm_unmarshal_RSA(BYTE **ptr, UINT32 *length, tpm_rsa_private_key_t *v)
   return 0;
 }
 
+int tpm_marshal_RSAPub(BYTE **ptr, UINT32 *length, tpm_rsa_public_key_t *v)
+{
+  size_t m_len, e_len;
+  if (*length < (UINT32)sizeof_RSAPub((*v))) return -1;
+  if (v->size > 0) {
+    tpm_rsa_export_public_modulus(v, &(*ptr)[4], &m_len);
+    tpm_rsa_export_public_exponent(v, &(*ptr)[4+m_len], &e_len);
+    tpm_marshal_UINT16(ptr, length, m_len);
+    tpm_marshal_UINT16(ptr, length, e_len);
+    *ptr += m_len + e_len;
+    *length -= m_len + e_len;
+  } else {
+    tpm_marshal_UINT16(ptr, length, 0);
+    tpm_marshal_UINT16(ptr, length, 0);
+  }
+  return 0;
+}
+
+int tpm_unmarshal_RSAPub(BYTE **ptr, UINT32 *length, tpm_rsa_public_key_t *v)
+{
+  UINT16 m_len, e_len;
+  if (tpm_unmarshal_UINT16(ptr, length, &m_len)
+      || tpm_unmarshal_UINT16(ptr, length, &e_len)) return -1;
+  if (m_len == 0) {
+    v->size = 0;
+    return 0;
+  }
+  if (*length < (UINT32)m_len + (UINT32)e_len
+      || tpm_rsa_import_public_key(v, RSA_MSB_FIRST, &(*ptr)[0], m_len, 
+                                   &(*ptr)[m_len], e_len)) return -1;
+  *ptr += m_len + e_len;
+  *length -= m_len + e_len;
+  return 0;
+}
+
 int tpm_marshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v)
 {
   if (tpm_marshal_BOOL(ptr, length, v->valid)) return -1;
@@ -1447,6 +1482,28 @@ int tpm_unmarshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v)
   return 0;
 }
 
+int tpm_marshal_TPM_PUBKEY_DATA(BYTE **ptr, UINT32 *length, TPM_PUBKEY_DATA *v)
+{
+  if (tpm_marshal_BOOL(ptr, length, v->valid)) return -1;
+  if (v->valid) {
+    if (tpm_marshal_TPM_ENC_SCHEME(ptr, length, v->encScheme)
+        || tpm_marshal_TPM_SIG_SCHEME(ptr, length, v->sigScheme)
+        || tpm_marshal_RSAPub(ptr, length, &v->key)) return -1;
+    }
+  return 0;
+}
+
+int tpm_unmarshal_TPM_PUBKEY_DATA(BYTE **ptr, UINT32 *length, TPM_PUBKEY_DATA *v)
+{
+  if (tpm_unmarshal_BOOL(ptr, length, &v->valid)) return -1;
+  if (v->valid) {
+    if (tpm_unmarshal_TPM_ENC_SCHEME(ptr, length, &v->encScheme)
+        || tpm_unmarshal_TPM_SIG_SCHEME(ptr, length, &v->sigScheme)
+        || tpm_unmarshal_RSAPub(ptr, length, &v->key)) return -1;
+    }
+  return 0;
+}
+
 int tpm_marshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DATA *v)
 {
   UINT32 i;
@@ -1455,6 +1512,7 @@ int tpm_marshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DAT
       || tpm_marshal_TPM_NONCE(ptr, length, &v->tpmProof)
       || tpm_marshal_TPM_SECRET(ptr, length, &v->ownerAuth)
       || tpm_marshal_TPM_SECRET(ptr, length, &v->operatorAuth)
+      || tpm_marshal_TPM_PUBKEY_DATA(ptr, length, &v->manuMaintPub)
       || tpm_marshal_TPM_NONCE(ptr, length, &v->ekReset)
       || tpm_marshal_RSA(ptr, length, &v->endorsementKey)
       || tpm_marshal_TPM_KEY_DATA(ptr, length, &v->srk)
@@ -1499,6 +1557,7 @@ int tpm_unmarshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_D
       || tpm_unmarshal_TPM_NONCE(ptr, length, &v->tpmProof)
       || tpm_unmarshal_TPM_SECRET(ptr, length, &v->ownerAuth)
       || tpm_unmarshal_TPM_SECRET(ptr, length, &v->operatorAuth)
+      || tpm_unmarshal_TPM_PUBKEY_DATA(ptr, length, &v->manuMaintPub)
       || tpm_unmarshal_TPM_NONCE(ptr, length, &v->ekReset)
       || tpm_unmarshal_RSA(ptr, length, &v->endorsementKey)
       || tpm_unmarshal_TPM_KEY_DATA(ptr, length, &v->srk)

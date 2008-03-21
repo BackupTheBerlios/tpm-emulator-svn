@@ -154,7 +154,7 @@ static inline int tpm_unmarshal_UINT64(BYTE **ptr, UINT32 *length, UINT64 *v)
 }
 
 static inline int tpm_marshal_BLOB(BYTE **ptr, UINT32 *ptr_length,
-                            BYTE *b, UINT32 b_length)
+                                   BYTE *b, UINT32 b_length)
 {
   if (*ptr_length < b_length) return -1;
   if (b_length) memcpy(*ptr, b, b_length);
@@ -163,7 +163,7 @@ static inline int tpm_marshal_BLOB(BYTE **ptr, UINT32 *ptr_length,
 }
 
 static inline int tpm_unmarshal_BLOB(BYTE **ptr, UINT32 *ptr_length,
-                              BYTE **b, UINT32 b_length)
+                                     BYTE **b, UINT32 b_length)
 {
   if (*ptr_length < b_length) return -1;
   *b = (b_length) ? *ptr : NULL;
@@ -172,7 +172,7 @@ static inline int tpm_unmarshal_BLOB(BYTE **ptr, UINT32 *ptr_length,
 }
 
 static inline int tpm_marshal_BYTE_ARRAY(BYTE **ptr, UINT32 *ptr_length,
-                                  BYTE *b, UINT32 b_length)
+                                         BYTE *b, UINT32 b_length)
 {
   if (*ptr_length < b_length) return -1;
   memcpy(*ptr, b, b_length);
@@ -181,7 +181,7 @@ static inline int tpm_marshal_BYTE_ARRAY(BYTE **ptr, UINT32 *ptr_length,
 }
 
 static inline int tpm_unmarshal_BYTE_ARRAY(BYTE **ptr, UINT32 *ptr_length,
-                                    BYTE *b, UINT32 b_length)
+                                           BYTE *b, UINT32 b_length)
 {
   if (*ptr_length < b_length) return -1;
   if (b_length) memcpy(b, *ptr, b_length);

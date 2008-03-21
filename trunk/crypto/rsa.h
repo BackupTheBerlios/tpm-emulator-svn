@@ -37,9 +37,10 @@ typedef struct {
 } tpm_rsa_public_key_t;
 
 enum { 
-  RSA_ES_PKCSV15, 
-  RSA_ES_OAEP_SHA1, 
-  RSA_SSA_PKCS1_SHA1, 
+  RSA_ES_PKCSV15,
+  RSA_ES_OAEP_SHA1,
+  RSA_ES_PLAIN,
+  RSA_SSA_PKCS1_SHA1,
   RSA_SSA_PKCS1_SHA1_RAW,
   RSA_SSA_PKCS1_DER
 };
@@ -84,6 +85,12 @@ void tpm_rsa_export_prime2(tpm_rsa_private_key_t *key,
 
 void tpm_rsa_mask_generation(const uint8_t *seed, size_t seed_len, 
                              uint8_t *data, size_t data_len);
+
+void tpm_rsa_export_public_modulus(tpm_rsa_public_key_t *key,
+                                   uint8_t *modulus, size_t *length);
+
+void tpm_rsa_export_public_exponent(tpm_rsa_public_key_t *key,
+                                    uint8_t *exponent, size_t *length);
 
 /* Note: Input and output areas MUST NOT overlap (i.e., one can't 
    use the same buffer for data and sig or in and out). */

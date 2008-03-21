@@ -1003,7 +1003,7 @@ typedef struct tdTPM_STORE_ASYMKEY {
   TPM_DIGEST pubDataDigest;
   TPM_STORE_PRIVKEY privKey;
 } TPM_STORE_ASYMKEY;
-#define sizeof_TPM_STORE_ASYMKEY(s) ( 1 + 20 + 20 + 20 \
+#define sizeof_TPM_STORE_ASYMKEY(s) (1 + 20 + 20 + 20 \
   + sizeof_TPM_STORE_PRIVKEY(s.privKey))
 #define free_TPM_STORE_ASYMKEY(s) { free_TPM_STORE_PRIVKEY(s.privKey); }
 
@@ -1017,11 +1017,10 @@ typedef struct tdTPM_MIGRATE_ASYMKEY {
   TPM_SECRET usageAuth;
   TPM_DIGEST pubDataDigest;
   UINT32 partPrivKeyLen;
-  TPM_STORE_PRIVKEY partPrivKey;
+  BYTE *partPrivKey;
 } TPM_MIGRATE_ASYMKEY;
-#define sizeof_TPM_MIGRATE_ASYMKEY(s) ( 1 + 20 + 20 + 4 \
-  + sizeof_TPM_STORE_PRIVKEY(s.partPrivKey))
-#define free_TPM_MIGRATE_ASYMKEY(s) { free_TPM_STORE_PRIVKEY(s.partPrivKey); }
+#define sizeof_TPM_MIGRATE_ASYMKEY(s) (1 + 20 + 20 + 4 + s.partPrivKeyLen)
+#define free_TPM_MIGRATE_ASYMKEY(s) { tpm_free(s.partPrivKey); }
 
 /*
  * TPM_MIGRATIONKEYAUTH ([TPM_Part2], Section 5.12)
@@ -2236,6 +2235,19 @@ typedef struct tdTPM_KEY_DATA {
   + sizeof_TPM_PCR_INFO(s.pcrInfo) + 1 + sizeof_RSA(s.key))
 
 /*
+ * TPM_PUBKEY_DATA
+ * This structure contains the data for stored RSA public keys.
+ */
+typedef struct tdTPM_PUBKEY_DATA {
+  BOOL valid;
+  TPM_ENC_SCHEME encScheme;
+  TPM_SIG_SCHEME sigScheme;
+  tpm_rsa_public_key_t key;
+} TPM_PUBKEY_DATA;
+#define sizeof_RSAPub(s) (4 + 2*(s.size >> 3))
+#define sizeof_TPM_PUBKEY_DATA(s) (1 + 2 + 2 + sizeof_RSAPub(s.key))
+
+/*
  * TPM_PERMANENT_DATA ([TPM_Part2], Section 7.4)
  * This structure contains the data fields that are permanently held in
  * the TPM and not affected by TPM_Startup(any).
@@ -2257,7 +2269,7 @@ typedef struct tdTPM_PERMANENT_DATA {
   TPM_SECRET ownerAuth;
   TPM_SECRET operatorAuth;
   //TPM_SECRET adminAuth;
-  //TPM_PUBKEY manuMaintPub;
+  TPM_PUBKEY_DATA manuMaintPub;
   TPM_NONCE ekReset;
   tpm_rsa_private_key_t endorsementKey;
   TPM_KEY_DATA srk;
