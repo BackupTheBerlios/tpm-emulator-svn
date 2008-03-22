@@ -1247,34 +1247,28 @@ static TPM_RESULT execute_TPM_LoadMaintenanceArchive(TPM_REQUEST *req, TPM_RESPO
 {
   BYTE *ptr;
   UINT32 len;
-  UINT32 inArgumentsSize;
-  BYTE *inArguments;
-  UINT32 outArgumentsSize;
-  BYTE *outArguments = NULL;
+  UINT32 archiveSize;
+  BYTE *archive;
+  UINT32 sigSize;
+  BYTE *sig;
+  UINT32 randomSize;
+  BYTE *random;
   TPM_RESULT res;
   /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
   len = req->paramSize;
-  if (tpm_unmarshal_UINT32(&ptr, &len, &inArgumentsSize)
-      || tpm_unmarshal_BLOB(&ptr, &len, &inArguments, inArgumentsSize)
+  if (tpm_unmarshal_UINT32(&ptr, &len, &archiveSize)
+      || tpm_unmarshal_BLOB(&ptr, &len, &archive, archiveSize)
+      || tpm_unmarshal_UINT32(&ptr, &len, &sigSize)
+      || tpm_unmarshal_BLOB(&ptr, &len, &sig, sigSize)
+      || tpm_unmarshal_UINT32(&ptr, &len, &randomSize)
+      || tpm_unmarshal_BLOB(&ptr, &len, &random, randomSize)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
-  res = TPM_LoadMaintenanceArchive(inArgumentsSize, inArguments, &req->auth1, 
-    &outArgumentsSize, &outArguments);
-  if (res != TPM_SUCCESS) return res;
-  /* marshal output */
-  rsp->paramSize = len = 4 + outArgumentsSize;
-  rsp->param = ptr = tpm_malloc(len);
-  if (ptr == NULL
-      || tpm_marshal_UINT32(&ptr, &len, outArgumentsSize)
-      || tpm_marshal_BLOB(&ptr, &len, outArguments, outArgumentsSize)) {
-    tpm_free(rsp->param);
-    res = TPM_FAIL;
-  }
-  tpm_free(outArguments);
-  return res;
+  return TPM_LoadMaintenanceArchive(archiveSize, archive, sigSize, sig,
+   randomSize, random, &req->auth1);
 }
 
 static TPM_RESULT execute_TPM_KillMaintenanceFeature(TPM_REQUEST *req, TPM_RESPONSE *rsp)

@@ -145,17 +145,92 @@ TPM_RESULT TPM_CreateMaintenanceArchive(BOOL generateRandom, TPM_AUTH *auth1,
   return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_LoadMaintenanceArchive(  
-  UINT32 inArgumentsSize,
-  BYTE *inArguments,
-  TPM_AUTH *auth1,  
-  UINT32 *outArgumentsSize,
-  BYTE **outArguments  
-)
+TPM_RESULT TPM_LoadMaintenanceArchive(UINT32 archiveSize, BYTE *archive,
+                                      UINT32 sigSize, BYTE *sig,
+                                      UINT32 randomSize, BYTE *random,
+                                      TPM_AUTH *auth1)
 {
-  info("TPM_LoadMaintenanceArchive() not implemented yet");
-  /* TODO: implement TPM_LoadMaintenanceArchive() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  TPM_KEY newsrk;
+  TPM_DIGEST digest;
+  tpm_sha1_ctx_t sha1;
+  BYTE *buf, *ptr;
+  UINT32 len;
+  size_t buf_len;
+    
+  info("TPM_LoadMaintenanceArchive()");
+  /* verify authorization */
+  if (!tpmData.permanent.data.manuMaintPub.valid) return TPM_KEYNOTFOUND;
+  if (!tpmData.permanent.flags.allowMaintenance) return TPM_DISABLED_CMD;
+  res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
+  if (res != TPM_SUCCESS) return res;
+   /* verify signature */
+  tpm_sha1_init(&sha1);
+  tpm_sha1_update(&sha1, archive, archiveSize);
+  tpm_sha1_final(&sha1, digest.digest);
+  if (sigSize != tpmData.permanent.data.manuMaintPub.key.size >> 3
+      || tpm_rsa_verify(&tpmData.permanent.data.manuMaintPub.key,
+                        RSA_SSA_PKCS1_SHA1, digest.digest,
+                        sizeof(digest.digest), sig) != 0)
+    return TPM_BAD_SIGNATURE;
+  /* unmarshal archive */
+  ptr = archive; len = archiveSize;
+  if (tpm_unmarshal_TPM_KEY(&ptr, &len, &newsrk) != 0 || len != 0)
+    return TPM_BAD_PARAMETER;
+  /* decrypt private key */
+  buf_len = newsrk.encDataSize;
+  buf = tpm_malloc(buf_len);
+  if (buf == NULL) return TPM_NOSPACE;
+  if (tpm_rsa_decrypt(&tpmData.permanent.data.srk.key, RSA_ES_PLAIN,
+                      newsrk.encData, newsrk.encDataSize, buf, &buf_len)
+      || buf[0] != 0x00) {
+    debug("tpm_rsa_decrypt() failed");
+    tpm_free(buf);
+    return TPM_DECRYPT_ERROR;
+  }
+  tpm_rsa_mask_generation(&buf[1 + SHA1_DIGEST_LENGTH], 
+    buf_len - SHA1_DIGEST_LENGTH - 1, &buf[1], SHA1_DIGEST_LENGTH);
+  tpm_rsa_mask_generation(&buf[1], SHA1_DIGEST_LENGTH, 
+    &buf[1 + SHA1_DIGEST_LENGTH], buf_len - SHA1_DIGEST_LENGTH - 1);
+  if (randomSize > 0) {
+    for (len = 0; len < buf_len; len++) buf[len] ^= random[len];
+  } else {
+    tpm_rsa_mask_generation(tpmData.permanent.data.ownerAuth,
+                            SHA1_DIGEST_LENGTH, buf, buf_len);
+  }
+  /* validate new SRK */
+  if (newsrk.keyFlags & TPM_KEY_FLAG_MIGRATABLE
+      || newsrk.keyUsage != TPM_KEY_STORAGE) return TPM_INVALID_KEYUSAGE;
+  if (newsrk.algorithmParms.algorithmID != TPM_ALG_RSA
+      || newsrk.algorithmParms.encScheme != TPM_ES_RSAESOAEP_SHA1_MGF1
+      || newsrk.algorithmParms.sigScheme != TPM_SS_NONE
+      || newsrk.algorithmParms.parmSize == 0
+      || newsrk.algorithmParms.parms.rsa.keyLength != 2048
+      || newsrk.algorithmParms.parms.rsa.numPrimes != 2
+      || newsrk.algorithmParms.parms.rsa.exponentSize != 0
+      || newsrk.PCRInfoSize != 0) return TPM_BAD_KEY_PROPERTY;
+  /* clear owner but keep ownerAuth */
+  memcpy(digest.digest, tpmData.permanent.data.ownerAuth, sizeof(TPM_SECRET));
+  tpm_owner_clear();
+  memcpy(tpmData.permanent.data.ownerAuth, digest.digest, sizeof(TPM_SECRET));
+  tpmData.permanent.flags.owned = TRUE;
+  /* update tpmProof */
+  for (ptr = &buf[21]; *ptr == 0x00; ptr++);
+  memcpy(&tpmData.permanent.data.tpmProof, &ptr[2], sizeof(TPM_NONCE));
+  /* update SRK */
+  tpmData.permanent.data.srk.keyFlags = newsrk.keyFlags;
+  tpmData.permanent.data.srk.keyFlags |= TPM_KEY_FLAG_PCR_IGNORE;
+  tpmData.permanent.data.srk.keyFlags &= ~TPM_KEY_FLAG_HAS_PCR;
+  tpmData.permanent.data.srk.keyUsage = newsrk.keyUsage;
+  tpmData.permanent.data.srk.keyControl = TPM_KEY_CONTROL_OWNER_EVICT;
+  tpmData.permanent.data.srk.encScheme = newsrk.algorithmParms.encScheme;
+  tpmData.permanent.data.srk.sigScheme = newsrk.algorithmParms.sigScheme;
+  tpmData.permanent.data.srk.authDataUsage = newsrk.authDataUsage;
+  tpmData.permanent.data.srk.parentPCRStatus = FALSE;
+  tpmData.permanent.data.srk.valid =TRUE;
+  tpm_free(buf);
+  tpmData.permanent.flags.maintenanceDone = TRUE;
+  return TPM_SUCCESS;
 }
 
 TPM_RESULT TPM_KillMaintenanceFeature(TPM_AUTH *auth1)
@@ -169,8 +244,8 @@ TPM_RESULT TPM_KillMaintenanceFeature(TPM_AUTH *auth1)
   return TPM_SUCCESS;
 }
 
-extern int tpm_compute_pubkey_checksum(TPM_NONCE *antiReplay, TPM_PUBKEY *pubKey,
-                                       TPM_DIGEST *checksum);
+extern int tpm_compute_pubkey_checksum(TPM_NONCE *antiReplay, 
+                                       TPM_PUBKEY *pubKey, TPM_DIGEST *checksum);
 
 TPM_RESULT TPM_LoadManuMaintPub(TPM_NONCE *antiReplay, TPM_PUBKEY *pubKey,
                                 TPM_DIGEST *checksum)

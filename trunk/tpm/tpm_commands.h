@@ -1017,23 +1017,27 @@ TPM_RESULT TPM_CreateMaintenanceArchive(
 
 /**
  * TPM_LoadMaintenanceArchive - loads in a maintenance archive
- * @inArgumentsSize: [in] Size of the vendor specific arguments
- * @inArguments: [in] Vendor specific arguments 
+ * @archiveSize: [in] Size of encrypted key archive
+ * @archive: [in] Encrypted key archive
+ * @sigSize: [in] Size of archive signature
+ * @sig: [in] archive signature
+ * @randomSize: [in] Size of the random data
+ * @random: [in] Random data to XOR with encrypted archive
  * @auth1: [in, out] Authorization protocol parameters
- * @outArgumentsSize: [out] Size of the vendor specific arguments
- * @outArguments: [out] Vendor specific arguments
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
  * Description: ([TPM_Part3], Section 12.2)
  * This command loads in a maintenance archive that has been massaged 
  * by the manufacturer to load into another TPM.
  */
-TPM_RESULT TPM_LoadMaintenanceArchive(  
-  UINT32 inArgumentsSize,
-  BYTE *inArguments,
-  TPM_AUTH *auth1,  
-  UINT32 *outArgumentsSize,
-  BYTE **outArguments  
+TPM_RESULT TPM_LoadMaintenanceArchive(
+  UINT32 archiveSize,
+  BYTE *archive,
+  UINT32 sigSize,
+  BYTE *sig,
+  UINT32 randomSize,
+  BYTE *random,
+  TPM_AUTH *auth1
 );
 
 /**

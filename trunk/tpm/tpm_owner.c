@@ -140,24 +140,22 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
       || srkParams->algorithmParms.parmSize == 0
       || srkParams->algorithmParms.parms.rsa.keyLength != 2048
       || srkParams->algorithmParms.parms.rsa.numPrimes != 2
-      || srkParams->algorithmParms.parms.rsa.exponentSize != 0)
-    return TPM_BAD_KEY_PROPERTY;
+      || srkParams->algorithmParms.parms.rsa.exponentSize != 0
+      || srkParams->PCRInfoSize != 0) return TPM_BAD_KEY_PROPERTY;
   /* setup and generate SRK */
   srk->keyFlags = srkParams->keyFlags;
+  srk->keyFlags |= TPM_KEY_FLAG_PCR_IGNORE;
+  srk->keyFlags &= ~TPM_KEY_FLAG_HAS_PCR;
   srk->keyUsage = srkParams->keyUsage;
   srk->encScheme = srkParams->algorithmParms.encScheme;
   srk->sigScheme = srkParams->algorithmParms.sigScheme;
   srk->authDataUsage = srkParams->authDataUsage;
-  debug("[ srk->authDataUsage=%.2x ]", srk->authDataUsage);
+  debug("srk->authDataUsage = %02x", srk->authDataUsage);
+  srk->parentPCRStatus = FALSE;
   srkParams->algorithmParms.parms.rsa.keyLength = 2048;
   if (tpm_rsa_generate_key(&srk->key, 
       srkParams->algorithmParms.parms.rsa.keyLength)) return TPM_FAIL;
   srk->valid = TRUE;
-  /* we do not allow binding of the SRK to PCRs */
-  if (srkParams->PCRInfoSize != 0) return TPM_BAD_KEY_PROPERTY;
-  srk->keyFlags |= TPM_KEY_FLAG_PCR_IGNORE;
-  srk->keyFlags &= ~TPM_KEY_FLAG_HAS_PCR;
-  srk->parentPCRStatus = FALSE;
   /* generate context Key */
   tpm_get_random_bytes(tpmData.permanent.data.contextKey,
     sizeof(tpmData.permanent.data.contextKey));
