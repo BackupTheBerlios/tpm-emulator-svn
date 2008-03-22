@@ -397,11 +397,9 @@ static TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
     case TPM_ORD_GetAuditDigest:
     case TPM_ORD_GetAuditDigestSigned:
     case TPM_ORD_SetOrdinalAuditStatus:
-/* WATCH: not yet implemented
     case TPM_ORD_FieldUpgrade:
     case TPM_ORD_SetRedirection:
     case TPM_ORD_ResetLockValue:
-*/
     case TPM_ORD_Seal:
     case TPM_ORD_Unseal:
     case TPM_ORD_UnBind:

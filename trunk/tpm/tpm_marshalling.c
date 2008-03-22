@@ -1597,7 +1597,8 @@ int tpm_marshal_TPM_STCLEAR_DATA(BYTE **ptr, UINT32 *length, TPM_STCLEAR_DATA *v
 {
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
       || tpm_marshal_TPM_NONCE(ptr, length, &v->contextNonceKey)
-      || tpm_marshal_TPM_COUNT_ID(ptr, length, v->countID) ) return -1;
+      || tpm_marshal_TPM_COUNT_ID(ptr, length, v->countID)
+      || tpm_marshal_BOOL(ptr, length, v->disableResetLock)) return -1;
   return 0;
 }
 
@@ -1605,7 +1606,8 @@ int tpm_unmarshal_TPM_STCLEAR_DATA(BYTE **ptr, UINT32 *length, TPM_STCLEAR_DATA 
 {
   if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
       || tpm_unmarshal_TPM_NONCE(ptr, length, &v->contextNonceKey)
-      || tpm_unmarshal_TPM_COUNT_ID(ptr, length, &v->countID) ) return -1;
+      || tpm_unmarshal_TPM_COUNT_ID(ptr, length, &v->countID)
+      || tpm_unmarshal_BOOL(ptr, length, &v->disableResetLock)) return -1;
   return 0;
 }
 

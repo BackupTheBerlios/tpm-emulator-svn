@@ -2319,11 +2319,11 @@ typedef struct tdTPM_STCLEAR_DATA {
   TPM_NONCE contextNonceKey;
   TPM_COUNT_ID countID;
   //UINT32 ownerReference;
-  //BOOL disableResetLock;
+  BOOL disableResetLock;
   //TPM_PCRVALUE PCR[TPM_NUM_PCR];
   //UINT32 deferredPhysicalPresence;
 } TPM_STCLEAR_DATA;
-#define sizeof_TPM_STCLEAR_DATA(s) (2 + 20 + 4)
+#define sizeof_TPM_STCLEAR_DATA(s) (2 + 20 + 4 + 1)
 
 /*
  * TPM_SESSION_DATA

@@ -213,10 +213,11 @@ TPM_RESULT TPM_LoadMaintenanceArchive(UINT32 archiveSize, BYTE *archive,
   memcpy(digest.digest, tpmData.permanent.data.ownerAuth, sizeof(TPM_SECRET));
   tpm_owner_clear();
   memcpy(tpmData.permanent.data.ownerAuth, digest.digest, sizeof(TPM_SECRET));
-  tpmData.permanent.flags.owned = TRUE;
   /* update tpmProof */
   for (ptr = &buf[21]; *ptr == 0x00; ptr++);
   memcpy(&tpmData.permanent.data.tpmProof, &ptr[2], sizeof(TPM_NONCE));
+  ptr += 1 + 25;
+  memmove(&buf[21], ptr, &buf[buf_len] - ptr); 
   /* update SRK */
   tpmData.permanent.data.srk.keyFlags = newsrk.keyFlags;
   tpmData.permanent.data.srk.keyFlags |= TPM_KEY_FLAG_PCR_IGNORE;
@@ -227,9 +228,19 @@ TPM_RESULT TPM_LoadMaintenanceArchive(UINT32 archiveSize, BYTE *archive,
   tpmData.permanent.data.srk.sigScheme = newsrk.algorithmParms.sigScheme;
   tpmData.permanent.data.srk.authDataUsage = newsrk.authDataUsage;
   tpmData.permanent.data.srk.parentPCRStatus = FALSE;
-  tpmData.permanent.data.srk.valid =TRUE;
-  tpm_free(buf);
+  if (tpm_rsa_import_key(&tpmData.permanent.data.srk.key, RSA_MSB_FIRST,
+    newsrk.pubKey.key, newsrk.pubKey.keyLength,
+    newsrk.algorithmParms.parms.rsa.exponent,
+    newsrk.algorithmParms.parms.rsa.exponentSize, &buf[5], NULL) != 0) {
+    tpm_free(buf);
+    debug("tpm_rsa_import_key() failed");
+    return TPM_FAIL;
+  }
+  /* enable SRK and mark TPM as owned */
+  tpmData.permanent.data.srk.valid = TRUE;
+  tpmData.permanent.flags.owned = TRUE;
   tpmData.permanent.flags.maintenanceDone = TRUE;
+  tpm_free(buf);
   return TPM_SUCCESS;
 }
 
