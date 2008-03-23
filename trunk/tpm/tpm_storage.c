@@ -108,23 +108,20 @@ int tpm_decrypt_sealed_data(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
   return 0;
 }
 
-void tpm_decrypt_input(TPM_SESSION_DATA *session, TPM_NONCE *nonceOdd,
-                       BYTE *data, UINT32 data_size)
+void tpm_xor_encrypt(TPM_SESSION_DATA *session, TPM_NONCE *nonceOdd,
+                     BYTE *data, UINT32 data_size)
 {
-  UINT32 i, j;
-  tpm_sha1_ctx_t ctx;
-  BYTE seed[SHA1_DIGEST_LENGTH];
+  BYTE seed[2 * sizeof(TPM_NONCE) + 3 + sizeof(TPM_SECRET)];
+  BYTE *ptr = seed;
 
-  /* compute seed */
-  tpm_sha1_init(&ctx);
-  tpm_sha1_update(&ctx, session->lastNonceEven.nonce, 
-                  sizeof(session->lastNonceEven.nonce));
-  tpm_sha1_update(&ctx, nonceOdd->nonce,
-                  sizeof(nonceOdd->nonce));
-  tpm_sha1_update(&ctx, (const BYTE*)"XOR", 3);
-  tpm_sha1_update(&ctx, session->sharedSecret,
-                  sizeof(session->sharedSecret));
-  tpm_sha1_final(&ctx, seed);
+  /* set up seed */
+  memcpy(ptr, session->lastNonceEven.nonce, sizeof(TPM_NONCE));
+  ptr += sizeof(TPM_NONCE);
+  memcpy(ptr, nonceOdd->nonce, sizeof(TPM_NONCE));
+  ptr += sizeof(TPM_NONCE);
+  memcpy(ptr, (const BYTE*)"XOR", 3);
+  ptr += 3;
+  memcpy(ptr, session->sharedSecret, sizeof(TPM_SECRET));
   /* decrypt data */
   tpm_rsa_mask_generation(seed, sizeof(seed), data, data_size);
 }
@@ -181,7 +178,7 @@ TPM_RESULT TPM_Seal(TPM_KEY_HANDLE keyHandle, TPM_ENCAUTH *encAuth,
     debug("TPM_Seal(): compute_store_digest() failed.");
     return TPM_FAIL;
   }
-  if ((session->entityType & 0xFF00) !=  TPM_ET_XOR)
+  if ((session->entityType & 0xff00) !=  TPM_ET_XOR)
     return TPM_INAPPROPRIATE_ENC;
   tpm_decrypt_auth_secret(*encAuth, session->sharedSecret,
     &session->lastNonceEven, seal.authData);
@@ -227,7 +224,7 @@ TPM_RESULT TPM_Sealx(TPM_KEY_HANDLE keyHandle, TPM_ENCAUTH *encAuth,
   /* setup store */
   if (pcrInfo->tag != TPM_TAG_PCR_INFO_LONG)
     return TPM_BAD_PARAMETER;
-  if ((session->entityType & 0xFF00) !=  TPM_ET_XOR)
+  if ((session->entityType & 0xff00) !=  TPM_ET_XOR)
     return TPM_INAPPROPRIATE_ENC;
   sealedData->tag = TPM_TAG_STORED_DATA12;
   sealedData->et = TPM_ET_XOR | TPM_ET_KEY;
@@ -252,8 +249,8 @@ TPM_RESULT TPM_Sealx(TPM_KEY_HANDLE keyHandle, TPM_ENCAUTH *encAuth,
     return TPM_FAIL;
   }
   tpm_decrypt_auth_secret(*encAuth, session->sharedSecret,
-    &session->lastNonceEven, seal.authData);  
-  tpm_decrypt_input(session, &auth1->nonceOdd, inData, inDataSize);
+    &session->lastNonceEven, seal.authData);
+  tpm_xor_encrypt(session, &auth1->nonceOdd, inData, inDataSize);
   seal.dataSize = inDataSize;
   seal.data = inData;
   /* encrypt sealed data */
@@ -275,6 +272,7 @@ TPM_RESULT TPM_Unseal(TPM_KEY_HANDLE parentHandle, TPM_STORED_DATA *inData,
 {
   TPM_RESULT res;
   TPM_KEY_DATA *key;
+  TPM_SESSION_DATA *session;
   TPM_SEALED_DATA seal;
   BYTE *seal_buf;
   TPM_DIGEST digest;
@@ -287,6 +285,11 @@ TPM_RESULT TPM_Unseal(TPM_KEY_HANDLE parentHandle, TPM_STORED_DATA *inData,
       || key->authDataUsage != TPM_AUTH_NEVER) {
     res = tpm_verify_auth(auth1, key->usageAuth, parentHandle);
     if (res != TPM_SUCCESS) return res;
+    auth1->continueAuthSession = FALSE;
+    session = tpm_get_auth(auth1->authHandle);
+    if (session->type != TPM_ST_OSAP) return TPM_AUTHFAIL;
+  } else {
+    session = NULL;
   }
   /* verify key properties */
   if (key->keyUsage != TPM_KEY_STORAGE
@@ -322,6 +325,14 @@ TPM_RESULT TPM_Unseal(TPM_KEY_HANDLE parentHandle, TPM_STORED_DATA *inData,
   } else {
     res = tpm_verify_auth(auth1, seal.authData, TPM_INVALID_HANDLE);
     if (res != TPM_SUCCESS) return res;
+  }
+  /* encrypt data if required */
+  debug("entity type = %04x", inData->et & 0xff00);
+  if (inData->et != 0) {
+     if (auth2->authHandle == TPM_INVALID_HANDLE) return TPM_AUTHFAIL;
+     if ((inData->et & 0xff00) == TPM_ET_XOR) {
+        tpm_xor_encrypt(session, &auth1->nonceOdd, seal.data, seal.dataSize);
+     } else return TPM_INAPPROPRIATE_ENC;
   }
   /* return secret */
   *sealedDataSize = seal.dataSize;
