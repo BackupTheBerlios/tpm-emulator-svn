@@ -170,10 +170,12 @@ void tpm_release_data(void)
   if (tpmData.permanent.data.endorsementKey.size > 0)
     tpm_rsa_release_private_key(&tpmData.permanent.data.endorsementKey);
   if (tpmData.permanent.data.srk.valid)
-    tpm_rsa_release_private_key(&tpmData.permanent.data.srk.key);
+    free_TPM_KEY_DATA(tpmData.permanent.data.srk);
+  if (tpmData.permanent.data.manuMaintPub.valid)
+    free_TPM_PUBKEY_DATA(tpmData.permanent.data.manuMaintPub);
   for (i = 0; i < TPM_MAX_KEYS; i++)
     if (tpmData.permanent.data.keys[i].valid)
-      tpm_rsa_release_private_key(&tpmData.permanent.data.keys[i].key);
+      free_TPM_KEY_DATA(tpmData.permanent.data.keys[i]);
 }
 
 int tpm_store_permanent_data(void)

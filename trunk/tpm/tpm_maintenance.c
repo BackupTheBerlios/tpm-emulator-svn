@@ -82,6 +82,7 @@ TPM_RESULT TPM_CreateMaintenanceArchive(BOOL generateRandom, TPM_AUTH *auth1,
   }
   /* generate an OAEP encoding of the TPM_MIGRATE_ASYMKEY structure for
      the SRK: 0x00|seed|0x00-pad|0x01|TPM_MIGRATE_ASYMKEY */
+  debug("generating OAEP encoding");
   buf_len = tpmData.permanent.data.manuMaintPub.key.size >> 3;
   buf = tpm_malloc(buf_len);
   if (buf == NULL) {
@@ -105,7 +106,25 @@ TPM_RESULT TPM_CreateMaintenanceArchive(BOOL generateRandom, TPM_AUTH *auth1,
     &buf[1 + SHA1_DIGEST_LENGTH], buf_len - SHA1_DIGEST_LENGTH - 1);
   tpm_rsa_mask_generation(&buf[1 + SHA1_DIGEST_LENGTH], 
     buf_len - SHA1_DIGEST_LENGTH - 1, &buf[1], SHA1_DIGEST_LENGTH);
-  /* encrypt OAEP encoding */
+  /* XOR encrypt OAEP encoding */
+  debug("generateRandom = %d", generateRandom);
+  if (generateRandom) {
+    *randomSize = buf_len;
+    *random = tpm_malloc(*randomSize);
+    if (*random == NULL) {
+      free_TPM_KEY(key);
+      tpm_free(buf);
+      return TPM_NOSPACE;
+    }
+    tpm_get_random_bytes(*random, *randomSize);
+    for (len = 0; len < buf_len; len++) buf[len] ^= (*random)[len];
+  } else {
+    *randomSize = 0;
+    *random = NULL;
+    tpm_rsa_mask_generation(tpmData.permanent.data.ownerAuth,
+                            SHA1_DIGEST_LENGTH, buf, buf_len);
+  }
+  /* RSA encrypt OAEP encoding */
   if (tpm_rsa_encrypt(&tpmData.permanent.data.manuMaintPub.key, RSA_ES_PLAIN,
                       buf, buf_len, buf, &buf_len) != 0) {
     debug("tpm_rsa_encrypt() failed");
@@ -115,24 +134,10 @@ TPM_RESULT TPM_CreateMaintenanceArchive(BOOL generateRandom, TPM_AUTH *auth1,
   }
   key.encData = buf;
   key.encDataSize = buf_len;
-  if (generateRandom) {
-    *randomSize = buf_len;
-    *random = tpm_malloc(*randomSize);
-    if (*random == NULL) {
-      free_TPM_KEY(key);
-      return TPM_NOSPACE;
-    }
-    tpm_get_random_bytes(*random, *randomSize);
-    for (len = 0; len < buf_len; len++) buf[len] ^= *random[len];
-  } else {
-    *randomSize = 0;
-    *random = NULL;
-    tpm_rsa_mask_generation(tpmData.permanent.data.ownerAuth,
-                            SHA1_DIGEST_LENGTH, buf, buf_len);
-  }
   /* marshal response */
   len = *archiveSize = sizeof_TPM_KEY(key);
   ptr = *archive = tpm_malloc(len);
+  debug("archiveSize = %d, archive = %p", *archiveSize, *archive);
   if (ptr == NULL || tpm_marshal_TPM_KEY(&ptr, &len, &key)) {
     tpm_free(ptr);
     tpm_free(*random);
@@ -268,7 +273,8 @@ TPM_RESULT TPM_LoadManuMaintPub(TPM_NONCE *antiReplay, TPM_PUBKEY *pubKey,
   if (pubKey->algorithmParms.algorithmID != TPM_ALG_RSA
       || pubKey->algorithmParms.encScheme != TPM_ES_RSAESOAEP_SHA1_MGF1
       || pubKey->algorithmParms.sigScheme != TPM_SS_NONE
-      || pubKey->pubKey.keyLength < 2048) return TPM_BAD_KEY_PROPERTY;
+      || pubKey->algorithmParms.parms.rsa.keyLength < 2048) 
+    return TPM_BAD_KEY_PROPERTY;
   key->encScheme = pubKey->algorithmParms.encScheme;
   key->sigScheme = pubKey->algorithmParms.sigScheme;
   if (tpm_rsa_import_public_key(&key->key, RSA_MSB_FIRST, 
