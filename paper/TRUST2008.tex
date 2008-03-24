@@ -175,14 +175,14 @@ startup and extended at every step of the boot sequence. In order to allow
 the storage of an unlimited number of measurements in a specific PCR register,
 the new value depends on both, the old value and the new value to be added.
 Consequently, updates to PCRs are noncommutative and cannot be undone until
-the platform is rebooted. The idea behind this process of integrity measurement
-and storage is that a platform may be permitted to enter any state, including
-undesirable or insecure states. However, such a odd state can be detected
-by the operating software, whenever some reference measurements are
-available for comparing.
+the platform is rebooted.
+% The idea behind this process of integrity measurement
+% and storage is that a platform may be permitted to enter any state, including
+% undesirable or insecure states, but that it cannot lie about states that it
+% was or was not in.
 
 \subsection{Root of Trust for Reporting}
-Each TPM has an unique \emph{Endorsement Key}~(EK) which is a encryption key
+Each TPM has an unique \emph{Endorsement Key}~(EK) % which is a encryption key
 whose public key is certified by a trusted third party, such as the TPM
 manufacturer. For privacy reasons, the EK is only used to obtain credentials
 from a certification authority (Privacy CA) for an \emph{Attestation Identity
@@ -191,8 +191,8 @@ Key}~(AIK), which the TPM generates by itself.
 %\emph{Direct Anonymous Attestation}~(DAA)~\cite{BrickellEtAl2004,Camenisch2004}
 %was introduced in version~1.2 of the TPM specification.
 These are signing keys whose private key is only used for signing data that
-has originated from the TPM. For example, a remote party interested in
-learning what soft- and hardware configuration is in control of the computer
+has originated from the TPM. For example, a remote party % interested in
+% learning what soft- and hardware configuration is in control of the computer
 can query the TPM for PCR values. The query contains the set of registers to
 look up and a nonce, in order to check for replay attacks.
 The TPM replies with the requested PCR values and a signature on these values
@@ -211,17 +211,20 @@ to as the parent key of the object. A parent key can again be stored outside
 the TPM and (possibly along with other keys) be protected by another storage
 key. The thereby induced storage tree is rooted at the so called \emph{Storage
 Root Key}~(SRK), which is created upon initialization of the TPM and cannot
-be unloaded. Consequently, a parent key has to be loaded into the TPM before
-the data it protects can be decrypted (or \emph{unwrapped} in TCG terminology).
-Note that protected keys are only used inside the TPM and thus (opposite to
-arbitrary data) are never disclosed to the user. Furthermore, each key is
-either marked as being \emph{migratable} or \emph{non-migratable}.
+be unloaded.
+% Consequently, a parent key has to be loaded into the TPM before
+% the data it protects can be decrypted (or \emph{unwrapped} in TCG terminology).
+% Note that protected keys are only used inside the TPM and thus (opposite to
+% arbitrary data) are never disclosed to the user. Furthermore,
+Each key is either marked as being \emph{migratable} or \emph{non-migratable}.
 If the key is migratable, it might be replicated and moved to other
 TPM-protected platforms. Otherwise, it is bound to an individual TPM and
-is never duplicated. Due to the limited size of data that can be directly
-protected by the TPM, not the objects themselves but a symmetric key is
-stored which is used to (de-)encrypt the objects. Regarding the protection
-of objects, the TPM specification distinguishes between \emph{binding} and
+is never duplicated.
+% Due to the limited size of data that can be directly
+% protected by the TPM, not the objects themselves but a symmetric key is
+% stored which is used to (de-)encrypt the objects. Regarding the protection
+% of objects,
+Furthermore, the TPM specification distinguishes between \emph{binding} and
 \emph{sealing}: Binding is the operation of encrypting an object with the
 public key of a so-called \emph{binding key}. If the binding key is
 non-migratable, only the TPM that created the key can use the corresponding
@@ -236,11 +239,11 @@ A TPM must support a minimum set of cryptographic algorithms and operations.
 However, a TPM is not supposed to be a cryptographic accelerator, i.e. there
 are no specified throughput requirements for any of the cryptographic
 functions. The mandatory cryptographic functions are: a) Either a true
-hardware-based or a algorithmic pseudo random-number generator as the
-source of randomness for the generation of nonces, keys, and padding masks;
+hardware-based or a algorithmic pseudo random-number generator; %as the source
+% of randomness for the generation of nonces, keys, and padding masks;
 b) a message digest function SHA-1 and corresponding message authentication
-code (HMAC) engine; and c) a RSA signing, encryption and key-generation unit,
-for key lengths of up to 2048-bits.
+code (HMAC) engine; and c) a RSA signing, encryption and key-generation unit.
+% %for key lengths of up to 2048-bits.
 
 \subsection{Auxiliary Functions}
 TPMs which conform to the TPM specification version 1.2 additionally provide
@@ -256,6 +259,18 @@ operations on the TPM have been executed.
 \emph{Authorization delegation} allows for the delegation of individual TPM
 owner privileges (i.e., the right to use individual owner authorized TPM
 commands) to individual entities.
+
+% \emph{Monotonic counters} implement an ever-increasing incremental value which
+% is designed to not wear out in the first 7 years of operation (with an
+% increment once every 5 seconds).
+% \emph{Non volatile storage} provides the manufacturers and owners of a TPM
+% with a protected and shielded non-volatile storage area for storing sensitive
+% or confidential information.
+% \emph{Auditing} gives the TPM owner the ability to determine that certain
+% operations on the TPM have been executed.
+% \emph{Authorization delegation} allows for the delegation of individual TPM
+% owner privileges (i.e., the right to use individual owner authorized TPM
+% commands) to individual entities.
 
 % \paragraph{Monotonic Counters}
 % Monotonic counters provide an ever-increasing incremental value which is designed to not wear
@@ -290,7 +305,7 @@ commands) to individual entities.
 \subsection{Startup}
 A TPM has three different startup modes: \emph{clear}, \emph{state},
 and \emph{deactivated}. In mode clear, the platform starts in a cleared state
-where (almost) all data is reset to its default value. In mode state, which
+where most data is reset to its default value. In mode state, which
 is the default mode, a previously saved state is restored and the TPM
 continues its operation from the restored state. In mode deactivated, the
 TPM deactivates itself and rejects any further operations.
