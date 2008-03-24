@@ -14,7 +14,7 @@ set xtics nomirror rotate by 90
 set noytics
 set y2tics rotate by 90 
 set yrange [0:17]
-set xrange [0.5:10.5]
+set xrange [-0.5:10.5]
 set style data histogram
 set style histogram rowstacked
 set style fill solid border -1

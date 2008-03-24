@@ -13,14 +13,14 @@
 "Integrity Reporting"		5	5	5
 
 
-"Maintenance"			5	0	0
-"Management"			3	0	0
+"Maintenance"			5	5	4
+"Management"			3	3	0
 "Migration"			10	0	0
 "Monotonic Counters"		5	5	4
 "Non-volatile Storage"		5	5	5
 "Ownership/Opt-In"		12	12	12
 "Session Management"		3	3	3
-"Storage Functions"		7	7	6
+"Storage Functions"		7	7	7
 "Testing"			3	3	3
 "Timing Ticks"			2	2	0
 "Transport Sessions"		3	3	0
