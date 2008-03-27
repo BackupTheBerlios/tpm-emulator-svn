@@ -823,9 +823,9 @@ implemented.
 \tpmcmdg{TPM\_GetAuditDigestSigned}{1.2}{134}{O}{tpm\_audit.c}{}\\
 \tpmcmdg{TPM\_SetOrdinalAuditStatus}{1.1}{141}{O}{tpm\_audit.c}{}
 	\item Administrative Functions -- Management (pp. 52--57)\\
-\tpmcmdr{TPM\_FieldUpgrade}{1.1}{170}{O}{tpm\_management.c}{}\\
-\tpmcmdr{TPM\_SetRedirection}{1.1}{154}{O}{tpm\_management.c}{}\\
-\tpmcmdr{TPM\_ResetLockValue}{1.2}{64}{M}{tpm\_management.c}{}
+\tpmcmdg{TPM\_FieldUpgrade}{1.1}{170}{O}{tpm\_management.c}{}\\
+\tpmcmdg{TPM\_SetRedirection}{1.1}{154}{O}{tpm\_management.c}{}\\
+\tpmcmdg{TPM\_ResetLockValue}{1.2}{64}{M}{tpm\_management.c}{}
 	\item Storage Functions (pp. 58--81)\\
 \tpmcmdg{TPM\_Seal}{1.1}{23}{M}{tpm\_storage.c}{passed \cite{trousers,jTSS,Sadeghi}}\\
 \tpmcmdg{TPM\_Unseal}{1.1}{24}{M}{tpm\_storage.c}{passed \cite{jTSS}}\\
@@ -833,7 +833,7 @@ implemented.
 \tpmcmdg{TPM\_CreateWrapKey}{1.1}{31}{M}{tpm\_storage.c}{passed \cite{trousers,jTSS,Sadeghi}}\\
 \tpmcmdy{TPM\_LoadKey2}{1.2}{65}{M}{tpm\_storage.c}{emulated by 32}\\
 \tpmcmdg{TPM\_GetPubKey}{1.1}{33}{M}{tpm\_storage.c}{passed \cite{trousers}}\\
-\tpmcmdr{TPM\_Sealx}{1.2}{61}{O}{tpm\_storage.c}{}
+\tpmcmdg{TPM\_Sealx}{1.2}{61}{O}{tpm\_storage.c}{passed \cite{trousers}}
 	\item Migration (pp. 82--108)\\
 \tpmcmdr{TPM\_CreateMigrationBlob}{1.1}{40}{M}{tpm\_migration.c}{}\\
 \tpmcmdr{TPM\_ConvertMigrationBlob}{1.1}{42}{M}{tpm\_migration.c}{}\\
@@ -846,11 +846,11 @@ implemented.
 \tpmcmdr{TPM\_CMK\_CreateBlob}{1.2}{27}{M}{tpm\_migration.c}{}\\
 \tpmcmdr{TPM\_CMK\_ConvertMigration}{1.2}{36}{M}{tpm\_migration.c}{}
 	\item Maintenance Functions (optional, pp. 109--118)\\
-\tpmcmdr{TPM\_CreateMaintenanceArchive}{1.1}{44}{O}{tpm\_maintenance.c}{}\\
-\tpmcmdr{TPM\_LoadMaintenanceArchive}{1.1}{45}{O}{tpm\_maintenance.c}{}\\
-\tpmcmdr{TPM\_KillMaintenanceFeature}{1.1}{46}{O}{tpm\_maintenance.c}{}\\
-\tpmcmdr{TPM\_LoadManuMaintPub}{1.1}{47}{O}{tpm\_maintenance.c}{}\\
-\tpmcmdr{TPM\_ReadManuMaintPub}{1.1}{48}{O}{tpm\_maintenance.c}{}
+\tpmcmdg{TPM\_CreateMaintenanceArchive}{1.1}{44}{O}{tpm\_maintenance.c}{}\\
+\tpmcmdg{TPM\_LoadMaintenanceArchive}{1.1}{45}{O}{tpm\_maintenance.c}{}\\
+\tpmcmdg{TPM\_KillMaintenanceFeature}{1.1}{46}{O}{tpm\_maintenance.c}{}\\
+\tpmcmdg{TPM\_LoadManuMaintPub}{1.1}{47}{O}{tpm\_maintenance.c}{}\\
+\tpmcmdg{TPM\_ReadManuMaintPub}{1.1}{48}{O}{tpm\_maintenance.c}{}
 	\item Cryptographic Functions (pp. 119--136)\\
 \tpmcmdg{TPM\_SHA1Start}{1.1}{160}{M}{tpm\_crypto.c}{passed \cite{trousers,jTSS}}\\
 \tpmcmdg{TPM\_SHA1Update}{1.1}{161}{M}{tpm\_crypto.c}{passed \cite{trousers,jTSS}}\\

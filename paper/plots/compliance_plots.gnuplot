@@ -25,11 +25,11 @@ set multiplot
 set size 0.5, 1
 set origin 0, 0
 plot 'tpm_compliance.txt' index 0 using ($4):xticlabel(1) lt 2 fill solid 0.25 title "implemented and verified", \
-     'tpm_compliance.txt' index 0 using ($3-$4)           lt 3 fill pattern 10 title "only partly implemnted or not verified",\
+     'tpm_compliance.txt' index 0 using ($3-$4)           lt 3 fill pattern 10 title "only partly implemented or not verified",\
      'tpm_compliance.txt' index 0 using ($2-$3)           lt 1 fill pattern  6 title "not implemented"
 set origin 0, 1
 plot 'tpm_compliance.txt' index 1 using ($4):xticlabel(1) lt 2 fill solid 0.25 title "implemented and verified", \
-     'tpm_compliance.txt' index 1 using ($3-$4)           lt 3 fill pattern 10 title "only partly implemnted or not verified",\
+     'tpm_compliance.txt' index 1 using ($3-$4)           lt 3 fill pattern 10 title "only partly implemented or not verified",\
      'tpm_compliance.txt' index 1 using ($2-$3)           lt 1 fill pattern  6 title "not implemented"
 set nomultiplot
 
@@ -46,10 +46,10 @@ set noy2tics
 set size 0.5, 0.11
 set key reverse Left over nobox
 plot  'tpm_compliance.txt' index 1 using (0):xticlabel(1) lt 2 fill solid 0.25 title "implemented and verified", \
-      'tpm_compliance.txt' index 1 using (0)              lt 3 fill pattern 10 title "only partly implemnted or not verified",\
+      'tpm_compliance.txt' index 1 using (0)              lt 3 fill pattern 10 title "only partly implemented or not verified",\
       'tpm_compliance.txt' index 1 using (0)              lt 1 fill pattern  6 title "not implemented yet"
 
 # plot 'tpm_compliance.txt' using ($4*100.0/$2):xticlabel(1) ls 1 title "implemented and verified", \
-#     'tpm_compliance.txt' using (($3-$4)*100.0/$2)         ls 2 title "only partly implemnted or not verified",\
+#     'tpm_compliance.txt' using (($3-$4)*100.0/$2)         ls 2 title "only partly implemented or not verified",\
 #     'tpm_compliance.txt' using (($2-$3)*100.0/$2)         ls 3 title "not implemented"
 
