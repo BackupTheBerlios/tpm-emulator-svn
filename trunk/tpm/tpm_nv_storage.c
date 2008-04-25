@@ -214,7 +214,6 @@ TPM_RESULT TPM_NV_WriteValue(TPM_NV_INDEX nvIndex, UINT32 offset,
 {
   TPM_RESULT res;
   TPM_NV_DATA_SENSITIVE *nv;
-  TPM_DIGEST digest;
 
   info("TPM_NV_WriteValue()");
   /* lock NV storage */
@@ -351,7 +350,6 @@ TPM_RESULT TPM_NV_ReadValueAuth(TPM_NV_INDEX nvIndex,  UINT32 offset,
 {
   TPM_RESULT res;
   TPM_NV_DATA_SENSITIVE *nv;
-  TPM_DIGEST digest;
 
   info("TPM_NV_ReadValueAuth()");
   debug("nvIndex = %08x, offset = %d, inDataSize = %d",

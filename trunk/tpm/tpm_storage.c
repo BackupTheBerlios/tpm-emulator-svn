@@ -776,7 +776,6 @@ TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
 
 TPM_RESULT internal_TPM_LoadKey(TPM_KEY *inKey, TPM_KEY_HANDLE *inkeyHandle)
 {
-  TPM_RESULT res;
   TPM_KEY_DATA *parent, *key;
   BYTE *key_buf;
   TPM_STORE_ASYMKEY store;

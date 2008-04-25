@@ -1253,7 +1253,6 @@ static TPM_RESULT execute_TPM_LoadMaintenanceArchive(TPM_REQUEST *req, TPM_RESPO
   BYTE *sig;
   UINT32 randomSize;
   BYTE *random;
-  TPM_RESULT res;
   /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */

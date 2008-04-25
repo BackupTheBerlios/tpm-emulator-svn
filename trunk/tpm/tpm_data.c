@@ -31,13 +31,12 @@ BOOL tpm_get_physical_presence(void)
 
 static inline void init_pcr_attr(int pcr, BOOL reset, BYTE rl, BYTE el)
 {
-  unsigned int i;
   tpmData.permanent.data.pcrAttrib[pcr].pcrReset = reset;
   tpmData.permanent.data.pcrAttrib[pcr].pcrResetLocal = rl;
   tpmData.permanent.data.pcrAttrib[pcr].pcrExtendLocal = el;
 }
 
-static void init_nv_storage()
+static void init_nv_storage(void)
 {
     TPM_NV_DATA_SENSITIVE *nv;
     memset(tpmData.permanent.data.nvData, 0xff, TPM_MAX_NV_SIZE);
