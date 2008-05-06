@@ -206,7 +206,7 @@ TPM_RESULT TPM_Sealx(TPM_KEY_HANDLE keyHandle, TPM_ENCAUTH *encAuth,
   TPM_SESSION_DATA *session;
   TPM_SEALED_DATA seal;
 
-  info("TPM_Seal()x");
+  info("TPM_Sealx()");
   if (inDataSize == 0) return TPM_BAD_PARAMETER;
   /* get key */
   key = tpm_get_key(keyHandle);
@@ -287,7 +287,6 @@ TPM_RESULT TPM_Unseal(TPM_KEY_HANDLE parentHandle, TPM_STORED_DATA *inData,
     if (res != TPM_SUCCESS) return res;
     auth1->continueAuthSession = FALSE;
     session = tpm_get_auth(auth1->authHandle);
-    if (session->type != TPM_ST_OSAP) return TPM_AUTHFAIL;
   } else {
     session = NULL;
   }
@@ -330,6 +329,7 @@ TPM_RESULT TPM_Unseal(TPM_KEY_HANDLE parentHandle, TPM_STORED_DATA *inData,
   debug("entity type = %04x", inData->et & 0xff00);
   if (inData->et != 0) {
      if (auth2->authHandle == TPM_INVALID_HANDLE) return TPM_AUTHFAIL;
+     if (session->type != TPM_ST_OSAP) return TPM_BAD_MODE;
      if ((inData->et & 0xff00) == TPM_ET_XOR) {
         tpm_xor_encrypt(session, &auth1->nonceOdd, seal.data, seal.dataSize);
      } else return TPM_INAPPROPRIATE_ENC;
