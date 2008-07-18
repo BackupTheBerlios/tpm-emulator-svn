@@ -69,6 +69,8 @@ done as follows:
 # make
 # make install
 
+Please note that the user and group 'tss' must exists on the target host.
+
 
 Startup
 --------------------------------------------------------------------------
