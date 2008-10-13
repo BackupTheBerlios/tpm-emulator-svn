@@ -2230,7 +2230,8 @@ typedef struct tdTPM_KEY_DATA {
   BOOL parentPCRStatus;
   tpm_rsa_private_key_t key;
 } TPM_KEY_DATA;
-#define sizeof_RSA(s) (6 + 2*(s.size >> 3) + (s.size >> 4))
+#define sizeof_RSA(s) (6 + tpm_rsa_modulus_length(&s) \
+ + tpm_rsa_exponent_length(&s), tpm_rsa_prime1_length(&s))
 #define sizeof_TPM_KEY_DATA(s) (1 + 2 + 4 + 4 + 1 + 2 + 2 + 20 \
   + sizeof_TPM_PCR_INFO(s.pcrInfo) + 1 + sizeof_RSA(s.key))
 #define free_TPM_KEY_DATA(s) { tpm_rsa_release_private_key(&s.key); }
@@ -2245,7 +2246,8 @@ typedef struct tdTPM_PUBKEY_DATA {
   TPM_SIG_SCHEME sigScheme;
   tpm_rsa_public_key_t key;
 } TPM_PUBKEY_DATA;
-#define sizeof_RSAPub(s) (4 + 2*(s.size >> 3))
+#define sizeof_RSAPub(s) (4 + tpm_rsa_public_modulus_length(&s) \
+ + tpm_rsa_public_exponent_length(&s))
 #define sizeof_TPM_PUBKEY_DATA(s) (1 + 2 + 2 + sizeof_RSAPub(s.key))
 #define free_TPM_PUBKEY_DATA(s) { tpm_rsa_release_public_key(&s.key); }
 
