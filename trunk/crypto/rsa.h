@@ -83,6 +83,14 @@ void tpm_rsa_export_prime1(tpm_rsa_private_key_t *key,
 void tpm_rsa_export_prime2(tpm_rsa_private_key_t *key, 
                            uint8_t *prime, size_t *length);
 
+size_t tpm_rsa_modulus_length(tpm_rsa_private_key_t *key);
+
+size_t tpm_rsa_exponent_length(tpm_rsa_private_key_t *key);
+
+size_t tpm_rsa_prime1_length(tpm_rsa_private_key_t *key);
+
+size_t tpm_rsa_prime2_length(tpm_rsa_private_key_t *key);
+
 void tpm_rsa_mask_generation(const uint8_t *seed, size_t seed_len, 
                              uint8_t *data, size_t data_len);
 
@@ -91,6 +99,10 @@ void tpm_rsa_export_public_modulus(tpm_rsa_public_key_t *key,
 
 void tpm_rsa_export_public_exponent(tpm_rsa_public_key_t *key,
                                     uint8_t *exponent, size_t *length);
+
+size_t tpm_rsa_public_modulus_length(tpm_rsa_public_key_t *key);
+
+size_t tpm_rsa_public_exponent_length(tpm_rsa_public_key_t *key);
 
 /* Note: Input and output areas MUST NOT overlap (i.e., one can't 
    use the same buffer for data and sig or in and out). */
