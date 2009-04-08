@@ -37,7 +37,7 @@
 #define TPM_CMD_BUF_SIZE    4096
 #define TPM_COMMAND_TIMEOUT 30
 #define TPM_RANDOM_DEVICE   "/dev/urandom"
-#undef  TPM_MKDIRS
+#define TPM_MKDIRS          1
 
 static volatile int stopflag = 0;
 static int is_daemon = 0;
@@ -362,6 +362,9 @@ static void main_loop(void)
     sock = init_socket(opt_socket_name);
     if (sock < 0) exit(EXIT_FAILURE);
     /* init tpm emulator */
+#ifdef TPM_MKDIRS
+    mkdirs(opt_storage_file);
+#endif
     debug("initializing TPM emulator: %d", tpm_startup);
     tpm_emulator_init(tpm_startup);
     /* start command processing */
