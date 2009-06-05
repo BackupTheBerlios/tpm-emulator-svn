@@ -72,8 +72,7 @@ static int encrypt_context(BYTE *iv, UINT32 iv_size, TPM_CONTEXT_SENSITIVE *cont
   /* marshal context */
   *enc_size = len = sizeof_TPM_CONTEXT_SENSITIVE((*context));
   *enc = ptr = tpm_malloc(len);
-  if (*enc == NULL)
-    return -1;
+  if (*enc == NULL) return -1;
   if (tpm_marshal_TPM_CONTEXT_SENSITIVE(&ptr, &len, context)) {
     tpm_free(*enc);
     return -1;
@@ -95,8 +94,7 @@ static int decrypt_context(BYTE *iv, UINT32 iv_size, BYTE *enc, UINT32 enc_size,
   BYTE key[TPM_CONTEXT_KEY_SIZE + iv_size];
   len = enc_size;
   *buf = ptr = tpm_malloc(len);
-  if (*buf == NULL)
-    return -1;
+  if (*buf == NULL) return -1;
   /* decrypt context */
   memcpy(key, tpmData.permanent.data.contextKey, TPM_CONTEXT_KEY_SIZE);
   memcpy(&key[TPM_CONTEXT_KEY_SIZE], iv, iv_size);
@@ -117,8 +115,7 @@ static int compute_context_digest(TPM_CONTEXT_BLOB *contextBlob, TPM_DIGEST *dig
   tpm_hmac_ctx_t hmac_ctx;
   len = sizeof_TPM_CONTEXT_BLOB((*contextBlob));
   buf = ptr = tpm_malloc(len);
-  if (buf == NULL)
-    return -1;
+  if (buf == NULL) return -1;
   if (tpm_marshal_TPM_CONTEXT_BLOB(&ptr, &len, contextBlob)) {
     tpm_free(buf);
     return -1;
@@ -160,9 +157,8 @@ TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
     debug("resourceType = TPM_RT_KEY, handle = %08x, key = %p", handle, key);
     if (key == NULL) return TPM_INVALID_RESOURCE;
     if (key->keyControl & TPM_KEY_CONTROL_OWNER_EVICT) return TPM_OWNER_CONTROL;
-    /* store key data */
+    /* store key data (shallow copy is ok) */
     memcpy(&context.internalData.key, key, sizeof(TPM_KEY_DATA));
-    tpm_rsa_copy_key(&context.internalData.key.key, &key->key);
     context.internalSize = sizeof_TPM_KEY_DATA((*key));
     /* set context nonce */
     memcpy(&context.contextNonce, &tpmData.stclear.data.contextNonceKey, 
@@ -195,7 +191,7 @@ TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
   if (resourceType == TPM_RT_KEY) {
     contextBlob->contextCount = 0;
   } else {
-    if (tpmData.stany.data.contextCount >= 0xffffffff) {
+    if (tpmData.stany.data.contextCount >= 0xfffffffc) {
       tpm_free(contextBlob->additionalData);
       return TPM_TOOMANYCONTEXTS;
     }
@@ -207,23 +203,24 @@ TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
       tpm_free(contextBlob->additionalData);
       return TPM_NOCONTEXTSPACE;
     }
-    tpmData.stany.data.contextList[i] = contextBlob->contextCount;
+    tpmData.stany.data.contextCount++;
+    tpmData.stany.data.contextList[i] = tpmData.stany.data.contextCount;
+    contextBlob->contextCount = tpmData.stany.data.contextCount;
   }
+  debug("context counter = %d", tpmData.stany.data.contextCount);
   /* encrypt sensitive data */
   if (encrypt_context(contextBlob->additionalData, contextBlob->additionalSize,
-      &context, &contextBlob->sensitiveData, 
-      &contextBlob->sensitiveSize)) {
+      &context, &contextBlob->sensitiveData, &contextBlob->sensitiveSize)) {
         tpm_free(contextBlob->additionalData);
         return TPM_ENCRYPT_ERROR;
   }
+  /* compute context digest */
   if (compute_context_digest(contextBlob, &contextBlob->integrityDigest)) {
     tpm_free(contextBlob->additionalData);
-    tpm_free(contextBlob->sensitiveData);
     return TPM_FAIL;
   }
   *contextSize = sizeof_TPM_CONTEXT_BLOB((*contextBlob));
-  if (resourceType != TPM_RT_KEY)
-  {
+  if (resourceType != TPM_RT_KEY) {
     /* The TPM MUST invalidate all information regarding the resource 
      * except for information needed for reloading. */
     if (resourceType != TPM_RT_DAA_TPM)

@@ -2231,7 +2231,7 @@ typedef struct tdTPM_KEY_DATA {
   tpm_rsa_private_key_t key;
 } TPM_KEY_DATA;
 #define sizeof_RSA(s) (6 + tpm_rsa_modulus_length(&s) \
- + tpm_rsa_exponent_length(&s), tpm_rsa_prime1_length(&s))
+ + tpm_rsa_exponent_length(&s) + tpm_rsa_prime1_length(&s) + 4)
 #define sizeof_TPM_KEY_DATA(s) (1 + 2 + 4 + 4 + 1 + 2 + 2 + 20 \
   + sizeof_TPM_PCR_INFO(s.pcrInfo) + 1 + sizeof_RSA(s.key))
 #define free_TPM_KEY_DATA(s) { tpm_rsa_release_private_key(&s.key); }
@@ -2466,7 +2466,7 @@ typedef struct tdTPM_CONTEXT_SENSITIVE {
     TPM_DAA_SESSION_DATA sessionDAA;
   } internalData;
 } TPM_CONTEXT_SENSITIVE;
-#define sizeof_TPM_CONTEXT_SENSITIVE(s) (2 + 20 + 4 + s.internalSize)
+#define sizeof_TPM_CONTEXT_SENSITIVE(s) (2 + 20 + 4 + 4 + s.internalSize)
 
 /*
  * TPM communication packets
