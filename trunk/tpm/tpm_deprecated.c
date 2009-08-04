@@ -387,7 +387,8 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(
   int scheme;
   TPM_CHANGEAUTH_VALIDATE a1;
   tpm_hmac_ctx_t hmac_ctx;
-  UINT32 len, size;
+  UINT32 len;
+  size_t size;
   BYTE *ptr, *buf;
   TPM_SECRET oldAuthSecret;
   TPM_HMAC b1;

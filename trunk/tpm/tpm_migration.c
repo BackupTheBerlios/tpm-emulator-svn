@@ -83,7 +83,7 @@ TPM_RESULT TPM_CreateMigrationBlob(TPM_KEY_HANDLE parentHandle,
   res = tpm_verify_auth(auth1, parent->usageAuth, parentHandle);
   if (res != TPM_SUCCESS) return res;
   session = tpm_get_auth(auth2->authHandle);
-  if (session == NULL || session->type != TPM_ST_OIAP) TPM_AUTHFAIL;
+  if (session == NULL || session->type != TPM_ST_OIAP) return TPM_AUTHFAIL;
   /* verify key properties */
   if (parent->keyUsage != TPM_KEY_STORAGE) return TPM_INVALID_KEYUSAGE;
   /* decrypt private key */
