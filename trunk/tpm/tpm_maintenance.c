@@ -193,16 +193,16 @@ TPM_RESULT TPM_LoadMaintenanceArchive(UINT32 archiveSize, BYTE *archive,
     tpm_free(buf);
     return TPM_DECRYPT_ERROR;
   }
-  tpm_rsa_mask_generation(&buf[1 + SHA1_DIGEST_LENGTH], 
-    buf_len - SHA1_DIGEST_LENGTH - 1, &buf[1], SHA1_DIGEST_LENGTH);
-  tpm_rsa_mask_generation(&buf[1], SHA1_DIGEST_LENGTH, 
-    &buf[1 + SHA1_DIGEST_LENGTH], buf_len - SHA1_DIGEST_LENGTH - 1);
   if (randomSize > 0) {
     for (len = 0; len < buf_len; len++) buf[len] ^= random[len];
   } else {
     tpm_rsa_mask_generation(tpmData.permanent.data.ownerAuth,
                             SHA1_DIGEST_LENGTH, buf, buf_len);
   }
+  tpm_rsa_mask_generation(&buf[1 + SHA1_DIGEST_LENGTH],
+    buf_len - SHA1_DIGEST_LENGTH - 1, &buf[1], SHA1_DIGEST_LENGTH);
+  tpm_rsa_mask_generation(&buf[1], SHA1_DIGEST_LENGTH,
+    &buf[1 + SHA1_DIGEST_LENGTH], buf_len - SHA1_DIGEST_LENGTH - 1);
   /* validate new SRK */
   if (newsrk.keyFlags & TPM_KEY_FLAG_MIGRATABLE
       || newsrk.keyUsage != TPM_KEY_STORAGE) return TPM_INVALID_KEYUSAGE;
