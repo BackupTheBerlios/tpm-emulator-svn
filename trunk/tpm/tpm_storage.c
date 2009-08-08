@@ -27,6 +27,143 @@
  * Storage functions ([TPM_Part3], Section 10)
  */
 
+int tpm_encrypt_public(TPM_PUBKEY_DATA *key, BYTE *in, UINT32 in_size,
+                       BYTE *enc, UINT32 *enc_size)
+{
+  size_t size = *enc_size;
+  int scheme;
+  switch (key->encScheme) {
+    case TPM_ES_RSAESOAEP_SHA1_MGF1: scheme = RSA_ES_OAEP_SHA1; break;
+    case TPM_ES_RSAESPKCSv15: scheme = RSA_ES_PKCSV15; break;
+    default:
+      debug("unsupported encryption scheme: %d", key->encScheme);
+      return -1;
+  }
+  if (tpm_rsa_encrypt(&key->key, scheme, in, in_size, enc, &size) != 0) {
+    debug("tpm_rsa_encrypt() failed");
+    return -1;
+  }
+  *enc_size = size;
+  return 0;
+}
+
+int tpm_encrypt_private(TPM_KEY_DATA *key, BYTE *in, UINT32 in_size,
+                        BYTE *enc, UINT32 *enc_size)
+{
+  int res;
+  TPM_PUBKEY_DATA pubKey;
+  pubKey.encScheme = key->encScheme;
+  TPM_RSA_EXTRACT_PUBLIC_KEY(key->key, pubKey.key);
+  res = tpm_encrypt_public(&pubKey, in, in_size, enc, enc_size);
+  free_TPM_PUBKEY_DATA(pubKey);
+  return res;
+}
+
+int tpm_decrypt(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
+                BYTE *out, UINT32 *out_size)
+{
+  size_t size = *out_size;
+  int scheme;
+  switch (key->encScheme) {
+    case TPM_ES_RSAESOAEP_SHA1_MGF1: scheme = RSA_ES_OAEP_SHA1; break;
+    case TPM_ES_RSAESPKCSv15: scheme = RSA_ES_PKCSV15; break;
+    default:
+      debug("unsupported encryption scheme: %d", key->encScheme);
+      return -1;
+  }
+  if (tpm_rsa_decrypt(&key->key, scheme, enc, enc_size, out, &size) != 0) {
+    debug("tpm_rsa_decrypt() failed");
+    return -1;
+  }
+  *out_size = size;
+  return 0;
+}
+
+int tpm_encrypt_sealed_data(TPM_KEY_DATA *key, TPM_SEALED_DATA *seal,
+                            BYTE *enc, UINT32 *enc_size)
+{
+  UINT32 len = sizeof_TPM_SEALED_DATA((*seal));
+  BYTE *buf, *ptr;
+  buf = ptr = tpm_malloc(len);
+  if (buf == NULL
+      || tpm_marshal_TPM_SEALED_DATA(&ptr, &len, seal)
+      || tpm_encrypt_private(key, buf, sizeof_TPM_SEALED_DATA((*seal)),
+                             enc, enc_size)) {
+    tpm_free(buf);
+    return -1;
+  }
+  tpm_free(buf);
+  return 0;
+}
+
+int tpm_decrypt_sealed_data(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
+                            TPM_SEALED_DATA *seal, BYTE **buf)
+{
+  BYTE *ptr;
+  *buf = ptr = tpm_malloc(enc_size);
+  if (*buf == NULL
+      || tpm_decrypt(key, enc, enc_size, *buf, &enc_size)
+      || tpm_unmarshal_TPM_SEALED_DATA(&ptr, &enc_size, seal)) {
+    tpm_free(*buf);
+    return -1;
+  }
+  return 0;
+}
+
+int tpm_encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
+                            BYTE *enc, UINT32 *enc_size)
+{
+  UINT32 len = sizeof_TPM_STORE_ASYMKEY((*store));
+  BYTE *buf, *ptr;
+  buf = ptr = tpm_malloc(len);
+  if (buf == NULL
+      || tpm_marshal_TPM_STORE_ASYMKEY(&ptr, &len, store)
+      || tpm_encrypt_private(key, buf, sizeof_TPM_STORE_ASYMKEY((*store)),
+                             enc, enc_size)) {
+    tpm_free(buf);
+    return -1;
+  }
+  tpm_free(buf);
+  return 0;
+}
+
+int tpm_decrypt_private_key(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
+                            TPM_STORE_ASYMKEY *store,
+                            BYTE **buf, UINT32 *buf_size)
+{
+  BYTE *ptr;
+  *buf = ptr = tpm_malloc(enc_size);
+  if (*buf == NULL || tpm_decrypt(key, enc, enc_size, *buf, &enc_size)) {
+    tpm_free(*buf);
+    return -1;
+  }
+  if (buf_size != NULL) *buf_size = enc_size;
+  if (tpm_unmarshal_TPM_STORE_ASYMKEY(&ptr, &enc_size, store) != 0) {
+    tpm_free(*buf);
+    return -1;
+  }
+  if (buf_size != NULL) *buf_size -= enc_size;
+  return 0;
+}
+
+void tpm_xor_encrypt(TPM_SESSION_DATA *session, TPM_NONCE *nonceOdd,
+                     BYTE *data, UINT32 data_size)
+{
+  BYTE seed[2 * sizeof(TPM_NONCE) + 3 + sizeof(TPM_SECRET)];
+  BYTE *ptr = seed;
+
+  /* set up seed */
+  memcpy(ptr, session->lastNonceEven.nonce, sizeof(TPM_NONCE));
+  ptr += sizeof(TPM_NONCE);
+  memcpy(ptr, nonceOdd->nonce, sizeof(TPM_NONCE));
+  ptr += sizeof(TPM_NONCE);
+  memcpy(ptr, (const BYTE*)"XOR", 3);
+  ptr += 3;
+  memcpy(ptr, session->sharedSecret, sizeof(TPM_SECRET));
+  /* decrypt data */
+  tpm_rsa_mask_generation(seed, sizeof(seed), data, data_size);
+}
+
 static int compute_store_digest(TPM_STORED_DATA *store, TPM_DIGEST *digest)
 {
   tpm_sha1_ctx_t sha1;
@@ -50,80 +187,8 @@ static int verify_store_digest(TPM_STORED_DATA *store, TPM_DIGEST *digest)
 {
   TPM_DIGEST store_digest;
   if (compute_store_digest(store, &store_digest)) return -1;
-  return memcmp(store_digest.digest, digest->digest, 
+  return memcmp(store_digest.digest, digest->digest,
     sizeof(store_digest.digest));
-}
-
-int tpm_encrypt_sealed_data(TPM_KEY_DATA *key, TPM_SEALED_DATA *seal,
-                            BYTE *enc, UINT32 *enc_size)
-{
-  UINT32 len;
-  size_t enc_len;
-  BYTE *buf, *ptr;
-  tpm_rsa_public_key_t pub_key;
-  int scheme;
-  switch (key->encScheme) {
-    case TPM_ES_RSAESOAEP_SHA1_MGF1: scheme = RSA_ES_OAEP_SHA1; break;
-    case TPM_ES_RSAESPKCSv15: scheme = RSA_ES_PKCSV15; break;
-    default: return -1;
-  }
-  TPM_RSA_EXTRACT_PUBLIC_KEY(key->key, pub_key);
-  len = sizeof_TPM_SEALED_DATA((*seal));
-  buf = ptr = tpm_malloc(len);
-  if (buf == NULL
-      || tpm_marshal_TPM_SEALED_DATA(&ptr, &len, seal)
-      || tpm_rsa_encrypt(&pub_key, scheme, buf, sizeof_TPM_SEALED_DATA((*seal)),
-                     enc, &enc_len)) {
-    tpm_free(buf);
-    tpm_rsa_release_public_key(&pub_key);
-    return -1;
-  }
-  *enc_size = enc_len;
-  tpm_free(buf);
-  tpm_rsa_release_public_key(&pub_key);
-  return 0;
-}
-
-int tpm_decrypt_sealed_data(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
-                            TPM_SEALED_DATA *seal, BYTE **buf) 
-{
-  UINT32 len;
-  size_t dec_len;
-  BYTE *ptr;
-  int scheme;
-  switch (key->encScheme) {
-    case TPM_ES_RSAESOAEP_SHA1_MGF1: scheme = RSA_ES_OAEP_SHA1; break;
-    case TPM_ES_RSAESPKCSv15: scheme = RSA_ES_PKCSV15; break;
-    default: return -1;
-  }
-  len = enc_size;
-  *buf = ptr = tpm_malloc(len);
-  if (*buf == NULL
-      || tpm_rsa_decrypt(&key->key, scheme, enc, enc_size, *buf, &dec_len)
-      || (len = dec_len) == 0
-      || tpm_unmarshal_TPM_SEALED_DATA(&ptr, &len, seal)) {
-    tpm_free(*buf);
-    return -1;
-  }
-  return 0;
-}
-
-void tpm_xor_encrypt(TPM_SESSION_DATA *session, TPM_NONCE *nonceOdd,
-                     BYTE *data, UINT32 data_size)
-{
-  BYTE seed[2 * sizeof(TPM_NONCE) + 3 + sizeof(TPM_SECRET)];
-  BYTE *ptr = seed;
-
-  /* set up seed */
-  memcpy(ptr, session->lastNonceEven.nonce, sizeof(TPM_NONCE));
-  ptr += sizeof(TPM_NONCE);
-  memcpy(ptr, nonceOdd->nonce, sizeof(TPM_NONCE));
-  ptr += sizeof(TPM_NONCE);
-  memcpy(ptr, (const BYTE*)"XOR", 3);
-  ptr += 3;
-  memcpy(ptr, session->sharedSecret, sizeof(TPM_SECRET));
-  /* decrypt data */
-  tpm_rsa_mask_generation(seed, sizeof(seed), data, data_size);
 }
 
 TPM_RESULT TPM_Seal(TPM_KEY_HANDLE keyHandle, TPM_ENCAUTH *encAuth,
@@ -442,60 +507,6 @@ int tpm_compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest)
   return 0;
 }
 
-int tpm_encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
-                            BYTE *enc, UINT32 *enc_size)
-{
-  UINT32 len;
-  size_t enc_len;
-  BYTE *buf, *ptr;
-  tpm_rsa_public_key_t pub_key;
-  int scheme;
-  switch (key->encScheme) {
-    case TPM_ES_RSAESOAEP_SHA1_MGF1: scheme = RSA_ES_OAEP_SHA1; break;
-    case TPM_ES_RSAESPKCSv15: scheme = RSA_ES_PKCSV15; break;
-    default: return -1;
-  }
-  TPM_RSA_EXTRACT_PUBLIC_KEY(key->key, pub_key);
-  len = sizeof_TPM_STORE_ASYMKEY((*store));
-  buf = ptr = tpm_malloc(len);
-  if (buf == NULL
-      || tpm_marshal_TPM_STORE_ASYMKEY(&ptr, &len, store)
-      || tpm_rsa_encrypt(&pub_key, scheme, buf, sizeof_TPM_STORE_ASYMKEY((*store)),
-                     enc, &enc_len)) {
-    tpm_free(buf);
-    tpm_rsa_release_public_key(&pub_key);
-    return -1;
-  }
-  *enc_size = enc_len;
-  tpm_free(buf);
-  tpm_rsa_release_public_key(&pub_key);
-  return 0;
-} 
-
-int tpm_decrypt_private_key(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size, 
-                            TPM_STORE_ASYMKEY *store, BYTE **buf) 
-{
-  UINT32 len;
-  size_t dec_len;
-  BYTE *ptr;
-  int scheme;
-  switch (key->encScheme) {
-    case TPM_ES_RSAESOAEP_SHA1_MGF1: scheme = RSA_ES_OAEP_SHA1; break;
-    case TPM_ES_RSAESPKCSv15: scheme = RSA_ES_PKCSV15; break;
-    default: return -1;
-  }
-  len = enc_size;
-  *buf = ptr = tpm_malloc(len);
-  if (*buf == NULL
-      || tpm_rsa_decrypt(&key->key, scheme, enc, enc_size, *buf, &dec_len)
-      || (len = dec_len) == 0
-      || tpm_unmarshal_TPM_STORE_ASYMKEY(&ptr, &len, store)) {
-    tpm_free(*buf);
-    return -1;
-  }
-  return 0;
-}
-
 TPM_RESULT TPM_CreateWrapKey(TPM_KEY_HANDLE parentHandle, 
                              TPM_ENCAUTH *dataUsageAuth,
                              TPM_ENCAUTH *dataMigrationAuth,
@@ -657,7 +668,7 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
     return TPM_INVALID_KEYUSAGE;
   /* decrypt private key */
   if (tpm_decrypt_private_key(parent, inKey->encData, inKey->encDataSize,
-                              &store, &key_buf)) return TPM_DECRYPT_ERROR;
+                              &store, &key_buf, NULL)) return TPM_DECRYPT_ERROR;
   /* get a free key-slot, if any free slot is left */
   *inkeyHandle = tpm_get_free_key();
   key = tpm_get_key(*inkeyHandle);
@@ -791,7 +802,7 @@ TPM_RESULT internal_TPM_LoadKey(TPM_KEY *inKey, TPM_KEY_HANDLE *inkeyHandle)
     return TPM_BAD_KEY_PROPERTY;
   /* decrypt private key */
   if (tpm_decrypt_private_key(parent, inKey->encData, inKey->encDataSize,
-                              &store, &key_buf)) return TPM_DECRYPT_ERROR;
+                              &store, &key_buf, NULL)) return TPM_DECRYPT_ERROR;
   /* get a free key-slot, if any free slot is left */
   *inkeyHandle = tpm_get_free_key();
   key = tpm_get_key(*inkeyHandle);

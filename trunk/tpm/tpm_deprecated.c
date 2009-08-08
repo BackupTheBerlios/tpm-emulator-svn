@@ -148,7 +148,8 @@ extern TPM_RESULT internal_TPM_LoadKey(TPM_KEY *inKey,
 extern int tpm_decrypt_sealed_data(TPM_KEY_DATA *key, 
   BYTE *enc, UINT32 enc_size, TPM_SEALED_DATA *seal, BYTE **buf);
 extern int tpm_decrypt_private_key(TPM_KEY_DATA *key, 
-  BYTE *enc, UINT32 enc_size, TPM_STORE_ASYMKEY *store, BYTE **buf);
+  BYTE *enc, UINT32 enc_size, TPM_STORE_ASYMKEY *store, BYTE **buf,
+  UINT32  *buf_size);
 /* import functions from tpm_crypto.c */
 extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
   BYTE *areaToSign, UINT32 areaToSignSize, BYTE **sig, UINT32 *sigSize);
@@ -426,7 +427,7 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(
     case TPM_ET_KEY:
       /* decrypt key data */
       if (tpm_decrypt_private_key(parentKey, encData, encDataSize,
-        &e1_store, &e1_key_buf)) return TPM_DECRYPT_ERROR;
+        &e1_store, &e1_key_buf, NULL)) return TPM_DECRYPT_ERROR;
       memcpy(oldAuthSecret, e1_store.usageAuth, sizeof(TPM_SECRET));
       tpm_free(e1_key_buf);
       break;

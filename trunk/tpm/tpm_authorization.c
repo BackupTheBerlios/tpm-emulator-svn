@@ -36,7 +36,8 @@ extern int tpm_encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
                                    BYTE *enc, UINT32 *enc_size);
                   
 extern int tpm_decrypt_private_key(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size, 
-                                   TPM_STORE_ASYMKEY *store, BYTE **buf);
+                                   TPM_STORE_ASYMKEY *store, BYTE **buf,
+                                   UINT32 *buf_size);
 
 TPM_RESULT TPM_ChangeAuth(TPM_KEY_HANDLE parentHandle,
                           TPM_PROTOCOL_ID protocolID, TPM_ENCAUTH *newAuth,
@@ -91,7 +92,7 @@ TPM_RESULT TPM_ChangeAuth(TPM_KEY_HANDLE parentHandle,
     BYTE *store_buf;
     /* decrypt entity */
     if (tpm_decrypt_private_key(parent, encData, encDataSize,
-        &store, &store_buf)) return TPM_DECRYPT_ERROR;
+        &store, &store_buf, NULL)) return TPM_DECRYPT_ERROR;
     /* verify auth2 */
     res = tpm_verify_auth(auth2, store.usageAuth, TPM_INVALID_HANDLE);
     if (res != TPM_SUCCESS) return (res == TPM_AUTHFAIL) ? TPM_AUTH2FAIL : res;
