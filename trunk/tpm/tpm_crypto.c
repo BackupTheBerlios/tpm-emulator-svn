@@ -69,6 +69,48 @@ TPM_RESULT TPM_SHA1CompleteExtend(TPM_PCRINDEX pcrNum, UINT32 hashDataSize,
   return TPM_Extend(pcrNum, hashValue, outDigest);
 }
 
+TPM_RESULT tpm_verify(TPM_PUBKEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
+                      BYTE *data, UINT32 dataSize, BYTE *sig, UINT32 sigSize)
+{
+  if (sigSize != key->key.size >> 3) return TPM_BAD_SIGNATURE;
+  if (key->sigScheme == TPM_SS_RSASSAPKCS1v15_SHA1) {
+    /* use signature scheme PKCS1_SHA1_RAW */
+    if (dataSize != 20) return TPM_BAD_PARAMETER;
+    if (tpm_rsa_verify(&key->key, RSA_SSA_PKCS1_SHA1_RAW,
+         data, dataSize, sig) != 0)  return TPM_BAD_SIGNATURE;
+  } else if (key->sigScheme == TPM_SS_RSASSAPKCS1v15_DER) {
+    /* use signature scheme PKCS1_DER */
+    if ((dataSize + 11) > (UINT32)(key->key.size >> 3)
+        || dataSize == 0) return TPM_BAD_PARAMETER;
+    if (tpm_rsa_verify(&key->key, RSA_SSA_PKCS1_DER,
+        data, dataSize, sig) != 0)  return TPM_BAD_SIGNATURE;
+  } else if (key->sigScheme == TPM_SS_RSASSAPKCS1v15_INFO && !isInfo) {
+    /* use signature scheme PKCS1_SHA1 and TPM_SIGN_INFO container */
+    BYTE buf[dataSize + 30];
+    if ((dataSize + 30) > (UINT32)(key->key.size >> 3)
+        || dataSize == 0) return TPM_BAD_PARAMETER;
+    /* setup TPM_SIGN_INFO structure */
+    memcpy(&buf[0], "\x05\x00SIGN", 6);
+    memcpy(&buf[6], auth->nonceOdd.nonce, 20);
+    buf[26] = (dataSize >> 24) & 0xff;
+    buf[27] = (dataSize >> 16) & 0xff;
+    buf[28] = (dataSize >>  8) & 0xff;
+    buf[29] = (dataSize      ) & 0xff;
+    memcpy(&buf[30], data, dataSize);
+    if (tpm_rsa_verify(&key->key, RSA_SSA_PKCS1_SHA1,
+        data, dataSize, sig) != 0)  return TPM_BAD_SIGNATURE;
+  } else if (key->sigScheme == TPM_SS_RSASSAPKCS1v15_INFO && isInfo) {
+    /* TPM_SIGN_INFO structure is already set up */
+    if (dataSize > (UINT32)(key->key.size >> 3)
+        || dataSize == 0) return TPM_BAD_PARAMETER;
+    if (tpm_rsa_verify(&key->key, RSA_SSA_PKCS1_SHA1,
+        data, dataSize, sig) != 0)  return TPM_BAD_SIGNATURE;
+  } else {
+    return TPM_INVALID_KEYUSAGE;
+  }
+  return TPM_SUCCESS;
+}
+
 TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
                     BYTE *areaToSign, UINT32 areaToSignSize, 
                     BYTE **sig, UINT32 *sigSize)

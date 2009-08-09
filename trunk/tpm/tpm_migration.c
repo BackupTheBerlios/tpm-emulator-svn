@@ -21,6 +21,7 @@
 #include "tpm_data.h"
 #include "tpm_marshalling.h"
 #include "crypto/sha1.h"
+#include "crypto/hmac.h"
 
 /*
  * Migration ([TPM_Part3], Section 11)
@@ -39,6 +40,12 @@ extern int tpm_encrypt_public(TPM_PUBKEY_DATA *key, BYTE *in,
                               UINT32 in_size, BYTE *enc, UINT32 *enc_size);
 
 extern int tpm_setup_pubkey(TPM_PUBKEY_DATA *key, TPM_PUBKEY *pubkey);
+
+extern int tpm_compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest);
+
+
+extern TPM_RESULT tpm_verify(TPM_PUBKEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
+  BYTE *data, UINT32 dataSize, BYTE *sig, UINT32 sigSize);
 
 int tpm_compute_migration_digest(TPM_PUBKEY *migrationKey,
                                  TPM_MIGRATE_SCHEME migrationScheme,
@@ -368,25 +375,36 @@ TPM_RESULT TPM_MigrateKey(TPM_KEY_HANDLE maKeyHandle, TPM_PUBKEY *pubKey,
   return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_CMK_SetRestrictions(
-  TPM_CMK_DELEGATE restriction,
-  TPM_AUTH *auth1
-)
+TPM_RESULT TPM_CMK_SetRestrictions(TPM_CMK_DELEGATE restriction,
+                                   TPM_AUTH *auth1)
 {
-  info("TPM_CMK_SetRestrictions() not implemented yet");
-  /* TODO: implement TPM_CMK_SetRestrictions() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  info("TPM_CMK_SetRestrictions()");
+  /* verify authorization */
+  res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
+  if (res != TPM_SUCCESS) return res;
+  /* update delegation restriction */
+  //TODO: tpmData.permanent.data.restrictDelegate = restriction;
+  return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_CMK_ApproveMA(
-  TPM_DIGEST *migrationAuthorityDigest,
-  TPM_AUTH *auth1,
-  TPM_HMAC *outData
-)
+TPM_RESULT TPM_CMK_ApproveMA(TPM_DIGEST *migrationAuthorityDigest,
+                             TPM_AUTH *auth1, TPM_HMAC *outData)
 {
-  info("TPM_CMK_ApproveMA() not implemented yet");
-  /* TODO: implement TPM_CMK_ApproveMA() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  BYTE buf[2];
+  tpm_hmac_ctx_t ctx;
+  info("TPM_CMK_ApproveMA()");
+  /* verify authorization */
+  res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
+  /* create hmac of a TPM_CMK_MA_APPROVAL structure */
+  buf[0] = (TPM_TAG_CMK_MA_APPROVAL >> 8) & 0xff;
+  buf[1] = TPM_TAG_CMK_MA_APPROVAL & 0xff;
+  tpm_hmac_init(&ctx, tpmData.permanent.data.tpmProof.nonce, sizeof(TPM_NONCE));
+  tpm_hmac_update(&ctx, buf, 2);
+  tpm_hmac_update(&ctx, migrationAuthorityDigest->digest, sizeof(TPM_DIGEST));
+  tpm_hmac_final(&ctx, outData->digest);
+  return TPM_SUCCESS;
 }
 
 TPM_RESULT TPM_CMK_CreateKey(
@@ -404,18 +422,46 @@ TPM_RESULT TPM_CMK_CreateKey(
   return TPM_FAIL;
 }
 
-TPM_RESULT TPM_CMK_CreateTicket(
-  TPM_PUBKEY *verificationKey,
-  TPM_DIGEST *signedData,
-  UINT32 signatureValueSize,
-  BYTE *signatureValue,
-  TPM_AUTH *auth1,
-  TPM_DIGEST *sigTicket
-)
+TPM_RESULT TPM_CMK_CreateTicket(TPM_PUBKEY *verificationKey,
+                                TPM_DIGEST *signedData,
+                                UINT32 signatureValueSize,
+                                BYTE *signatureValue, TPM_AUTH *auth1,
+                                TPM_DIGEST *sigTicket)
 {
-  info("TPM_CMK_CreateTicket() not implemented yet");
-  /* TODO: implement TPM_CMK_CreateTicket() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  TPM_PUBKEY_DATA key;
+  BYTE buf[2];
+  TPM_DIGEST keyDigest;
+  tpm_hmac_ctx_t ctx;
+  info("TPM_CMK_CreateTicket()");
+  /* verify authorization */
+  res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
+  /* verify key type and algorithm */
+  if (verificationKey->algorithmParms.algorithmID != TPM_ALG_RSA
+      || verificationKey->algorithmParms.encScheme != TPM_ES_NONE)
+    return TPM_BAD_KEY_PROPERTY;
+  if (verificationKey->algorithmParms.sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1
+      && verificationKey->algorithmParms.sigScheme != TPM_SS_RSASSAPKCS1v15_INFO)
+    return TPM_BAD_KEY_PROPERTY;
+  /* verify signature */
+  if (tpm_setup_pubkey(&key, verificationKey) != 0) return TPM_FAIL;
+  res = tpm_verify(&key, auth1, FALSE, signedData->digest, sizeof(TPM_DIGEST),
+                   signatureValue, signatureValueSize);
+  free_TPM_PUBKEY_DATA(key);
+  if (res != TPM_SUCCESS) return res;
+  /* create hmac on TPM_CMK_SIGTICKET */
+  buf[0] = (TPM_TAG_CMK_SIGTICKET >> 8) & 0xff;
+  buf[1] = TPM_TAG_CMK_SIGTICKET & 0xff;
+  if (tpm_compute_pubkey_digest(verificationKey, &keyDigest) !=0 ) {
+    debug("tpm_compute_pubkey_digest() failed");
+    return TPM_FAIL;
+  }
+  tpm_hmac_init(&ctx, tpmData.permanent.data.tpmProof.nonce, sizeof(TPM_NONCE));
+  tpm_hmac_update(&ctx, buf, 2);
+  tpm_hmac_update(&ctx, keyDigest.digest, sizeof(TPM_DIGEST));
+  tpm_hmac_update(&ctx, signedData->digest, sizeof(TPM_DIGEST));
+  tpm_hmac_final(&ctx, sigTicket->digest);
+  return TPM_SUCCESS;
 }
 
 TPM_RESULT TPM_CMK_CreateBlob(
