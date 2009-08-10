@@ -867,6 +867,7 @@ TPM_RESULT TPM_CMK_ApproveMA(
  * @parentHandle: [in] Handle of a loaded key that can perform key wrapping
  * @dataUsageAuth: [in] Encrypted usage authorization data for the sealed data
  * @keyInfo: [in] Information about key to be created
+ * @migrationAuthorityApproval: [in] A ticket created by the TPM owner
  * @migrationAuthorityDigest: [in] The digest of the public key of the MSA or MA
  * @auth1: [in, out] Authorization protocol parameters
  * @auth2: [in, out] Authorization protocol parameters
@@ -882,6 +883,7 @@ TPM_RESULT TPM_CMK_CreateKey(
   TPM_KEY_HANDLE parentHandle,
   TPM_ENCAUTH *dataUsageAuth,
   TPM_KEY *keyInfo,
+  TPM_HMAC *migrationAuthorityApproval,
   TPM_DIGEST *migrationAuthorityDigest,
   TPM_AUTH *auth1,
   TPM_AUTH *auth2,

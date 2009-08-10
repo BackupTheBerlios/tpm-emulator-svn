@@ -1038,6 +1038,7 @@ static TPM_RESULT execute_TPM_CMK_CreateKey(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   TPM_KEY_HANDLE parentHandle;
   TPM_ENCAUTH dataUsageAuth;
   TPM_KEY keyInfo;
+  TPM_HMAC migrationAuthorityApproval;
   TPM_DIGEST migrationAuthorityDigest;
   TPM_KEY wrappedKey;
   TPM_RESULT res;
@@ -1049,11 +1050,12 @@ static TPM_RESULT execute_TPM_CMK_CreateKey(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &parentHandle)
       || tpm_unmarshal_TPM_ENCAUTH(&ptr, &len, &dataUsageAuth)
       || tpm_unmarshal_TPM_KEY(&ptr, &len, &keyInfo)
+      || tpm_unmarshal_TPM_HMAC(&ptr, &len, &migrationAuthorityApproval)
       || tpm_unmarshal_TPM_DIGEST(&ptr, &len, &migrationAuthorityDigest)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
-  res = TPM_CMK_CreateKey(parentHandle, &dataUsageAuth, &keyInfo, &migrationAuthorityDigest, 
-    &req->auth1, &req->auth2, &wrappedKey);
+  res = TPM_CMK_CreateKey(parentHandle, &dataUsageAuth, &keyInfo, &migrationAuthorityApproval,
+    &migrationAuthorityDigest, &req->auth1, &req->auth2, &wrappedKey);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
   rsp->paramSize = len = sizeof_TPM_KEY(wrappedKey);

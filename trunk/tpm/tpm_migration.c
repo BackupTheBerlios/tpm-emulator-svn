@@ -43,6 +43,7 @@ extern int tpm_setup_pubkey(TPM_PUBKEY_DATA *key, TPM_PUBKEY *pubkey);
 
 extern int tpm_compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest);
 
+extern int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
 
 extern TPM_RESULT tpm_verify(TPM_PUBKEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
   BYTE *data, UINT32 dataSize, BYTE *sig, UINT32 sigSize);
@@ -407,19 +408,137 @@ TPM_RESULT TPM_CMK_ApproveMA(TPM_DIGEST *migrationAuthorityDigest,
   return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_CMK_CreateKey(
-  TPM_KEY_HANDLE parentHandle,
-  TPM_ENCAUTH *dataUsageAuth,
-  TPM_KEY *keyInfo,
-  TPM_DIGEST *migrationAuthorityDigest,
-  TPM_AUTH *auth1,
-  TPM_AUTH *auth2,
-  TPM_KEY *wrappedKey
-)
+TPM_RESULT TPM_CMK_CreateKey(TPM_KEY_HANDLE parentHandle,
+                             TPM_ENCAUTH *dataUsageAuth,
+                             TPM_KEY *keyInfo,
+                             TPM_HMAC *migrationAuthorityApproval,
+                             TPM_DIGEST *migrationAuthorityDigest,
+                             TPM_AUTH *auth1, TPM_AUTH *auth2,
+                             TPM_KEY *wrappedKey)
 {
-  info("TPM_CMK_CreateKey() not implemented yet");
-  /* TODO: implement TPM_CMK_CreateKey() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  TPM_KEY_DATA *parent;
+  TPM_SESSION_DATA *session;
+  tpm_hmac_ctx_t ctx;
+  BYTE buf[SHA1_DIGEST_LENGTH];
+  TPM_STORE_ASYMKEY store;
+  tpm_rsa_private_key_t rsa;
+  UINT32 key_length;
+  TPM_PUBKEY pubKey;
+  TPM_DIGEST keyDigest;
+
+  info("TPM_CMK_CreateKey()");
+  /* get parent key */
+  parent = tpm_get_key(parentHandle);
+  if (parent == NULL) return TPM_INVALID_KEYHANDLE;
+  /* verify authorization */
+  res = tpm_verify_auth(auth1, parent->usageAuth, parentHandle);
+  if (res != TPM_SUCCESS) return res;
+  auth1->continueAuthSession = FALSE;
+  session = tpm_get_auth(auth1->authHandle);
+  if (session->type != TPM_ST_OSAP) return TPM_AUTHFAIL;
+  /* must be TPM_KEY12 */
+  if (keyInfo->tag != TPM_TAG_KEY12) return TPM_INVALID_STRUCTURE;
+  /* verify key parameters */
+  if (parent->keyUsage != TPM_KEY_STORAGE
+      || parent->encScheme == TPM_ES_NONE
+      || parent->keyFlags & TPM_KEY_FLAG_MIGRATABLE
+      || !(keyInfo->keyFlags & TPM_KEY_FLAG_MIGRATABLE)
+      || !(keyInfo->keyFlags & TPM_KEY_FLAG_AUTHORITY)
+      || keyInfo->keyUsage == TPM_KEY_IDENTITY
+      || keyInfo->keyUsage == TPM_KEY_AUTHCHANGE) return TPM_INVALID_KEYUSAGE;
+  if (keyInfo->algorithmParms.algorithmID != TPM_ALG_RSA
+      || keyInfo->algorithmParms.parmSize == 0
+      || keyInfo->algorithmParms.parms.rsa.keyLength < 512
+      || keyInfo->algorithmParms.parms.rsa.numPrimes != 2
+      || keyInfo->algorithmParms.parms.rsa.exponentSize != 0)
+    return TPM_BAD_KEY_PROPERTY;
+  if (tpmData.permanent.flags.FIPS
+      && (keyInfo->algorithmParms.parms.rsa.keyLength < 1024
+          || keyInfo->authDataUsage == TPM_AUTH_NEVER
+          || keyInfo->keyUsage == TPM_KEY_LEGACY)) return TPM_NOTFIPS;
+  if ((keyInfo->keyUsage == TPM_KEY_STORAGE
+       || keyInfo->keyUsage == TPM_KEY_MIGRATE)
+      && (keyInfo->algorithmParms.algorithmID != TPM_ALG_RSA
+          || keyInfo->algorithmParms.parms.rsa.keyLength != 2048
+          || keyInfo->algorithmParms.sigScheme != TPM_SS_NONE
+          || keyInfo->algorithmParms.encScheme != TPM_ES_RSAESOAEP_SHA1_MGF1))
+    return TPM_BAD_KEY_PROPERTY;
+  /* verify migration authority */
+  buf[0] = (TPM_TAG_CMK_MA_APPROVAL >> 8) & 0xff;
+  buf[1] = TPM_TAG_CMK_MA_APPROVAL & 0xff;
+  tpm_hmac_init(&ctx, tpmData.permanent.data.tpmProof.nonce, sizeof(TPM_NONCE));
+  tpm_hmac_update(&ctx, buf, 2);
+  tpm_hmac_update(&ctx, migrationAuthorityDigest->digest, sizeof(TPM_DIGEST));
+  tpm_hmac_final(&ctx, buf);
+  if (!memcmp(migrationAuthorityApproval, buf, sizeof(TPM_HMAC)))
+    return TPM_MA_AUTHORITY;
+  /* setup the wrapped key */
+  memcpy(wrappedKey, keyInfo, sizeof(TPM_KEY));
+  /* setup key store */
+  store.payload = TPM_PT_MIGRATE_RESTRICTED;
+  tpm_decrypt_auth_secret(*dataUsageAuth, session->sharedSecret,
+    &session->lastNonceEven, store.usageAuth);
+  /* compute PCR digest */
+  if (keyInfo->PCRInfoSize > 0) {
+    tpm_compute_pcr_digest(&keyInfo->PCRInfo.creationPCRSelection,
+      &keyInfo->PCRInfo.digestAtCreation, NULL);
+    keyInfo->PCRInfo.localityAtCreation =
+      tpmData.stany.flags.localityModifier;
+  }
+  /* generate key and store it */
+  key_length = keyInfo->algorithmParms.parms.rsa.keyLength;
+  if (tpm_rsa_generate_key(&rsa, key_length)) {
+    debug("TPM_CreateWrapKey(): tpm_rsa_generate_key() failed.");
+    return TPM_FAIL;
+  }
+  wrappedKey->pubKey.keyLength = key_length >> 3;
+  wrappedKey->pubKey.key = tpm_malloc(wrappedKey->pubKey.keyLength);
+  store.privKey.keyLength = key_length >> 4;
+  store.privKey.key = tpm_malloc(store.privKey.keyLength);
+  wrappedKey->encDataSize = parent->key.size >> 3;
+  wrappedKey->encData = tpm_malloc(wrappedKey->encDataSize);
+  if (wrappedKey->pubKey.key == NULL || store.privKey.key == NULL
+      || wrappedKey->encData == NULL) {
+    tpm_rsa_release_private_key(&rsa);
+    tpm_free(wrappedKey->pubKey.key);
+    tpm_free(store.privKey.key);
+    tpm_free(wrappedKey->encData);
+    return TPM_NOSPACE;
+  }
+  tpm_rsa_export_modulus(&rsa, wrappedKey->pubKey.key, NULL);
+  tpm_rsa_export_prime1(&rsa, store.privKey.key, NULL);
+  tpm_rsa_release_private_key(&rsa);
+  /* create hmac on TPM_CMK_MIGAUTH  */
+  buf[0] = (TPM_TAG_CMK_MIGAUTH >> 8) & 0xff;
+  buf[1] = TPM_TAG_CMK_MIGAUTH & 0xff;
+  memcpy(&pubKey.algorithmParms, &wrappedKey->algorithmParms,
+         sizeof(TPM_KEY_PARMS));
+  memcpy(&pubKey.pubKey, &wrappedKey->pubKey, sizeof(TPM_STORE_PUBKEY));
+  if (tpm_compute_pubkey_digest(&pubKey, &keyDigest) !=0 ) {
+    debug("tpm_compute_pubkey_digest() failed");
+    return TPM_FAIL;
+  }
+  tpm_hmac_init(&ctx, tpmData.permanent.data.tpmProof.nonce, sizeof(TPM_NONCE));
+  tpm_hmac_update(&ctx, buf, 2);
+  tpm_hmac_update(&ctx, migrationAuthorityDigest->digest, sizeof(TPM_DIGEST));
+  tpm_hmac_update(&ctx, keyDigest.digest, sizeof(TPM_DIGEST));
+  tpm_hmac_final(&ctx, store.migrationAuth);
+  /* compute the digest of the wrapped key (without encData) */
+  if (tpm_compute_key_digest(wrappedKey, &store.pubDataDigest)) {
+    debug("TPM_CreateWrapKey(): tpm_compute_key_digest() failed.");
+    return TPM_FAIL;
+  }
+  /* encrypt private key data */
+  if (tpm_encrypt_private_key(parent, &store, wrappedKey->encData,
+      &wrappedKey->encDataSize)) {
+    tpm_free(wrappedKey->pubKey.key);
+    tpm_free(store.privKey.key);
+    tpm_free(wrappedKey->encData);
+    return TPM_ENCRYPT_ERROR;
+  }
+  tpm_free(store.privKey.key);
+  return TPM_SUCCESS;
 }
 
 TPM_RESULT TPM_CMK_CreateTicket(TPM_PUBKEY *verificationKey,
