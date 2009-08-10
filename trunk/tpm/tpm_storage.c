@@ -543,9 +543,15 @@ TPM_RESULT TPM_CreateWrapKey(TPM_KEY_HANDLE parentHandle,
       || keyInfo->algorithmParms.parms.rsa.numPrimes != 2
       || keyInfo->algorithmParms.parms.rsa.exponentSize != 0)
     return TPM_BAD_KEY_PROPERTY;
-  if (keyInfo->keyUsage == TPM_KEY_STORAGE
+  if (tpmData.permanent.flags.FIPS
+      && (keyInfo->algorithmParms.parms.rsa.keyLength < 1024
+          || keyInfo->authDataUsage == TPM_AUTH_NEVER
+          || keyInfo->keyUsage == TPM_KEY_LEGACY)) return TPM_NOTFIPS;
+  if ((keyInfo->keyUsage == TPM_KEY_STORAGE
+       || keyInfo->keyUsage == TPM_KEY_MIGRATE)
       && (keyInfo->algorithmParms.algorithmID != TPM_ALG_RSA
           || keyInfo->algorithmParms.parms.rsa.keyLength != 2048
+          || keyInfo->algorithmParms.sigScheme != TPM_SS_NONE
           || keyInfo->algorithmParms.encScheme != TPM_ES_RSAESOAEP_SHA1_MGF1))
     return TPM_BAD_KEY_PROPERTY;
   /* setup the wrapped key */
