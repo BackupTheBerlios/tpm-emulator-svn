@@ -157,7 +157,8 @@ TPM_RESULT TPM_CreateMigrationBlob(TPM_KEY_HANDLE parentHandle,
     }
   } else if (migrationType == TPM_MS_MIGRATE) {
     BYTE *ptr, *buf;
-    UINT32 len, buf_len;
+    UINT32 len;
+    size_t buf_len;
     /* generate an OAEP encoding of the TPM_MIGRATE_ASYMKEY structure:
        0x00|seed|K1|0x00-pad|0x01|TPM_MIGRATE_ASYMKEY */
     debug("migrationType = TPM_MS_MIGRATE");
@@ -224,7 +225,8 @@ TPM_RESULT TPM_ConvertMigrationBlob(TPM_KEY_HANDLE parentHandle,
   TPM_RESULT res;
   TPM_KEY_DATA *parent;
   BYTE *ptr, *buf;
-  UINT32 len, buf_len;
+  UINT32 len;
+  size_t buf_len;
   TPM_STORE_ASYMKEY store;
   info("TPM_ConvertMigrationBlob()");
   /* get parent key */
