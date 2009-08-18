@@ -449,6 +449,7 @@ typedef struct tdTPM_MSA_COMPOSITE {
   UINT32 MSAlist;
   TPM_DIGEST migAuthDigest[MAX_MSA_COMPOSITE_ENTRIES];
 } TPM_MSA_COMPOSITE;
+#define sizeof_TPM_MSA_COMPOSITE(s) (4 + s.MSAlist * 20)
 
 /*
  * TPM_CMK_AUTH ([TPM_Part2], Section 5.16)

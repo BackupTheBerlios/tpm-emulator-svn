@@ -921,6 +921,8 @@ TPM_RESULT TPM_CMK_CreateTicket(
  * @migrationType: [in] The migration type
  * @migrationKeyAuth: [in] Migration public key and its authorization digest
  * @pubSourceKeyDigest: [in] Digest of the entity's public key to be migrated
+ * @msaListSize: [in] The size of the msaList parameter
+ * @msaList: [in] Digests of public keys belonging to MAs
  * @restrictTicketSize: [in] The size of the restrictTicket parameter
  * @restrictTicket: [in] The digests of the public keys
  * @sigTicketSize: [in] The size of the sigTicket parameter
@@ -945,6 +947,8 @@ TPM_RESULT TPM_CMK_CreateBlob(
   TPM_MIGRATE_SCHEME migrationType,
   TPM_MIGRATIONKEYAUTH *migrationKeyAuth,
   TPM_DIGEST *pubSourceKeyDigest,
+  UINT32 msaListSize,
+  TPM_MSA_COMPOSITE *msaList,
   UINT32 restrictTicketSize,
   BYTE *restrictTicket,
   UINT32 sigTicketSize,

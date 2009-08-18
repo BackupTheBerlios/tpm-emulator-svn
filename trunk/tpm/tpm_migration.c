@@ -585,26 +585,134 @@ TPM_RESULT TPM_CMK_CreateTicket(TPM_PUBKEY *verificationKey,
   return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_CMK_CreateBlob(
-  TPM_KEY_HANDLE parentHandle,
-  TPM_MIGRATE_SCHEME migrationType,
-  TPM_MIGRATIONKEYAUTH *migrationKeyAuth,
-  TPM_DIGEST *pubSourceKeyDigest,
-  UINT32 restrictTicketSize,
-  BYTE *restrictTicket,
-  UINT32 sigTicketSize,
-  BYTE *sigTicket,
-  UINT32 encDataSize,
-  BYTE *encData,
-  TPM_AUTH *auth1,
-  UINT32 *randomSize,
-  BYTE **random,
-  UINT32 *outDataSize,
-  BYTE **outData
-)
+TPM_RESULT TPM_CMK_CreateBlob(TPM_KEY_HANDLE parentHandle,
+                              TPM_MIGRATE_SCHEME migrationType,
+                              TPM_MIGRATIONKEYAUTH *migrationKeyAuth,
+                              TPM_DIGEST *pubSourceKeyDigest,
+                              UINT32 msaListSize,
+                              TPM_MSA_COMPOSITE *msaList,
+                              UINT32 restrictTicketSize, BYTE *restrictTicket,
+                              UINT32 sigTicketSize, BYTE *sigTicket,
+                              UINT32 encDataSize, BYTE *encData,
+                              TPM_AUTH *auth1,
+                              UINT32 *randomSize, BYTE **random,
+                              UINT32 *outDataSize, BYTE **outData)
 {
-  info("TPM_CMK_CreateBlob() not implemented yet");
-  /* TODO: implement TPM_CMK_CreateBlob() */
+  TPM_RESULT res;
+  TPM_KEY_DATA *parent;
+  TPM_STORE_ASYMKEY store;
+  BYTE *key_buf;
+  UINT32 key_buf_size;
+  tpm_hmac_ctx_t hmac_ctx;
+  tpm_sha1_ctx_t sha1_ctx;
+  BYTE *ptr, buf[sizeof_TPM_MSA_COMPOSITE((*msaList))];
+  UINT32 len;
+  TPM_DIGEST msaListDigest;
+
+  info("TPM_CMK_CreateBlob()");
+  /* get parent key */
+  parent = tpm_get_key(parentHandle);
+  if (parent == NULL) return TPM_INVALID_KEYHANDLE;
+  /* verify authorization */
+  res = tpm_verify_auth(auth1, parent->usageAuth, parentHandle);
+  if (res != TPM_SUCCESS) return res;
+  /* migrationType must match */
+  if (migrationType != migrationKeyAuth->migrationScheme) return TPM_BAD_MODE;
+  if (parent->keyFlags & TPM_KEY_FLAG_MIGRATABLE) return TPM_BAD_KEY_PROPERTY;
+  /* decrypt private key */
+  if (tpm_decrypt_private_key(parent, encData, encDataSize,
+                              &store, &key_buf, &key_buf_size)
+      || store.payload != TPM_PT_ASYM) {
+    tpm_free(key_buf);
+    return TPM_DECRYPT_ERROR;
+  }
+  if (tpm_verify_migration_digest(migrationKeyAuth,
+      &tpmData.permanent.data.tpmProof)) {
+    debug("tpm_verify_migration_digest() failed");
+    tpm_free(key_buf);
+    return TPM_MIGRATEFAIL;
+  }
+  /* verify that the migration authorities in msaList are authorized
+     to migrate this key */
+  ptr = buf;
+  len = sizeof(buf);
+  tpm_marshal_TPM_MSA_COMPOSITE(&ptr, &len, msaList);
+  tpm_sha1_init(&sha1_ctx);
+  tpm_sha1_update(&sha1_ctx, buf, sizeof_TPM_MSA_COMPOSITE((*msaList)));
+  tpm_sha1_final(&sha1_ctx, msaListDigest.digest);
+  buf[0] = (TPM_TAG_CMK_MIGAUTH >> 8) & 0xff;
+  buf[1] = TPM_TAG_CMK_MIGAUTH & 0xff;
+  tpm_hmac_init(&hmac_ctx, tpmData.permanent.data.tpmProof.nonce, sizeof(TPM_NONCE));
+  tpm_hmac_update(&hmac_ctx, buf, 2);
+  tpm_hmac_update(&hmac_ctx, msaListDigest.digest, sizeof(TPM_DIGEST));
+  tpm_hmac_update(&hmac_ctx, pubSourceKeyDigest->digest, sizeof(TPM_DIGEST));
+  tpm_hmac_final(&hmac_ctx, store.migrationAuth);
+
+  /*
+	  1823 7.
+	  1824 a. Create M2 a TPM_CMK_MIGAUTH structure
+	  1825 i. Set M2 -> msaDigest to SHA-1[msaList]
+	  1826 ii. Set M2 -> pubKeyDigest to pubSourceKeyDigest
+	  1827 b. Verify that d1 -> migrationAuth == HMAC(M2) using tpmProof as the secret and
+	  1828 return error TPM_MA_AUTHORITY on mismatch
+	  */
+
+  /*
+        1821 6. Verify that d1 -> payload == TPM_PT_MIGRATE_RESTRICTED or
+        1822 TPM_PT_MIGRATE_EXTERNAL
+  */
+
+  if (migrationKeyAuth->migrationScheme == TPM_MS_RESTRICT_MIGRATE) {
+    /* verify that intended migration destination is an MA */
+        /*
+	  i. For one of n=1 to n=(msaList -> MSAlist), verify that SHA-1[1831 migrationKeyAuth ->
+	  1832 migrationKey] == msaList -> migAuthDigest[n]
+	  1833 b. Validate that the MA key is the correct type
+	  */
+    /* verify key type and algorithm */
+    if (migrationKeyAuth->migrationKey.algorithmParms.algorithmID != TPM_ALG_RSA
+        || migrationKeyAuth->migrationKey.algorithmParms.encScheme != TPM_ES_RSAESOAEP_SHA1_MGF1
+        || migrationKeyAuth->migrationKey.algorithmParms.sigScheme != TPM_SS_NONE)
+    return TPM_BAD_KEY_PROPERTY;
+  } else if (migrationKeyAuth->migrationScheme == TPM_MS_RESTRICT_APPROVE) {
+    /*
+	  1841 a. Verify that the intended migration destination has been approved by the MSA:
+	  1842 i. Verify that for one of the n=1 to n=(msaList -> MSAlist) values of msaList ->
+	  1843 migAuthDigest[n], sigTicket == HMAC (V1) using tpmProof as the secret where V1
+	  1844 is a TPM_CMK_SIGTICKET structure such that:
+	  1845 (1) V1 -> verKeyDigest = msaList -> migAuthDigest[n]
+	  1846 (2) V1 -> signedData = SHA-1[restrictTicket]
+	  1847 ii. If [restrictTicket -> destinationKeyDigest] != SHA-1[migrationKeyAuth ->
+	  1848 migrationKey], return error TPM_MA_DESTINATION
+	  1849 iii. If [restrictTicket -> sourceKeyDigest] != pubSourceKeyDigest, return error
+	  1850 TPM_MA_SOURCE */
+  } else {
+    return TPM_BAD_PARAMETER;
+  }
+  /*
+	  1852 11. Build two bytes array, K1 and K2, using d1:
+	  1853 a. K1 = TPM_STORE_ASYMKEY.privKey[0..19]
+	  1854 (TPM_STORE_ASYMKEY.privKey.keyLength + 16 bytes of
+	  1855 TPM_STORE_ASYMKEY.privKey.key), sizeof(K1) = 20
+	  1856 b. K2 = TPM_STORE_ASYMKEY.privKey[20..131] (position 16-127 of
+	  1857 TPM_STORE_ASYMKEY . privKey.key), sizeof(K2) = 112
+	  1858 12. Build M1 a TPM_MIGRATE_ASYMKEY structure
+	  1859 a. TPM_MIGRATE_ASYMKEY.payload = TPM_PT_CMK_MIGRATE
+	  1860 b. TPM_MIGRATE_ASYMKEY.usageAuth = TPM_STORE_ASYMKEY.usageAuth
+	  1861 c. TPM_MIGRATE_ASYMKEY.pubDataDigest = TPM_STORE_ASYMKEY. pubDataDigest
+	  1862 d. TPM_MIGRATE_ASYMKEY.partPrivKeyLen = 112 – 127.
+	  1863 e. TPM_MIGRATE_ASYMKEY.partPrivKey = K2
+	  1864 13. Create o1 (which SHALL be 198 bytes for a 2048 bit RSA key) by performing the OAEP
+	  1865 encoding of m using OAEP parameters m, pHash, and seed
+	  1866 a. m is the previously created M1
+	  1867 b. pHash = SHA-1( SHA-1[msaList] || pubSourceKeyDigest)
+	  1868 c. seed = s1 = the previously created K1
+	  14. Create r1 a random value from the TPM RNG. The size of r1 MUST 1869 be the size of o1.
+	  1870 Return r1 in the random parameter
+	  1871 15. Create x1 by XOR of o1 with r1
+	  1872 16. Copy r1 into the output field “random”
+	  1873 17. Encrypt x1 with the migrationKeyAuth-> migrationKey
+  */
   return TPM_FAIL;
 }
 

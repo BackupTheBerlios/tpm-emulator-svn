@@ -419,8 +419,8 @@ int tpm_unmarshal_TPM_DAA_JOINDATA(BYTE **ptr, UINT32 *length, TPM_DAA_JOINDATA 
 int tpm_marshal_TPM_DAA_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_DAA_SESSION_DATA *v);
 int tpm_unmarshal_TPM_DAA_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_DAA_SESSION_DATA *v);
 
-int tpm_marshal_TPM_MSA_COMPOSITE(BYTE **ptr, UINT32 *length, TPM_MSA_COMPOSITE *v, UINT32 n);
-int tpm_unmarshal_TPM_MSA_COMPOSITE(BYTE **ptr, UINT32 *length, TPM_MSA_COMPOSITE *v, UINT32 n);
+int tpm_marshal_TPM_MSA_COMPOSITE(BYTE **ptr, UINT32 *length, TPM_MSA_COMPOSITE *v);
+int tpm_unmarshal_TPM_MSA_COMPOSITE(BYTE **ptr, UINT32 *length, TPM_MSA_COMPOSITE *v);
 
 int tpm_marshal_TPM_CMK_AUTH(BYTE **ptr, UINT32 *length, TPM_CMK_AUTH *v);
 int tpm_unmarshal_TPM_CMK_AUTH(BYTE **ptr, UINT32 *length, TPM_CMK_AUTH *v);

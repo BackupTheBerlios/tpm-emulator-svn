@@ -1112,6 +1112,8 @@ static TPM_RESULT execute_TPM_CMK_CreateBlob(TPM_REQUEST *req, TPM_RESPONSE *rsp
   TPM_MIGRATE_SCHEME migrationType;
   TPM_MIGRATIONKEYAUTH migrationKeyAuth;
   TPM_DIGEST pubSourceKeyDigest;
+  UINT32 msaListSize;
+  TPM_MSA_COMPOSITE msaList;
   UINT32 restrictTicketSize;
   BYTE *restrictTicket;
   UINT32 sigTicketSize;
@@ -1132,6 +1134,8 @@ static TPM_RESULT execute_TPM_CMK_CreateBlob(TPM_REQUEST *req, TPM_RESPONSE *rsp
       || tpm_unmarshal_TPM_MIGRATE_SCHEME(&ptr, &len, &migrationType)
       || tpm_unmarshal_TPM_MIGRATIONKEYAUTH(&ptr, &len, &migrationKeyAuth)
       || tpm_unmarshal_TPM_DIGEST(&ptr, &len, &pubSourceKeyDigest)
+      || tpm_unmarshal_UINT32(&ptr, &len, &msaListSize)
+      || tpm_unmarshal_TPM_MSA_COMPOSITE(&ptr, &len, &msaList)
       || tpm_unmarshal_UINT32(&ptr, &len, &restrictTicketSize)
       || tpm_unmarshal_BLOB(&ptr, &len, &restrictTicket, restrictTicketSize)
       || tpm_unmarshal_UINT32(&ptr, &len, &sigTicketSize)
@@ -1140,9 +1144,9 @@ static TPM_RESULT execute_TPM_CMK_CreateBlob(TPM_REQUEST *req, TPM_RESPONSE *rsp
       || tpm_unmarshal_BLOB(&ptr, &len, &encData, encDataSize)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
-  res = TPM_CMK_CreateBlob(parentHandle, migrationType, &migrationKeyAuth, &pubSourceKeyDigest, 
-    restrictTicketSize, restrictTicket, sigTicketSize, sigTicket, encDataSize, encData, 
-    &req->auth1, &randomSize, &random, &outDataSize, &outData);
+  res = TPM_CMK_CreateBlob(parentHandle, migrationType, &migrationKeyAuth, &pubSourceKeyDigest,
+    msaListSize, &msaList, restrictTicketSize, restrictTicket, sigTicketSize, sigTicket,
+    encDataSize, encData, &req->auth1, &randomSize, &random, &outDataSize, &outData);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
   rsp->paramSize = len = 4 + randomSize + 4 + outDataSize;
@@ -1185,8 +1189,7 @@ static TPM_RESULT execute_TPM_CMK_ConvertMigration(TPM_REQUEST *req, TPM_RESPONS
       || tpm_unmarshal_TPM_HMAC(&ptr, &len, &sigTicket)
       || tpm_unmarshal_TPM_KEY(&ptr, &len, &migratedKey)
       || tpm_unmarshal_UINT32(&ptr, &len, &msaListSize)
-      || (msaListSize > MAX_MSA_COMPOSITE_ENTRIES)
-      || tpm_unmarshal_TPM_MSA_COMPOSITE(&ptr, &len, &msaList, msaListSize)
+      || tpm_unmarshal_TPM_MSA_COMPOSITE(&ptr, &len, &msaList)
       || tpm_unmarshal_UINT32(&ptr, &len, &randomSize)
       || tpm_unmarshal_BLOB(&ptr, &len, &random, randomSize)
       || len != 0) return TPM_BAD_PARAMETER;

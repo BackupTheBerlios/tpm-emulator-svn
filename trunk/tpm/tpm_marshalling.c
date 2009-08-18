@@ -930,25 +930,24 @@ int tpm_unmarshal_TPM_DAA_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_DAA_SESSI
   return 0;
 }
 
-int tpm_marshal_TPM_MSA_COMPOSITE
-  (BYTE **ptr, UINT32 *length, TPM_MSA_COMPOSITE *v, UINT32 n)
+int tpm_marshal_TPM_MSA_COMPOSITE(BYTE **ptr, UINT32 *length, TPM_MSA_COMPOSITE *v)
 {
   UINT32 i;
   if (tpm_marshal_UINT32(ptr, length, v->MSAlist))
     return -1;
-  for (i = 0; i < n; i++) {
+  for (i = 0; i < v->MSAlist; i++) {
     if (tpm_marshal_TPM_DIGEST(ptr, length, &v->migAuthDigest[i])) return -1;
   }
   return 0;
 }
 
-int tpm_unmarshal_TPM_MSA_COMPOSITE
-  (BYTE **ptr, UINT32 *length, TPM_MSA_COMPOSITE *v, UINT32 n)
+int tpm_unmarshal_TPM_MSA_COMPOSITE(BYTE **ptr, UINT32 *length, TPM_MSA_COMPOSITE *v)
 {
   UINT32 i;
   if (tpm_unmarshal_UINT32(ptr, length, &v->MSAlist))
     return -1;
-  for (i = 0; i < n; i++) {
+  if (v->MSAlist > MAX_MSA_COMPOSITE_ENTRIES) return -1;
+  for (i = 0; i < v->MSAlist; i++) {
     if (tpm_unmarshal_TPM_DIGEST(ptr, length, &v->migAuthDigest[i])) return -1;
   }
   return 0;
