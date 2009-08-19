@@ -48,6 +48,8 @@ extern int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
 extern TPM_RESULT tpm_verify(TPM_PUBKEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
   BYTE *data, UINT32 dataSize, BYTE *sig, UINT32 sigSize);
 
+extern int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms);
+
 int tpm_compute_migration_digest(TPM_PUBKEY *migrationKey,
                                  TPM_MIGRATE_SCHEME migrationScheme,
                                  TPM_NONCE *tpmProof, TPM_DIGEST *digest)
@@ -97,6 +99,7 @@ TPM_RESULT TPM_CreateMigrationBlob(TPM_KEY_HANDLE parentHandle,
   UINT32 len, key_buf_size;
   TPM_STORE_ASYMKEY store;
   TPM_PUBKEY_DATA key;
+
   info("TPM_CreateMigrationBlob()");
   /* get parent key */
   parent = tpm_get_key(parentHandle);
@@ -227,6 +230,7 @@ TPM_RESULT TPM_ConvertMigrationBlob(TPM_KEY_HANDLE parentHandle,
   UINT32 len;
   size_t buf_len;
   TPM_STORE_ASYMKEY store;
+
   info("TPM_ConvertMigrationBlob()");
   /* get parent key */
   parent = tpm_get_key(parentHandle);
@@ -310,6 +314,7 @@ TPM_RESULT TPM_AuthorizeMigrationKey(TPM_MIGRATE_SCHEME migrateScheme,
                                      TPM_MIGRATIONKEYAUTH *outData)
 {
   TPM_RESULT res;
+
   info("TPM_AuthorizeMigrationKey()");
   /* verify authorization */
   res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
@@ -342,6 +347,7 @@ TPM_RESULT TPM_MigrateKey(TPM_KEY_HANDLE maKeyHandle, TPM_PUBKEY *pubKey,
   TPM_KEY_DATA *key;
   TPM_PUBKEY_DATA key2;
   UINT32 size;
+
   info("TPM_MigrateKey()");
   key = tpm_get_key(maKeyHandle);
   if (key == NULL) return TPM_INVALID_KEYHANDLE;
@@ -381,6 +387,7 @@ TPM_RESULT TPM_CMK_SetRestrictions(TPM_CMK_DELEGATE restriction,
                                    TPM_AUTH *auth1)
 {
   TPM_RESULT res;
+
   info("TPM_CMK_SetRestrictions()");
   /* verify authorization */
   res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
@@ -396,6 +403,7 @@ TPM_RESULT TPM_CMK_ApproveMA(TPM_DIGEST *migrationAuthorityDigest,
   TPM_RESULT res;
   BYTE buf[2];
   tpm_hmac_ctx_t ctx;
+
   info("TPM_CMK_ApproveMA()");
   /* verify authorization */
   res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
@@ -553,6 +561,7 @@ TPM_RESULT TPM_CMK_CreateTicket(TPM_PUBKEY *verificationKey,
   BYTE buf[2];
   TPM_DIGEST keyDigest;
   tpm_hmac_ctx_t ctx;
+
   info("TPM_CMK_CreateTicket()");
   /* verify authorization */
   res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
@@ -721,9 +730,15 @@ TPM_RESULT TPM_CMK_CreateBlob(TPM_KEY_HANDLE parentHandle,
       return TPM_MA_AUTHORITY;
     }
     if (memcmp(&restrictTicket->destinationKeyDigest, &migKeyDigest,
-               sizeof(TPM_DIGEST)) != 0) return TPM_MA_DESTINATION;
+               sizeof(TPM_DIGEST)) != 0) {
+      tpm_free(key_buf);
+      return TPM_MA_DESTINATION;
+    }
     if (memcmp(&restrictTicket->sourceKeyDigest, pubSourceKeyDigest,
-               sizeof(TPM_DIGEST)) != 0) return TPM_MA_SOURCE;
+               sizeof(TPM_DIGEST)) != 0) {
+      tpm_free(key_buf);
+      return TPM_MA_SOURCE;
+    }
   } else {
     tpm_free(key_buf);
     return TPM_BAD_PARAMETER;
@@ -787,20 +802,189 @@ TPM_RESULT TPM_CMK_CreateBlob(TPM_KEY_HANDLE parentHandle,
   return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_CMK_ConvertMigration(
-  TPM_KEY_HANDLE parentHandle,
-  TPM_CMK_AUTH *restrictTicket,
-  TPM_HMAC *sigTicket,
-  TPM_KEY *migratedKey,
-  TPM_MSA_COMPOSITE *msaList,
-  UINT32 randomSize,
-  BYTE *random,
-  TPM_AUTH *auth1,
-  UINT32 *outDataSize,
-  BYTE **outData
-)
+TPM_RESULT TPM_CMK_ConvertMigration(TPM_KEY_HANDLE parentHandle,
+                                    TPM_CMK_AUTH *restrictTicket,
+                                    TPM_HMAC *sigTicket, TPM_KEY *migratedKey,
+                                    TPM_MSA_COMPOSITE *msaList,
+                                    UINT32 randomSize, BYTE *random,
+                                    TPM_AUTH *auth1,
+                                    UINT32 *outDataSize, BYTE **outData)
 {
-  info("TPM_CMK_ConvertMigration() not implemented yet");
-  /* TODO: implement TPM_CMK_ConvertMigration() */
-  return TPM_FAIL;
+  TPM_RESULT res;
+  TPM_KEY_DATA *parent;
+  BYTE *ptr, *buf, *buf2;
+  UINT32 i, len;
+  size_t buf_len;
+  BYTE tag[2], hmac[SHA1_DIGEST_LENGTH];
+  TPM_STORE_ASYMKEY store;
+  tpm_sha1_ctx_t sha1_ctx;
+  tpm_hmac_ctx_t hmac_ctx;
+  TPM_PUBKEY migratedPubKey;
+  TPM_PUBKEY parentPubKey;
+  TPM_DIGEST migKeyDigest;
+  TPM_DIGEST msaListDigest;
+  TPM_DIGEST ticketDigest;
+  TPM_DIGEST parentDigest;
+
+  info("TPM_CMK_ConvertMigration()");
+  /* get parent key */
+  parent = tpm_get_key(parentHandle);
+  if (parent == NULL) return TPM_INVALID_KEYHANDLE;
+  /* verify authorization */
+  res = tpm_verify_auth(auth1, parent->usageAuth, parentHandle);
+  if (res != TPM_SUCCESS) return res;
+  /* verify key properties */
+  if (parent->keyUsage != TPM_KEY_STORAGE
+      || parent->keyFlags & TPM_KEY_FLAG_MIGRATABLE) return TPM_INVALID_KEYUSAGE;
+  if (!(migratedKey->keyFlags & TPM_KEY_FLAG_MIGRATABLE)
+      && (!(migratedKey->keyFlags & TPM_KEY_FLAG_AUTHORITY))) return TPM_INVALID_KEYUSAGE;
+  /* decrypt private key */
+  buf_len = parent->key.size >> 3;
+  buf = tpm_malloc(buf_len);
+  if (buf == NULL) return TPM_NOSPACE;
+  /* RSA decrypt OAEP encoding */
+  if (tpm_rsa_decrypt(&parent->key, RSA_ES_PLAIN, migratedKey->encData,
+      migratedKey->encDataSize, buf, &buf_len)
+      || buf[0] != 0x00 || buf_len != randomSize) {
+    debug("tpm_rsa_decrypt() failed");
+    tpm_free(buf);
+    return TPM_DECRYPT_ERROR;
+  }
+  /* XOR decrypt OAEP encoding */
+  for (len = 0; len < buf_len; len++) buf[len] ^= random[len];
+  /* unmask OAEP encoding */
+  tpm_rsa_mask_generation(&buf[1 + SHA1_DIGEST_LENGTH],
+    buf_len - SHA1_DIGEST_LENGTH - 1, &buf[1], SHA1_DIGEST_LENGTH);
+  tpm_rsa_mask_generation(&buf[1], SHA1_DIGEST_LENGTH,
+    &buf[1 + SHA1_DIGEST_LENGTH], buf_len - SHA1_DIGEST_LENGTH - 1);
+  /* compute digest of migrated public key */
+  memcpy(&migratedPubKey.algorithmParms, &migratedKey->algorithmParms,
+         sizeof(TPM_KEY_PARMS));
+  memcpy(&migratedPubKey.pubKey, &migratedKey->pubKey, sizeof(TPM_STORE_PUBKEY));
+  if (tpm_compute_pubkey_digest(&migratedPubKey, &migKeyDigest) !=0 ) {
+    debug("tpm_compute_pubkey_digest() failed");
+    tpm_free(buf);
+    return TPM_FAIL;
+  }
+  /* compute digest of parent key */
+  parentPubKey.pubKey.keyLength = parent->key.size >> 3;
+  parentPubKey.pubKey.key = tpm_malloc(parentPubKey.pubKey.keyLength);
+  if (parentPubKey.pubKey.key == NULL) {
+    tpm_free(buf);
+    return TPM_NOSPACE;
+  }
+  tpm_rsa_export_modulus(&parent->key, parentPubKey.pubKey.key, NULL);
+  if (tpm_setup_key_parms(parent, &parentPubKey.algorithmParms) != 0) {
+    debug("tpm_setup_key_parms() failed.");
+    tpm_free(parentPubKey.pubKey.key);
+    tpm_free(buf);
+    return TPM_FAIL;
+  }
+  if (tpm_compute_pubkey_digest(&parentPubKey, &parentDigest) != 0) {
+    debug("tpm_compute_pubkey_digest() failed.");
+    free_TPM_PUBKEY(parentPubKey);
+    tpm_free(buf);
+    return TPM_FAIL;
+  }
+  free_TPM_PUBKEY(parentPubKey);
+  /* compute digest of msaList */
+  len = sizeof_TPM_MSA_COMPOSITE((*msaList));
+  ptr = buf2 = tpm_malloc(len);
+  if (buf2 == NULL || tpm_marshal_TPM_MSA_COMPOSITE(&ptr, &len, msaList)) {
+    debug("tpm_marshal_TPM_MSA_COMPOSITE() failed");
+    tpm_free(buf2);
+    tpm_free(buf);
+    return TPM_FAIL;
+  }
+  tpm_sha1_init(&sha1_ctx);
+  tpm_sha1_update(&sha1_ctx, buf2, sizeof_TPM_MSA_COMPOSITE((*msaList)));
+  tpm_sha1_final(&sha1_ctx, msaListDigest.digest);
+  tpm_free(buf2);
+  /* compute digest of restrictedTicket */
+  len = sizeof_TPM_CMK_AUTH((*restrictTicket));
+  ptr = buf2 = tpm_malloc(len);
+  if (buf2 == NULL || tpm_marshal_TPM_CMK_AUTH(&ptr, &len, restrictTicket)) {
+    debug("tpm_marshal_TPM_CMK_AUTH() failed");
+    tpm_free(buf2);
+    tpm_free(buf);
+    return TPM_FAIL;
+  }
+  tpm_sha1_init(&sha1_ctx);
+  tpm_sha1_update(&sha1_ctx, buf2, sizeof_TPM_CMK_AUTH((*restrictTicket)));
+  tpm_sha1_final(&sha1_ctx, ticketDigest.digest);
+  tpm_free(buf2);
+  /* verify decoded data */
+  tpm_sha1_init(&sha1_ctx);
+  tpm_sha1_update(&sha1_ctx, msaListDigest.digest, sizeof(TPM_DIGEST));
+  tpm_sha1_update(&sha1_ctx, migKeyDigest.digest, sizeof(TPM_DIGEST));
+  tpm_sha1_final(&sha1_ctx, hmac);
+  if (memcmp(&buf[1], hmac, sizeof(TPM_DIGEST)) != 0) {
+    tpm_free(buf);
+    return TPM_INVALID_STRUCTURE;
+  }
+  /* create a TPM_STORE_ASYMKEY structure */
+  for (ptr = &buf[1 + sizeof(TPM_SECRET) + 20]; *ptr == 0x00; ptr++);
+  if (ptr[0] != 0x01 || ptr[1] != TPM_PT_CMK_MIGRATE) {
+    tpm_free(buf);
+    return TPM_DECRYPT_ERROR;
+  }
+  ptr += 2;
+  len = ptr - buf;
+  store.payload = TPM_PT_MIGRATE_EXTERNAL;
+  tpm_unmarshal_TPM_SECRET(&ptr, &len, &store.usageAuth);
+  tpm_unmarshal_TPM_DIGEST(&ptr, &len, &store.pubDataDigest);
+  tpm_unmarshal_UINT32(&ptr, &len, &store.privKey.keyLength);
+  store.privKey.keyLength += 16;
+  memmove(&buf[1 + sizeof(TPM_SECRET) + 20], ptr, len);
+  store.privKey.key = &buf[1 + sizeof(TPM_SECRET) + 4];
+  tag[0] = (TPM_TAG_CMK_MIGAUTH >> 8) & 0xff;
+  tag[1] = TPM_TAG_CMK_MIGAUTH & 0xff;
+  tpm_hmac_init(&hmac_ctx, tpmData.permanent.data.tpmProof.nonce, sizeof(TPM_NONCE));
+  tpm_hmac_update(&hmac_ctx, tag, 2);
+  tpm_hmac_update(&hmac_ctx, msaListDigest.digest, sizeof(TPM_DIGEST));
+  tpm_hmac_update(&hmac_ctx, migKeyDigest.digest, sizeof(TPM_DIGEST));
+  tpm_hmac_final(&hmac_ctx, store.migrationAuth);
+  /* verify the migration destination */
+  for (i = 0; i < msaList->MSAlist; i++) {
+    /* create hmac of TPM_CMK_SIGTICKET */
+    tag[0] = (TPM_TAG_CMK_SIGTICKET >> 8) & 0xff;
+    tag[1] = TPM_TAG_CMK_SIGTICKET & 0xff;
+    tpm_hmac_init(&hmac_ctx, tpmData.permanent.data.tpmProof.nonce,
+                  sizeof(TPM_NONCE));
+    tpm_hmac_update(&hmac_ctx, tag, 2);
+    tpm_hmac_update(&hmac_ctx, msaList->migAuthDigest[i].digest,
+                    sizeof(TPM_DIGEST));
+    tpm_hmac_update(&hmac_ctx, ticketDigest.digest, sizeof(TPM_DIGEST));
+    tpm_hmac_final(&hmac_ctx, hmac);
+    if (memcmp(hmac, sigTicket->digest, sizeof(TPM_DIGEST)) == 0) break;
+  }
+  if (i >= msaList->MSAlist) {
+    tpm_free(buf);
+    return TPM_MA_AUTHORITY;
+  }
+  if (memcmp(&restrictTicket->destinationKeyDigest, &parentDigest,
+             sizeof(TPM_DIGEST)) != 0) {
+    tpm_free(buf);
+    return TPM_MA_DESTINATION;
+  }
+  if (memcmp(&restrictTicket->sourceKeyDigest, &migKeyDigest,
+             sizeof(TPM_DIGEST)) != 0) {
+    tpm_free(buf);
+    return TPM_MA_SOURCE;
+  }
+  /* encrypt private key */
+  *outDataSize = parent->key.size >> 3;
+  *outData = tpm_malloc(*outDataSize);
+  if (*outData == NULL) {
+    tpm_free(buf);
+    return TPM_NOSPACE;
+  }
+  if (tpm_encrypt_private_key(parent, &store, *outData, outDataSize)) {
+    debug("tpm_encrypt_private_key() failed");
+    tpm_free(*outData);
+    tpm_free(buf);
+    return TPM_ENCRYPT_ERROR;
+  }
+  tpm_free(buf);
+  return TPM_SUCCESS;
 }
