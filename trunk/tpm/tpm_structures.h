@@ -459,6 +459,7 @@ typedef struct tdTPM_CMK_AUTH {
   TPM_DIGEST destinationKeyDigest;
   TPM_DIGEST sourceKeyDigest;
 } TPM_CMK_AUTH;
+#define sizeof_TPM_CMK_AUTH(s) (3 * 20)
 
 /* !!! WATCH: completely renamed since v1.2 rev 94 !!!
  *

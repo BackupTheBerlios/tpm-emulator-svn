@@ -1115,9 +1115,9 @@ static TPM_RESULT execute_TPM_CMK_CreateBlob(TPM_REQUEST *req, TPM_RESPONSE *rsp
   UINT32 msaListSize;
   TPM_MSA_COMPOSITE msaList;
   UINT32 restrictTicketSize;
-  BYTE *restrictTicket;
+  TPM_CMK_AUTH restrictTicket;
   UINT32 sigTicketSize;
-  BYTE *sigTicket;
+  TPM_HMAC sigTicket;
   UINT32 encDataSize;
   BYTE *encData;
   UINT32 randomSize;
@@ -1137,15 +1137,19 @@ static TPM_RESULT execute_TPM_CMK_CreateBlob(TPM_REQUEST *req, TPM_RESPONSE *rsp
       || tpm_unmarshal_UINT32(&ptr, &len, &msaListSize)
       || tpm_unmarshal_TPM_MSA_COMPOSITE(&ptr, &len, &msaList)
       || tpm_unmarshal_UINT32(&ptr, &len, &restrictTicketSize)
-      || tpm_unmarshal_BLOB(&ptr, &len, &restrictTicket, restrictTicketSize)
+      || (restrictTicketSize > 0
+          && tpm_unmarshal_TPM_CMK_AUTH(&ptr, &len, &restrictTicket))
       || tpm_unmarshal_UINT32(&ptr, &len, &sigTicketSize)
-      || tpm_unmarshal_BLOB(&ptr, &len, &sigTicket, sigTicketSize)
+      || (sigTicketSize > 0
+          && tpm_unmarshal_TPM_HMAC(&ptr, &len, &sigTicket))
       || tpm_unmarshal_UINT32(&ptr, &len, &encDataSize)
       || tpm_unmarshal_BLOB(&ptr, &len, &encData, encDataSize)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
-  res = TPM_CMK_CreateBlob(parentHandle, migrationType, &migrationKeyAuth, &pubSourceKeyDigest,
-    msaListSize, &msaList, restrictTicketSize, restrictTicket, sigTicketSize, sigTicket,
+  res = TPM_CMK_CreateBlob(parentHandle, migrationType, &migrationKeyAuth,
+    &pubSourceKeyDigest, &msaList,
+    restrictTicketSize > 0 ? &restrictTicket : NULL,
+    sigTicketSize > 0 ? &sigTicket : NULL,
     encDataSize, encData, &req->auth1, &randomSize, &random, &outDataSize, &outData);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
@@ -1195,8 +1199,8 @@ static TPM_RESULT execute_TPM_CMK_ConvertMigration(TPM_REQUEST *req, TPM_RESPONS
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
   res = TPM_CMK_ConvertMigration(parentHandle, &restrictTicket, &sigTicket, 
-    &migratedKey, msaListSize, &msaList, randomSize, random, 
-    &req->auth1, &outDataSize, &outData);
+    &migratedKey, &msaList, randomSize, random, &req->auth1, &outDataSize,
+    &outData);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
   rsp->paramSize = len = 4 + outDataSize;
