@@ -634,7 +634,8 @@ TPM_RESULT TPM_CMK_CreateBlob(TPM_KEY_HANDLE parentHandle,
   /* decrypt private key */
   if (tpm_decrypt_private_key(parent, encData, encDataSize,
                               &store, &key_buf, &key_buf_size)
-      || store.payload != TPM_PT_ASYM) {
+      || (store.payload != TPM_PT_MIGRATE_RESTRICTED
+          && store.payload != TPM_PT_MIGRATE_EXTERNAL)) {
     tpm_free(key_buf);
     return TPM_DECRYPT_ERROR;
   }
@@ -643,11 +644,6 @@ TPM_RESULT TPM_CMK_CreateBlob(TPM_KEY_HANDLE parentHandle,
     debug("tpm_verify_migration_digest() failed");
     tpm_free(key_buf);
     return TPM_MIGRATEFAIL;
-  }
-  if (store.payload != TPM_PT_MIGRATE_RESTRICTED
-      && store.payload != TPM_PT_MIGRATE_EXTERNAL) {
-    tpm_free(key_buf);
-    return TPM_INVALID_STRUCTURE;
   }
   /* verify the migration authority list */
   len = sizeof_TPM_MSA_COMPOSITE((*msaList));
