@@ -496,6 +496,11 @@ static int decode_message(int type, uint8_t *msg, size_t msg_len,
       *data_len = msg_len - i - 1;
       memmove(data, &msg[i + 1], *data_len);
       break;
+    case RSA_ES_PLAIN:
+      /* EM = data */
+      *data_len = msg_len;
+      if (msg != data) memcpy(msg, data, msg_len);
+      break;
     default:
       /* unsupported encoding method */
       return -1;

@@ -69,7 +69,7 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
     tpmData.stclear.data.tag = TPM_TAG_STCLEAR_DATA;
     /* flush volatiles and PCR dependent keys keys */
     for (i = 0; i < TPM_MAX_KEYS; i++) {
-      if (tpmData.permanent.data.keys[i].valid 
+      if (tpmData.permanent.data.keys[i].payload
           && ((tpmData.permanent.data.keys[i].keyFlags & TPM_KEY_FLAG_VOLATILE)
               || tpmData.permanent.data.keys[i].parentPCRStatus))
         TPM_FlushSpecific(INDEX_TO_KEY_HANDLE(i), TPM_RT_KEY);

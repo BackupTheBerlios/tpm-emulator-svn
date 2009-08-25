@@ -1445,8 +1445,8 @@ int tpm_unmarshal_RSAPub(BYTE **ptr, UINT32 *length, tpm_rsa_public_key_t *v)
 
 int tpm_marshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v)
 {
-  if (tpm_marshal_BOOL(ptr, length, v->valid)) return -1;
-  if (v->valid) {
+  if (tpm_marshal_TPM_PAYLOAD_TYPE(ptr, length, v->payload)) return -1;
+  if (v->payload) {
     if (tpm_marshal_TPM_KEY_USAGE(ptr, length, v->keyUsage)
         || tpm_marshal_TPM_KEY_FLAGS(ptr, length, v->keyFlags)
         || tpm_marshal_TPM_KEY_CONTROL(ptr, length, v->keyControl)
@@ -1464,8 +1464,8 @@ int tpm_marshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v)
 
 int tpm_unmarshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v)
 {
-  if (tpm_unmarshal_BOOL(ptr, length, &v->valid)) return -1;
-  if (v->valid) {
+  if (tpm_unmarshal_TPM_PAYLOAD_TYPE(ptr, length, &v->payload)) return -1;
+  if (v->payload) {
     if (tpm_unmarshal_TPM_KEY_USAGE(ptr, length, &v->keyUsage)
         || tpm_unmarshal_TPM_KEY_FLAGS(ptr, length, &v->keyFlags)
         || tpm_unmarshal_TPM_KEY_CONTROL(ptr, length, &v->keyControl)

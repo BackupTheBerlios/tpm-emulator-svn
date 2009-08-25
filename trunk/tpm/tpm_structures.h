@@ -125,6 +125,7 @@ typedef UINT32 TPM_FAMILY_OPERATION;
 #define TPM_PT_CMK_MIGRATE              0x08
 /* 0x09 - 0x7F Reserved for future use by TPM */
 /* 0x80 - 0xFF Vendor specific payloads */
+#define TPM_PT_NONE                     0x00
 
 /* !!! WATCH: completely changed since v1.2 rev 94 !!!
  *
@@ -2220,7 +2221,7 @@ typedef struct tdTPM_STANY_FLAGS {
  * This structure contains the data for stored RSA keys.
  */
 typedef struct tdTPM_KEY_DATA {
-  BOOL valid;
+  TPM_PAYLOAD_TYPE payload;
   TPM_KEY_USAGE keyUsage;
   TPM_KEY_FLAGS keyFlags;
   TPM_KEY_CONTROL keyControl;

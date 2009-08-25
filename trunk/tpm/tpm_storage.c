@@ -624,8 +624,8 @@ TPM_KEY_HANDLE tpm_get_free_key(void)
 {
   int i;
   for (i = 0; i < TPM_MAX_KEYS; i++) {
-    if (!tpmData.permanent.data.keys[i].valid) {
-      tpmData.permanent.data.keys[i].valid = TRUE;
+    if (!tpmData.permanent.data.keys[i].payload) {
+      tpmData.permanent.data.keys[i].payload = TPM_PT_ASYM;
       return INDEX_TO_KEY_HANDLE(i);
     }
   }
@@ -705,6 +705,7 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
       return TPM_FAIL;
     }
   }
+  if (store.payload) key->payload = store.payload;
   key->keyUsage = inKey->keyUsage;
   key->keyFlags = inKey->keyFlags;
   key->authDataUsage = inKey->authDataUsage;
@@ -727,7 +728,7 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
 TPM_RESULT TPM_LoadKey2(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
                         TPM_AUTH *auth1, TPM_KEY_HANDLE *inkeyHandle)
 {
-  info("TPM_LoadKey2() is currently emulated by TPM_LoadKey()");
+  info("TPM_LoadKey2()");
   return TPM_LoadKey(parentHandle, inKey, auth1, inkeyHandle);
 }
 

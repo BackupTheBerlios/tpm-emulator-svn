@@ -55,15 +55,15 @@ TPM_KEY_DATA *tpm_get_key(TPM_KEY_HANDLE handle)
     case TPM_KH_ADMIN:
       return NULL;
     case TPM_KH_SRK:
-      debug("SRK valid? %.4x", tpmData.permanent.data.srk.valid);
-      return (tpmData.permanent.data.srk.valid) ?
+      debug("SRK valid? %d", tpmData.permanent.data.srk.payload);
+      return (tpmData.permanent.data.srk.payload) ?
         &tpmData.permanent.data.srk : NULL;
   }
   if (handle == TPM_INVALID_HANDLE 
       || (handle >> 24) != TPM_RT_KEY) return NULL;
   handle &= 0x00ffffff;
   if (handle >= TPM_MAX_KEYS
-      || !tpmData.permanent.data.keys[handle].valid) return NULL;
+      || !tpmData.permanent.data.keys[handle].payload) return NULL;
   return &tpmData.permanent.data.keys[handle];
 }
 

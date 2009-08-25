@@ -242,7 +242,7 @@ TPM_RESULT TPM_LoadMaintenanceArchive(UINT32 archiveSize, BYTE *archive,
     return TPM_FAIL;
   }
   /* enable SRK and mark TPM as owned */
-  tpmData.permanent.data.srk.valid = TRUE;
+  tpmData.permanent.data.srk.payload = TPM_PT_ASYM;
   tpmData.permanent.flags.owned = TRUE;
   tpmData.permanent.flags.maintenanceDone = TRUE;
   tpm_free(buf);

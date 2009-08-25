@@ -39,8 +39,6 @@ extern int tpm_decrypt(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
 extern int tpm_encrypt_public(TPM_PUBKEY_DATA *key, BYTE *in,
                               UINT32 in_size, BYTE *enc, UINT32 *enc_size);
 
-extern int tpm_setup_pubkey(TPM_PUBKEY_DATA *key, TPM_PUBKEY *pubkey);
-
 extern int tpm_compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest);
 
 extern int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
@@ -49,6 +47,19 @@ extern TPM_RESULT tpm_verify(TPM_PUBKEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
   BYTE *data, UINT32 dataSize, BYTE *sig, UINT32 sigSize);
 
 extern int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms);
+
+int tpm_setup_pubkey_data(TPM_PUBKEY *in, TPM_PUBKEY_DATA *out)
+{
+  out->valid = TRUE;
+  out->encScheme = in->algorithmParms.encScheme;
+  out->sigScheme = in->algorithmParms.sigScheme;
+  out->key.size = in->algorithmParms.parms.rsa.keyLength;
+  if (tpm_rsa_import_public_key(&out->key, RSA_MSB_FIRST,
+      in->pubKey.key, in->pubKey.keyLength,
+      in->algorithmParms.parms.rsa.exponent,
+      in->algorithmParms.parms.rsa.exponentSize) != 0) return -1;
+  return 0;
+}
 
 int tpm_compute_migration_digest(TPM_PUBKEY *migrationKey,
                                  TPM_MIGRATE_SCHEME migrationScheme,
@@ -118,6 +129,7 @@ TPM_RESULT TPM_CreateMigrationBlob(TPM_KEY_HANDLE parentHandle,
     tpm_free(key_buf);
     return TPM_DECRYPT_ERROR;
   }
+  debug("key size: %d / %d", store.privKey.keyLength, key_buf_size);
   /* verify migration authorization */
   res = tpm_verify_auth(auth2, store.migrationAuth, TPM_INVALID_HANDLE);
   if (res != TPM_SUCCESS) {
@@ -130,8 +142,9 @@ TPM_RESULT TPM_CreateMigrationBlob(TPM_KEY_HANDLE parentHandle,
     tpm_free(key_buf);
     return TPM_MIGRATEFAIL;
   }
+  debug("migration authorization is valid.");
   /* set public key */
-  if (tpm_setup_pubkey(&key, &migrationKeyAuth->migrationKey) != 0) {
+  if (tpm_setup_pubkey_data(&migrationKeyAuth->migrationKey, &key) != 0) {
       debug("tpm_setup_pubkey() failed");
       tpm_free(key_buf);
       return TPM_FAIL;
@@ -140,8 +153,8 @@ TPM_RESULT TPM_CreateMigrationBlob(TPM_KEY_HANDLE parentHandle,
   if (migrationType == TPM_MS_REWRAP) {
     /* re-encrypt raw key data */
     debug("migrationType = TPM_MS_REWRAP");
-    random = NULL;
-    randomSize = 0;
+    *random = NULL;
+    *randomSize = 0;
     *outDataSize = key.key.size >> 3;
     *outData = tpm_malloc(*outDataSize);
     if (*outData == NULL) {
@@ -181,14 +194,15 @@ TPM_RESULT TPM_CreateMigrationBlob(TPM_KEY_HANDLE parentHandle,
     len = 4;
     tpm_marshal_UINT32(&ptr, &len, store.privKey.keyLength);
     memcpy(ptr, store.privKey.key, 16);
-    memset(ptr + 16, 0, buf_len - 5 - 16);
-    len = 1 + 45 + store.privKey.keyLength - 16;
+    memset(ptr + 16, 0, buf_len - 41);
+    len = 46 + store.privKey.keyLength - 16;
     ptr = &buf[buf_len - len];
     tpm_marshal_BYTE(&ptr, &len, 0x01);
     tpm_marshal_TPM_PAYLOAD_TYPE(&ptr, &len, TPM_PT_MIGRATE);
     tpm_marshal_TPM_SECRET(&ptr, &len, &store.usageAuth);
     tpm_marshal_TPM_DIGEST(&ptr, &len, &store.pubDataDigest);
     tpm_marshal_UINT32(&ptr, &len, store.privKey.keyLength - 16);
+    memcpy(ptr, &store.privKey.key[16], store.privKey.keyLength - 16);
     tpm_rsa_mask_generation(&buf[1], SHA1_DIGEST_LENGTH,
       &buf[1 + SHA1_DIGEST_LENGTH], buf_len - SHA1_DIGEST_LENGTH - 1);
     tpm_rsa_mask_generation(&buf[1 + SHA1_DIGEST_LENGTH],
@@ -236,8 +250,11 @@ TPM_RESULT TPM_ConvertMigrationBlob(TPM_KEY_HANDLE parentHandle,
   parent = tpm_get_key(parentHandle);
   if (parent == NULL) return TPM_INVALID_KEYHANDLE;
   /* verify parent authorization */
-  res = tpm_verify_auth(auth1, parent->usageAuth, parentHandle);
-  if (res != TPM_SUCCESS) return res;
+  if (auth1->authHandle != TPM_INVALID_HANDLE
+      || parent->authDataUsage != TPM_AUTH_NEVER) {
+    res = tpm_verify_auth(auth1, parent->usageAuth, parentHandle);
+    if (res != TPM_SUCCESS) return res;
+  }
   /* verify key properties */
   if (parent->keyUsage != TPM_KEY_STORAGE) return TPM_INVALID_KEYUSAGE;
   /* decrypt private key */
@@ -246,7 +263,7 @@ TPM_RESULT TPM_ConvertMigrationBlob(TPM_KEY_HANDLE parentHandle,
   if (buf == NULL) return TPM_NOSPACE;
   /* RSA decrypt OAEP encoding */
   if (tpm_rsa_decrypt(&parent->key, RSA_ES_PLAIN, inData, inDataSize, buf, &buf_len)
-      || buf[0] != 0x00 || buf_len != randomSize) {
+      || buf_len != randomSize) {
     debug("tpm_rsa_decrypt() failed");
     tpm_free(buf);
     return TPM_DECRYPT_ERROR;
@@ -361,7 +378,7 @@ TPM_RESULT TPM_MigrateKey(TPM_KEY_HANDLE maKeyHandle, TPM_PUBKEY *pubKey,
   if (pubKey->algorithmParms.algorithmID != TPM_ALG_RSA
       || pubKey->algorithmParms.parms.rsa.keyLength < (inDataSize << 3))
     return TPM_BAD_KEY_PROPERTY;
-  if (tpm_setup_pubkey(&key2, pubKey) != 0) return TPM_FAIL;
+  if (tpm_setup_pubkey_data(pubKey, &key2) != 0) return TPM_FAIL;
   /* decrypt inData and re-encrypt it with the public key */
   *outDataSize = size = pubKey->algorithmParms.parms.rsa.keyLength >> 3;
   *outData = tpm_malloc(*outDataSize);
@@ -573,7 +590,7 @@ TPM_RESULT TPM_CMK_CreateTicket(TPM_PUBKEY *verificationKey,
       && verificationKey->algorithmParms.sigScheme != TPM_SS_RSASSAPKCS1v15_INFO)
     return TPM_BAD_KEY_PROPERTY;
   /* verify signature */
-  if (tpm_setup_pubkey(&key, verificationKey) != 0) return TPM_FAIL;
+  if (tpm_setup_pubkey_data(verificationKey, &key) != 0) return TPM_FAIL;
   res = tpm_verify(&key, auth1, FALSE, signedData->digest, sizeof(TPM_DIGEST),
                    signatureValue, signatureValueSize);
   free_TPM_PUBKEY_DATA(key);
@@ -740,7 +757,7 @@ TPM_RESULT TPM_CMK_CreateBlob(TPM_KEY_HANDLE parentHandle,
     return TPM_BAD_PARAMETER;
   }
   /* set public key */
-  if (tpm_setup_pubkey(&key, &migrationKeyAuth->migrationKey) != 0) {
+  if (tpm_setup_pubkey_data(&migrationKeyAuth->migrationKey, &key) != 0) {
     debug("tpm_setup_pubkey() failed");
     tpm_free(key_buf);
     return TPM_FAIL;

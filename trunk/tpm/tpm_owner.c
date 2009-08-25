@@ -155,7 +155,7 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   srkParams->algorithmParms.parms.rsa.keyLength = 2048;
   if (tpm_rsa_generate_key(&srk->key, 
       srkParams->algorithmParms.parms.rsa.keyLength)) return TPM_FAIL;
-  srk->valid = TRUE;
+  srk->payload = TPM_PT_ASYM;
   /* generate context Key */
   tpm_get_random_bytes(tpmData.permanent.data.contextKey,
     sizeof(tpmData.permanent.data.contextKey));
@@ -166,7 +166,7 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   srkPub->pubKey.key = tpm_malloc(srkPub->pubKey.keyLength);
   if (srkPub->pubKey.key == NULL) {
     tpm_rsa_release_private_key(&srk->key);
-    srk->valid = FALSE;
+    srk->payload = TPM_PT_NONE;
     return TPM_FAIL;
   }
   tpm_rsa_export_modulus(&srk->key, srkPub->pubKey.key, NULL);
@@ -182,7 +182,7 @@ void tpm_owner_clear()
   int i;
   /* unload all keys */
   for (i = 0; i < TPM_MAX_KEYS; i++) {
-    if (tpmData.permanent.data.keys[i].valid)
+    if (tpmData.permanent.data.keys[i].payload)
       TPM_FlushSpecific(INDEX_TO_KEY_HANDLE(i), TPM_RT_KEY);
   }
   /* invalidate stany and stclear data */

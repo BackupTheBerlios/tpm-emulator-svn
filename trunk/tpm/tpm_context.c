@@ -45,7 +45,7 @@ TPM_RESULT TPM_KeyControlOwner(TPM_KEY_HANDLE keyHandle, UINT32 bitName,
       if (bitValue) {
         int i, num = 0;
         for (i = 0; i < TPM_MAX_KEYS; i++) {
-          if (!tpmData.permanent.data.keys[i].valid ||
+          if (!tpmData.permanent.data.keys[i].payload ||
               !(tpmData.permanent.data.keys[i].keyControl 
                 & TPM_KEY_CONTROL_OWNER_EVICT)) num++;
         }
@@ -271,7 +271,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
     }
     /* check handle */
     key = tpm_get_key_slot(hintHandle);
-    if (key == NULL || key->valid) {
+    if (key == NULL || !key->payload) {
       if (keepHandle) {
         tpm_free(context_buf);
         return TPM_BAD_HANDLE;

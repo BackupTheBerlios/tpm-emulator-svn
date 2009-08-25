@@ -74,7 +74,7 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
     case TPM_CAP_PROP_KEYS:
       debug("[TPM_CAP_PROP_KEYS]");
       for (i = 0, j = TPM_MAX_KEYS; i < TPM_MAX_KEYS; i++)
-        if (tpmData.permanent.data.keys[i].valid) j--;
+        if (tpmData.permanent.data.keys[i].payload) j--;
       return return_UINT32(respSize, resp, j); 
 
     case TPM_CAP_PROP_MIN_COUNTER:
@@ -312,7 +312,7 @@ static TPM_RESULT cap_handle(UINT32 subCapSize, BYTE *subCap,
     case TPM_RT_KEY:
       debug("[TPM_RT_KEY]");
       for (i = 0; i < TPM_MAX_KEYS; i++)
-        if (tpmData.permanent.data.keys[i].valid) {
+        if (tpmData.permanent.data.keys[i].payload) {
           list.loaded++;
           list.handle[i] = INDEX_TO_KEY_HANDLE(i);
         }
@@ -590,7 +590,7 @@ static TPM_RESULT cap_loaded(UINT32 subCapSize, BYTE *subCap,
   if (tpm_unmarshal_TPM_KEY_PARMS(&subCap, &subCapSize, &parms))
     return TPM_BAD_MODE;
   for (i = 0; i < TPM_MAX_KEYS; i++) 
-    if (!tpmData.permanent.data.keys[i].valid) free_space = TRUE;
+    if (!tpmData.permanent.data.keys[i].payload) free_space = TRUE;
   if (free_space
       && parms.algorithmID == TPM_ALG_RSA
       && parms.parms.rsa.keyLength <= 2048

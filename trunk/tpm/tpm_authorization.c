@@ -227,7 +227,7 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
       break;
     case TPM_ET_SRK:
       session->handle = TPM_KH_SRK;
-      if (tpmData.permanent.data.srk.valid)
+      if (tpmData.permanent.data.srk.payload)
         secret = &tpmData.permanent.data.srk.usageAuth;
       break;
     case TPM_ET_COUNTER:

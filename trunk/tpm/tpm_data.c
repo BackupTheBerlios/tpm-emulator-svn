@@ -168,12 +168,12 @@ void tpm_release_data(void)
   /* release the EK, SRK as well as all other rsa keys */
   if (tpmData.permanent.data.endorsementKey.size > 0)
     tpm_rsa_release_private_key(&tpmData.permanent.data.endorsementKey);
-  if (tpmData.permanent.data.srk.valid)
+  if (tpmData.permanent.data.srk.payload)
     free_TPM_KEY_DATA(tpmData.permanent.data.srk);
   if (tpmData.permanent.data.manuMaintPub.valid)
     free_TPM_PUBKEY_DATA(tpmData.permanent.data.manuMaintPub);
   for (i = 0; i < TPM_MAX_KEYS; i++)
-    if (tpmData.permanent.data.keys[i].valid)
+    if (tpmData.permanent.data.keys[i].payload)
       free_TPM_KEY_DATA(tpmData.permanent.data.keys[i]);
 }
 
