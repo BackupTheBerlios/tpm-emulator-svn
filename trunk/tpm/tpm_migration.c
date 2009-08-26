@@ -845,8 +845,11 @@ TPM_RESULT TPM_CMK_ConvertMigration(TPM_KEY_HANDLE parentHandle,
   parent = tpm_get_key(parentHandle);
   if (parent == NULL) return TPM_INVALID_KEYHANDLE;
   /* verify authorization */
-  res = tpm_verify_auth(auth1, parent->usageAuth, parentHandle);
-  if (res != TPM_SUCCESS) return res;
+  if (auth1->authHandle != TPM_INVALID_HANDLE
+      || parent->authDataUsage != TPM_AUTH_NEVER) {
+    res = tpm_verify_auth(auth1, parent->usageAuth, parentHandle);
+    if (res != TPM_SUCCESS) return res;
+  }
   /* verify key properties */
   if (parent->keyUsage != TPM_KEY_STORAGE
       || parent->keyFlags & TPM_KEY_FLAG_MIGRATABLE) return TPM_INVALID_KEYUSAGE;
@@ -875,7 +878,7 @@ TPM_RESULT TPM_CMK_ConvertMigration(TPM_KEY_HANDLE parentHandle,
   memcpy(&migratedPubKey.algorithmParms, &migratedKey->algorithmParms,
          sizeof(TPM_KEY_PARMS));
   memcpy(&migratedPubKey.pubKey, &migratedKey->pubKey, sizeof(TPM_STORE_PUBKEY));
-  if (tpm_compute_pubkey_digest(&migratedPubKey, &migKeyDigest) !=0 ) {
+  if (tpm_compute_pubkey_digest(&migratedPubKey, &migKeyDigest) != 0) {
     debug("tpm_compute_pubkey_digest() failed");
     tpm_free(buf);
     return TPM_FAIL;

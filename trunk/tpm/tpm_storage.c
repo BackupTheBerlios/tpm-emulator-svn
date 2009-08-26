@@ -369,7 +369,6 @@ TPM_RESULT TPM_Unseal(TPM_KEY_HANDLE parentHandle, TPM_STORED_DATA *inData,
         && !(inData->sealInfo.localityAtRelease 
              & (1 << tpmData.stany.flags.localityModifier)))
        return TPM_BAD_LOCALITY;
-   
   }
   /* decrypt sealed data */
   if (tpm_decrypt_sealed_data(key, inData->encData, inData->encDataSize,
@@ -750,11 +749,16 @@ int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms)
   parms->sigScheme = key->sigScheme;
   parms->parms.rsa.keyLength = key->key.size;
   parms->parms.rsa.numPrimes = 2;
-  parms->parms.rsa.exponentSize = key->key.size >> 3;
-  parms->parms.rsa.exponent = tpm_malloc(parms->parms.rsa.exponentSize);
-  if (parms->parms.rsa.exponent == NULL) return -1;
-  tpm_rsa_export_exponent(&key->key, parms->parms.rsa.exponent, &exp_len);
-  parms->parms.rsa.exponentSize = exp_len;
+  if (tpm_bn_cmp_ui(key->key.e, 65537) == 0) {
+    parms->parms.rsa.exponentSize = 0;
+    parms->parms.rsa.exponent = NULL;
+  } else {
+    parms->parms.rsa.exponentSize = tpm_rsa_exponent_length(&key->key);
+    parms->parms.rsa.exponent = tpm_malloc(parms->parms.rsa.exponentSize);
+    if (parms->parms.rsa.exponent == NULL) return -1;
+    tpm_rsa_export_exponent(&key->key, parms->parms.rsa.exponent, &exp_len);
+    parms->parms.rsa.exponentSize = exp_len;
+  }
   parms->parmSize = 12 + parms->parms.rsa.exponentSize;
   return 0;
 }
