@@ -846,7 +846,7 @@ TPM_RESULT TPM_CMK_ConvertMigration(TPM_KEY_HANDLE parentHandle,
   if (parent == NULL) return TPM_INVALID_KEYHANDLE;
   /* verify authorization */
   res = tpm_verify_auth(auth1, parent->usageAuth, parentHandle);
-  //if (res != TPM_SUCCESS) return res; FIXME
+  if (res != TPM_SUCCESS) return res;
   /* verify key properties */
   if (parent->keyUsage != TPM_KEY_STORAGE
       || parent->keyFlags & TPM_KEY_FLAG_MIGRATABLE) return TPM_INVALID_KEYUSAGE;
@@ -976,13 +976,11 @@ TPM_RESULT TPM_CMK_ConvertMigration(TPM_KEY_HANDLE parentHandle,
     tpm_free(buf);
     return TPM_MA_AUTHORITY;
   }
-  /* FIXME
   if (memcmp(&restrictTicket->destinationKeyDigest, &parentDigest,
              sizeof(TPM_DIGEST)) != 0) {
     tpm_free(buf);
     return TPM_MA_DESTINATION;
   }
-  */
   if (memcmp(&restrictTicket->sourceKeyDigest, &migKeyDigest,
              sizeof(TPM_DIGEST)) != 0) {
     tpm_free(buf);
