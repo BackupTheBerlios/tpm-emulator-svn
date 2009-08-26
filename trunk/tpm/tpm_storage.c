@@ -683,14 +683,24 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
     return TPM_NOSPACE;
   }
   /* import key */
-  if (tpm_verify_key_digest(inKey, &store.pubDataDigest)
-      || inKey->pubKey.keyLength != (store.privKey.keyLength * 2)
-      || tpm_rsa_import_key(&key->key, RSA_MSB_FIRST,
-                        inKey->pubKey.key, inKey->pubKey.keyLength,
-                        inKey->algorithmParms.parms.rsa.exponent,
-                        inKey->algorithmParms.parms.rsa.exponentSize,
-                        store.privKey.key, NULL)) {
-    debug("TPM_LoadKey(): tpm_verify_key_digest() or tpm_rsa_import_key() failed.");
+  if (tpm_verify_key_digest(inKey, &store.pubDataDigest) != 0) {
+    debug("tpm_verify_key_digest() failed.");
+    memset(key, 0, sizeof(TPM_KEY_DATA));
+    tpm_free(key_buf);
+    return TPM_FAIL;
+  }
+  if (inKey->pubKey.keyLength != (store.privKey.keyLength * 2)) {
+    debug("size of the public modulus does not match the secret prime");
+    memset(key, 0, sizeof(TPM_KEY_DATA));
+    tpm_free(key_buf);
+    return TPM_FAIL;
+  }
+  if (tpm_rsa_import_key(&key->key, RSA_MSB_FIRST,
+                         inKey->pubKey.key, inKey->pubKey.keyLength,
+                         inKey->algorithmParms.parms.rsa.exponent,
+                         inKey->algorithmParms.parms.rsa.exponentSize,
+                         store.privKey.key, NULL)) {
+    debug("tpm_rsa_import_key() failed.");
     memset(key, 0, sizeof(TPM_KEY_DATA));
     tpm_free(key_buf);
     return TPM_FAIL;
