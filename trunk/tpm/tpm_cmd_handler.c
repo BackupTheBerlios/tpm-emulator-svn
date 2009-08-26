@@ -31,6 +31,7 @@ UINT32 tpm_get_in_param_offset(TPM_COMMAND_CODE ordinal)
 */
     case TPM_ORD_ChangeAuth:
     case TPM_ORD_ChangeAuthAsymStart:
+    case TPM_ORD_CMK_ConvertMigration:
     case TPM_ORD_CMK_CreateBlob:
     case TPM_ORD_CMK_CreateKey:
     case TPM_ORD_ConvertMigrationBlob:

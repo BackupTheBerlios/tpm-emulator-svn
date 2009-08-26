@@ -407,7 +407,6 @@ static TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
     case TPM_ORD_LoadKey2:
     case TPM_ORD_GetPubKey:
     case TPM_ORD_Sealx:
-/* WATCH: not yet implemented
     case TPM_ORD_CreateMigrationBlob:
     case TPM_ORD_ConvertMigrationBlob:
     case TPM_ORD_AuthorizeMigrationKey:
@@ -418,7 +417,6 @@ static TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
     case TPM_ORD_CMK_CreateTicket:
     case TPM_ORD_CMK_CreateBlob:
     case TPM_ORD_CMK_ConvertMigration:
-*/
     case TPM_ORD_CreateMaintenanceArchive:
     case TPM_ORD_LoadMaintenanceArchive:
     case TPM_ORD_KillMaintenanceFeature:
