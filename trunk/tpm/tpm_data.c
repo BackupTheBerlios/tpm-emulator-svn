@@ -200,7 +200,7 @@ int tpm_store_permanent_data(void)
     tpm_free(buf);
     return -1;
   }
-  if (len != 0) debug("warning: buffer was too large.");
+  if (len != 0) debug("warning: buffer was too large, %d bytes left", len);
   if (tpm_write_to_file(buf, buf_length - len)) {
     tpm_free(buf);
     return -1; 

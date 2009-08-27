@@ -2124,7 +2124,8 @@ typedef struct tdTPM_KEY_DATA {
 #define sizeof_RSA(s) (6 + tpm_rsa_modulus_length(&s) \
  + tpm_rsa_exponent_length(&s) + tpm_rsa_prime1_length(&s))
 #define sizeof_TPM_KEY_DATA(s) (1 + 2 + 4 + 4 + 1 + 2 + 2 + 20 \
-  + sizeof_TPM_PCR_INFO(s.pcrInfo) + 1 + sizeof_RSA(s.key))
+  + ((s.keyFlags & TPM_KEY_FLAG_HAS_PCR) ? sizeof_TPM_PCR_INFO(s.pcrInfo) : 0) \
+  + 1 + sizeof_RSA(s.key))
 #define free_TPM_KEY_DATA(s) { tpm_rsa_release_private_key(&s.key); }
 
 /*

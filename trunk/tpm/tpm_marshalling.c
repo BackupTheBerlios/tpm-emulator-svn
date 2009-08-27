@@ -618,13 +618,7 @@ int tpm_marshal_TPM_CURRENT_TICKS(BYTE **ptr, UINT32 *length, TPM_CURRENT_TICKS 
 {
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
       || tpm_marshal_UINT64(ptr, length, v->currentTicks)
-/* removed since v1.2 rev 94
-      || tpm_marshal_UINT16(ptr, length, v->tickType)
-*/
       || tpm_marshal_UINT16(ptr, length, v->tickRate)
-/* removed since v1.2 rev 94
-      || tpm_marshal_UINT16(ptr, length, v->tickSecurity)
-*/
       || tpm_marshal_TPM_NONCE(ptr, length, &v->tickNonce)) return -1;
   return 0;
 }
@@ -633,13 +627,7 @@ int tpm_unmarshal_TPM_CURRENT_TICKS(BYTE **ptr, UINT32 *length, TPM_CURRENT_TICK
 {
   if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
       || tpm_unmarshal_UINT64(ptr, length, &v->currentTicks)
-/* removed since v1.2 rev 94
-      || tpm_unmarshal_UINT16(ptr, length, &v->tickType)
-*/
       || tpm_unmarshal_UINT16(ptr, length, &v->tickRate)
-/* removed since v1.2 rev 94
-      || tpm_unmarshal_UINT16(ptr, length, &v->tickSecurity)
-*/
       || tpm_unmarshal_TPM_NONCE(ptr, length, &v->tickNonce)) return -1;
   return 0;
 }
@@ -1374,9 +1362,6 @@ int tpm_marshal_TPM_STCLEAR_FLAGS(BYTE **ptr, UINT32 *length, TPM_STCLEAR_FLAGS 
       || tpm_marshal_BOOL(ptr, length, v->disableForceClear)
       || tpm_marshal_BOOL(ptr, length, v->physicalPresence)
       || tpm_marshal_BOOL(ptr, length, v->physicalPresenceLock)
-/* removed since v1.2 rev 94
-      || tpm_marshal_BOOL_ARRAY(ptr, length, v->tableAdmin, TPM_MAX_FAMILY)
-*/
       || tpm_marshal_BOOL(ptr, length, v->bGlobalLock)) return -1;
   return 0;
 }
@@ -1388,9 +1373,6 @@ int tpm_unmarshal_TPM_STCLEAR_FLAGS(BYTE **ptr, UINT32 *length, TPM_STCLEAR_FLAG
       || tpm_unmarshal_BOOL(ptr, length, &v->disableForceClear)
       || tpm_unmarshal_BOOL(ptr, length, &v->physicalPresence)
       || tpm_unmarshal_BOOL(ptr, length, &v->physicalPresenceLock)
-/* removed since v1.2 rev 94
-      || tpm_unmarshal_BOOL_ARRAY(ptr, length, v->tableAdmin, TPM_MAX_FAMILY)
-*/
       || tpm_unmarshal_BOOL(ptr, length, &v->bGlobalLock)) return -1;
   return 0;
 }
