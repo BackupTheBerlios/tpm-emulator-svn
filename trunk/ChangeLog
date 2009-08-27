@@ -1,5 +1,91 @@
+2009-08-27  Mario Strasser <mast@gmx.net>
+	* tpm_structures.h: structures updated and completed
+	* all: major revision number incremented to 6 due to changes in the
+		internal data structure
+	* ChangeLog: changelog updated
+
+
+2009-08-26  Mario Strasser <mast@gmx.net>
+	* tpm_migration.c: bugs in CMK functionality fixed, migration support
+		completed and enabled
+	* tpm_storage.c: usage of default exponent in pubkey generation fixed
+
+
+2009-08-25  Mario Strasser <mast@gmx.net>
+	* tpm_migration.c: bugs in key migration functionality fixed
+
+
+2009-08-19  Mario Strasser <mast@gmx.net>
+	* tpm_migration.c: TPM_CMK_CreateBlob() and
+		TPM_CMK_ConvertMigration() added
+
+
+2009-08-13  Mario Strasser <mast@gmx.net>
+	* tpm_migration.c: size_t issue fixed; thanks to E. Fleury
+
+
+2009-08-10  Mario Strasser <mast@gmx.net>
+	* tpm_storage.c: TPM_CreateWrapKey() updated
+	* tpm_migration.c: TPM_CMK_CreateKey() added
+
+
+2009-08-09  Mario Strasser <mast@gmx.net>
+	* tpm_storage.c: tpm_decrypt and tpm_encrypt added
+	* tpm_migration.c: initial migration support added
+	* tpm_migration.c: CMK support added
+
+
+2009-08-04  Mario Strasser <mast@gmx.net>
+	* tpm_deprecated.c, tpm_migration.c: bugs fixed; thanks to M. Schmidt
+
+
+2009-06-05  Mario Strasser <mast@gmx.net>
+	* tpm_structures.c: bug in rsa key size computation fixed
+
+
+2009-05-30  Mario Strasser <mast@gmx.net>
+	* tpm_owner.c: set readPubek to false once the TPM is owned
+
+
+2009-04-08  Mario Strasser <mast@gmx.net>
+	* tpmd.c: missing mkdirs call added
+
+
+2008-10-13  Mario Strasser <mast@gmx.net>
+	* rsa.[ch]: functions to determine rsa key length added
+	* tpm_structures.h: sizeof_RSA uses precise vales
+
+
+2008-05-06  Mario Strasser <mast@gmx.net>
+	* tpm_storage.c: version 1.1 compatibility fixed
+
+
+2008-03-23  Mario Strasser <mast@gmx.net>
+	* tpm_maintenance.c: management support added
+	* tpm_maintenance.c: several fixes in the maintenance support
+	* tpm_storage.c: TPM_Sealx fixed and TPM_UnSeal adapted
+
+
+2008-03-22  Mario Strasser <mast@gmx.net>
+	* tpm_cmd_handler.c tpm_maintenance.c: maintenance support added
+
+
+2008-03-21  Mario Strasser <mast@gmx.net>
+	* rsa.[ch], tpm_storage.c: TPM_Sealx added
+
+
+2008-03-13  Mario Strasser <mast@gmx.net>
+	* tpm_owner.c: memory leak in TPM_OwnerClear fixed
+
+
+2008-03-12  Mario Strasser <mast@gmx.net>
+	* rsa.c: memory leak fixed
+	* all: NV support added
+
+
 2008-03-03  Heiko Stamer <stamer@gaos.org>
 	* tpm_deprecated.c, tpm_marshalling.c: TPM_ChangeAuthAsymFinish() added
+	* tpm_capability.c: supported commands changed
 
 
 2008-02-21  Heiko Stamer <stamer@gaos.org>
@@ -128,7 +214,7 @@
 
 
 2007-03-23  Mario Strasser <mast@gmx.net>
-	* tpmd.c: additional tpmd paramters added
+	* tpmd.c: additional tpmd parameters added
 
 
 2006-12-27  Mario Strasser <mast@gmx.net>
