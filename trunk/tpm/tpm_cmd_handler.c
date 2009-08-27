@@ -2287,7 +2287,7 @@ static TPM_RESULT execute_TPM_Delegate_ReadTable(TPM_REQUEST *req, TPM_RESPONSE 
   UINT32 familyTableSize;
   BYTE *familyTable = NULL;
   UINT32 delegateTableSize;
-  TPM_DELEGATE_PUBLIC *delegateTable = NULL;
+  BYTE *delegateTable = NULL;
   TPM_RESULT res;
   /* execute command */
   res = TPM_Delegate_ReadTable(&familyTableSize, &familyTable, &delegateTableSize, &delegateTable);
@@ -2299,7 +2299,7 @@ static TPM_RESULT execute_TPM_Delegate_ReadTable(TPM_REQUEST *req, TPM_RESPONSE 
       || tpm_marshal_UINT32(&ptr, &len, familyTableSize)
       || tpm_marshal_BLOB(&ptr, &len, familyTable, familyTableSize)
       || tpm_marshal_UINT32(&ptr, &len, delegateTableSize)
-      || tpm_marshal_TPM_DELEGATE_PUBLIC_ARRAY(&ptr, &len, delegateTable, delegateTableSize)) {
+      || tpm_marshal_BLOB(&ptr, &len, delegateTable, delegateTableSize)) {
     tpm_free(rsp->param);
     res = TPM_FAIL;
   }
@@ -4165,7 +4165,9 @@ void tpm_emulator_init(uint32_t startup)
 void tpm_emulator_shutdown()
 {
   debug("tpm_emulator_shutdown()");
-  TPM_SaveState();
+  if (TPM_SaveState() != TPM_SUCCESS) {
+    error("TPM_SaveState() failed");
+  }
   tpm_release_data();
 }
 

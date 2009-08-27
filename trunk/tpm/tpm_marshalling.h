@@ -261,6 +261,12 @@ static inline int tpm_unmarshal_BYTE_ARRAY(BYTE **ptr, UINT32 *ptr_length,
 #define tpm_unmarshal_TPM_FAMILY_ID            tpm_unmarshal_UINT32
 #define tpm_marshal_TPM_FAMILY_VERIFICATION    tpm_marshal_UINT32
 #define tpm_unmarshal_TPM_FAMILY_VERIFICATION  tpm_unmarshal_UINT32
+#define tpm_marshal_TPM_STARTUP_EFFECTS        tpm_marshal_UINT32
+#define tpm_unmarshal_TPM_STARTUP_EFFECTS      tpm_unmarshal_UINT32
+#define tpm_marshal_TPM_SYM_MODE               tpm_marshal_UINT32
+#define tpm_unmarshal_TPM_SYM_MODE             tpm_unmarshal_UINT32
+#define tpm_marshal_TPM_FAMILY_FLAGS           tpm_marshal_UINT32
+#define tpm_unmarshal_TPM_FAMILY_FLAGS         tpm_unmarshal_UINT32
 #define tpm_marshal_TPM_DELEGATE_INDEX         tpm_marshal_UINT32
 #define tpm_unmarshal_TPM_DELEGATE_INDEX       tpm_unmarshal_UINT32
 #define tpm_marshal_TPM_COUNT_ID               tpm_marshal_UINT32
@@ -449,6 +455,12 @@ int tpm_unmarshal_TPM_NV_DATA_PUBLIC(BYTE **ptr, UINT32 *length, TPM_NV_DATA_PUB
 int tpm_marshal_TPM_DELEGATIONS(BYTE **ptr, UINT32 *length, TPM_DELEGATIONS *v);
 int tpm_unmarshal_TPM_DELEGATIONS(BYTE **ptr, UINT32 *length, TPM_DELEGATIONS *v);
 
+int tpm_marshal_TPM_FAMILY_LABEL(BYTE **ptr, UINT32 *length, TPM_FAMILY_LABEL *v);
+int tpm_unmarshal_TPM_FAMILY_LABEL(BYTE **ptr, UINT32 *length, TPM_FAMILY_LABEL *v);
+
+int tpm_marshal_TPM_FAMILY_TABLE_ENTRY(BYTE **ptr, UINT32 *length, TPM_FAMILY_TABLE_ENTRY *v);
+int tpm_unmarshal_TPM_FAMILY_TABLE_ENTRY(BYTE **ptr, UINT32 *length, TPM_FAMILY_TABLE_ENTRY *v);
+
 int tpm_marshal_TPM_DELEGATE_LABEL(BYTE **ptr, UINT32 *length, TPM_DELEGATE_LABEL *v);
 int tpm_unmarshal_TPM_DELEGATE_LABEL(BYTE **ptr, UINT32 *length, TPM_DELEGATE_LABEL *v);
 
@@ -457,6 +469,9 @@ int tpm_unmarshal_TPM_DELEGATE_PUBLIC(BYTE **ptr, UINT32 *length, TPM_DELEGATE_P
 
 int tpm_marshal_TPM_DELEGATE_PUBLIC_ARRAY(BYTE **ptr, UINT32 *length, TPM_DELEGATE_PUBLIC *v, UINT32 n);
 int tpm_unmarshal_TPM_DELEGATE_PUBLIC_ARRAY(BYTE **ptr, UINT32 *length, TPM_DELEGATE_PUBLIC *v, UINT32 n);
+
+int tpm_marshal_TPM_DELEGATE_TABLE_ROW(BYTE **ptr, UINT32 *length, TPM_DELEGATE_TABLE_ROW *v);
+int tpm_unmarshal_TPM_DELEGATE_TABLE_ROW(BYTE **ptr, UINT32 *length, TPM_DELEGATE_TABLE_ROW *v);
 
 int tpm_marshal_TPM_DELEGATE_OWNER_BLOB(BYTE **ptr, UINT32 *length, TPM_DELEGATE_OWNER_BLOB *v);
 int tpm_unmarshal_TPM_DELEGATE_OWNER_BLOB(BYTE **ptr, UINT32 *length, TPM_DELEGATE_OWNER_BLOB *v);

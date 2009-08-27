@@ -135,10 +135,6 @@ void tpm_init_data(void)
   for (i = 24; i < TPM_NUM_PCR; i++) {
     init_pcr_attr(i, TRUE, 0x00, 0x00);
   }
-  /* set tick type */
-/* removed since v1.2 rev 94
-  tpmData.permanent.data.tickType = TICK_INC;
-*/
 #ifdef TPM_GENERATE_EK
   /* generate a new endorsement key */
   tpm_rsa_generate_key(&tpmData.permanent.data.endorsementKey, 2048);
@@ -148,7 +144,7 @@ void tpm_init_data(void)
     RSA_MSB_FIRST, ek_n, 256, ek_e, 3, ek_p, ek_q);
 #endif
 #ifdef TPM_GENERATE_SEED_DAA
-  /* generate the DAA seed (cf. [TPM_Part2], v1.2 rev 94, Section 7.4) */
+  /* generate the DAA seed */
   tpm_get_random_bytes(tpmData.permanent.data.tpmDAASeed.nonce, 
     sizeof(tpmData.permanent.data.tpmDAASeed.nonce));
 #else
@@ -186,10 +182,11 @@ int tpm_store_permanent_data(void)
   /* marshal data */
   buf_length = len = sizeof_TPM_VERSION(tpmData.permanent.data.version)
     + sizeof_TPM_PERMANENT_FLAGS(tpmData.permanent.flags) + 2
-    + sizeof_TPM_PERMANENT_DATA(tpmData.permanent.data)
+    + sizeof_TPM_PERMANENT_DATA(&tpmData.permanent.data)
     + sizeof_TPM_STCLEAR_FLAGS(tpmData.stclear.flags)
     + sizeof_TPM_STCLEAR_DATA(tpmData.stclear.data)
     + sizeof_TPM_STANY_DATA(tpmData.stany.data);
+  debug("size of permanent data: %d", buf_length);
   buf = ptr = tpm_malloc(buf_length);
   if (buf == NULL
       || tpm_marshal_TPM_VERSION(&ptr, &len, &tpmData.permanent.data.version)
@@ -203,6 +200,7 @@ int tpm_store_permanent_data(void)
     tpm_free(buf);
     return -1;
   }
+  if (len != 0) debug("warning: buffer was too large.");
   if (tpm_write_to_file(buf, buf_length - len)) {
     tpm_free(buf);
     return -1; 

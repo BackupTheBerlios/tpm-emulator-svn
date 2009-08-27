@@ -1870,7 +1870,7 @@ TPM_RESULT TPM_Delegate_ReadTable(
   UINT32 *familyTableSize,
   BYTE **familyTable ,
   UINT32 *delegateTableSize,
-  TPM_DELEGATE_PUBLIC **delegateTable  
+  BYTE **delegateTable
 );
 
 /**

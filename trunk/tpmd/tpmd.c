@@ -446,7 +446,7 @@ int main(int argc, char **argv)
     openlog(TPM_DAEMON_NAME, 0, LOG_DAEMON);
     setlogmask(~LOG_MASK(LOG_DEBUG));
     syslog(LOG_INFO, "--- separator ---\n");
-    info("starting TPM Emulator daemon");
+    info("starting TPM Emulator daemon (1.2.%d.%d)", VERSION_MAJOR, VERSION_MINOR);
     parse_options(argc, argv);
     /* switch uid/gid if required */
     switch_uid_gid();

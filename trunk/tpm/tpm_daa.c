@@ -252,7 +252,7 @@ static int encrypt_daa(BYTE *iv, UINT32 iv_size, TPM_DAA_SENSITIVE *sensitive,
   UINT32 len;
   BYTE *ptr;
   tpm_rc4_ctx_t rc4_ctx;
-  BYTE key[TPM_CONTEXT_KEY_SIZE + iv_size];
+  BYTE key[TPM_SYM_KEY_SIZE + iv_size];
   
   /* marshal sensitive */
   *enc_size = len = sizeof_TPM_DAA_SENSITIVE((*sensitive));
@@ -265,8 +265,8 @@ static int encrypt_daa(BYTE *iv, UINT32 iv_size, TPM_DAA_SENSITIVE *sensitive,
   }
   
   /* encrypt sensitive */
-  memcpy(key, tpmData.permanent.data.contextKey, TPM_CONTEXT_KEY_SIZE);
-  memcpy(&key[TPM_CONTEXT_KEY_SIZE], iv, iv_size);
+  memcpy(key, tpmData.permanent.data.daaKey, TPM_SYM_KEY_SIZE);
+  memcpy(&key[TPM_SYM_KEY_SIZE], iv, iv_size);
   tpm_rc4_init(&rc4_ctx, key, sizeof(key));
   tpm_rc4_crypt(&rc4_ctx, *enc, *enc, *enc_size);
   
@@ -279,14 +279,14 @@ static int decrypt_daa(BYTE *iv, UINT32 iv_size, BYTE *enc, UINT32 enc_size,
   UINT32 len;
   BYTE *ptr;
   tpm_rc4_ctx_t rc4_ctx;
-  BYTE key[TPM_CONTEXT_KEY_SIZE + iv_size];
+  BYTE key[TPM_SYM_KEY_SIZE + iv_size];
   
   /* decrypt sensitive */
   len = enc_size, *buf = ptr = tpm_malloc(len);
   if (ptr == NULL)
     return -1;
-  memcpy(key, tpmData.permanent.data.contextKey, TPM_CONTEXT_KEY_SIZE);
-  memcpy(&key[TPM_CONTEXT_KEY_SIZE], iv, iv_size);
+  memcpy(key, tpmData.permanent.data.daaKey, TPM_SYM_KEY_SIZE);
+  memcpy(&key[TPM_SYM_KEY_SIZE], iv, iv_size);
   tpm_rc4_init(&rc4_ctx, key, sizeof(key));
   tpm_rc4_crypt(&rc4_ctx, enc, ptr, enc_size);
   
@@ -315,8 +315,8 @@ static int compute_daa_digest(TPM_DAA_BLOB *daaBlob, TPM_DIGEST *digest)
     return -1;
   }
   memset(&buf[22], 0, sizeof(TPM_DIGEST));
-  tpm_hmac_init(&hmac_ctx, tpmData.permanent.data.tpmProof.nonce, 
-    sizeof(tpmData.permanent.data.tpmProof.nonce));
+  tpm_hmac_init(&hmac_ctx, tpmData.permanent.data.daaProof.nonce,
+    sizeof(tpmData.permanent.data.daaProof.nonce));
   tpm_hmac_update(&hmac_ctx, buf, sizeof_TPM_DAA_BLOB((*daaBlob)));
   tpm_hmac_final(&hmac_ctx, digest->digest);
   tpm_free(buf);
@@ -2095,7 +2095,7 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         blob.resourceType = TPM_RT_DAA_V0;
         memset(blob.label, 0, sizeof(blob.label));
         memset(&blob.blobIntegrity, 0, sizeof(TPM_DIGEST));
-        blob.additionalSize = TPM_CONTEXT_KEY_SIZE;
+        blob.additionalSize = TPM_SYM_KEY_SIZE;
         blob.additionalData = tpm_malloc(blob.additionalSize);
         if (blob.additionalData == NULL) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
@@ -2202,8 +2202,8 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         blob.resourceType = TPM_RT_DAA_V1;
         memset(blob.label, 0, sizeof(blob.label));
         memset(&blob.blobIntegrity, 0, sizeof(TPM_DIGEST));
-        blob.additionalSize = TPM_CONTEXT_KEY_SIZE;
-        blob.additionalData = tpm_malloc(TPM_CONTEXT_KEY_SIZE);
+        blob.additionalSize = TPM_SYM_KEY_SIZE;
+        blob.additionalData = tpm_malloc(blob.additionalSize);
         if (blob.additionalData == NULL) {
           memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
           return TPM_NOSPACE;
@@ -2285,8 +2285,8 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       blob.resourceType = TPM_RT_DAA_TPM;
       memcpy(blob.label, "DAA_tpmSpecific", 15);
       memset(&blob.blobIntegrity, 0, sizeof(TPM_DIGEST));
-      blob.additionalSize = TPM_CONTEXT_KEY_SIZE;
-      blob.additionalData = tpm_malloc(TPM_CONTEXT_KEY_SIZE);
+      blob.additionalSize = TPM_SYM_KEY_SIZE;
+      blob.additionalData = tpm_malloc(blob.additionalSize);
       if (blob.additionalData == NULL) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_NOSPACE;

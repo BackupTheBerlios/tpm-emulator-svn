@@ -156,10 +156,13 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   if (tpm_rsa_generate_key(&srk->key, 
       srkParams->algorithmParms.parms.rsa.keyLength)) return TPM_FAIL;
   srk->payload = TPM_PT_ASYM;
-  /* generate context Key */
+  /* generate context, delegate, and DAA key */
   tpm_get_random_bytes(tpmData.permanent.data.contextKey,
     sizeof(tpmData.permanent.data.contextKey));
-  /* TODO: generate delegate Key */
+  tpm_get_random_bytes(tpmData.permanent.data.delegateKey,
+      sizeof(tpmData.permanent.data.delegateKey));
+  tpm_get_random_bytes(tpmData.permanent.data.daaKey,
+      sizeof(tpmData.permanent.data.daaKey));
   /* export SRK */
   memcpy(srkPub, srkParams, sizeof(TPM_KEY));
   srkPub->pubKey.keyLength = srk->key.size >> 3;
@@ -170,9 +173,11 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
     return TPM_FAIL;
   }
   tpm_rsa_export_modulus(&srk->key, srkPub->pubKey.key, NULL);
-  /* setup tpmProof and set state to owned */
+  /* setup tpmProof/daaProof and set state to owned */
   tpm_get_random_bytes(tpmData.permanent.data.tpmProof.nonce, 
     sizeof(tpmData.permanent.data.tpmProof.nonce));
+  tpm_get_random_bytes(tpmData.permanent.data.daaProof.nonce,
+    sizeof(tpmData.permanent.data.daaProof.nonce));
   tpmData.permanent.flags.owned = TRUE;
   return TPM_SUCCESS;
 }
@@ -197,9 +202,17 @@ void tpm_owner_clear()
     sizeof(tpmData.permanent.data.srk));
   memset(&tpmData.permanent.data.tpmProof, 0,
     sizeof(tpmData.permanent.data.tpmProof));
+  memset(&tpmData.permanent.data.daaProof, 0,
+    sizeof(tpmData.permanent.data.daaProof));
   memset(&tpmData.permanent.data.operatorAuth, 0,
     sizeof(tpmData.permanent.data.operatorAuth));
-  /* TODO: invalidate delegate and context key */
+  /* invalidate delegate, context, and DAA key */
+  memset(&tpmData.permanent.data.contextKey, 0,
+    sizeof(tpmData.permanent.data.contextKey));
+  memset(&tpmData.permanent.data.delegateKey, 0,
+    sizeof(tpmData.permanent.data.delegateKey));
+  memset(&tpmData.permanent.data.daaKey, 0,
+    sizeof(tpmData.permanent.data.daaKey));
   /* set permanent flags */
   tpmData.permanent.flags.owned = FALSE;
   tpmData.permanent.flags.operator = FALSE;

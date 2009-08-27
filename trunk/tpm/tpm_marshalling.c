@@ -1163,6 +1163,38 @@ int tpm_unmarshal_TPM_DELEGATIONS(BYTE **ptr, UINT32 *length, TPM_DELEGATIONS *v
   return 0;
 }
 
+int tpm_marshal_TPM_FAMILY_LABEL(BYTE **ptr, UINT32 *length, TPM_FAMILY_LABEL *v)
+{
+  if (tpm_marshal_BYTE(ptr, length, v->label)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_FAMILY_LABEL(BYTE **ptr, UINT32 *length, TPM_FAMILY_LABEL *v)
+{
+  if (tpm_unmarshal_BYTE(ptr, length, &v->label)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_FAMILY_TABLE_ENTRY(BYTE **ptr, UINT32 *length, TPM_FAMILY_TABLE_ENTRY *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_FAMILY_LABEL(ptr, length, &v->familyLabel)
+      || tpm_marshal_TPM_FAMILY_ID(ptr, length, v->familyID)
+      || tpm_marshal_TPM_FAMILY_VERIFICATION(ptr, length, v->verificationCount)
+      || tpm_marshal_TPM_FAMILY_FLAGS(ptr, length, v->flags)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_FAMILY_TABLE_ENTRY(BYTE **ptr, UINT32 *length, TPM_FAMILY_TABLE_ENTRY *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_FAMILY_LABEL(ptr, length, &v->familyLabel)
+      || tpm_unmarshal_TPM_FAMILY_ID(ptr, length, &v->familyID)
+      || tpm_unmarshal_TPM_FAMILY_VERIFICATION(ptr, length, &v->verificationCount)
+      || tpm_unmarshal_TPM_FAMILY_FLAGS(ptr, length, &v->flags)) return -1;
+  return 0;
+}
+
 int tpm_marshal_TPM_DELEGATE_LABEL(BYTE **ptr, UINT32 *length, TPM_DELEGATE_LABEL *v)
 {
   if (tpm_marshal_BYTE(ptr, length, v->label)) return -1;
@@ -1217,6 +1249,21 @@ int tpm_unmarshal_TPM_DELEGATE_PUBLIC_ARRAY(BYTE **ptr, UINT32 *length,
   return 0;
 }
 
+int tpm_marshal_TPM_DELEGATE_TABLE_ROW(BYTE **ptr, UINT32 *length, TPM_DELEGATE_TABLE_ROW *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_DELEGATE_PUBLIC(ptr, length, &v->pub)
+      || tpm_marshal_TPM_SECRET(ptr, length, &v->authValue)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DELEGATE_TABLE_ROW(BYTE **ptr, UINT32 *length, TPM_DELEGATE_TABLE_ROW *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+      || tpm_unmarshal_TPM_DELEGATE_PUBLIC(ptr, length, &v->pub)
+      || tpm_unmarshal_TPM_SECRET(ptr, length, &v->authValue)) return -1;
+  return 0;
+}
 
 int tpm_marshal_TPM_DELEGATE_OWNER_BLOB(BYTE **ptr, UINT32 *length, TPM_DELEGATE_OWNER_BLOB *v)
 {
@@ -1289,7 +1336,8 @@ int tpm_marshal_TPM_PERMANENT_FLAGS(BYTE **ptr, UINT32 *length, TPM_PERMANENT_FL
       || tpm_marshal_BOOL(ptr, length, v->nvLocked)
       || tpm_marshal_BOOL(ptr, length, v->readSRKPub)
       || tpm_marshal_BOOL(ptr, length, v->tpmEstablished)
-      || tpm_marshal_BOOL(ptr, length, v->maintenanceDone)) return -1;
+      || tpm_marshal_BOOL(ptr, length, v->maintenanceDone)
+      || tpm_marshal_BOOL(ptr, length, v->disableFullDALogicInfo)) return -1;
   return 0;
 }
 
@@ -1314,7 +1362,8 @@ int tpm_unmarshal_TPM_PERMANENT_FLAGS(BYTE **ptr, UINT32 *length, TPM_PERMANENT_
       || tpm_unmarshal_BOOL(ptr, length, &v->nvLocked)
       || tpm_unmarshal_BOOL(ptr, length, &v->readSRKPub)
       || tpm_unmarshal_BOOL(ptr, length, &v->tpmEstablished)
-      || tpm_unmarshal_BOOL(ptr, length, &v->maintenanceDone)) return -1;
+      || tpm_unmarshal_BOOL(ptr, length, &v->maintenanceDone)
+      || tpm_unmarshal_BOOL(ptr, length, &v->disableFullDALogicInfo)) return -1;
   return 0;
 }
 
@@ -1509,40 +1558,54 @@ int tpm_marshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DAT
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
       || tpm_marshal_TPM_VERSION(ptr, length, &v->version)
       || tpm_marshal_TPM_NONCE(ptr, length, &v->tpmProof)
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->ekReset)
       || tpm_marshal_TPM_SECRET(ptr, length, &v->ownerAuth)
       || tpm_marshal_TPM_SECRET(ptr, length, &v->operatorAuth)
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->tpmDAASeed)
+      || tpm_marshal_TPM_NONCE(ptr, length, &v->daaProof)
       || tpm_marshal_TPM_PUBKEY_DATA(ptr, length, &v->manuMaintPub)
-      || tpm_marshal_TPM_NONCE(ptr, length, &v->ekReset)
       || tpm_marshal_RSA(ptr, length, &v->endorsementKey)
       || tpm_marshal_TPM_KEY_DATA(ptr, length, &v->srk)
       || tpm_marshal_BYTE_ARRAY(ptr, length, v->contextKey, sizeof(v->contextKey))
-/* removed since v1.2 rev 94
-      || tpm_marshal_BYTE(ptr, length, v->tickType)
-*/
-      || tpm_marshal_UINT32(ptr, length, v->maxNVBufSize)
-      || tpm_marshal_UINT32(ptr, length, v->noOwnerNVWrite)
-      || tpm_marshal_UINT32(ptr, length, v->nvDataSize)
-      || tpm_marshal_BYTE_ARRAY(ptr, length, v->nvData, sizeof(v->nvData))
-      || tpm_marshal_BYTE_ARRAY(ptr, length, v->ordinalAuditStatus, sizeof(v->ordinalAuditStatus))
-      || tpm_marshal_TPM_ACTUAL_COUNT(ptr, length, v->auditMonotonicCounter)
-      || tpm_marshal_TPM_NONCE(ptr, length, &v->tpmDAASeed)) return -1;
+      || tpm_marshal_BYTE_ARRAY(ptr, length, v->delegateKey, sizeof(v->contextKey))
+      || tpm_marshal_BYTE_ARRAY(ptr, length, v->daaKey, sizeof(v->contextKey))
+      || tpm_marshal_TPM_ACTUAL_COUNT(ptr, length, v->auditMonotonicCounter)) return -1;
   for (i = 0; i < TPM_MAX_COUNTERS; i++) {
     if (tpm_marshal_TPM_COUNTER_VALUE(ptr, length, &v->counters[i])
         || tpm_marshal_TPM_SECRET(ptr, length, &v->counters[i].usageAuth)
         || tpm_marshal_BOOL(ptr, length, v->counters[i].valid)) return -1;
-  } 
+  }
   for (i = 0; i < TPM_NUM_PCR; i++) {
-    if (tpm_marshal_TPM_PCR_ATTRIBUTES(ptr, length, &v->pcrAttrib[i])
-        || tpm_marshal_TPM_PCRVALUE(ptr, length, &v->pcrValue[i])) return -1;
+    if (tpm_marshal_TPM_PCR_ATTRIBUTES(ptr, length, &v->pcrAttrib[i])) return -1;
   }
-  for (i = 0; i < TPM_MAX_KEYS; i++) {
-    if (tpm_marshal_TPM_KEY_DATA(ptr, length, &v->keys[i])) return -1;
+  if (tpm_marshal_BYTE_ARRAY(ptr, length, v->ordinalAuditStatus, sizeof(v->ordinalAuditStatus))
+      || tpm_marshal_BYTE_ARRAY(ptr, length, v->rngState, sizeof(v->rngState))) return -1;
+  for (i = 0; i < TPM_NUM_FAMILY_TABLE_ENTRY; i++) {
+    if (tpm_marshal_BOOL(ptr, length, v->familyTable.famRow[i].valid)) return -1;
+    if (v->familyTable.famRow[i].valid) {
+      if (tpm_marshal_TPM_FAMILY_TABLE_ENTRY(ptr, length, &v->familyTable.famRow[i])) return -1;
+    }
   }
+  for (i = 0; i < TPM_NUM_DELEGATE_TABLE_ENTRY; i++) {
+    if (tpm_marshal_BOOL(ptr, length, v->delegateTable.delRow[i].valid)) return -1;
+    if (v->delegateTable.delRow[i].valid) {
+      if (tpm_marshal_TPM_DELEGATE_TABLE_ROW(ptr, length, &v->delegateTable.delRow[i])) return -1;
+    }
+  }
+  if (tpm_marshal_UINT32(ptr, length, v->lastFamilyID)
+      || tpm_marshal_TPM_CMK_DELEGATE(ptr, length, v->restrictDelegate)
+      || tpm_marshal_UINT32(ptr, length, v->maxNVBufSize)
+      || tpm_marshal_UINT32(ptr, length, v->noOwnerNVWrite)
+      || tpm_marshal_UINT32(ptr, length, v->nvDataSize)
+      || tpm_marshal_BYTE_ARRAY(ptr, length, v->nvData, sizeof(v->nvData))) return -1;
   for (i = 0; i < TPM_MAX_NVS; i++) {
     if (tpm_marshal_BOOL(ptr, length, v->nvStorage[i].valid)) return -1;
     if (v->nvStorage[i].valid) {
       if (tpm_marshal_TPM_NV_DATA_SENSITIVE(ptr, length, &v->nvStorage[i])) return -1;
     }
+  }
+  for (i = 0; i < TPM_MAX_KEYS; i++) {
+    if (tpm_marshal_TPM_KEY_DATA(ptr, length, &v->keys[i])) return -1;
   }
   return 0;
 }
@@ -1550,63 +1613,88 @@ int tpm_marshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DAT
 int tpm_unmarshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DATA *v)
 {
   UINT32 i;
-
   if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
       || tpm_unmarshal_TPM_VERSION(ptr, length, &v->version)
       || tpm_unmarshal_TPM_NONCE(ptr, length, &v->tpmProof)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->ekReset)
       || tpm_unmarshal_TPM_SECRET(ptr, length, &v->ownerAuth)
       || tpm_unmarshal_TPM_SECRET(ptr, length, &v->operatorAuth)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->tpmDAASeed)
+      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->daaProof)
       || tpm_unmarshal_TPM_PUBKEY_DATA(ptr, length, &v->manuMaintPub)
-      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->ekReset)
       || tpm_unmarshal_RSA(ptr, length, &v->endorsementKey)
       || tpm_unmarshal_TPM_KEY_DATA(ptr, length, &v->srk)
       || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->contextKey, sizeof(v->contextKey))
-/* removed since v1.2 rev 94
-      || tpm_unmarshal_BYTE(ptr, length, &v->tickType)
-*/
-      || tpm_unmarshal_UINT32(ptr, length, &v->maxNVBufSize)
-      || tpm_unmarshal_UINT32(ptr, length, &v->noOwnerNVWrite)
-      || tpm_unmarshal_UINT32(ptr, length, &v->nvDataSize)
-      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->nvData, sizeof(v->nvData))
-      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->ordinalAuditStatus, sizeof(v->ordinalAuditStatus))
-      || tpm_unmarshal_TPM_ACTUAL_COUNT(ptr, length, &v->auditMonotonicCounter)
-      || tpm_unmarshal_TPM_NONCE(ptr, length, &v->tpmDAASeed)) return -1;
+      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->delegateKey, sizeof(v->contextKey))
+      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->daaKey, sizeof(v->contextKey))
+      || tpm_unmarshal_TPM_ACTUAL_COUNT(ptr, length, &v->auditMonotonicCounter)) return -1;
   for (i = 0; i < TPM_MAX_COUNTERS; i++) {
     if (tpm_unmarshal_TPM_COUNTER_VALUE(ptr, length, &v->counters[i])
         || tpm_unmarshal_TPM_SECRET(ptr, length, &v->counters[i].usageAuth)
         || tpm_unmarshal_BOOL(ptr, length, &v->counters[i].valid)) return -1;
   }
   for (i = 0; i < TPM_NUM_PCR; i++) {
-    if (tpm_unmarshal_TPM_PCR_ATTRIBUTES(ptr, length, &v->pcrAttrib[i])
-        || tpm_unmarshal_TPM_PCRVALUE(ptr, length, &v->pcrValue[i])) return -1;
+    if (tpm_unmarshal_TPM_PCR_ATTRIBUTES(ptr, length, &v->pcrAttrib[i])) return -1;
   }
-  for (i = 0; i < TPM_MAX_KEYS; i++) {
-    if (tpm_unmarshal_TPM_KEY_DATA(ptr, length, &v->keys[i])) return -1;
+  if (tpm_unmarshal_BYTE_ARRAY(ptr, length, v->ordinalAuditStatus, sizeof(v->ordinalAuditStatus))
+      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->rngState, sizeof(v->rngState))) return -1;
+  for (i = 0; i < TPM_NUM_FAMILY_TABLE_ENTRY; i++) {
+    if (tpm_unmarshal_BOOL(ptr, length, &v->familyTable.famRow[i].valid)) return -1;
+    if (v->familyTable.famRow[i].valid) {
+      if (tpm_unmarshal_TPM_FAMILY_TABLE_ENTRY(ptr, length, &v->familyTable.famRow[i])) return -1;
+    }
   }
+  for (i = 0; i < TPM_NUM_DELEGATE_TABLE_ENTRY; i++) {
+    if (tpm_unmarshal_BOOL(ptr, length, &v->delegateTable.delRow[i].valid)) return -1;
+    if (v->delegateTable.delRow[i].valid) {
+      if (tpm_unmarshal_TPM_DELEGATE_TABLE_ROW(ptr, length, &v->delegateTable.delRow[i])) return -1;
+    }
+  }
+  if (tpm_unmarshal_UINT32(ptr, length, &v->lastFamilyID)
+      || tpm_unmarshal_TPM_CMK_DELEGATE(ptr, length, &v->restrictDelegate)
+      || tpm_unmarshal_UINT32(ptr, length, &v->maxNVBufSize)
+      || tpm_unmarshal_UINT32(ptr, length, &v->noOwnerNVWrite)
+      || tpm_unmarshal_UINT32(ptr, length, &v->nvDataSize)
+      || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->nvData, sizeof(v->nvData))) return -1;
   for (i = 0; i < TPM_MAX_NVS; i++) {
     if (tpm_unmarshal_BOOL(ptr, length, &v->nvStorage[i].valid)) return -1;
     if (v->nvStorage[i].valid) {
       if (tpm_unmarshal_TPM_NV_DATA_SENSITIVE(ptr, length, &v->nvStorage[i])) return -1;
     }
   }
+  for (i = 0; i < TPM_MAX_KEYS; i++) {
+    if (tpm_unmarshal_TPM_KEY_DATA(ptr, length, &v->keys[i])) return -1;
+  }
   return 0;
 }
 
 int tpm_marshal_TPM_STCLEAR_DATA(BYTE **ptr, UINT32 *length, TPM_STCLEAR_DATA *v)
 {
+  UINT32 i;
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
       || tpm_marshal_TPM_NONCE(ptr, length, &v->contextNonceKey)
       || tpm_marshal_TPM_COUNT_ID(ptr, length, v->countID)
+      || tpm_marshal_UINT32(ptr, length, v->ownerReference)
       || tpm_marshal_BOOL(ptr, length, v->disableResetLock)) return -1;
+  for (i = 0; i < TPM_NUM_PCR; i++) {
+    if (tpm_marshal_TPM_PCRVALUE(ptr, length, &v->pcrValue[i])) return -1;
+  }
+  if (tpm_marshal_UINT32(ptr, length, v->deferredPhysicalPresence)) return -1;
   return 0;
 }
 
 int tpm_unmarshal_TPM_STCLEAR_DATA(BYTE **ptr, UINT32 *length, TPM_STCLEAR_DATA *v)
 {
+  UINT32 i;
   if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
       || tpm_unmarshal_TPM_NONCE(ptr, length, &v->contextNonceKey)
       || tpm_unmarshal_TPM_COUNT_ID(ptr, length, &v->countID)
+      || tpm_unmarshal_UINT32(ptr, length, &v->ownerReference)
       || tpm_unmarshal_BOOL(ptr, length, &v->disableResetLock)) return -1;
+  for (i = 0; i < TPM_NUM_PCR; i++) {
+    if (tpm_unmarshal_TPM_PCRVALUE(ptr, length, &v->pcrValue[i])) return -1;
+  }
+  if (tpm_unmarshal_UINT32(ptr, length, &v->deferredPhysicalPresence)) return -1;
   return 0;
 }
 

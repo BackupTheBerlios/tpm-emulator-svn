@@ -68,7 +68,7 @@ static int encrypt_context(BYTE *iv, UINT32 iv_size, TPM_CONTEXT_SENSITIVE *cont
   UINT32 len;
   BYTE *ptr;
   tpm_rc4_ctx_t rc4_ctx;
-  BYTE key[TPM_CONTEXT_KEY_SIZE + iv_size];
+  BYTE key[TPM_SYM_KEY_SIZE + iv_size];
   /* marshal context */
   *enc_size = len = sizeof_TPM_CONTEXT_SENSITIVE((*context));
   *enc = ptr = tpm_malloc(len);
@@ -78,8 +78,8 @@ static int encrypt_context(BYTE *iv, UINT32 iv_size, TPM_CONTEXT_SENSITIVE *cont
     return -1;
   }
   /* encrypt context */
-  memcpy(key, tpmData.permanent.data.contextKey, TPM_CONTEXT_KEY_SIZE);
-  memcpy(&key[TPM_CONTEXT_KEY_SIZE], iv, iv_size);
+  memcpy(key, tpmData.permanent.data.contextKey, TPM_SYM_KEY_SIZE);
+  memcpy(&key[TPM_SYM_KEY_SIZE], iv, iv_size);
   tpm_rc4_init(&rc4_ctx, key, sizeof(key));
   tpm_rc4_crypt(&rc4_ctx, *enc, *enc, *enc_size);
   return 0;
@@ -91,13 +91,13 @@ static int decrypt_context(BYTE *iv, UINT32 iv_size, BYTE *enc, UINT32 enc_size,
   UINT32 len;
   BYTE *ptr;
   tpm_rc4_ctx_t rc4_ctx;
-  BYTE key[TPM_CONTEXT_KEY_SIZE + iv_size];
+  BYTE key[TPM_SYM_KEY_SIZE + iv_size];
   len = enc_size;
   *buf = ptr = tpm_malloc(len);
   if (*buf == NULL) return -1;
   /* decrypt context */
-  memcpy(key, tpmData.permanent.data.contextKey, TPM_CONTEXT_KEY_SIZE);
-  memcpy(&key[TPM_CONTEXT_KEY_SIZE], iv, iv_size);
+  memcpy(key, tpmData.permanent.data.contextKey, TPM_SYM_KEY_SIZE);
+  memcpy(&key[TPM_SYM_KEY_SIZE], iv, iv_size);
   tpm_rc4_init(&rc4_ctx, key, sizeof(key));  
   tpm_rc4_crypt(&rc4_ctx, enc, *buf, enc_size);
   /* unmarshal context */
@@ -182,7 +182,7 @@ TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
   contextBlob->handle = handle;
   memset(&contextBlob->integrityDigest, 0, sizeof(TPM_DIGEST));
   memcpy(contextBlob->label, label, sizeof(contextBlob->label));
-  contextBlob->additionalSize = TPM_CONTEXT_KEY_SIZE;
+  contextBlob->additionalSize = TPM_SYM_KEY_SIZE;
   contextBlob->additionalData = tpm_malloc(contextBlob->additionalSize);
   if (contextBlob->additionalData == NULL) return TPM_FAIL;
   tpm_get_random_bytes(contextBlob->additionalData, 
