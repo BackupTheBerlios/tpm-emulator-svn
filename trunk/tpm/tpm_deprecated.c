@@ -159,17 +159,14 @@ extern int tpm_rsa_decrypt(tpm_rsa_private_key_t *key, int type,
 /* import functions from tpm_eviction.c */
 extern void invalidate_sessions(TPM_HANDLE handle);
 
-TPM_RESULT TPM_ChangeAuthAsymStart(  
-  TPM_KEY_HANDLE idHandle,
-  TPM_NONCE *antiReplay,
-  TPM_KEY_PARMS *inTempKey,
-  TPM_AUTH *auth1,
-  TPM_CERTIFY_INFO *certifyInfo,
-  UINT32 *sigSize,
-  BYTE **sig,
-  TPM_KEY_HANDLE *ephHandle,
-  TPM_KEY *outTempKey
-)
+TPM_RESULT TPM_ChangeAuthAsymStart(TPM_KEY_HANDLE idHandle,
+                                   TPM_NONCE *antiReplay,
+                                   TPM_KEY_PARMS *inTempKey,
+                                   TPM_AUTH *auth1,
+                                   TPM_CERTIFY_INFO *certifyInfo,
+                                   UINT32 *sigSize, BYTE **sig,
+                                   TPM_KEY_HANDLE *ephHandle,
+                                   TPM_KEY *outTempKey)
 {
   TPM_RESULT res;
   TPM_KEY_DATA *idKey;
@@ -364,21 +361,16 @@ TPM_RESULT TPM_ChangeAuthAsymStart(
   return res;
 }
 
-TPM_RESULT TPM_ChangeAuthAsymFinish(  
-  TPM_KEY_HANDLE parentHandle,
-  TPM_KEY_HANDLE ephHandle,
-  TPM_ENTITY_TYPE entityType,
-  TPM_HMAC *newAuthLink,
-  UINT32 newAuthSize,
-  BYTE *encNewAuth,
-  UINT32 encDataSize,
-  BYTE *encData,
-  TPM_AUTH *auth1,
-  UINT32 *outDataSize,
-  BYTE **outData,
-  TPM_NONCE *saltNonce,
-  TPM_DIGEST *changeProof
-)
+TPM_RESULT TPM_ChangeAuthAsymFinish(TPM_KEY_HANDLE parentHandle,
+                                    TPM_KEY_HANDLE ephHandle,
+                                    TPM_ENTITY_TYPE entityType,
+                                    TPM_HMAC *newAuthLink,
+                                    UINT32 newAuthSize, BYTE *encNewAuth,
+                                    UINT32 encDataSize, BYTE *encData,
+                                    TPM_AUTH *auth1,
+                                    UINT32 *outDataSize, BYTE **outData,
+                                    TPM_NONCE *saltNonce,
+                                    TPM_DIGEST *changeProof)
 {
   TPM_RESULT res;
   TPM_KEY_DATA *parentKey, *ephKey;
