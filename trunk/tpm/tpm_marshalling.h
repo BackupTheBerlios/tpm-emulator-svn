@@ -427,6 +427,9 @@ int tpm_unmarshal_TPM_MSA_COMPOSITE(BYTE **ptr, UINT32 *length, TPM_MSA_COMPOSIT
 int tpm_marshal_TPM_CMK_AUTH(BYTE **ptr, UINT32 *length, TPM_CMK_AUTH *v);
 int tpm_unmarshal_TPM_CMK_AUTH(BYTE **ptr, UINT32 *length, TPM_CMK_AUTH *v);
 
+int tpm_marshal_TPM_SELECT_SIZE(BYTE **ptr, UINT32 *length, TPM_SELECT_SIZE *v);
+int tpm_unmarshal_TPM_SELECT_SIZE(BYTE **ptr, UINT32 *length, TPM_SELECT_SIZE *v);
+
 int tpm_marshal_TPM_CAP_VERSION_INFO(BYTE **ptr, UINT32 *length, TPM_CAP_VERSION_INFO *v);
 int tpm_unmarshal_TPM_CAP_VERSION_INFO(BYTE **ptr, UINT32 *length, TPM_CAP_VERSION_INFO *v);
 

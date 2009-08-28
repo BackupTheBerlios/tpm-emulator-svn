@@ -957,6 +957,22 @@ int tpm_unmarshal_TPM_CMK_AUTH(BYTE **ptr, UINT32 *length, TPM_CMK_AUTH *v)
   return 0;
 }
 
+int tpm_marshal_TPM_SELECT_SIZE(BYTE **ptr, UINT32 *length, TPM_SELECT_SIZE *v)
+{
+  if (tpm_marshal_BYTE(ptr, length, v->major)
+      || tpm_marshal_BYTE(ptr, length, v->minor)
+      || tpm_marshal_UINT16(ptr, length, v->reqSize)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_SELECT_SIZE(BYTE **ptr, UINT32 *length, TPM_SELECT_SIZE *v)
+{
+  if (tpm_unmarshal_BYTE(ptr, length, &v->major)
+      || tpm_unmarshal_BYTE(ptr, length, &v->minor)
+      || tpm_unmarshal_UINT16(ptr, length, &v->reqSize)) return -1;
+  return 0;
+}
+
 int tpm_marshal_TPM_CAP_VERSION_INFO(BYTE **ptr, UINT32 *length, TPM_CAP_VERSION_INFO *v)
 {
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)

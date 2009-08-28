@@ -131,8 +131,7 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_FAMILYROWS:
       debug("[TPM_CAP_PROP_FAMILYROWS]");
-      /* TODO: TPM_CAP_PROP_FAMILYROWS */
-      return TPM_FAIL;
+      return return_UINT32(respSize, resp, TPM_NUM_FAMILY_TABLE_ENTRY);
 
     case TPM_CAP_PROP_TIS_TIMEOUT:
       debug("[TPM_CAP_PROP_TIS_TIMEOUT]");
@@ -145,8 +144,7 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_DELEGATE_ROW:
       debug("[TPM_CAP_PROP_DELEGATE_ROW]");
-      /* TODO: TPM_CAP_PROP_DELEGATE_ROW */
-      return TPM_FAIL;
+      return return_UINT32(respSize, resp, TPM_NUM_DELEGATE_TABLE_ENTRY);
 
     case TPM_CAP_PROP_MAX_DAASESS:
       debug("[TPM_CAP_PROP_MAX_DAASESS]");
@@ -160,8 +158,7 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_CONTEXT_DIST:
       debug("[TPM_CAP_PROP_CONTEXT_DIST]");
-      /* TODO: TPM_CAP_PROP_CONTEXT_DIST */
-      return TPM_FAIL;
+      return return_UINT32(respSize, resp, 0xfffffffe);
 
     case TPM_CAP_PROP_DAA_INTERRUPT:
       debug("[TPM_CAP_PROP_DAA_INTERRUPT]");
@@ -184,8 +181,8 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_CMK_RESTRICTION:
       debug("[TPM_CAP_PROP_CMK_RESTRICTION]");
-      /* TODO: TPM_CAP_PROP_CMK_RESTRICTION */
-      return TPM_FAIL;
+      return return_UINT32(respSize, resp,
+                           tpmData.permanent.data.restrictDelegate);
 
     case TPM_CAP_PROP_DURATION:
       debug("[TPM_CAP_PROP_DURATION]");
@@ -194,8 +191,7 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_ACTIVE_COUNTER:
       debug("[TPM_CAP_PROP_ACTIVE_COUNTER]");
-      /* TODO: TPM_CAP_PROP_ACTIVE_COUNTER */
-      return TPM_FAIL;
+      return return_UINT32(respSize, resp, tpmData.stclear.data.countID);
 
     case TPM_CAP_PROP_MAX_NV_AVAILABLE:
       debug("[TPM_CAP_PROP_MAX_NV_AVAILABLE]");
@@ -204,8 +200,7 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_INPUT_BUFFER:
       debug("[TPM_CAP_PROP_INPUT_BUFFER]");
-      /* TODO: TPM_CAP_PROP_INPUT_BUFFER */
-      return TPM_FAIL;
+      return return_UINT32(respSize, resp, TPM_CMD_BUF_SIZE);
 
     default:
       return TPM_BAD_MODE;
@@ -238,8 +233,6 @@ static TPM_RESULT cap_mfr(UINT32 subCapSize, BYTE *subCap,
     return TPM_BAD_MODE;
   
   switch (type) {
-    /* TODO */
-    
     default:
       if (ptr == NULL || tpm_marshal_TPM_VERSION(&ptr, &len, 
         &tpmData.permanent.data.version)) {
@@ -334,11 +327,6 @@ static TPM_RESULT cap_handle(UINT32 subCapSize, BYTE *subCap,
           list.handle[i] = INDEX_TO_TRANS_HANDLE(i);
         }
       break;
-/* removed since v1.2 rev 94
-    case TPM_RT_DELEGATE:
-      debug("[TPM_RT_DELEGATE]");
-      break;
-*/
     case TPM_RT_COUNTER:
       debug("[TPM_RT_COUNTER]");
       for (i = 0; i < TPM_MAX_COUNTERS; i++)
@@ -348,7 +336,12 @@ static TPM_RESULT cap_handle(UINT32 subCapSize, BYTE *subCap,
         }
       break;
     case TPM_RT_CONTEXT:
-      /* TODO: implement TPM_CAP_HANDLE for TPM_RT_CONTEXT */
+      debug("[TPM_RT_CONTEXT]");
+      for (i = 0; i < TPM_MAX_SESSION_LIST; i++)
+        if (tpmData.stany.data.contextList[i] != 0) {
+          list.loaded++;
+          list.handle[i] = tpmData.stany.data.contextList[i];
+        }
     default:
       return TPM_BAD_MODE;
   }
@@ -563,17 +556,6 @@ static TPM_RESULT cap_flag(UINT32 subCapSize, BYTE *subCap,
         return TPM_FAIL;
       }
       return TPM_SUCCESS;
-/* removed since v1.2 rev 94
-    case TPM_CAP_FLAG_STANY:
-      debug("[TPM_CAP_FLAG_STANY]");
-      *respSize = len = sizeof_TPM_STANY_FLAGS(tpmData.stany.flags);
-      *resp = ptr = tpm_malloc(len);
-      if (tpm_marshal_TPM_STANY_FLAGS(&ptr, &len, &tpmData.stany.flags)) {
-        tpm_free(*resp);
-        return TPM_FAIL;
-      }
-*/
-      return TPM_SUCCESS;
     default:
       return TPM_BAD_MODE;
   }
@@ -611,7 +593,71 @@ static TPM_RESULT cap_auth_encrypt(UINT32 subCapSize, BYTE *subCap,
   }
 }
 
-/* WATCH: added since v1.2 rev 94 */
+static TPM_RESULT cap_sym_mode(UINT32 subCapSize, BYTE *subCap,
+                               UINT32 *respSize, BYTE **resp)
+{
+  TPM_SYM_MODE mode;
+  if (tpm_unmarshal_TPM_SYM_MODE(&subCap, &subCapSize, &mode))
+    return TPM_BAD_MODE;
+  switch (mode) {
+    case TPM_ES_SYM_CTR:
+    case TPM_ES_SYM_OFB:
+    default:
+      return return_BOOL(respSize, resp, FALSE);
+  }
+}
+
+static TPM_RESULT cap_key_status(UINT32 subCapSize, BYTE *subCap,
+                                 UINT32 *respSize, BYTE **resp)
+{
+  TPM_KEY_HANDLE handle;
+  TPM_KEY_DATA *key;
+  if (tpm_unmarshal_TPM_KEY_HANDLE(&subCap, &subCapSize, &handle))
+    return TPM_BAD_MODE;
+  key = tpm_get_key(handle);
+  if (key == NULL) return TPM_INVALID_KEYHANDLE;
+  return return_BOOL(respSize, resp,
+                     key->keyControl & TPM_KEY_CONTROL_OWNER_EVICT);
+}
+
+static TPM_RESULT cap_trans_alg(UINT32 subCapSize, BYTE *subCap,
+                                UINT32 *respSize, BYTE **resp)
+{
+  TPM_ALGORITHM_ID id;
+  if (tpm_unmarshal_TPM_ALGORITHM_ID(&subCap, &subCapSize, &id))
+    return TPM_BAD_MODE;
+  switch (id) {
+    case TPM_ALG_RSA:
+      return return_BOOL(respSize, resp, TRUE);
+    default:
+      return return_BOOL(respSize, resp, FALSE);
+  }
+}
+
+static TPM_RESULT cap_trans_es(UINT32 subCapSize, BYTE *subCap,
+                               UINT32 *respSize, BYTE **resp)
+{
+  TPM_ENC_SCHEME es;
+  if (tpm_unmarshal_TPM_ENC_SCHEME(&subCap, &subCapSize, &es))
+    return TPM_BAD_MODE;
+  switch (es) {
+    case TPM_ES_RSAESOAEP_SHA1_MGF1:
+    case TPM_ES_RSAESPKCSv15:
+      return return_BOOL(respSize, resp, TRUE);
+    default:
+      return return_BOOL(respSize, resp, FALSE);
+  }
+}
+
+static TPM_RESULT cap_select_size(UINT32 subCapSize, BYTE *subCap,
+                                  UINT32 *respSize, BYTE **resp)
+{
+  TPM_SELECT_SIZE size;
+  if (tpm_unmarshal_TPM_SELECT_SIZE(&subCap, &subCapSize, &size))
+    return TPM_BAD_MODE;
+  return return_BOOL(respSize, resp, (size.reqSize <= TPM_NUM_PCR/8));
+}
+
 TPM_RESULT cap_version_val(UINT32 *respSize, BYTE **resp)
 {
   UINT32 len;
@@ -679,13 +725,11 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
 
     case TPM_CAP_SYM_MODE:
       debug("[TPM_CAP_SYM_MODE]");
-      /* TODO: TPM_CAP_SYM_MODE */
-      return TPM_FAIL;
+      return cap_sym_mode(subCapSize, subCap, respSize, resp);
 
     case TPM_CAP_KEY_STATUS:
       debug("[TPM_CAP_KEY_STATUS]");
-      /* TODO: TPM_CAP_KEY_STATUS */
-      return TPM_FAIL;
+      return cap_key_status(subCapSize, subCap, respSize, resp);
 
     case TPM_CAP_NV_LIST:
       debug("[TPM_CAP_NV_LIST]");
@@ -701,8 +745,7 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
 
     case TPM_CAP_TRANS_ALG:
       debug("[TPM_CAP_TRANS_ALG]");
-      /* TODO: TPM_CAP_TRANS_ALG */
-      return TPM_FAIL;
+      return cap_trans_alg(subCapSize, subCap, respSize, resp);
 
     case TPM_CAP_HANDLE:
       debug("[TPM_CAP_HANDLE]");
@@ -710,8 +753,7 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
 
     case TPM_CAP_TRANS_ES:
       debug("[TPM_CAP_TRANS_ES]");
-      /* TODO: TPM_CAP_TRANS_ES */
-      return TPM_FAIL;
+      return cap_trans_es(subCapSize, subCap, respSize, resp);
 
     case TPM_CAP_AUTH_ENCRYPT:
       debug("[TPM_CAP_AUTH_ENCRYPT]");
@@ -719,8 +761,7 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
 
     case TPM_CAP_SELECT_SIZE:
       debug("[TPM_CAP_SELECT_SIZE]");
-      /* TODO: TPM_CAP_SELECT_SIZE */
-      return TPM_FAIL;
+      return cap_select_size(subCapSize, subCap, respSize, resp);
 
     case TPM_CAP_VERSION_VAL:
       debug("[TPM_CAP_VERSION_VAL]");

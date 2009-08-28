@@ -34,7 +34,6 @@
 #include "tpm/tpm_emulator.h"
 
 #define TPM_DAEMON_NAME     "tpmd"
-#define TPM_CMD_BUF_SIZE    4096
 #define TPM_COMMAND_TIMEOUT 30
 #define TPM_RANDOM_DEVICE   "/dev/urandom"
 #define TPM_MKDIRS          1
