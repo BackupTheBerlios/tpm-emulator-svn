@@ -8,17 +8,8 @@ Completely Missing:
 -------------------
   Mandatory Commands:
     TPM_SetCapability
-    TPM_LoadKey2 (currently emulated by TPM_LoadKey)
-    All Migration Functions
     TPM_DSAP
     All Delegation Functions
-
-* complete permanent data
-  - DAA secret + proof
-  - delegation
-  - marshalling
-
-* complete migration
 
 * update encryption: RC4 -> AES256
   - de- and encryption

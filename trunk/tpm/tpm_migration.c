@@ -410,7 +410,7 @@ TPM_RESULT TPM_CMK_SetRestrictions(TPM_CMK_DELEGATE restriction,
   res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
   if (res != TPM_SUCCESS) return res;
   /* update delegation restriction */
-  //TODO: tpmData.permanent.data.restrictDelegate = restriction;
+  tpmData.permanent.data.restrictDelegate = restriction;
   return TPM_SUCCESS;
 }
 

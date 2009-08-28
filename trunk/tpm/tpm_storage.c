@@ -721,6 +721,7 @@ TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
   key->encScheme = inKey->algorithmParms.encScheme;
   key->sigScheme = inKey->algorithmParms.sigScheme;
   memcpy(key->usageAuth, store.usageAuth, sizeof(TPM_SECRET));
+  memcpy(key->migrationAuth, store.migrationAuth, sizeof(TPM_SECRET));
   /* setup PCR info */
   if (inKey->PCRInfoSize > 0) {
     memcpy(&key->pcrInfo, &inKey->PCRInfo, sizeof(TPM_PCR_INFO));

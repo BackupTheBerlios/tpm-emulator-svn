@@ -20,6 +20,7 @@
 #include "tpm_data.h"
 #include "tpm_handles.h"
 #include "crypto/sha1.h"
+#include "crypto/hmac.h"
 #include "tpm_marshalling.h"
 
 /*
@@ -326,6 +327,8 @@ TPM_RESULT TPM_CertifyKey(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
   return TPM_SUCCESS;
 }
 
+extern int tpm_compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest);
+
 TPM_RESULT TPM_CertifyKey2(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
                            TPM_DIGEST *migrationPubDigest, 
                            TPM_NONCE *antiReplay, TPM_AUTH *auth1, 
@@ -378,9 +381,52 @@ TPM_RESULT TPM_CertifyKey2(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
     certifyInfo->PCRInfoSize = 0;
   }
   /* setup migration authority values */
-  if (/* TODO: handle CMK keys */FALSE) {
+  if (key->payload == TPM_PT_MIGRATE_RESTRICTED
+      || key->payload == TPM_PT_MIGRATE_EXTERNAL) {
+    TPM_PUBKEY pubKey;
+    TPM_DIGEST keyDigest;
+    BYTE buf[SHA1_DIGEST_LENGTH];
+    tpm_hmac_ctx_t hmac_ctx;
+    tpm_sha1_ctx_t sha1_ctx;
+    /* compute digest of public key */
+    pubKey.pubKey.keyLength = key->key.size >> 3;
+    pubKey.pubKey.key = tpm_malloc(pubKey.pubKey.keyLength);
+    if (pubKey.pubKey.key == NULL) return TPM_NOSPACE;
+    tpm_rsa_export_modulus(&key->key, pubKey.pubKey.key, NULL);
+    if (tpm_setup_key_parms(key, &pubKey.algorithmParms) != 0) {
+      debug("tpm_setup_key_parms() failed.");
+      tpm_free(pubKey.pubKey.key);
+      return TPM_FAIL;
+    }
+    if (tpm_compute_pubkey_digest(&pubKey, &keyDigest) != 0) {
+      debug("tpm_compute_pubkey_digest() failed.");
+      free_TPM_PUBKEY(pubKey);
+      return TPM_FAIL;
+    }
+    free_TPM_PUBKEY(pubKey);
+    /* verify migration authorization */
+    buf[0] = (TPM_TAG_CMK_MIGAUTH >> 8) & 0xff;
+    buf[1] = TPM_TAG_CMK_MIGAUTH & 0xff;
+    tpm_hmac_init(&hmac_ctx, tpmData.permanent.data.tpmProof.nonce, sizeof(TPM_NONCE));
+    tpm_hmac_update(&hmac_ctx, buf, 2);
+    tpm_hmac_update(&hmac_ctx, migrationPubDigest->digest, sizeof(TPM_DIGEST));
+    tpm_hmac_update(&hmac_ctx, keyDigest.digest, sizeof(TPM_DIGEST));
+    tpm_hmac_final(&hmac_ctx, buf);
+    if (memcmp(key->migrationAuth, buf, sizeof(TPM_SECRET)) != 0) return TPM_MA_SOURCE;
+    /* compute migrationAuthority */
+    certifyInfo->migrationAuthoritySize = SHA1_DIGEST_LENGTH;
+    certifyInfo->migrationAuthority = tpm_malloc(certifyInfo->migrationAuthoritySize);
+    if (certifyInfo->migrationAuthority == NULL) return TPM_NOSPACE;
+    tpm_sha1_init(&sha1_ctx);
+    tpm_sha1_update(&sha1_ctx, migrationPubDigest->digest, sizeof(TPM_DIGEST));
+    buf[0] = key->payload;
+    tpm_sha1_update(&sha1_ctx, buf, 1);
+    tpm_sha1_final(&sha1_ctx, certifyInfo->migrationAuthority);
+    certifyInfo->payloadType = key->payload;
   } else {
     certifyInfo->migrationAuthoritySize = 0;
+    certifyInfo->migrationAuthority = 0;
+    certifyInfo->payloadType = TPM_PT_ASYM;
   }
   /* setup CERTIFY_INFO2 structure */
   certifyInfo->tag = TPM_TAG_CERTIFY_INFO2;

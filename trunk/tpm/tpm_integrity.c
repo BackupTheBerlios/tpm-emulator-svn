@@ -36,7 +36,7 @@ extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
  */
 
 #define PCR_ATTRIB     tpmData.permanent.data.pcrAttrib
-#define PCR_VALUE      tpmData.stclear.data.pcrValue
+#define PCR_VALUE      tpmData.permanent.data.pcrValue
 #define LOCALITY       tpmData.stany.flags.localityModifier
 
 TPM_RESULT TPM_Extend(TPM_PCRINDEX pcrNum, TPM_DIGEST *inDigest, 

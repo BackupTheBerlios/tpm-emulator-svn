@@ -1485,6 +1485,7 @@ int tpm_marshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v)
         || tpm_marshal_TPM_ENC_SCHEME(ptr, length, v->encScheme)
         || tpm_marshal_TPM_SIG_SCHEME(ptr, length, v->sigScheme)
         || tpm_marshal_TPM_SECRET(ptr, length, &v->usageAuth)
+        || tpm_marshal_TPM_SECRET(ptr, length, &v->migrationAuth)
         || (v->keyFlags & TPM_KEY_FLAG_HAS_PCR
             && tpm_marshal_TPM_PCR_INFO(ptr, length, &v->pcrInfo))
         || tpm_marshal_BOOL(ptr, length, v->parentPCRStatus)
@@ -1504,6 +1505,7 @@ int tpm_unmarshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v)
         || tpm_unmarshal_TPM_ENC_SCHEME(ptr, length, &v->encScheme)
         || tpm_unmarshal_TPM_SIG_SCHEME(ptr, length, &v->sigScheme)
         || tpm_unmarshal_TPM_SECRET(ptr, length, &v->usageAuth)
+        || tpm_unmarshal_TPM_SECRET(ptr, length, &v->migrationAuth)
         || (v->keyFlags & TPM_KEY_FLAG_HAS_PCR
             && tpm_unmarshal_TPM_PCR_INFO(ptr, length, &v->pcrInfo))
         || tpm_unmarshal_BOOL(ptr, length, &v->parentPCRStatus)
@@ -1559,6 +1561,9 @@ int tpm_marshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DAT
   }
   for (i = 0; i < TPM_NUM_PCR; i++) {
     if (tpm_marshal_TPM_PCR_ATTRIBUTES(ptr, length, &v->pcrAttrib[i])) return -1;
+  }
+  for (i = 0; i < TPM_NUM_PCR; i++) {
+    if (tpm_marshal_TPM_PCRVALUE(ptr, length, &v->pcrValue[i])) return -1;
   }
   if (tpm_marshal_BYTE_ARRAY(ptr, length, v->ordinalAuditStatus, sizeof(v->ordinalAuditStatus))
       || tpm_marshal_BYTE_ARRAY(ptr, length, v->rngState, sizeof(v->rngState))) return -1;
@@ -1618,6 +1623,9 @@ int tpm_unmarshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_D
   for (i = 0; i < TPM_NUM_PCR; i++) {
     if (tpm_unmarshal_TPM_PCR_ATTRIBUTES(ptr, length, &v->pcrAttrib[i])) return -1;
   }
+  for (i = 0; i < TPM_NUM_PCR; i++) {
+    if (tpm_unmarshal_TPM_PCRVALUE(ptr, length, &v->pcrValue[i])) return -1;
+  }
   if (tpm_unmarshal_BYTE_ARRAY(ptr, length, v->ordinalAuditStatus, sizeof(v->ordinalAuditStatus))
       || tpm_unmarshal_BYTE_ARRAY(ptr, length, v->rngState, sizeof(v->rngState))) return -1;
   for (i = 0; i < TPM_NUM_FAMILY_TABLE_ENTRY; i++) {
@@ -1657,11 +1665,8 @@ int tpm_marshal_TPM_STCLEAR_DATA(BYTE **ptr, UINT32 *length, TPM_STCLEAR_DATA *v
       || tpm_marshal_TPM_NONCE(ptr, length, &v->contextNonceKey)
       || tpm_marshal_TPM_COUNT_ID(ptr, length, v->countID)
       || tpm_marshal_UINT32(ptr, length, v->ownerReference)
-      || tpm_marshal_BOOL(ptr, length, v->disableResetLock)) return -1;
-  for (i = 0; i < TPM_NUM_PCR; i++) {
-    if (tpm_marshal_TPM_PCRVALUE(ptr, length, &v->pcrValue[i])) return -1;
-  }
-  if (tpm_marshal_UINT32(ptr, length, v->deferredPhysicalPresence)) return -1;
+      || tpm_marshal_BOOL(ptr, length, v->disableResetLock)
+      || tpm_marshal_UINT32(ptr, length, v->deferredPhysicalPresence)) return -1;
   return 0;
 }
 
@@ -1672,11 +1677,8 @@ int tpm_unmarshal_TPM_STCLEAR_DATA(BYTE **ptr, UINT32 *length, TPM_STCLEAR_DATA 
       || tpm_unmarshal_TPM_NONCE(ptr, length, &v->contextNonceKey)
       || tpm_unmarshal_TPM_COUNT_ID(ptr, length, &v->countID)
       || tpm_unmarshal_UINT32(ptr, length, &v->ownerReference)
-      || tpm_unmarshal_BOOL(ptr, length, &v->disableResetLock)) return -1;
-  for (i = 0; i < TPM_NUM_PCR; i++) {
-    if (tpm_unmarshal_TPM_PCRVALUE(ptr, length, &v->pcrValue[i])) return -1;
-  }
-  if (tpm_unmarshal_UINT32(ptr, length, &v->deferredPhysicalPresence)) return -1;
+      || tpm_unmarshal_BOOL(ptr, length, &v->disableResetLock)
+      || tpm_unmarshal_UINT32(ptr, length, &v->deferredPhysicalPresence)) return -1;
   return 0;
 }
 

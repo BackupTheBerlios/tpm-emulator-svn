@@ -202,8 +202,6 @@ void tpm_owner_clear()
     sizeof(tpmData.permanent.data.srk));
   memset(&tpmData.permanent.data.tpmProof, 0,
     sizeof(tpmData.permanent.data.tpmProof));
-  memset(&tpmData.permanent.data.daaProof, 0,
-    sizeof(tpmData.permanent.data.daaProof));
   memset(&tpmData.permanent.data.operatorAuth, 0,
     sizeof(tpmData.permanent.data.operatorAuth));
   /* invalidate delegate, context, and DAA key */
@@ -211,8 +209,11 @@ void tpm_owner_clear()
     sizeof(tpmData.permanent.data.contextKey));
   memset(&tpmData.permanent.data.delegateKey, 0,
     sizeof(tpmData.permanent.data.delegateKey));
-  memset(&tpmData.permanent.data.daaKey, 0,
-    sizeof(tpmData.permanent.data.daaKey));
+  /* set permanent data */
+  tpmData.permanent.data.noOwnerNVWrite = 0;
+  tpmData.permanent.data.restrictDelegate = 0;
+  memset (tpmData.permanent.data.ordinalAuditStatus, 0,
+          sizeof(tpmData.permanent.data.ordinalAuditStatus));
   /* set permanent flags */
   tpmData.permanent.flags.owned = FALSE;
   tpmData.permanent.flags.operator = FALSE;
@@ -220,6 +221,9 @@ void tpm_owner_clear()
   tpmData.permanent.flags.ownership = TRUE;
   tpmData.permanent.flags.disable = FALSE;
   tpmData.permanent.flags.deactivated = FALSE;
+  tpmData.permanent.flags.maintenanceDone = FALSE;
+  tpmData.permanent.flags.allowMaintenance = TRUE;
+  tpmData.permanent.flags.disableFullDALogicInfo = FALSE;
 #ifdef TPM_KEEP_PUBEK_READABLE  
   tpmData.permanent.flags.readPubek = TRUE;
 #else
@@ -228,7 +232,23 @@ void tpm_owner_clear()
   /* release all counters */
   for (i = 0; i < TPM_MAX_COUNTERS; i++)
     memset(&tpmData.permanent.data.counters[i], 0, sizeof(TPM_COUNTER_VALUE));
-  /* TODO: invalidate familyTable */
+  /* invalidate family and delegates table */
+  for (i = 0; i < TPM_NUM_FAMILY_TABLE_ENTRY; i++) {
+    memset(&tpmData.permanent.data.familyTable.famRow[i], 0,
+           sizeof(TPM_FAMILY_TABLE_ENTRY));
+  }
+  for (i = 0; i < TPM_NUM_DELEGATE_TABLE_ENTRY; i++) {
+    memset(&tpmData.permanent.data.delegateTable.delRow[i], 0,
+           sizeof(TPM_DELEGATE_TABLE_ROW));
+  }
+  /* release NV storage */
+  for (i = 0; i < TPM_MAX_NVS; i++) {
+    TPM_NV_DATA_SENSITIVE *nv = &tpmData.permanent.data.nvStorage[i];
+    if (nv->valid && (nv->pubInfo.permission.attributes
+                      & (TPM_NV_PER_OWNERWRITE | TPM_NV_PER_OWNERREAD))) {
+      //TODO: release NV storage
+    }
+  }
 }
 
 TPM_RESULT TPM_OwnerClear(TPM_AUTH *auth1)

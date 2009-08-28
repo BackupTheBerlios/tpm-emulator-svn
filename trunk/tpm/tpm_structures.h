@@ -2117,13 +2117,14 @@ typedef struct tdTPM_KEY_DATA {
   TPM_ENC_SCHEME encScheme;
   TPM_SIG_SCHEME sigScheme;
   TPM_SECRET usageAuth;
+  TPM_SECRET migrationAuth;
   TPM_PCR_INFO pcrInfo;
   BOOL parentPCRStatus;
   tpm_rsa_private_key_t key;
 } TPM_KEY_DATA;
 #define sizeof_RSA(s) (6 + tpm_rsa_modulus_length(&s) \
  + tpm_rsa_exponent_length(&s) + tpm_rsa_prime1_length(&s))
-#define sizeof_TPM_KEY_DATA(s) (1 + 2 + 4 + 4 + 1 + 2 + 2 + 20 \
+#define sizeof_TPM_KEY_DATA(s) (1 + 2 + 4 + 4 + 1 + 2 + 2 + 20 + 20 \
   + ((s.keyFlags & TPM_KEY_FLAG_HAS_PCR) ? sizeof_TPM_PCR_INFO(s.pcrInfo) : 0) \
   + 1 + sizeof_RSA(s.key))
 #define free_TPM_KEY_DATA(s) { tpm_rsa_release_private_key(&s.key); }
@@ -2176,6 +2177,7 @@ typedef struct tdTPM_PERMANENT_DATA {
   TPM_ACTUAL_COUNT auditMonotonicCounter;
   TPM_COUNTER_VALUE counters[TPM_MAX_COUNTERS];
   TPM_PCR_ATTRIBUTES pcrAttrib[TPM_NUM_PCR];
+  TPM_PCRVALUE pcrValue[TPM_NUM_PCR];
   BYTE ordinalAuditStatus[TPM_ORD_MAX / 8];
   BYTE rngState[16];
   TPM_FAMILY_TABLE familyTable;
@@ -2200,7 +2202,7 @@ static inline int sizeof_TPM_PERMANENT_DATA(TPM_PERMANENT_DATA *s) {
   for (i = 0; i < TPM_MAX_COUNTERS; i++) {
     size += sizeof_TPM_COUNTER_VALUE2((s->counters[i]));
   }
-  size += TPM_NUM_PCR*sizeof_TPM_PCR_ATTRIBUTES(x) + TPM_ORD_MAX/8 + 16;
+  size += TPM_NUM_PCR*(sizeof_TPM_PCR_ATTRIBUTES(x) + 20) + TPM_ORD_MAX/8 + 16;
   for (i = 0; i < TPM_NUM_FAMILY_TABLE_ENTRY; i++) {
     size += 1;
     if (s->familyTable.famRow[i].valid)
@@ -2239,10 +2241,9 @@ typedef struct tdTPM_STCLEAR_DATA {
   TPM_COUNT_ID countID;
   UINT32 ownerReference;
   BOOL disableResetLock;
-  TPM_PCRVALUE pcrValue[TPM_NUM_PCR];
   UINT32 deferredPhysicalPresence;
 } TPM_STCLEAR_DATA;
-#define sizeof_TPM_STCLEAR_DATA(s) (2 + 20 + 4 + 4 + 1 + TPM_NUM_PCR * 20 + 4)
+#define sizeof_TPM_STCLEAR_DATA(s) (2 + 20 + 4 + 4 + 1 + 4)
 
 /*
  * TPM_SESSION_DATA
