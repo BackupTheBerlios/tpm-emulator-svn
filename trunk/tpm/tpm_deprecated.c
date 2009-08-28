@@ -517,7 +517,6 @@ TPM_RESULT TPM_Reset()
     if (session->type == TPM_ST_OIAP || session->type == TPM_ST_OSAP)
       memset(session, 0, sizeof(*session));
   }
-  /* TODO: invalidate AuthContextSave structures */
   return TPM_SUCCESS;
 }
 
