@@ -199,10 +199,6 @@ static inline int tpm_unmarshal_BYTE_ARRAY(BYTE **ptr, UINT32 *ptr_length,
 #define tpm_unmarshal_TPM_PAYLOAD_TYPE         tpm_unmarshal_BYTE
 #define tpm_marshal_TPM_LOCALITY_SELECTION     tpm_marshal_BYTE
 #define tpm_unmarshal_TPM_LOCALITY_SELECTION   tpm_unmarshal_BYTE
-/* removed since v1.2 rev 94
-#define tpm_marshal_TPM_TICKTYPE               tpm_marshal_BYTE
-#define tpm_unmarshal_TPM_TICKTYPE             tpm_unmarshal_BYTE
-*/
 #define tpm_marshal_TPM_TAG                    tpm_marshal_UINT16
 #define tpm_unmarshal_TPM_TAG                  tpm_unmarshal_UINT16
 #define tpm_marshal_TPM_PROTOCOL_ID            tpm_marshal_UINT16

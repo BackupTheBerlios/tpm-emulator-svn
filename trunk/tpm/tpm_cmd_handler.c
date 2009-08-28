@@ -26,9 +26,6 @@ UINT32 tpm_get_in_param_offset(TPM_COMMAND_CODE ordinal)
 {
   switch (ordinal) {
     case TPM_ORD_ActivateIdentity:
-/* removed since v1.2 rev 94
-    case TPM_ORD_CertifySelfTest:
-*/
     case TPM_ORD_ChangeAuth:
     case TPM_ORD_ChangeAuthAsymStart:
     case TPM_ORD_CMK_ConvertMigration:
@@ -2556,7 +2553,6 @@ static TPM_RESULT execute_TPM_LoadContext(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   /* unmarshal input */
   ptr = req->param;
   len = req->paramSize;
-//WATCH: the order of the following two arguments has been changed in rev85
   if (tpm_unmarshal_BOOL(&ptr, &len, &keepHandle)
       || tpm_unmarshal_TPM_HANDLE(&ptr, &len, &hintHandle)
       || tpm_unmarshal_UINT32(&ptr, &len, &contextSize)
@@ -2591,22 +2587,6 @@ static TPM_RESULT execute_TPM_FlushSpecific(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   /* execute command */
   return TPM_FlushSpecific(handle, resourceType);
 }
-
-/* removed since v1.2 rev 94
-static TPM_RESULT execute_TPM_SetTickType(TPM_REQUEST *req, TPM_RESPONSE *rsp)
-{
-  BYTE *ptr;
-  UINT32 len;
-  TPM_TICKTYPE tickType;
-  // unmarshal input
-  ptr = req->param;
-  len = req->paramSize;
-  if (tpm_unmarshal_TPM_TICKTYPE(&ptr, &len, &tickType)
-      || len != 0) return TPM_BAD_PARAMETER;
-  // execute command
-  return TPM_SetTickType(tickType);
-}
-*/
 
 static TPM_RESULT execute_TPM_GetTicks(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
@@ -3273,41 +3253,6 @@ static TPM_RESULT execute_TPM_Reset(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   return TPM_Reset();
 }
 
-/* removed since v1.2 rev 94
-static TPM_RESULT execute_TPM_CertifySelfTest(TPM_REQUEST *req, TPM_RESPONSE *rsp)
-{
-  BYTE *ptr;
-  UINT32 len;
-  TPM_KEY_HANDLE keyHandle;
-  TPM_NONCE antiReplay;
-  UINT32 sigSize;
-  BYTE *sig = NULL;
-  TPM_RESULT res;
-  // compute parameter digest
-  tpm_compute_in_param_digest(req);
-  // unmarshal input
-  ptr = req->param;
-  len = req->paramSize;
-  if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &keyHandle)
-      || tpm_unmarshal_TPM_NONCE(&ptr, &len, &antiReplay)
-      || len != 0) return TPM_BAD_PARAMETER;
-  // execute command
-  res = TPM_CertifySelfTest(keyHandle, &antiReplay, &req->auth1, &sigSize, &sig);
-  if (res != TPM_SUCCESS) return res;
-  // marshal output
-  rsp->paramSize = len = 4 + sigSize;
-  rsp->param = ptr = tpm_malloc(len);
-  if (ptr == NULL
-      || tpm_marshal_UINT32(&ptr, &len, sigSize)
-      || tpm_marshal_BLOB(&ptr, &len, sig, sigSize)) {
-    tpm_free(rsp->param);
-    res = TPM_FAIL;
-  }
-  tpm_free(sig);
-  return res;
-}
-*/
-
 static TPM_RESULT execute_TPM_OwnerReadPubek(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
   BYTE *ptr;
@@ -3343,12 +3288,6 @@ static void tpm_setup_rsp_auth(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
     case TPM_TAG_RSP_AUTH2_COMMAND:
       tpm_hmac_init(&hmac, *rsp->auth2->secret, sizeof(*rsp->auth2->secret));
       tpm_hmac_update(&hmac, rsp->auth2->digest, sizeof(rsp->auth2->digest));
-#if 0
-      if (tpm_get_auth(rsp->auth2->authHandle)->type == TPM_ST_OIAP) {
-        UINT32 handle = CPU_TO_BE32(rsp->auth2->authHandle);
-        tpm_hmac_update(&hmac, (BYTE*)&handle, 4);
-      }
-#endif
       tpm_hmac_update(&hmac, rsp->auth2->nonceEven.nonce, 
                   sizeof(rsp->auth2->nonceEven.nonce));
       tpm_hmac_update(&hmac, rsp->auth2->nonceOdd.nonce, 
@@ -3358,12 +3297,6 @@ static void tpm_setup_rsp_auth(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
     case TPM_TAG_RSP_AUTH1_COMMAND:
       tpm_hmac_init(&hmac, *rsp->auth1->secret, sizeof(*rsp->auth1->secret));
       tpm_hmac_update(&hmac, rsp->auth1->digest, sizeof(rsp->auth1->digest));
-#if 0
-      if (tpm_get_auth(rsp->auth1->authHandle)->type == TPM_ST_OIAP) {
-        UINT32 handle = CPU_TO_BE32(rsp->auth1->authHandle);
-        tpm_hmac_update(&hmac, (BYTE*)&handle, 4);
-      }
-#endif
       tpm_hmac_update(&hmac, rsp->auth1->nonceEven.nonce, 
         sizeof(rsp->auth1->nonceEven.nonce));
       tpm_hmac_update(&hmac, rsp->auth1->nonceOdd.nonce, 
@@ -3415,9 +3348,6 @@ static TPM_RESULT tpm_check_status_and_mode(TPM_REQUEST *req)
       && req->ordinal != TPM_ORD_FlushSpecific
       && req->ordinal != TPM_ORD_Terminate_Handle
       && req->ordinal != TPM_ORD_Extend
-/* removed since v1.2 rev 94
-      && req->ordinal != TPM_ORD_PCRRead
-*/
       && req->ordinal != TPM_ORD_PCR_Reset
       && req->ordinal != TPM_ORD_NV_DefineSpace
       && req->ordinal != TPM_ORD_NV_ReadValue
@@ -3448,9 +3378,6 @@ static TPM_RESULT tpm_check_status_and_mode(TPM_REQUEST *req)
       && req->ordinal != TPM_ORD_FlushSpecific
       && req->ordinal != TPM_ORD_Terminate_Handle
       && req->ordinal != TPM_ORD_Extend
-/* removed since v1.2 rev 94
-      && req->ordinal != TPM_ORD_PCRRead
-*/
       && req->ordinal != TPM_ORD_PCR_Reset
       && req->ordinal != TPM_ORD_NV_DefineSpace
       && req->ordinal != TPM_ORD_NV_ReadValue
@@ -3981,13 +3908,6 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       res = execute_TPM_FlushSpecific(req, rsp);
     break;
 
-/* removed since v1.2 rev 94
-    case TPM_ORD_SetTickType:
-      debug("[TPM_ORD_SetTickType]");
-      res = execute_TPM_SetTickType(req, rsp);
-    break;
-*/
-
     case TPM_ORD_GetTicks:
       debug("[TPM_ORD_GetTicks]");
       res = execute_TPM_GetTicks(req, rsp);
@@ -4102,13 +4022,6 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       debug("[TPM_ORD_Reset]");
       res = execute_TPM_Reset(req, rsp);
     break;
-
-/* removed since v1.2 rev 94
-    case TPM_ORD_CertifySelfTest:
-      debug("[TPM_ORD_CertifySelfTest]");
-      res = execute_TPM_CertifySelfTest(req, rsp);
-    break;
-*/
 
     case TPM_ORD_OwnerReadPubek:
       debug("[TPM_ORD_OwnerReadPubek]");

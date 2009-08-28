@@ -67,9 +67,6 @@ static void transport_log_in(TPM_COMMAND_CODE ordinal, BYTE parameters[20],
 
   ptr = buf; len = sizeof(buf);
   tpm_marshal_TPM_TAG(&ptr, &len, tag);
-/* removed since v1.2 rev 94
-  tpm_marshal_TPM_COMMAND_CODE(&ptr, &len, ordinal);
-*/
   tpm_marshal_BYTE_ARRAY(&ptr, &len, parameters, 20);
   tpm_marshal_BYTE_ARRAY(&ptr, &len, pubKeyHash, 20);
   tpm_sha1_init(&sha1);

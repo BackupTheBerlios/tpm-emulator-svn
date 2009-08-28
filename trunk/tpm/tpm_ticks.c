@@ -28,14 +28,6 @@
  * See the design document for details. 
  */
 
-/* removed since v1.2 rev 94
-TPM_RESULT TPM_SetTickType(TPM_TICKTYPE tickType)
-{
-  info("TPM_SetTickType()");
-  return TPM_DISABLED_CMD;
-}
-*/
-
 TPM_RESULT TPM_GetTicks(TPM_CURRENT_TICKS *currentTime)
 {
   info("TPM_GetTicks()");
@@ -97,15 +89,9 @@ void tpm_update_ticks(void)
   if (tpmData.stany.data.currentTicks.tag == 0) {
     tpmData.stany.data.currentTicks.tag = TPM_TAG_CURRENT_TICKS;
     tpmData.stany.data.currentTicks.currentTicks += tpm_get_ticks();
-/* removed since v1.2 rev 94
-    tpmData.stany.data.currentTicks.tickType = tpmData.permanent.data.tickType;
-*/
     tpm_get_random_bytes(tpmData.stany.data.currentTicks.tickNonce.nonce, 
       sizeof(TPM_NONCE));
     tpmData.stany.data.currentTicks.tickRate = 1;
-/* removed since v1.2 rev 94
-    tpmData.stany.data.currentTicks.tickSecurity = TICK_SEC_NO_CHECK;
-*/
   } else {
     tpmData.stany.data.currentTicks.currentTicks += tpm_get_ticks();
   }

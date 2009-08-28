@@ -605,8 +605,9 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       /* Set DAA_session->DAA_scratch = NULL */
       memset(session->DAA_session.DAA_scratch, 0, 
         sizeof(session->DAA_session.DAA_scratch));
-      /* WATCH: Set outputData = NULL */
-      *outputSize = 0, *outputData = NULL;
+      /* Set outputData = NULL */
+      *outputSize = 0;
+      *outputData = NULL;
       /* Increment DAA_session->DAA_stage by 1 */
       session->DAA_session.DAA_stage++;
       /* Return TPM_SUCCESS */
@@ -2419,7 +2420,7 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       if (handle == TPM_INVALID_HANDLE)
         return TPM_RESOURCES;
       session = &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(handle)];
-      /* WATCH: Verify that sizeOf(inputData0) == sizeOf(TPM_DAA_ISSUER) 
+      /* Verify that sizeOf(inputData0) == sizeOf(TPM_DAA_ISSUER)
        * and return error TPM_DAA_INPUT_DATA0 on mismatch */
       if (inputSize0 != sizeof(TPM_DAA_ISSUER)) {
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));

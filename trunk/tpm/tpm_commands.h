@@ -364,7 +364,7 @@ TPM_RESULT TPM_SetCapability(
 );
 
 /**
- * TPM_GetCapabilityOwner - deprecated since v1.2 rev 94
+ * TPM_GetCapabilityOwner (deprecated)
  * @version: [out] Properly filled out version structure
  * @non_volatile_flags: [out] Current state of the non-volatile flags
  * @volatile_flags: [out] Current state of the volatile flags
@@ -2123,21 +2123,6 @@ TPM_RESULT TPM_FlushSpecific(
  * timing ticks to actual time is a protocol that occurs outside of the TPM. 
  * See the design document for details. 
  */
-
-/**
- * TPM_SetTickType - sets the TPM clock type
- * @tickType: [in] The clock type to be set
- * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
- * 
- * Description: ([TPM_Part3], Section 23.1)
- * This is a one time command that sets the TPM clock type when it is 
- * installed on a platform during platform manufacturing.
- */
-/* removed since v1.2 rev 94
-TPM_RESULT TPM_SetTickType(  
-  TPM_TICKTYPE tickType
-);
-*/
 
 /**
  * TPM_GetTicks - provides the current tick count

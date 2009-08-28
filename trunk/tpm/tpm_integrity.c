@@ -209,18 +209,12 @@ TPM_RESULT tpm_verify_pcr(TPM_KEY_DATA *key, BOOL atrelease, BOOL atcreation)
   return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_Quote2(
-  TPM_KEY_HANDLE keyHandle,
-  TPM_NONCE *externalData,
-  TPM_PCR_SELECTION *targetPCR,
-  BOOL addVersion,
-  TPM_AUTH *auth1,
-  TPM_PCR_INFO_SHORT *pcrData,
-  UINT32 *versionInfoSize,
-  TPM_CAP_VERSION_INFO *versionInfo,
-  UINT32 *sigSize,
-  BYTE **sig
-)
+TPM_RESULT TPM_Quote2(TPM_KEY_HANDLE keyHandle, TPM_NONCE *externalData,
+                      TPM_PCR_SELECTION *targetPCR, BOOL addVersion,
+                      TPM_AUTH *auth1, TPM_PCR_INFO_SHORT *pcrData,
+                      UINT32 *versionInfoSize,
+                      TPM_CAP_VERSION_INFO *versionInfo,
+                      UINT32 *sigSize, BYTE **sig)
 {
   TPM_RESULT res;
   TPM_KEY_DATA *key;
@@ -247,12 +241,6 @@ TPM_RESULT TPM_Quote2(
   if ((key->sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1) && 
        (key->sigScheme != TPM_SS_RSASSAPKCS1v15_INFO))
     return TPM_INAPPROPRIATE_SIG;
-
-/* WATCH: ??? specification error, missing check for key usage ???
-   A security issue may be the (mis)usage of the EK for signing.
-   WATCH: !!! This error has been corrected recently in v1.2 rev 103,
-              thus it might occur in some TPM v1.2 chip designs. !!! */
-
   /* 3. Validate that keyHandle->keyUsage is TPM_KEY_SIGNING, TPM_KEY_IDENTITY,
         or TPM_KEY_LEGACY, if not return TPM_INVALID_KEYUSAGE */
   if ((key->keyUsage != TPM_KEY_SIGNING) && (key->keyUsage != TPM_KEY_LEGACY)
