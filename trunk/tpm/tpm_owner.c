@@ -182,6 +182,8 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   return TPM_SUCCESS;
 }
 
+extern void tpm_nv_remove_data(TPM_NV_DATA_SENSITIVE *nv);
+
 void tpm_owner_clear()
 {
   int i;
@@ -243,10 +245,10 @@ void tpm_owner_clear()
   }
   /* release NV storage */
   for (i = 0; i < TPM_MAX_NVS; i++) {
-    TPM_NV_DATA_SENSITIVE *nv = &tpmData.permanent.data.nvStorage[i];
-    if (nv->valid && (nv->pubInfo.permission.attributes
-                      & (TPM_NV_PER_OWNERWRITE | TPM_NV_PER_OWNERREAD))) {
-      //TODO: release NV storage
+    if (tpmData.permanent.data.nvStorage[i].valid
+        && (tpmData.permanent.data.nvStorage[i].pubInfo.permission.attributes
+            & (TPM_NV_PER_OWNERWRITE | TPM_NV_PER_OWNERREAD))) {
+      tpm_nv_remove_data(&tpmData.permanent.data.nvStorage[i]);
     }
   }
 }

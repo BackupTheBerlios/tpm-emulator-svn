@@ -47,7 +47,27 @@ static TPM_NV_DATA_SENSITIVE *tpm_get_free_nvs(void)
   }
   return NULL;
 }
- 
+
+void tpm_nv_remove_data(TPM_NV_DATA_SENSITIVE *nv)
+{
+  UINT32 i;
+  /* remove data */
+  memcpy(tpmData.permanent.data.nvData + nv->dataIndex,
+    tpmData.permanent.data.nvData + nv->dataIndex + nv->pubInfo.dataSize,
+    nv->pubInfo.dataSize);
+  /* adapt indices */
+  for (i = 0; i < TPM_MAX_NVS; i++) {
+    if (tpmData.permanent.data.nvStorage[i].valid
+        && tpmData.permanent.data.nvStorage[i].dataIndex > nv->dataIndex)
+      tpmData.permanent.data.nvStorage[i].dataIndex -= nv->pubInfo.dataSize;
+  }
+  tpmData.permanent.data.nvDataSize -= nv->pubInfo.dataSize;
+  /* invalidate meta data */
+  memset(tpmData.permanent.data.nvData + tpmData.permanent.data.nvDataSize,
+    0xff, nv->pubInfo.dataSize);
+  memset(nv, 0x00, sizeof(TPM_NV_DATA_SENSITIVE));
+}
+
 TPM_RESULT TPM_NV_DefineSpace(TPM_NV_DATA_PUBLIC *pubInfo,
                               TPM_ENCAUTH *encAuth, TPM_AUTH *auth1)
 {
@@ -113,18 +133,7 @@ TPM_RESULT TPM_NV_DefineSpace(TPM_NV_DATA_PUBLIC *pubInfo,
       }
     }
     /* delete the NV storage area */
-    memcpy(tpmData.permanent.data.nvData + nv->dataIndex,
-           tpmData.permanent.data.nvData + nv->dataIndex + nv->pubInfo.dataSize,
-           nv->pubInfo.dataSize);
-    for (i = 0; i < TPM_MAX_NVS; i++) {
-      if (tpmData.permanent.data.nvStorage[i].valid
-          && tpmData.permanent.data.nvStorage[i].dataIndex > nv->dataIndex)
-        tpmData.permanent.data.nvStorage[i].dataIndex -= nv->pubInfo.dataSize;
-    }
-    tpmData.permanent.data.nvDataSize -= nv->pubInfo.dataSize;
-    memset(tpmData.permanent.data.nvData + tpmData.permanent.data.nvDataSize,
-           0xff, nv->pubInfo.dataSize);
-    memset(nv, 0x00, sizeof(TPM_NV_DATA_SENSITIVE));
+    tpm_nv_remove_data(nv);
     return TPM_SUCCESS;
   }
   /* verify pcrInfoRead and pcrInfoWrite */
