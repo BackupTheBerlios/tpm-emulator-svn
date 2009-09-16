@@ -68,6 +68,7 @@ TPM_RESULT TPM_Delegate_CreateOwnerDelegation(
 TPM_RESULT TPM_Delegate_LoadOwnerDelegation(  
   TPM_DELEGATE_INDEX index,
   UINT32 blobSize,
+  TPM_DELEGATE_OWNER_BLOB *blob,
   TPM_AUTH *auth1
 )
 {

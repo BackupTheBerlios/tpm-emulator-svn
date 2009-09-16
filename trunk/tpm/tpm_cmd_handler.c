@@ -2265,6 +2265,7 @@ static TPM_RESULT execute_TPM_Delegate_LoadOwnerDelegation(TPM_REQUEST *req, TPM
   UINT32 len;
   TPM_DELEGATE_INDEX index;
   UINT32 blobSize;
+  TPM_DELEGATE_OWNER_BLOB blob;
   /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* unmarshal input */
@@ -2272,9 +2273,10 @@ static TPM_RESULT execute_TPM_Delegate_LoadOwnerDelegation(TPM_REQUEST *req, TPM
   len = req->paramSize;
   if (tpm_unmarshal_TPM_DELEGATE_INDEX(&ptr, &len, &index)
       || tpm_unmarshal_UINT32(&ptr, &len, &blobSize)
+      || tpm_unmarshal_TPM_DELEGATE_OWNER_BLOB(&ptr, &len, &blob)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
-  return TPM_Delegate_LoadOwnerDelegation(index, blobSize, &req->auth1);
+  return TPM_Delegate_LoadOwnerDelegation(index, blobSize, &blob, &req->auth1);
 }
 
 static TPM_RESULT execute_TPM_Delegate_ReadTable(TPM_REQUEST *req, TPM_RESPONSE *rsp)

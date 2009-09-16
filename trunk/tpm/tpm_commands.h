@@ -1839,7 +1839,8 @@ TPM_RESULT TPM_Delegate_CreateOwnerDelegation(
 /**
  * TPM_Delegate_LoadOwnerDelegation - loads a delegate table row blob
  * @index: [in] The index of the delegate row to be written
- * @blobSize: [in] The size of the delegate blob 6 <
+ * @blobSize: [in] The size of the delegate blob
+ * @blob: [in] the delegation information
  * @auth1: [in, out] Authorization protocol parameters
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
@@ -1851,6 +1852,7 @@ TPM_RESULT TPM_Delegate_CreateOwnerDelegation(
 TPM_RESULT TPM_Delegate_LoadOwnerDelegation(  
   TPM_DELEGATE_INDEX index,
   UINT32 blobSize,
+  TPM_DELEGATE_OWNER_BLOB *blob,
   TPM_AUTH *auth1
 );
 
