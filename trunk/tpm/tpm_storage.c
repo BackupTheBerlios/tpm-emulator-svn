@@ -764,6 +764,23 @@ int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms)
   return 0;
 }
 
+int tpm_extract_pubkey(TPM_KEY_DATA *key, TPM_PUBKEY *pubKey)
+{
+  pubKey->pubKey.keyLength = key->key.size >> 3;
+  pubKey->pubKey.key = tpm_malloc(pubKey->pubKey.keyLength);
+  if (pubKey->pubKey.key == NULL) {
+    debug("tpm_malloc() failed.");
+    return -1;
+  }
+  tpm_rsa_export_modulus(&key->key, pubKey->pubKey.key, NULL);
+  if (tpm_setup_key_parms(key, &pubKey->algorithmParms) != 0) {
+    debug("tpm_setup_key_parms() failed.");
+    tpm_free(pubKey->pubKey.key);
+    return -1;
+  }
+  return 0;
+}
+
 TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1, 
                          TPM_PUBKEY *pubKey)
 {
@@ -794,16 +811,8 @@ TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
              & (1 << tpmData.stany.flags.localityModifier)))
        return TPM_BAD_LOCALITY;
   }
-  /* setup pubKey */
-  pubKey->pubKey.keyLength = key->key.size >> 3;
-  pubKey->pubKey.key = tpm_malloc(pubKey->pubKey.keyLength);
-  if (pubKey->pubKey.key == NULL) return TPM_NOSPACE;
-  tpm_rsa_export_modulus(&key->key, pubKey->pubKey.key, NULL);
-  if (tpm_setup_key_parms(key, &pubKey->algorithmParms) != 0) {
-    debug("TPM_GetPubKey(): tpm_setup_key_parms() failed.");
-    tpm_free(pubKey->pubKey.key);
-    return TPM_FAIL;
-  }
+  /* extract pubKey */
+  if (tpm_extract_pubkey(key, pubKey) != 0) return TPM_FAIL;
   return TPM_SUCCESS;
 }
 

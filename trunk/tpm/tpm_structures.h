@@ -1706,6 +1706,7 @@ typedef struct tdTPM_DELEGATE_SENSITIVE {
   TPM_STRUCTURE_TAG tag;
   TPM_SECRET authValue;
 } TPM_DELEGATE_SENSITIVE;
+#define sizeof_TPM_DELEGATE_SENSITIVE(s) (2 + 20)
 
 /*
  * TPM_DELEGATE_OWNER_BLOB ([TPM_Part2], Section 20.12)
@@ -1734,7 +1735,7 @@ typedef struct tdTPM_DELEGATE_OWNER_BLOB {
  * A structure identical to TPM_DELEGATE_OWNER_BLOB but which stores
  * delegation information for user keys.
  */
-#define TPM_TAG_DELGATE_KEY_BLOB 0x0027
+#define TPM_TAG_DELEGATE_KEY_BLOB 0x0027
 typedef struct tdTPM_DELEGATE_KEY_BLOB {
   TPM_STRUCTURE_TAG tag;
   TPM_DELEGATE_PUBLIC pub;

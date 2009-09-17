@@ -2100,7 +2100,8 @@ static TPM_RESULT execute_TPM_DSAP(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
   BYTE *ptr;
   UINT32 len;
-  TPM_KEY_HANDLE KeyHandle;
+  TPM_ENTITY_TYPE entityType;
+  TPM_KEY_HANDLE keyHandle;
   UINT32 entityValueSize;
   BYTE *entityValue;
   TPM_NONCE nonceOddDSAP;
@@ -2111,14 +2112,15 @@ static TPM_RESULT execute_TPM_DSAP(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   /* unmarshal input */
   ptr = req->param;
   len = req->paramSize;
-  if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &KeyHandle)
+  if (tpm_unmarshal_TPM_ENTITY_TYPE(&ptr, &len, &entityType)
+      || tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &keyHandle)
       || tpm_unmarshal_UINT32(&ptr, &len, &entityValueSize)
       || tpm_unmarshal_BLOB(&ptr, &len, &entityValue, entityValueSize)
       || tpm_unmarshal_TPM_NONCE(&ptr, &len, &nonceOddDSAP)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
-  res = TPM_DSAP(KeyHandle, entityValueSize, entityValue, &nonceOddDSAP, 
-    &authHandle, &nonceEven, &nonceEvenDSAP);
+  res = TPM_DSAP(entityType, keyHandle, &nonceOddDSAP, entityValueSize,
+    entityValue, &authHandle, &nonceEven, &nonceEvenDSAP);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
   rsp->paramSize = len = 4 + 20 + 20;

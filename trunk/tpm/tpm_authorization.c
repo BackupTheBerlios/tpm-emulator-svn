@@ -19,6 +19,7 @@
 #include "tpm_commands.h"
 #include "tpm_handles.h"
 #include "tpm_data.h"
+#include "tpm_marshalling.h"
 #include "crypto/hmac.h"
 #include "crypto/sha1.h"
 
@@ -210,7 +211,7 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
     default:
       return TPM_INAPPROPRIATE_ENC;
   }
-  /* get resource handle and the dedicated secret */
+  /* get resource handle and the respective secret */
   switch (entityType & 0x00FF) {
     case TPM_ET_KEYHANDLE:
       session->handle = entityValue;
@@ -262,19 +263,147 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
   return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_DSAP(  
-  TPM_KEY_HANDLE KeyHandle,
-  UINT32 entityValueSize,
-  BYTE *entityValue,
-  TPM_NONCE *nonceOddDSAP,
-  TPM_AUTHHANDLE *authHandle,
-  TPM_NONCE *nonceEven,
-  TPM_NONCE *nonceEvenDSAP
-)
+extern TPM_FAMILY_TABLE_ENTRY *tpm_get_family_row(TPM_FAMILY_ID id);
+
+extern TPM_DELEGATE_TABLE_ROW *tpm_get_delegate_row(UINT32 row);
+
+extern void tpm_compute_owner_blob_digest(TPM_DELEGATE_OWNER_BLOB *blob,
+                                          TPM_DIGEST *digest);
+
+extern void tpm_compute_key_blob_digest(TPM_DELEGATE_KEY_BLOB *blob,
+                                        TPM_DIGEST *digest);
+
+extern int tpm_decrypt_sensitive(BYTE *iv, UINT32 iv_size,
+                                 BYTE *enc, UINT32 enc_size,
+                                 TPM_DELEGATE_SENSITIVE *sensitive, BYTE **buf);
+
+extern int tpm_extract_pubkey(TPM_KEY_DATA *key, TPM_PUBKEY *pubKey);
+
+extern int tpm_compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest);
+
+TPM_RESULT TPM_DSAP(TPM_ENTITY_TYPE entityType, TPM_KEY_HANDLE keyHandle,
+                    TPM_NONCE *nonceOddDSAP, UINT32 entityValueSize,
+                    BYTE *entityValue, TPM_AUTHHANDLE *authHandle,
+                    TPM_NONCE *nonceEven, TPM_NONCE *nonceEvenDSAP)
 {
-  info("TPM_DSAP() not implemented yet");
-  /* TODO: implement TPM_DSAP() */
-  return TPM_FAIL;
+  tpm_hmac_ctx_t ctx;
+  TPM_SESSION_DATA *session;
+  TPM_SECRET secret;
+  TPM_FAMILY_TABLE_ENTRY *fr;
+  info("TPM_DSAP()");
+  /* get a free session if any is left */
+  *authHandle = tpm_get_free_session(TPM_ST_OSAP);
+  session = tpm_get_auth(*authHandle);
+  if (session == NULL) return TPM_RESOURCES;
+  debug("entityType = %04x, entityValueSize = %04x", entityType, entityValueSize);
+  /* decode entity value and get respective secret */
+  if (entityType == TPM_ET_DEL_OWNER_BLOB) {
+    TPM_DELEGATE_OWNER_BLOB blob;
+    TPM_DELEGATE_SENSITIVE sens;
+    BYTE *sens_buf;
+    TPM_DIGEST blobDigest;
+    /* unmarshal the entity value */
+    if (tpm_unmarshal_TPM_DELEGATE_OWNER_BLOB(&entityValue,
+                                              &entityValueSize, &blob)
+        || blob.tag != TPM_TAG_DELEGATE_OWNER_BLOB) return TPM_WRONG_ENTITYTYPE;
+    /* validate the integrity of the blob */
+    tpm_compute_owner_blob_digest(&blob, &blobDigest);
+    if (memcmp(&blob.integrityDigest, &blobDigest, sizeof(TPM_DIGEST)) != 0)
+      return TPM_AUTHFAIL;
+    /* get family table row */
+    debug("family id = %d", blob.pub.familyID);
+    fr = tpm_get_family_row(blob.pub.familyID);
+    if (fr == NULL) return TPM_BADINDEX;
+    if (!(fr->flags & TPM_FAMFLAG_ENABLED)) return TPM_DISABLED_CMD;
+    if (fr->verificationCount != blob.pub.verificationCount) return TPM_FAIL;
+    /* decrypt sensitive data */
+    if (tpm_decrypt_sensitive(blob.additionalArea, blob.additionalSize,
+          blob.sensitiveArea, blob.sensitiveSize, &sens, &sens_buf)) {
+      debug("tpm_decrypt_sensitive() failed");
+      return TPM_DECRYPT_ERROR;
+    }
+    if (sens.tag != TPM_TAG_DELEGATE_SENSITIVE) {
+      tpm_free(sens_buf);
+      return TPM_BAD_DELEGATE;
+    }
+    memcpy(&secret, &sens.authValue, sizeof(TPM_SECRET));
+    tpm_free(sens_buf);
+  } else if (entityType == TPM_ET_DEL_ROW) {
+    UINT32 row;
+    TPM_DELEGATE_TABLE_ROW *dr;
+    if (tpm_unmarshal_UINT32(&entityValue, &entityValueSize, &row))
+      return TPM_WRONG_ENTITYTYPE;
+    debug("row number = %d", row);
+    dr = tpm_get_delegate_row(row);
+    if (dr == NULL) return TPM_BADINDEX;
+    fr = tpm_get_family_row(dr->pub.familyID);
+    if (fr == NULL) return TPM_BADINDEX;
+    if (!(fr->flags & TPM_FAMFLAG_ENABLED)) return TPM_DISABLED_CMD;
+    if (fr->verificationCount != dr->pub.verificationCount) return TPM_FAIL;
+    memcpy(&secret, dr->authValue, sizeof(TPM_SECRET));
+  } else if (entityType == TPM_ET_DEL_KEY_BLOB) {
+    TPM_DELEGATE_KEY_BLOB blob;
+    TPM_DELEGATE_SENSITIVE sens;
+    BYTE *sens_buf;
+    TPM_DIGEST blobDigest;
+    TPM_KEY_DATA *key;
+    TPM_PUBKEY pubKey;
+    /* unmarshal the entity value */
+    if (tpm_unmarshal_TPM_DELEGATE_KEY_BLOB(&entityValue,
+                                            &entityValueSize, &blob)
+        || blob.tag != TPM_TAG_DELEGATE_KEY_BLOB) return TPM_WRONG_ENTITYTYPE;
+    /* validate the integrity of the blob */
+    tpm_compute_key_blob_digest(&blob, &blobDigest);
+    if (memcmp(&blob.integrityDigest, &blobDigest, sizeof(TPM_DIGEST)) != 0)
+      return TPM_AUTHFAIL;
+    /* validate key digest */
+    key = tpm_get_key(keyHandle);
+    if (key == NULL) return TPM_KEYNOTFOUND;
+    if (tpm_extract_pubkey(key, &pubKey) != 0) {
+      debug("tpm_extract_pubkey() failed.");
+      return TPM_FAIL;
+    }
+    if (tpm_compute_pubkey_digest(&pubKey, &blobDigest) != 0) {
+      debug("tpm_compute_pubkey_digest() failed.");
+      free_TPM_PUBKEY(pubKey);
+      return TPM_FAIL;
+    }
+    free_TPM_PUBKEY(pubKey);
+    if (memcmp(&blob.pubKeyDigest, &blobDigest, sizeof(TPM_DIGEST)) != 0)
+      return TPM_KEYNOTFOUND;
+    /* get family table row */
+    debug("family id = %d", blob.pub.familyID);
+    fr = tpm_get_family_row(blob.pub.familyID);
+    if (fr == NULL) return TPM_BADINDEX;
+    if (!(fr->flags & TPM_FAMFLAG_ENABLED)) return TPM_DISABLED_CMD;
+    if (fr->verificationCount != blob.pub.verificationCount) return TPM_FAIL;
+    /* decrypt sensitive data */
+    if (tpm_decrypt_sensitive(blob.additionalArea, blob.additionalSize,
+          blob.sensitiveArea, blob.sensitiveSize, &sens, &sens_buf)) {
+      debug("tpm_decrypt_sensitive() failed");
+      return TPM_DECRYPT_ERROR;
+   }
+   if (sens.tag != TPM_TAG_DELEGATE_SENSITIVE) {
+     tpm_free(sens_buf);
+     return TPM_BAD_DELEGATE;
+   }
+   memcpy(&secret, &sens.authValue, sizeof(TPM_SECRET));
+   tpm_free(sens_buf);
+  } else {
+    return TPM_BAD_PARAMETER;
+  }
+  /* save entity type */
+  session->entityType = entityType;
+  /* generate nonces */
+  tpm_get_random_bytes(nonceEven->nonce, sizeof(nonceEven->nonce));
+  memcpy(&session->nonceEven, nonceEven, sizeof(TPM_NONCE));
+  tpm_get_random_bytes(nonceEvenDSAP->nonce, sizeof(nonceEvenDSAP->nonce));
+  /* compute shared secret */
+  tpm_hmac_init(&ctx, secret, sizeof(secret));
+  tpm_hmac_update(&ctx, nonceEvenDSAP->nonce, sizeof(nonceEvenDSAP->nonce));
+  tpm_hmac_update(&ctx, nonceOddDSAP->nonce, sizeof(nonceOddDSAP->nonce));
+  tpm_hmac_final(&ctx, session->sharedSecret);
+  return TPM_SUCCESS;
 }
 
 TPM_RESULT TPM_SetOwnerPointer(TPM_ENTITY_TYPE entityType, UINT32 entityValue)
@@ -339,4 +468,3 @@ void tpm_decrypt_auth_secret(TPM_ENCAUTH encAuth, TPM_SECRET secret,
   for (i = 0; i < sizeof(TPM_SECRET); i++)
     plainAuth[i] ^= encAuth[i];
 }
-

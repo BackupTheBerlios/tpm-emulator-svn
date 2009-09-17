@@ -329,6 +329,8 @@ TPM_RESULT TPM_CertifyKey(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
 
 extern int tpm_compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest);
 
+extern int tpm_extract_pubkey(TPM_KEY_DATA *key, TPM_PUBKEY *pubKey);
+
 TPM_RESULT TPM_CertifyKey2(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
                            TPM_DIGEST *migrationPubDigest, 
                            TPM_NONCE *antiReplay, TPM_AUTH *auth1, 
@@ -389,13 +391,8 @@ TPM_RESULT TPM_CertifyKey2(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
     tpm_hmac_ctx_t hmac_ctx;
     tpm_sha1_ctx_t sha1_ctx;
     /* compute digest of public key */
-    pubKey.pubKey.keyLength = key->key.size >> 3;
-    pubKey.pubKey.key = tpm_malloc(pubKey.pubKey.keyLength);
-    if (pubKey.pubKey.key == NULL) return TPM_NOSPACE;
-    tpm_rsa_export_modulus(&key->key, pubKey.pubKey.key, NULL);
-    if (tpm_setup_key_parms(key, &pubKey.algorithmParms) != 0) {
-      debug("tpm_setup_key_parms() failed.");
-      tpm_free(pubKey.pubKey.key);
+    if (tpm_extract_pubkey(key, &pubKey) != 0) {
+      debug("tpm_extract_pubkey() failed");
       return TPM_FAIL;
     }
     if (tpm_compute_pubkey_digest(&pubKey, &keyDigest) != 0) {

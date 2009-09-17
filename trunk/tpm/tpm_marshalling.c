@@ -1267,6 +1267,20 @@ int tpm_unmarshal_TPM_DELEGATE_TABLE_ROW(BYTE **ptr, UINT32 *length, TPM_DELEGAT
   return 0;
 }
 
+int tpm_marshal_TPM_DELEGATE_SENSITIVE(BYTE **ptr, UINT32 *length, TPM_DELEGATE_SENSITIVE *v)
+{
+  if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
+      || tpm_marshal_TPM_SECRET(ptr, length, &v->authValue)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DELEGATE_SENSITIVE(BYTE **ptr, UINT32 *length, TPM_DELEGATE_SENSITIVE *v)
+{
+  if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
+    || tpm_unmarshal_TPM_SECRET(ptr, length, &v->authValue)) return -1;
+  return 0;
+}
+
 int tpm_marshal_TPM_DELEGATE_OWNER_BLOB(BYTE **ptr, UINT32 *length, TPM_DELEGATE_OWNER_BLOB *v)
 {
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)

@@ -472,6 +472,9 @@ int tpm_unmarshal_TPM_DELEGATE_PUBLIC_ARRAY(BYTE **ptr, UINT32 *length, TPM_DELE
 int tpm_marshal_TPM_DELEGATE_TABLE_ROW(BYTE **ptr, UINT32 *length, TPM_DELEGATE_TABLE_ROW *v);
 int tpm_unmarshal_TPM_DELEGATE_TABLE_ROW(BYTE **ptr, UINT32 *length, TPM_DELEGATE_TABLE_ROW *v);
 
+int tpm_marshal_TPM_DELEGATE_SENSITIVE(BYTE **ptr, UINT32 *length, TPM_DELEGATE_SENSITIVE *v);
+int tpm_unmarshal_TPM_DELEGATE_SENSITIVE(BYTE **ptr, UINT32 *length, TPM_DELEGATE_SENSITIVE *v);
+
 int tpm_marshal_TPM_DELEGATE_OWNER_BLOB(BYTE **ptr, UINT32 *length, TPM_DELEGATE_OWNER_BLOB *v);
 int tpm_unmarshal_TPM_DELEGATE_OWNER_BLOB(BYTE **ptr, UINT32 *length, TPM_DELEGATE_OWNER_BLOB *v);
 
