@@ -1622,6 +1622,8 @@ int tpm_marshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_DAT
   for (i = 0; i < TPM_MAX_KEYS; i++) {
     if (tpm_marshal_TPM_KEY_DATA(ptr, length, &v->keys[i])) return -1;
   }
+  if (tpm_marshal_UINT32_ARRAY(ptr, length, v->tis_timeouts, TPM_NUM_TIS_TIMEOUTS)
+      || tpm_marshal_UINT32_ARRAY(ptr, length, v->cmd_durations, TPM_NUM_CMD_DURATIONS)) return -1;
   return 0;
 }
 
@@ -1683,6 +1685,8 @@ int tpm_unmarshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_D
   for (i = 0; i < TPM_MAX_KEYS; i++) {
     if (tpm_unmarshal_TPM_KEY_DATA(ptr, length, &v->keys[i])) return -1;
   }
+  if (tpm_unmarshal_UINT32_ARRAY(ptr, length, v->tis_timeouts, TPM_NUM_TIS_TIMEOUTS)
+      || tpm_unmarshal_UINT32_ARRAY(ptr, length, v->cmd_durations, TPM_NUM_CMD_DURATIONS)) return -1;
   return 0;
 }
 

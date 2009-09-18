@@ -2160,6 +2160,8 @@ typedef struct tdTPM_PUBKEY_DATA {
 #define TPM_SYM_KEY_SIZE                32
 #define TPM_MAX_NV_BUF_SIZE             1024
 #define TPM_MAX_NVS                     20
+#define TPM_NUM_TIS_TIMEOUTS            4
+#define TPM_NUM_CMD_DURATIONS           3
 typedef struct tdTPM_PERMANENT_DATA {
   TPM_STRUCTURE_TAG tag;
   TPM_VERSION version;
@@ -2191,6 +2193,8 @@ typedef struct tdTPM_PERMANENT_DATA {
   BYTE nvData[TPM_MAX_NV_SIZE];
   TPM_NV_DATA_SENSITIVE nvStorage[TPM_MAX_NVS];
   TPM_KEY_DATA keys[TPM_MAX_KEYS];
+  UINT32 tis_timeouts[TPM_NUM_TIS_TIMEOUTS];
+  UINT32 cmd_durations[TPM_NUM_CMD_DURATIONS];
   const char *testResult;
 } TPM_PERMANENT_DATA;
 
@@ -2226,6 +2230,8 @@ static inline int sizeof_TPM_PERMANENT_DATA(TPM_PERMANENT_DATA *s) {
     else
       size += 1;
   }
+  size += TPM_NUM_TIS_TIMEOUTS * 4;
+  size += TPM_NUM_CMD_DURATIONS * 4;
   return size;
 }
 

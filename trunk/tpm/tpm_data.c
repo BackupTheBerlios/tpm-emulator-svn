@@ -58,6 +58,18 @@ static void init_nv_storage(void)
     tpmData.permanent.data.nvDataSize = 20;
 }
 
+static void init_timeouts(void)
+{
+  /* for the timeouts we use the PC platform defaults */
+  tpmData.permanent.data.tis_timeouts[0] = 750;
+  tpmData.permanent.data.tis_timeouts[1] = 2000;
+  tpmData.permanent.data.tis_timeouts[2] = 750;
+  tpmData.permanent.data.tis_timeouts[3] = 750;
+  tpmData.permanent.data.cmd_durations[0] = 1;
+  tpmData.permanent.data.cmd_durations[1] = 10;
+  tpmData.permanent.data.cmd_durations[2] = 1000;
+}
+
 void tpm_init_data(void)
 {
 #ifndef TPM_GENERATE_EK
@@ -156,6 +168,8 @@ void tpm_init_data(void)
   memcpy(tpmData.permanent.data.ekReset.nonce, "\xde\xad\xbe\xef", 4);
   /* initialize predefined non-volatile storage */
   init_nv_storage();
+  /* set the timeout and duration values */
+  init_timeouts();
 }
 
 void tpm_release_data(void)

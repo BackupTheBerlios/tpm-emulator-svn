@@ -40,6 +40,18 @@ static inline TPM_RESULT return_UINT32(UINT32 *respSize, BYTE **resp, UINT32 val
   return TPM_SUCCESS;
 }
 
+static inline TPM_RESULT return_UINT32_array(UINT32 *respSize, BYTE **resp, 
+		                             UINT32 *array, UINT32 array_len)
+{
+  UINT32 len = *respSize = 4 * array_len;
+  BYTE *ptr = *resp = tpm_malloc(*respSize);
+  if (ptr == NULL || tpm_marshal_UINT32_ARRAY(&ptr, &len, array, array_len)) {
+    tpm_free(*resp);	 
+    return TPM_FAIL;
+  }
+  return TPM_SUCCESS;
+}
+
 static inline TPM_RESULT return_BOOL(UINT32 *respSize, BYTE **resp, BOOL value)
 {
   UINT32 len = *respSize = 1;
@@ -135,8 +147,8 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_TIS_TIMEOUT:
       debug("[TPM_CAP_PROP_TIS_TIMEOUT]");
-      /* TODO: TPM_CAP_PROP_TIS_TIMEOUT */
-      return TPM_FAIL;
+      return return_UINT32_array(respSize, resp,
+        tpmData.permanent.data.tis_timeouts, TPM_NUM_TIS_TIMEOUTS);
 
     case TPM_CAP_PROP_STARTUP_EFFECT:
       debug("[TPM_CAP_PROP_STARTUP_EFFECT]");
@@ -186,8 +198,8 @@ static TPM_RESULT cap_property(UINT32 subCapSize, BYTE *subCap,
 
     case TPM_CAP_PROP_DURATION:
       debug("[TPM_CAP_PROP_DURATION]");
-      /* TODO: TPM_CAP_PROP_DURATION */
-      return TPM_FAIL;
+      return return_UINT32_array(respSize, resp,
+              tpmData.permanent.data.cmd_durations, TPM_NUM_CMD_DURATIONS);
 
     case TPM_CAP_PROP_ACTIVE_COUNTER:
       debug("[TPM_CAP_PROP_ACTIVE_COUNTER]");
@@ -687,7 +699,7 @@ static TPM_RESULT cap_version_val(UINT32 *respSize, BYTE **resp)
 TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize, 
                              BYTE *subCap, UINT32 *respSize, BYTE **resp)
 {
-  info("TPM_GetCapability() (not fully implemented yet)");
+  info("TPM_GetCapability()");
   switch (capArea) {
 
     case TPM_CAP_ORD:
