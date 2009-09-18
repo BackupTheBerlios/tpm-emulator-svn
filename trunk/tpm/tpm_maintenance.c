@@ -25,11 +25,7 @@
  * Maintenance Functions ([TPM_Part3], Section 12)
  */
 
-extern int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
-
-extern int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms);
-
-int tpm_setup_privkey(TPM_KEY_DATA *key, TPM_KEY *privkey)
+static int tpm_setup_privkey(TPM_KEY_DATA *key, TPM_KEY *privkey)
 {
   size_t key_length;
   
@@ -260,9 +256,6 @@ TPM_RESULT TPM_KillMaintenanceFeature(TPM_AUTH *auth1)
   return TPM_SUCCESS;
 }
 
-extern int tpm_compute_pubkey_checksum(TPM_NONCE *antiReplay, 
-                                       TPM_PUBKEY *pubKey, TPM_DIGEST *checksum);
-
 TPM_RESULT TPM_LoadManuMaintPub(TPM_NONCE *antiReplay, TPM_PUBKEY *pubKey,
                                 TPM_DIGEST *checksum)
 {
@@ -287,7 +280,7 @@ TPM_RESULT TPM_LoadManuMaintPub(TPM_NONCE *antiReplay, TPM_PUBKEY *pubKey,
   return TPM_SUCCESS;
 }
 
-int tpm_setup_pubkey(TPM_PUBKEY_DATA *key, TPM_PUBKEY *pubkey)
+static int tpm_setup_pubkey(TPM_PUBKEY_DATA *key, TPM_PUBKEY *pubkey)
 {
   size_t key_length;
  

@@ -658,7 +658,7 @@ static TPM_RESULT cap_select_size(UINT32 subCapSize, BYTE *subCap,
   return return_BOOL(respSize, resp, (size.reqSize <= TPM_NUM_PCR/8));
 }
 
-TPM_RESULT cap_version_val(UINT32 *respSize, BYTE **resp)
+static TPM_RESULT cap_version_val(UINT32 *respSize, BYTE **resp)
 {
   UINT32 len;
   BYTE *ptr;

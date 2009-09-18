@@ -137,28 +137,6 @@ TPM_RESULT TPM_DirRead(TPM_DIRINDEX dirIndex, TPM_DIRVALUE *dirContents)
   return TPM_SUCCESS;
 }
 
-/* import functions from tpm_storage.c */
-extern int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
-extern int tpm_encrypt_sealed_data(TPM_KEY_DATA *key, TPM_SEALED_DATA *seal,
-  BYTE *enc, UINT32 *enc_size);
-extern int tpm_encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
-  BYTE *enc, UINT32 *enc_size);
-extern TPM_RESULT internal_TPM_LoadKey(TPM_KEY *inKey, 
-  TPM_KEY_HANDLE *inkeyHandle);
-extern int tpm_decrypt_sealed_data(TPM_KEY_DATA *key, 
-  BYTE *enc, UINT32 enc_size, TPM_SEALED_DATA *seal, BYTE **buf);
-extern int tpm_decrypt_private_key(TPM_KEY_DATA *key, 
-  BYTE *enc, UINT32 enc_size, TPM_STORE_ASYMKEY *store, BYTE **buf,
-  UINT32  *buf_size);
-/* import functions from tpm_crypto.c */
-extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
-  BYTE *areaToSign, UINT32 areaToSignSize, BYTE **sig, UINT32 *sigSize);
-/* import functions from rsa.c */
-extern int tpm_rsa_decrypt(tpm_rsa_private_key_t *key, int type,
-  const uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len);
-/* import functions from tpm_eviction.c */
-extern void invalidate_sessions(TPM_HANDLE handle);
-
 TPM_RESULT TPM_ChangeAuthAsymStart(TPM_KEY_HANDLE idHandle,
                                    TPM_NONCE *antiReplay,
                                    TPM_KEY_PARMS *inTempKey,
@@ -502,8 +480,7 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(TPM_KEY_HANDLE parentHandle,
          with the authorization session. */
   tpm_rsa_release_private_key(&ephKey->key);
   memset(ephKey, 0, sizeof(*ephKey));
-  invalidate_sessions(ephHandle);
-  
+  tpm_invalidate_sessions(ephHandle);
   return TPM_SUCCESS;
 }
 
@@ -551,8 +528,6 @@ TPM_RESULT TPM_CertifySelfTest(TPM_KEY_HANDLE keyHandle, TPM_NONCE *antiReplay,
   return tpm_sign(key, auth1, FALSE, buf, sizeof(buf), sig, sigSize);
 }
 
-extern TPM_RESULT tpm_get_pubek(TPM_PUBKEY *pubEndorsementKey);
-
 TPM_RESULT TPM_OwnerReadPubek(TPM_AUTH *auth1, TPM_PUBKEY *pubEndorsementKey)
 {
   TPM_RESULT res;
@@ -564,4 +539,3 @@ TPM_RESULT TPM_OwnerReadPubek(TPM_AUTH *auth1, TPM_PUBKEY *pubEndorsementKey)
   if (res != TPM_SUCCESS) return res; 
   return TPM_SUCCESS;
 }
-

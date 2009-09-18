@@ -28,22 +28,6 @@
  * FIPS 140-2 compatibility. 
  */
 
-int tpm_compute_pubkey_checksum(TPM_NONCE *antiReplay, TPM_PUBKEY *pubKey,
-                                TPM_DIGEST *checksum)
-{
-  tpm_sha1_ctx_t sha1;
-  UINT32 len = sizeof_TPM_PUBKEY((*pubKey));
-  BYTE buf[len], *ptr = buf;
-
-  if (tpm_marshal_TPM_PUBKEY(&ptr, &len, pubKey)) return -1;
-  /* compute SHA1 hash */
-  tpm_sha1_init(&sha1);
-  tpm_sha1_update(&sha1, buf, sizeof_TPM_PUBKEY((*pubKey)));
-  tpm_sha1_update(&sha1, antiReplay->nonce, sizeof(antiReplay->nonce));
-  tpm_sha1_final(&sha1, checksum->digest);
-  return 0;
-}
-
 TPM_RESULT tpm_get_pubek(TPM_PUBKEY *pubEndorsementKey)
 {
   UINT32 key_length;

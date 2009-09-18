@@ -24,12 +24,6 @@
 #include "tpm_handles.h"
 #include "tpm_marshalling.h"
 
-/* import functions from tpm_capability.c */
-extern TPM_RESULT cap_version_val(UINT32 *respSize, BYTE **resp);
-/* import functions from tpm_crypto.c */
-extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
-  BYTE *areaToSign, UINT32 areaToSignSize, BYTE **sig, UINT32 *sigSize);
-
 /*
  * Integrity Collection and Reporting ([TPM_Part3], Section 16)
  * This section deals with what commands have direct access to the PCR.
@@ -287,7 +281,7 @@ TPM_RESULT TPM_Quote2(TPM_KEY_HANDLE keyHandle, TPM_NONCE *externalData,
   if (addVersion == TRUE) {
     debug("TPM_Quote2(): addVersion == TRUE");
     /* a. Concatenate to Q1 a TPM_CAP_VERSION_INFO structure */
-    res = cap_version_val(&respSize, &resp);
+    res = TPM_GetCapability(TPM_CAP_VERSION_VAL, 0, NULL, &respSize, &resp);
     if (res != TPM_SUCCESS) {
       debug("TPM_Quote2(): cap_version_val() failed.");
       tpm_free(buf);

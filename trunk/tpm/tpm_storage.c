@@ -27,6 +27,18 @@
  * Storage functions ([TPM_Part3], Section 10)
  */
 
+TPM_KEY_HANDLE tpm_get_free_key(void)
+{
+  int i;
+  for (i = 0; i < TPM_MAX_KEYS; i++) {
+    if (!tpmData.permanent.data.keys[i].payload) {
+      tpmData.permanent.data.keys[i].payload = TPM_PT_ASYM;
+      return INDEX_TO_KEY_HANDLE(i);
+    }
+  }
+  return TPM_INVALID_HANDLE;
+}
+
 int tpm_encrypt_public(TPM_PUBKEY_DATA *key, BYTE *in, UINT32 in_size,
                        BYTE *enc, UINT32 *enc_size)
 {
@@ -146,8 +158,8 @@ int tpm_decrypt_private_key(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
   return 0;
 }
 
-void tpm_xor_encrypt(TPM_SESSION_DATA *session, TPM_NONCE *nonceOdd,
-                     BYTE *data, UINT32 data_size)
+static void tpm_xor_encrypt(TPM_SESSION_DATA *session, TPM_NONCE *nonceOdd,
+                            BYTE *data, UINT32 data_size)
 {
   BYTE seed[2 * sizeof(TPM_NONCE) + 3 + sizeof(TPM_SECRET)];
   BYTE *ptr = seed;
@@ -162,6 +174,119 @@ void tpm_xor_encrypt(TPM_SESSION_DATA *session, TPM_NONCE *nonceOdd,
   memcpy(ptr, session->sharedSecret, sizeof(TPM_SECRET));
   /* decrypt data */
   tpm_rsa_mask_generation(seed, sizeof(seed), data, data_size);
+}
+
+int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest)
+{
+  tpm_sha1_ctx_t sha1;
+  UINT32 len = sizeof_TPM_KEY((*key));
+  BYTE *buf, *ptr;
+  buf = ptr = tpm_malloc(len);
+  if (buf == NULL
+      || tpm_marshal_TPM_KEY(&ptr, &len, key)) {
+    tpm_free(buf);
+    return -1;
+  }
+  /* compute SHA1 hash */
+  tpm_sha1_init(&sha1);
+  tpm_sha1_update(&sha1, buf, sizeof_TPM_KEY((*key)) - key->encDataSize - 4);
+  tpm_sha1_final(&sha1, digest->digest);
+  tpm_free(buf);
+  return 0;
+}
+
+static int tpm_verify_key_digest(TPM_KEY *key, TPM_DIGEST *digest)
+{
+  TPM_DIGEST key_digest;
+  if (tpm_compute_key_digest(key, &key_digest)) return -1;
+  return memcmp(key_digest.digest, digest->digest, sizeof(key_digest.digest));
+}
+
+int tpm_compute_pubkey_checksum(TPM_NONCE *antiReplay, TPM_PUBKEY *pubKey,
+                                TPM_DIGEST *checksum)
+{
+  tpm_sha1_ctx_t sha1;
+  UINT32 len = sizeof_TPM_PUBKEY((*pubKey));
+  BYTE buf[len], *ptr = buf;
+
+  if (tpm_marshal_TPM_PUBKEY(&ptr, &len, pubKey)) return -1;
+  /* compute SHA1 hash */
+  tpm_sha1_init(&sha1);
+  tpm_sha1_update(&sha1, buf, sizeof_TPM_PUBKEY((*pubKey)));
+  tpm_sha1_update(&sha1, antiReplay->nonce, sizeof(antiReplay->nonce));
+  tpm_sha1_final(&sha1, checksum->digest);
+  return 0;
+}
+
+int tpm_compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest)
+{
+  tpm_sha1_ctx_t sha1;
+  UINT32 len = sizeof_TPM_PUBKEY((*key));
+  BYTE *buf, *ptr;
+  buf = ptr = tpm_malloc(len);
+  if (buf == NULL
+      || tpm_marshal_TPM_PUBKEY(&ptr, &len, key)) {
+    tpm_free(buf);
+    return -1;
+  }
+  /* compute SHA1 hash */
+  tpm_sha1_init(&sha1);
+  tpm_sha1_update(&sha1, buf, sizeof_TPM_PUBKEY((*key)));
+  tpm_sha1_final(&sha1, digest->digest);
+  tpm_free(buf);
+  return 0;
+}
+
+int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms)
+{
+  size_t exp_len;
+  parms->algorithmID = TPM_ALG_RSA;
+  parms->encScheme = key->encScheme;
+  parms->sigScheme = key->sigScheme;
+  parms->parms.rsa.keyLength = key->key.size;
+  parms->parms.rsa.numPrimes = 2;
+  if (tpm_bn_cmp_ui(key->key.e, 65537) == 0) {
+    parms->parms.rsa.exponentSize = 0;
+    parms->parms.rsa.exponent = NULL;
+  } else {
+    parms->parms.rsa.exponentSize = tpm_rsa_exponent_length(&key->key);
+    parms->parms.rsa.exponent = tpm_malloc(parms->parms.rsa.exponentSize);
+    if (parms->parms.rsa.exponent == NULL) return -1;
+    tpm_rsa_export_exponent(&key->key, parms->parms.rsa.exponent, &exp_len);
+    parms->parms.rsa.exponentSize = exp_len;
+  }
+  parms->parmSize = 12 + parms->parms.rsa.exponentSize;
+  return 0;
+}
+
+int tpm_setup_pubkey_data(TPM_PUBKEY *in, TPM_PUBKEY_DATA *out)
+{
+  out->valid = TRUE;
+  out->encScheme = in->algorithmParms.encScheme;
+  out->sigScheme = in->algorithmParms.sigScheme;
+  out->key.size = in->algorithmParms.parms.rsa.keyLength;
+  if (tpm_rsa_import_public_key(&out->key, RSA_MSB_FIRST,
+      in->pubKey.key, in->pubKey.keyLength,
+      in->algorithmParms.parms.rsa.exponent,
+      in->algorithmParms.parms.rsa.exponentSize) != 0) return -1;
+  return 0;
+}
+
+int tpm_extract_pubkey(TPM_KEY_DATA *key, TPM_PUBKEY *pubKey)
+{
+  pubKey->pubKey.keyLength = key->key.size >> 3;
+  pubKey->pubKey.key = tpm_malloc(pubKey->pubKey.keyLength);
+  if (pubKey->pubKey.key == NULL) {
+    debug("tpm_malloc() failed.");
+    return -1;
+  }
+  tpm_rsa_export_modulus(&key->key, pubKey->pubKey.key, NULL);
+  if (tpm_setup_key_parms(key, &pubKey->algorithmParms) != 0) {
+    debug("tpm_setup_key_parms() failed.");
+    tpm_free(pubKey->pubKey.key);
+    return -1;
+  }
+  return 0;
 }
 
 static int compute_store_digest(TPM_STORED_DATA *store, TPM_DIGEST *digest)
@@ -461,51 +586,6 @@ TPM_RESULT TPM_UnBind(TPM_KEY_HANDLE keyHandle, UINT32 inDataSize,
   return TPM_SUCCESS;
 }
 
-int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest)
-{
-  tpm_sha1_ctx_t sha1;
-  UINT32 len = sizeof_TPM_KEY((*key));
-  BYTE *buf, *ptr;
-  buf = ptr = tpm_malloc(len);
-  if (buf == NULL
-      || tpm_marshal_TPM_KEY(&ptr, &len, key)) {
-    tpm_free(buf);
-    return -1;
-  }
-  /* compute SHA1 hash */
-  tpm_sha1_init(&sha1);
-  tpm_sha1_update(&sha1, buf, sizeof_TPM_KEY((*key)) - key->encDataSize - 4);
-  tpm_sha1_final(&sha1, digest->digest);
-  tpm_free(buf);
-  return 0;
-}
-
-static int tpm_verify_key_digest(TPM_KEY *key, TPM_DIGEST *digest)
-{
-  TPM_DIGEST key_digest;
-  if (tpm_compute_key_digest(key, &key_digest)) return -1;
-  return memcmp(key_digest.digest, digest->digest, sizeof(key_digest.digest));
-}
-
-int tpm_compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest)
-{
-  tpm_sha1_ctx_t sha1;
-  UINT32 len = sizeof_TPM_PUBKEY((*key));
-  BYTE *buf, *ptr;
-  buf = ptr = tpm_malloc(len);
-  if (buf == NULL
-      || tpm_marshal_TPM_PUBKEY(&ptr, &len, key)) {
-    tpm_free(buf);
-    return -1;
-  }
-  /* compute SHA1 hash */
-  tpm_sha1_init(&sha1);
-  tpm_sha1_update(&sha1, buf, sizeof_TPM_PUBKEY((*key)));
-  tpm_sha1_final(&sha1, digest->digest);
-  tpm_free(buf);
-  return 0;
-}
-
 TPM_RESULT TPM_CreateWrapKey(TPM_KEY_HANDLE parentHandle, 
                              TPM_ENCAUTH *dataUsageAuth,
                              TPM_ENCAUTH *dataMigrationAuth,
@@ -619,18 +699,6 @@ TPM_RESULT TPM_CreateWrapKey(TPM_KEY_HANDLE parentHandle,
   return TPM_SUCCESS;
 }
 
-TPM_KEY_HANDLE tpm_get_free_key(void)
-{
-  int i;
-  for (i = 0; i < TPM_MAX_KEYS; i++) {
-    if (!tpmData.permanent.data.keys[i].payload) {
-      tpmData.permanent.data.keys[i].payload = TPM_PT_ASYM;
-      return INDEX_TO_KEY_HANDLE(i);
-    }
-  }
-  return TPM_INVALID_HANDLE;
-}
-
 TPM_RESULT TPM_LoadKey(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
                        TPM_AUTH *auth1, TPM_KEY_HANDLE *inkeyHandle)
 {
@@ -742,80 +810,6 @@ TPM_RESULT TPM_LoadKey2(TPM_KEY_HANDLE parentHandle, TPM_KEY *inKey,
   return TPM_LoadKey(parentHandle, inKey, auth1, inkeyHandle);
 }
 
-int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms)
-{
-  size_t exp_len;
-  parms->algorithmID = TPM_ALG_RSA;
-  parms->encScheme = key->encScheme;
-  parms->sigScheme = key->sigScheme;
-  parms->parms.rsa.keyLength = key->key.size;
-  parms->parms.rsa.numPrimes = 2;
-  if (tpm_bn_cmp_ui(key->key.e, 65537) == 0) {
-    parms->parms.rsa.exponentSize = 0;
-    parms->parms.rsa.exponent = NULL;
-  } else {
-    parms->parms.rsa.exponentSize = tpm_rsa_exponent_length(&key->key);
-    parms->parms.rsa.exponent = tpm_malloc(parms->parms.rsa.exponentSize);
-    if (parms->parms.rsa.exponent == NULL) return -1;
-    tpm_rsa_export_exponent(&key->key, parms->parms.rsa.exponent, &exp_len);
-    parms->parms.rsa.exponentSize = exp_len;
-  }
-  parms->parmSize = 12 + parms->parms.rsa.exponentSize;
-  return 0;
-}
-
-int tpm_extract_pubkey(TPM_KEY_DATA *key, TPM_PUBKEY *pubKey)
-{
-  pubKey->pubKey.keyLength = key->key.size >> 3;
-  pubKey->pubKey.key = tpm_malloc(pubKey->pubKey.keyLength);
-  if (pubKey->pubKey.key == NULL) {
-    debug("tpm_malloc() failed.");
-    return -1;
-  }
-  tpm_rsa_export_modulus(&key->key, pubKey->pubKey.key, NULL);
-  if (tpm_setup_key_parms(key, &pubKey->algorithmParms) != 0) {
-    debug("tpm_setup_key_parms() failed.");
-    tpm_free(pubKey->pubKey.key);
-    return -1;
-  }
-  return 0;
-}
-
-TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1, 
-                         TPM_PUBKEY *pubKey)
-{
-  TPM_RESULT res;
-  TPM_KEY_DATA *key;
-  TPM_DIGEST digest;
-  info("TPM_GetPubKey()");
-  /* get key */
-  if (keyHandle == TPM_KH_SRK
-      && !tpmData.permanent.flags.readSRKPub) return TPM_INVALID_KEYHANDLE;
-  key = tpm_get_key(keyHandle);
-  if (key == NULL) return TPM_INVALID_KEYHANDLE;
-  /* verify authorization */
-  if (auth1->authHandle != TPM_INVALID_HANDLE
-      || (key->authDataUsage != TPM_AUTH_NEVER
-          && key->authDataUsage != TPM_AUTH_PRIV_USE_ONLY)) {
-              res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
-              if (res != TPM_SUCCESS) return res;
-  }
-  if (!(key->keyFlags & TPM_KEY_FLAG_PCR_IGNORE)) {
-    res = tpm_compute_pcr_digest(&key->pcrInfo.releasePCRSelection, 
-      &digest, NULL);
-    if (res != TPM_SUCCESS) return res;
-    if (memcmp(&digest, &key->pcrInfo.digestAtRelease, sizeof(TPM_DIGEST)))
-      return TPM_WRONGPCRVAL;
-    if (key->pcrInfo.tag == TPM_TAG_PCR_INFO_LONG
-        && !(key->pcrInfo.localityAtRelease
-             & (1 << tpmData.stany.flags.localityModifier)))
-       return TPM_BAD_LOCALITY;
-  }
-  /* extract pubKey */
-  if (tpm_extract_pubkey(key, pubKey) != 0) return TPM_FAIL;
-  return TPM_SUCCESS;
-}
-
 TPM_RESULT internal_TPM_LoadKey(TPM_KEY *inKey, TPM_KEY_HANDLE *inkeyHandle)
 {
   TPM_KEY_DATA *parent, *key;
@@ -870,5 +864,40 @@ TPM_RESULT internal_TPM_LoadKey(TPM_KEY *inKey, TPM_KEY_HANDLE *inkeyHandle)
   }
   key->parentPCRStatus = parent->parentPCRStatus;
   tpm_free(key_buf);
+  return TPM_SUCCESS;
+}
+
+TPM_RESULT TPM_GetPubKey(TPM_KEY_HANDLE keyHandle, TPM_AUTH *auth1,
+                         TPM_PUBKEY *pubKey)
+{
+  TPM_RESULT res;
+  TPM_KEY_DATA *key;
+  TPM_DIGEST digest;
+  info("TPM_GetPubKey()");
+  /* get key */
+  if (keyHandle == TPM_KH_SRK
+      && !tpmData.permanent.flags.readSRKPub) return TPM_INVALID_KEYHANDLE;
+  key = tpm_get_key(keyHandle);
+  if (key == NULL) return TPM_INVALID_KEYHANDLE;
+  /* verify authorization */
+  if (auth1->authHandle != TPM_INVALID_HANDLE
+      || (key->authDataUsage != TPM_AUTH_NEVER
+          && key->authDataUsage != TPM_AUTH_PRIV_USE_ONLY)) {
+              res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
+              if (res != TPM_SUCCESS) return res;
+  }
+  if (!(key->keyFlags & TPM_KEY_FLAG_PCR_IGNORE)) {
+    res = tpm_compute_pcr_digest(&key->pcrInfo.releasePCRSelection,
+      &digest, NULL);
+    if (res != TPM_SUCCESS) return res;
+    if (memcmp(&digest, &key->pcrInfo.digestAtRelease, sizeof(TPM_DIGEST)))
+      return TPM_WRONGPCRVAL;
+    if (key->pcrInfo.tag == TPM_TAG_PCR_INFO_LONG
+        && !(key->pcrInfo.localityAtRelease
+             & (1 << tpmData.stany.flags.localityModifier)))
+       return TPM_BAD_LOCALITY;
+  }
+  /* extract pubKey */
+  if (tpm_extract_pubkey(key, pubKey) != 0) return TPM_FAIL;
   return TPM_SUCCESS;
 }

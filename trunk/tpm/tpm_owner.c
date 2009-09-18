@@ -182,8 +182,6 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   return TPM_SUCCESS;
 }
 
-extern void tpm_nv_remove_data(TPM_NV_DATA_SENSITIVE *nv);
-
 void tpm_owner_clear()
 {
   int i;

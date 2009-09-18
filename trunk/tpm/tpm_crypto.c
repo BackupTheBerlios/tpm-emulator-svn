@@ -216,8 +216,6 @@ TPM_RESULT TPM_StirRandom(UINT32 dataSize, BYTE *inData)
   return TPM_SUCCESS;
 }
 
-extern int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms);
-
 TPM_RESULT TPM_CertifyKey(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
                           TPM_NONCE *antiReplay, TPM_AUTH *auth1, 
                           TPM_AUTH *auth2, TPM_CERTIFY_INFO *certifyInfo,
@@ -326,10 +324,6 @@ TPM_RESULT TPM_CertifyKey(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
   }
   return TPM_SUCCESS;
 }
-
-extern int tpm_compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest);
-
-extern int tpm_extract_pubkey(TPM_KEY_DATA *key, TPM_PUBKEY *pubKey);
 
 TPM_RESULT TPM_CertifyKey2(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
                            TPM_DIGEST *migrationPubDigest, 

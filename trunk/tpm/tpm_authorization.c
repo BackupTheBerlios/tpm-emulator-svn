@@ -27,19 +27,6 @@
  * Authorization Changing ([TPM_Part3], Section 17)
  */
 
-extern int tpm_encrypt_sealed_data(TPM_KEY_DATA *key, TPM_SEALED_DATA *seal,
-                                   BYTE *enc, UINT32 *enc_size);
-                               
-extern int tpm_decrypt_sealed_data(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
-                                   TPM_SEALED_DATA *seal, BYTE **buf);
-                               
-extern int tpm_encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
-                                   BYTE *enc, UINT32 *enc_size);
-                  
-extern int tpm_decrypt_private_key(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size, 
-                                   TPM_STORE_ASYMKEY *store, BYTE **buf,
-                                   UINT32 *buf_size);
-
 TPM_RESULT TPM_ChangeAuth(TPM_KEY_HANDLE parentHandle,
                           TPM_PROTOCOL_ID protocolID, TPM_ENCAUTH *newAuth,
                           TPM_ENTITY_TYPE entityType, UINT32 encDataSize,
@@ -164,19 +151,6 @@ TPM_RESULT TPM_ChangeAuthOwner(TPM_PROTOCOL_ID protocolID,
  * Authorization Sessions ([TPM_Part3], Section 18)
  */
 
-UINT32 tpm_get_free_session(BYTE type)
-{
-  UINT32 i;
-  for (i = 0; i < TPM_MAX_SESSIONS; i++) {
-    if (tpmData.stany.data.sessions[i].type == TPM_ST_INVALID) {
-      tpmData.stany.data.sessions[i].type = type;
-      if (type == TPM_ST_TRANSPORT) return INDEX_TO_TRANS_HANDLE(i);
-      else return INDEX_TO_AUTH_HANDLE(i);
-    }
-  }
-  return TPM_INVALID_HANDLE;
-}
-
 TPM_RESULT TPM_OIAP(TPM_AUTHHANDLE *authHandle, TPM_NONCE *nonceEven)
 {
   TPM_SESSION_DATA *session;
@@ -262,24 +236,6 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
   tpm_hmac_final(&ctx, session->sharedSecret);
   return TPM_SUCCESS;
 }
-
-extern TPM_FAMILY_TABLE_ENTRY *tpm_get_family_row(TPM_FAMILY_ID id);
-
-extern TPM_DELEGATE_TABLE_ROW *tpm_get_delegate_row(UINT32 row);
-
-extern void tpm_compute_owner_blob_digest(TPM_DELEGATE_OWNER_BLOB *blob,
-                                          TPM_DIGEST *digest);
-
-extern void tpm_compute_key_blob_digest(TPM_DELEGATE_KEY_BLOB *blob,
-                                        TPM_DIGEST *digest);
-
-extern int tpm_decrypt_sensitive(BYTE *iv, UINT32 iv_size,
-                                 BYTE *enc, UINT32 enc_size,
-                                 TPM_DELEGATE_SENSITIVE *sensitive, BYTE **buf);
-
-extern int tpm_extract_pubkey(TPM_KEY_DATA *key, TPM_PUBKEY *pubKey);
-
-extern int tpm_compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest);
 
 TPM_RESULT TPM_DSAP(TPM_ENTITY_TYPE entityType, TPM_KEY_HANDLE keyHandle,
                     TPM_NONCE *nonceOddDSAP, UINT32 entityValueSize,
@@ -412,13 +368,13 @@ TPM_RESULT TPM_SetOwnerPointer(TPM_ENTITY_TYPE entityType, UINT32 entityValue)
   return TPM_DISABLED_CMD;
 }
 
-TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret, 
+TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
                            TPM_HANDLE handle)
 {
   tpm_hmac_ctx_t ctx;
   TPM_SESSION_DATA *session;
   UINT32 auth_handle = CPU_TO_BE32(auth->authHandle);
-  
+
   info("tpm_verify_auth()");
   debug("handle = %08x", auth->authHandle);
   /* get dedicated authorization or transport session */
@@ -428,7 +384,7 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
   /* setup authorization */
   if (session->type == TPM_ST_OIAP) {
     debug("[TPM_ST_OIAP]");
-    /* We copy the secret because it might be deleted or invalidated 
+    /* We copy the secret because it might be deleted or invalidated
        afterwards, but we need it again for authorizing the response. */
     memcpy(session->sharedSecret, secret, sizeof(TPM_SECRET));
   } else if (session->type == TPM_ST_OSAP) {

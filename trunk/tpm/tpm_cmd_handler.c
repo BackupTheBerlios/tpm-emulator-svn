@@ -3392,8 +3392,6 @@ static TPM_RESULT tpm_check_status_and_mode(TPM_REQUEST *req)
   return TPM_SUCCESS; 
 }
 
-extern const char *tpm_error_to_string(TPM_RESULT res);
-
 void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
   TPM_RESULT res;

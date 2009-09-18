@@ -124,9 +124,6 @@ TPM_RESULT TPM_GetAuditDigest(UINT32 startOrdinal,
   return TPM_SUCCESS;
 }
 
-extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
-  BYTE *areaToSign, UINT32 areaToSignSize, BYTE **sig, UINT32 *sigSize);
-
 TPM_RESULT TPM_GetAuditDigestSigned(TPM_KEY_HANDLE keyHandle, 
                                     UINT32 startOrdinal, BOOL closeAudit,
                                     TPM_NONCE *antiReplay, TPM_AUTH *auth1,  

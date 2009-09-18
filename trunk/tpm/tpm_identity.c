@@ -24,14 +24,7 @@
 #include "tpm_handles.h"
 #include "tpm_marshalling.h"
 
-#define LOCALITY       tpmData.stany.flags.localityModifier
-
-/* import functions from tpm_storage.c */
-extern int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
-extern int tpm_compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest);
-extern int tpm_encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
-                                   BYTE *enc, UINT32 *enc_size);
-extern int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms);
+#define LOCALITY tpmData.stany.flags.localityModifier
 
 /*
  * Identity Creation and Activation ([TPM_Part3], Section 15)

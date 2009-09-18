@@ -722,6 +722,208 @@ TPM_RESULT TPM_Sealx(
   TPM_STORED_DATA *sealedData
 );
 
+/**
+ * tpm_get_free_key - allocates a new key slot
+ * Returns: the key handle on success, TPM_INVALID_HANDLE otherwise.
+
+ */
+TPM_KEY_HANDLE tpm_get_free_key(void);
+
+/**
+ * tpm_encrypt_public - encrypts the input data with the specified public key
+ * @key: [in], Public key
+ * @in: [in] Input data to encrypt
+ * @in_size: [in] Size of the input data
+ * @enc: [out] Encrypted data
+ * @enc_size: [out] Size of the encrypted data
+ * Returns: 0 on success, -1 otherwise.
+ */
+int tpm_encrypt_public(
+  TPM_PUBKEY_DATA *key,
+  BYTE *in,
+  UINT32 in_size,
+  BYTE *enc,
+  UINT32 *enc_size
+);
+
+/**
+ * tpm_encrypt_private - encrypts the input data with the specified private key
+ * @key: [in], Private key
+ * @in: [in] Input data to encrypt
+ * @in_size: [in] Size of the input data
+ * @enc: [out] Encrypted data
+ * @enc_size: [out] Size of the encrypted data
+ * Returns: 0 on success, -1 otherwise.
+ */
+int tpm_encrypt_private(
+  TPM_KEY_DATA *key,
+  BYTE *in,
+  UINT32 in_size,
+  BYTE *enc,
+  UINT32 *enc_size
+);
+
+/**
+ * tpm_decrypt - decrypts the input data with the specified private key
+ * @key: [in], Private key
+ * @enc: [in] Encrypted data
+ * @enc_size: [in] Size of the encrypted data
+ * @out: [out] Decrypted data
+ * @out_size: [out] Size of the decrypted data
+ * Returns: 0 on success, -1 otherwise.
+ */
+int tpm_decrypt(
+  TPM_KEY_DATA *key,
+  BYTE *enc,
+  UINT32 enc_size,
+  BYTE *out,
+  UINT32 *out_size
+);
+
+/**
+ * tpm_encrypt_sealed_data - encrypts a TPM_SEALED_DATA structure
+ * @key: [in], Private key
+ * @seal: [in] Structure to encrypt
+ * @enc: [out] Encrypted structure
+ * @enc_size: [out] Size of the encrypted structure
+ * Returns: 0 on success, -1 otherwise.
+ */
+int tpm_encrypt_sealed_data(
+  TPM_KEY_DATA *key,
+  TPM_SEALED_DATA *seal,
+  BYTE *enc,
+  UINT32 *enc_size
+);
+
+/**
+ * tpm_decrypt_sealed_data - decrypts a TPM_SEALED_DATA structure
+ * @key: [in], Private key
+ * @enc: [in] Encrypted structure
+ * @enc_size: [in] Size of the encrypted structure
+ * @seal: [out] Decrypted structure
+ * @buf: [out] Buffer for the decrypted structure (to be freed by the caller)
+ * Returns: 0 on success, -1 otherwise.
+ */
+int tpm_decrypt_sealed_data(
+  TPM_KEY_DATA *key,
+  BYTE *enc,
+  UINT32 enc_size,
+  TPM_SEALED_DATA *seal,
+  BYTE **buf
+);
+
+/**
+ * tpm_encrypt_sealed_data - encrypts a TPM_STORE_ASYMKEY structure
+ * @key: [in], Private key
+ * @store: [in] Structure to encrypt
+ * @enc: [out] Encrypted structure
+ * @enc_size: [out] Size of the encrypted structure
+ * Returns: 0 on success, -1 otherwise.
+ */
+int tpm_encrypt_private_key(
+  TPM_KEY_DATA *key,
+  TPM_STORE_ASYMKEY *store,
+  BYTE *enc,
+  UINT32 *enc_size
+);
+
+/**
+ * tpm_decrypt_sealed_data - decrypts a TPM_STORE_ASYMKEY structure
+ * @key: [in], Private key
+ * @enc: [in] Encrypted structure
+ * @enc_size: [in] Size of the encrypted structure
+ * @store: [out] Decrypted structure
+ * @buf: [out] Buffer for the decrypted structure (to be freed by the caller)
+ * @buf_size: [out] Size of the buffer
+ * Returns: 0 on success, -1 otherwise.
+ */
+int tpm_decrypt_private_key(
+  TPM_KEY_DATA *key,
+  BYTE *enc,
+  UINT32 enc_size,
+  TPM_STORE_ASYMKEY *store,
+  BYTE **buf,
+  UINT32 *buf_size
+);
+
+/**
+ * tpm_compute_key_digest - computes the digest of a key
+ * @key: [in] Key
+ * @digest: [out] Digest of the key
+ * @Returns: 0 on success, -1 otherwise.
+ */
+int tpm_compute_key_digest(
+  TPM_KEY *key,
+  TPM_DIGEST *digest
+);
+
+/**
+ * tpm_compute_pubkey_checksum - computes the checksum of a public key
+ * @antiReplay: [in] Nonce to prevent replay of messages
+ * @pubKey: [in] Public key
+ * @checksum: [out] Checksum of the public key and the nonce
+ * @Returns: 0 on success, -1 otherwise.
+ */
+int tpm_compute_pubkey_checksum(
+  TPM_NONCE *antiReplay,
+  TPM_PUBKEY *pubKey,
+  TPM_DIGEST *checksum
+);
+
+/**
+ * tpm_compute_pubkey_digest - computes the digest of a public key
+ * @key: [in] Public key
+ * @digest: [out] Digest of the key
+ * @Returns: 0 on success, -1 otherwise.
+ */
+int tpm_compute_pubkey_digest(
+  TPM_PUBKEY *key,
+  TPM_DIGEST *digest
+);
+
+/**
+ * tpm_setup_key_parms - sets the key parameters according to the given key
+ * @key: [in] Key
+ * @params: [out] Key parameters to set
+ * @Returns: 0 on success, -1 otherwise.
+ */
+int tpm_setup_key_parms(
+  TPM_KEY_DATA *key,
+  TPM_KEY_PARMS *parms
+);
+
+/**
+ * tpm_setup_pubkey_data - creates an internal public key based on the given key
+ * @in: [in] Public Key of type TPM_PUBKEY
+ * @out: [out] Internal public key of type TPM_PUBKEY_DATA
+ * @Returns: 0 on success, -1 otherwise.
+ */
+int tpm_setup_pubkey_data(
+  TPM_PUBKEY *in,
+  TPM_PUBKEY_DATA *out
+);
+
+/**
+ * tpm_extract_pubkey - extracts the public part of the specified key
+ * @in: [in] Key
+ * @out: [out] Public key
+ * @Returns: 0 on success, -1 otherwise.
+ */
+int tpm_extract_pubkey(
+  TPM_KEY_DATA *key,
+  TPM_PUBKEY *pubKey
+);
+
+/**
+ * internal_TPM_LoadKey - loads the specified key into the TPM
+ * @inKey: [in] Incoming key structure, both private and public portions
+ * @inkeyHandle: [out] Internal TPM handle where decrypted key was loaded
+ */
+TPM_RESULT internal_TPM_LoadKey(
+  TPM_KEY *inKey,
+  TPM_KEY_HANDLE *inkeyHandle
+);
+
 /*
  * Migration ([TPM_Part3], Section 11)
  * [tpm_migration.c]
@@ -1157,6 +1359,48 @@ TPM_RESULT TPM_SHA1CompleteExtend(
 );
 
 /**
+ * tpm_verify - verifies the signature with the specified key
+ * @key: [in] key to verify the signature
+ * @auth: [in, out] Authorization protocol parameters
+ * @isInfo: [in] True if the input data is of type TPM_SIGN_INFO
+ * @data: [in] The input data
+ * @dataSize: [in] The size of the input data
+ * @sig: [in] The digital signature
+ * @sigSize: [in] The size of the digital signature
+ * Returns: TPM_SUCCESS if the signature is valid, a TPM error code otherwise.
+ */
+TPM_RESULT tpm_verify(
+  TPM_PUBKEY_DATA *key,
+  TPM_AUTH *auth,
+  BOOL isInfo,
+  BYTE *data,
+  UINT32 dataSize,
+  BYTE *sig,
+  UINT32 sigSize
+);
+
+/**
+ * tpm_sign - signs data with the specified key
+ * @key: [in] key to compute the signature
+ * @auth: [in, out] Authorization protocol parameters
+ * @isInfo: [in] True if the input data is of type TPM_SIGN_INFO
+ * @areaToSign: [in] The value to sign
+ * @areaToSignSize: [in] The size of the areaToSign parameter
+ * @sig: [out] The digital signature
+ * @sigSize: [out] The size of the digital signature
+ * Returns: TPM_SUCCESS if the signature is valid, a TPM error code otherwise.
+ */
+TPM_RESULT tpm_sign(
+  TPM_KEY_DATA *key,
+  TPM_AUTH *auth,
+  BOOL isInfo,
+  BYTE *areaToSign,
+  UINT32 areaToSignSize,
+  BYTE **sig,
+  UINT32 *sigSize
+);
+
+/**
  * TPM_Sign - signs data and provides the resulting digital signature
  * @keyHandle: [in] Handle of a loaded key that can perform digital signatures
  * @areaToSignSize: [in] The size of the areaToSign parameter 
@@ -1333,6 +1577,14 @@ TPM_RESULT TPM_CreateRevocableEK(
  */
 TPM_RESULT TPM_RevokeTrust(  
   TPM_NONCE *EKReset
+);
+
+/**
+ * tpm_get_pubek - extracts the public portion of the EK
+ * @pubEndorsementKey: [out] The public endorsement key
+ */
+TPM_RESULT tpm_get_pubek(
+  TPM_PUBKEY *pubEndorsementKey
 );
 
 /**
@@ -1914,6 +2166,79 @@ TPM_RESULT TPM_Delegate_VerifyDelegation(
   BYTE *delegation
 );
 
+/**
+ * tpm_get_family_row - returns the family row for the specified id
+ * @id: [in] family id
+ * Returns: The matching family row on success, NULL otherwise.
+ */
+TPM_FAMILY_TABLE_ENTRY *tpm_get_family_row(
+  TPM_FAMILY_ID id
+);
+
+/**
+ * tpm_get_delegate_row - returns the delegate row for the specified index
+ * @row: [in] row index
+ * Returns: The matching delegate row on success, NULL otherwise.
+ */
+TPM_DELEGATE_TABLE_ROW *tpm_get_delegate_row(
+  UINT32 row
+);
+
+/**
+ * tpm_compute_owner_blob_digest - computes the digest of an owner blob
+ * @blob: [in] Owner blob
+ * @digest: [out] Digest of the specified owner blob
+ */
+void tpm_compute_owner_blob_digest(
+  TPM_DELEGATE_OWNER_BLOB *blob,
+  TPM_DIGEST *digest
+);
+
+/**
+ * tpm_compute_key_blob_digest - computes the digest of a key blob
+ * @blob: [in] Key blob
+ * @digest: [out] Digest of the specified key blob
+ */
+void tpm_compute_key_blob_digest(
+  TPM_DELEGATE_KEY_BLOB *blob,
+  TPM_DIGEST *digest
+);
+
+/**
+ * tpm_encrypt_sensitive - encrypts a TPM_DELEGATE_SENSITIVE structure
+ * @iv: [in] IV value
+ * @iv_size: [in] Size of the IV value
+ * @sensitive: [in] structure to encrypt
+ * @enc: [out] Encrypted structure
+ * @enc_size: [out] Size of the encrypted structure
+ * Returns 0 on success, -1 otherwise.
+ */
+int tpm_encrypt_sensitive(
+  BYTE *iv,
+  UINT32 iv_size,
+  TPM_DELEGATE_SENSITIVE *sensitive,
+  BYTE **enc,
+  UINT32 *enc_size
+);
+
+/**
+ * tpm_decrypt_sensitive - decrypts a TPM_DELEGATE_SENSITIVE structure
+ * @iv: [in] IV value
+ * @iv_size: [in] Size of the IV value
+ * @enc: [in] Encrypted structure
+ * @enc_size: [in] Size of the encrypted structure
+ * @sensitive: [out] decrypted structure
+ * Returns 0 on success, -1 otherwise.
+ */
+int tpm_decrypt_sensitive(
+  BYTE *iv,
+  UINT32 iv_size,
+  BYTE *enc,
+  UINT32 enc_size,
+  TPM_DELEGATE_SENSITIVE *sensitive,
+  BYTE **buf
+);
+
 /*
  * Non-volatile Storage ([TPM_Part3], Section 20)
  * [tpm_nv_storage.c]
@@ -2028,6 +2353,14 @@ TPM_RESULT TPM_NV_ReadValueAuth(
   BYTE **data  
 );
 
+/**
+ * tpm_nv_remove_data - removes the specified data from the NV area
+ * @nv: [in] Data area to be removed
+ */
+void tpm_nv_remove_data(
+  TPM_NV_DATA_SENSITIVE *nv
+);
+
 /*
  * Session Management ([TPM_Part3], Section 21)
  * [tpm_context.c]
@@ -2093,6 +2426,23 @@ TPM_RESULT TPM_LoadContext(
   UINT32 contextSize,
   TPM_CONTEXT_BLOB *contextBlob,  
   TPM_HANDLE *handle 
+);
+
+/**
+ * tpm_get_free_session - allocates a new session
+ * @type: [in] The session type
+ * Returns: the session handle on success, TPM_INVALID_HANDLE otherwise.
+ */
+UINT32 tpm_get_free_session(
+  BYTE type
+);
+
+/**
+ * tpm_invalidate_sessions - invalidates all sessions associated with the handle
+ * @handle: [in] Session handle
+ */
+void tpm_invalidate_sessions(
+  TPM_HANDLE handle
 );
 
 /*
@@ -2420,6 +2770,12 @@ TPM_RESULT TPM_DAA_Sign(
   BYTE **outputData  
 );
 
+/**
+ * tpm_get_free_daa_session - allocates a new DAA session
+ * Returns: the session handle on success, TPM_INVALID_HANDLE otherwise.
+ */
+UINT32 tpm_get_free_daa_session(void);
+
 /*
  * Deprecated commands ([TPM_Part3], Section 28)
  * [tpm_deprecated.c]
@@ -2672,6 +3028,20 @@ TPM_RESULT TPM_CertifySelfTest(
 TPM_RESULT TPM_OwnerReadPubek(  
   TPM_AUTH *auth1,  
   TPM_PUBKEY *pubEndorsementKey 
+);
+
+/*
+ * Error handling
+ * [tpm_error.c]
+ */
+
+/**
+ * tpm_error_to_string - converts the specified error code into a string message
+ * @res: [in] Error code
+ * Returns: Human-readable description of the error code.
+ */
+const char *tpm_error_to_string(
+  TPM_RESULT res
 );
 
 #endif /* _TPM_COMMANDS_H_ */

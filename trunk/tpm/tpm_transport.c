@@ -94,8 +94,6 @@ static void transport_log_out(TPM_CURRENT_TICKS *currentTicks, BYTE parameters[2
   tpm_sha1_final(&sha1, transDigest->digest);
 }
 
-extern UINT32 tpm_get_free_session(BYTE type);
-
 TPM_RESULT TPM_EstablishTransport(TPM_KEY_HANDLE encHandle,
                                   TPM_TRANSPORT_PUBLIC *transPublic,
                                   UINT32 secretSize, BYTE *secret,
@@ -321,9 +319,6 @@ TPM_RESULT TPM_ExecuteTransport(UINT32 inWrappedCmdSize, BYTE *inWrappedCmd,
   }
   return TPM_SUCCESS;
 }
-
-extern TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
-  BYTE *areaToSign, UINT32 areaToSignSize, BYTE **sig, UINT32 *sigSize);
 
 TPM_RESULT TPM_ReleaseTransportSigned(TPM_KEY_HANDLE keyHandle,
                                       TPM_NONCE *antiReplay,

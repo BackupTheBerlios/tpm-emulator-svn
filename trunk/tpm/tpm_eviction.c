@@ -31,20 +31,6 @@
  * generic command that will evict all resource types.
  */
 
-/* invalidate all associated authorization and transport sessions */
-void invalidate_sessions(TPM_HANDLE handle)
-{
-  TPM_SESSION_DATA *session;
-  int i;
-  
-  for (i = 0; i < TPM_MAX_SESSIONS; i++) {
-    session = &tpmData.stany.data.sessions[i];
-    if ((session->type == TPM_ST_OSAP && session->handle == handle)
-        || (session->type == TPM_ST_TRANSPORT && session->handle == handle))
-      memset(session, 0, sizeof(*session));
-  }
-}
-
 TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle, 
                              TPM_RESOURCE_TYPE resourceType)
 {
@@ -72,7 +58,7 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
       if (handle == TPM_KH_SRK) return TPM_FAIL;
       tpm_rsa_release_private_key(&key->key);
       memset(key, 0, sizeof(*key));
-      invalidate_sessions(handle);
+      tpm_invalidate_sessions(handle);
       return TPM_SUCCESS;
     
     case TPM_RT_HASH:
@@ -98,7 +84,7 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
       memset(sessionDAA, 0, sizeof(*sessionDAA));
       if (handle == tpmData.stany.data.currentDAA)
         tpmData.stany.data.currentDAA = 0;
-      invalidate_sessions(handle);
+      tpm_invalidate_sessions(handle);
       return TPM_SUCCESS;
   }
   return TPM_INVALID_RESOURCE;

@@ -27,43 +27,9 @@
  * Migration ([TPM_Part3], Section 11)
  */
 
-extern int tpm_decrypt_private_key(TPM_KEY_DATA *key, BYTE *enc,
-  UINT32 enc_size, TPM_STORE_ASYMKEY *store, BYTE **buf, UINT32 *buf_size);
-
-extern int tpm_encrypt_private_key(TPM_KEY_DATA *key, TPM_STORE_ASYMKEY *store,
-                                   BYTE *enc, UINT32 *enc_size);
-
-extern int tpm_decrypt(TPM_KEY_DATA *key, BYTE *enc, UINT32 enc_size,
-                       BYTE *out, UINT32 *out_size);
-
-extern int tpm_encrypt_public(TPM_PUBKEY_DATA *key, BYTE *in,
-                              UINT32 in_size, BYTE *enc, UINT32 *enc_size);
-
-extern int tpm_compute_pubkey_digest(TPM_PUBKEY *key, TPM_DIGEST *digest);
-
-extern int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest);
-
-extern TPM_RESULT tpm_verify(TPM_PUBKEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
-  BYTE *data, UINT32 dataSize, BYTE *sig, UINT32 sigSize);
-
-extern int tpm_setup_key_parms(TPM_KEY_DATA *key, TPM_KEY_PARMS *parms);
-
-int tpm_setup_pubkey_data(TPM_PUBKEY *in, TPM_PUBKEY_DATA *out)
-{
-  out->valid = TRUE;
-  out->encScheme = in->algorithmParms.encScheme;
-  out->sigScheme = in->algorithmParms.sigScheme;
-  out->key.size = in->algorithmParms.parms.rsa.keyLength;
-  if (tpm_rsa_import_public_key(&out->key, RSA_MSB_FIRST,
-      in->pubKey.key, in->pubKey.keyLength,
-      in->algorithmParms.parms.rsa.exponent,
-      in->algorithmParms.parms.rsa.exponentSize) != 0) return -1;
-  return 0;
-}
-
-int tpm_compute_migration_digest(TPM_PUBKEY *migrationKey,
-                                 TPM_MIGRATE_SCHEME migrationScheme,
-                                 TPM_NONCE *tpmProof, TPM_DIGEST *digest)
+static int tpm_compute_migration_digest(TPM_PUBKEY *migrationKey,
+                                        TPM_MIGRATE_SCHEME migrationScheme,
+                                        TPM_NONCE *tpmProof, TPM_DIGEST *digest)
 {
   tpm_sha1_ctx_t sha1;
   UINT32 len = sizeof_TPM_PUBKEY((*migrationKey));
@@ -86,8 +52,8 @@ int tpm_compute_migration_digest(TPM_PUBKEY *migrationKey,
   return 0;
 }
 
-int tpm_verify_migration_digest(TPM_MIGRATIONKEYAUTH *migrationKeyAuth,
-                                TPM_NONCE *tpmProof)
+static int tpm_verify_migration_digest(TPM_MIGRATIONKEYAUTH *migrationKeyAuth,
+                                       TPM_NONCE *tpmProof)
 {
   TPM_DIGEST digest;
   if (tpm_compute_migration_digest(&migrationKeyAuth->migrationKey,
