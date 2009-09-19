@@ -8,7 +8,7 @@ PACKAGE_NAME   := tpm_emulator
 VERSION_MAJOR  := 0
 VERSION_MINOR  := 6
 VERSION_BUILD  := $(shell date +"%s")
-VERSION_SUFFIX := .beta
+VERSION_SUFFIX := 
 
 SUBDIRS := tpmd tpmd_dev tddl
 
