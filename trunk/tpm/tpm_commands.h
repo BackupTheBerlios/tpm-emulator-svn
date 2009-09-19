@@ -350,6 +350,7 @@ TPM_RESULT TPM_GetCapability(
  * @subCap: [in] Further definition of information
  * @setValueSize: [in] Size of the value to set
  * @setValue: [in] Value to set
+ * @auth1: [in, out] Authorization protocol parameters
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
  * Description: ([TPM_Part3], Section 7.2)
@@ -360,11 +361,13 @@ TPM_RESULT TPM_SetCapability(
   UINT32 subCapSize,
   BYTE *subCap,
   UINT32 setValueSize,
-  BYTE *setValue
+  BYTE *setValue,
+  TPM_AUTH *auth1
 );
 
 /**
  * TPM_GetCapabilityOwner (deprecated)
+ * @auth1: [in, out] Authorization protocol parameters
  * @version: [out] Properly filled out version structure
  * @non_volatile_flags: [out] Current state of the non-volatile flags
  * @volatile_flags: [out] Current state of the volatile flags
@@ -374,10 +377,10 @@ TPM_RESULT TPM_SetCapability(
  * This command is deprecated.
  */
 TPM_RESULT TPM_GetCapabilityOwner(
+  TPM_AUTH *auth1,
   TPM_VERSION *version,
   UINT32 *non_volatile_flags,
-  UINT32 *volatile_flags,
-  TPM_AUTH *auth1
+  UINT32 *volatile_flags
 );
 
 /*

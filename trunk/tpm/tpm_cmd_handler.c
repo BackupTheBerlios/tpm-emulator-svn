@@ -387,7 +387,7 @@ static TPM_RESULT execute_TPM_SetCapability(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       || tpm_unmarshal_BLOB(&ptr, &len, &setValue, setValueSize)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
-  return TPM_SetCapability(capArea, subCapSize, subCap, setValueSize, setValue);
+  return TPM_SetCapability(capArea, subCapSize, subCap, setValueSize, setValue, &req->auth1);
 }
 
 static TPM_RESULT execute_TPM_GetCapabilityOwner(TPM_REQUEST *req, TPM_RESPONSE *rsp)
@@ -401,8 +401,7 @@ static TPM_RESULT execute_TPM_GetCapabilityOwner(TPM_REQUEST *req, TPM_RESPONSE 
   /* compute parameter digest */
   tpm_compute_in_param_digest(req);
   /* execute command */
-  res = TPM_GetCapabilityOwner(&version, &non_volatile_flags, &volatile_flags, 
-    &req->auth1);
+  res = TPM_GetCapabilityOwner(&req->auth1, &version, &non_volatile_flags, &volatile_flags);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
   rsp->paramSize = len = 12;

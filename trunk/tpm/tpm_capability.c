@@ -395,9 +395,7 @@ static TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
     case TSC_ORD_PhysicalPresence:
     case TSC_ORD_ResetEstablishmentBit:
     case TPM_ORD_GetCapability:
-/* WATCH: not yet implemented
     case TPM_ORD_SetCapability:
-*/
     case TPM_ORD_GetCapabilityOwner:
     case TPM_ORD_GetAuditDigest:
     case TPM_ORD_GetAuditDigestSigned:
@@ -452,9 +450,7 @@ static TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
     case TPM_ORD_ChangeAuthOwner:
     case TPM_ORD_OIAP:
     case TPM_ORD_OSAP:
-/* WATCH: not yet implemented
     case TPM_ORD_DSAP:
-*/
     case TPM_ORD_SetOwnerPointer:
 /* WATCH: not yet implemented
     case TPM_ORD_Delegate_Manage:
@@ -533,9 +529,7 @@ static TPM_RESULT cap_pid(UINT32 subCapSize, BYTE *subCap,
     case TPM_PID_ADIP:
     case TPM_PID_ADCP:
     case TPM_PID_OWNER:
-/* WATCH: not yet implemented
     case TPM_PID_DSAP:
-*/
     case TPM_PID_TRANSPORT:
       return return_BOOL(respSize, resp, TRUE);
     default:
@@ -784,27 +778,289 @@ TPM_RESULT TPM_GetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
   }
 }
 
-TPM_RESULT TPM_SetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize, 
-                             BYTE *subCap, UINT32 setValueSize, BYTE *setValue)
+static TPM_RESULT set_perm_flags(UINT32 subCap, BOOL flag, BOOL ownerAuth,
+                                 BOOL  deactivated, BOOL disabled)
 {
-  info("TPM_SetCapability() not implemented yet");
-  /* TODO: implement TPM_SetCapability() */
-  return TPM_FAIL;
+  switch (subCap) {
+    case 1:
+      if (!ownerAuth && !tpm_get_physical_presence()) return TPM_AUTHFAIL;
+      tpmData.permanent.flags.disable = flag;
+      return TPM_SUCCESS;
+
+    case 2:
+      if (!tpm_get_physical_presence()) return TPM_AUTHFAIL;
+      if (tpmData.permanent.flags.owned) return TPM_OWNER_SET;
+      if (deactivated) return TPM_DEACTIVATED;
+      if (disabled) return TPM_DISABLED;
+      tpmData.permanent.flags.ownership = flag;
+      return TPM_SUCCESS;
+
+    case 3:
+      if (!tpm_get_physical_presence()) return TPM_AUTHFAIL;
+      if (disabled) return TPM_DISABLED;
+      tpmData.permanent.flags.deactivated = flag;
+      return TPM_SUCCESS;
+
+    case 4:
+      if (!ownerAuth) return TPM_AUTHFAIL;
+      if (deactivated) return TPM_DEACTIVATED;
+      if (disabled) return TPM_DISABLED;
+      tpmData.permanent.flags.readPubek = flag;
+      return TPM_SUCCESS;
+
+    case 5:
+      if (!ownerAuth) return TPM_AUTHFAIL;
+      if (deactivated) return TPM_DEACTIVATED;
+      if (disabled) return TPM_DISABLED;
+      if (flag == FALSE) return TPM_BAD_PARAMETER;
+      tpmData.permanent.flags.disableOwnerClear = TRUE;
+      return TPM_SUCCESS;
+
+    case 6:
+      if (!ownerAuth) return TPM_AUTHFAIL;
+      if (deactivated) return TPM_DEACTIVATED;
+      if (disabled) return TPM_DISABLED;
+      if (flag == TRUE) return TPM_BAD_PARAMETER;
+      tpmData.permanent.flags.allowMaintenance = FALSE;
+      return TPM_SUCCESS;
+
+    case 17:
+      if (!ownerAuth) return TPM_AUTHFAIL;
+      if (deactivated) return TPM_DEACTIVATED;
+      if (disabled) return TPM_DISABLED;
+      tpmData.permanent.flags.readSRKPub = flag;
+      return TPM_SUCCESS;
+
+    case 18:
+      if (tpmData.stany.flags.localityModifier
+          & (TPM_LOC_THREE | TPM_LOC_FOUR)) return TPM_BAD_LOCALITY;
+      if (flag == TRUE)  return TPM_BAD_PARAMETER;
+      tpmData.permanent.flags.tpmEstablished = FALSE;
+      return TPM_SUCCESS;
+
+    case 20:
+      if (!ownerAuth) return TPM_AUTHFAIL;
+      tpmData.permanent.flags.disableFullDALogicInfo = flag;
+      return TPM_SUCCESS;
+  }
+  return TPM_BAD_PARAMETER;
 }
 
-TPM_RESULT TPM_GetCapabilityOwner(TPM_VERSION *version, 
+static TPM_RESULT set_stclear_flags(UINT32 subCap, BOOL flag, BOOL ownerAuth,
+                                    BOOL  deactivated, BOOL disabled)
+{
+  switch (subCap) {
+    case 2:
+      if (deactivated) return TPM_DEACTIVATED;
+      if (disabled) return TPM_DISABLED;
+      if (flag == FALSE)  return TPM_BAD_PARAMETER;
+      tpmData.stclear.flags.disableForceClear = TRUE;
+      return TPM_SUCCESS;
+  }
+  return TPM_BAD_PARAMETER;
+}
+
+static TPM_RESULT set_stany_flags(UINT32 subCap, BOOL flag, BOOL ownerAuth,
+                                  BOOL deactivated, BOOL disabled)
+{
+    switch (subCap) {
+      case 2:
+        if (tpmData.stany.flags.localityModifier
+            & (TPM_LOC_THREE | TPM_LOC_FOUR)) return TPM_BAD_LOCALITY;
+        if (deactivated) return TPM_DEACTIVATED;
+        if (disabled) return TPM_DISABLED;
+        if (flag == TRUE)  return TPM_BAD_PARAMETER;
+        tpmData.stany.flags.TOSPresent = FALSE;
+        return TPM_SUCCESS;
+    }
+    return TPM_BAD_PARAMETER;
+}
+
+static TPM_RESULT set_perm_data(UINT32 subCap, BYTE *setValue,
+                                UINT32 setValueSize, BOOL ownerAuth,
+                                BOOL deactivated, BOOL disabled)
+{
+  TPM_CMK_DELEGATE del;
+  TPM_NONCE nonce;
+  switch (subCap) {
+    case 23:
+      if (!ownerAuth) return TPM_AUTHFAIL;
+      if (deactivated) return TPM_DEACTIVATED;
+      if (disabled) return TPM_DISABLED;
+      if  (tpm_unmarshal_TPM_CMK_DELEGATE(&setValue, &setValueSize, &del) != 0)
+        return TPM_BAD_PARAMETER;
+      tpmData.permanent.data.restrictDelegate = del;
+      return TPM_SUCCESS;
+
+    case 25:
+      if (!ownerAuth) return TPM_AUTHFAIL;
+      if  (tpm_unmarshal_TPM_NONCE(&setValue, &setValueSize, &nonce) != 0)
+        return TPM_BAD_PARAMETER;
+      memcpy(&tpmData.permanent.data.daaProof, &nonce, sizeof(TPM_NONCE));
+      return TPM_SUCCESS;
+
+  }
+  return TPM_BAD_PARAMETER;
+}
+
+static TPM_RESULT set_stclear_data(UINT32 subCap, BYTE *setValue,
+                                   UINT32 setValueSize, BOOL ownerAuth,
+                                   BOOL deactivated, BOOL disabled)
+{
+  UINT32 presence;
+  switch (subCap) {
+    case 23:
+      if  (tpm_unmarshal_UINT32(&setValue, &setValueSize, &presence) != 0)
+        return TPM_BAD_PARAMETER;
+      /* without physical presence we are only allowed to disable bits */
+      if (((tpmData.stclear.data.deferredPhysicalPresence | presence)
+           != tpmData.stclear.data.deferredPhysicalPresence)
+          && !tpm_get_physical_presence()) return TPM_BAD_PARAMETER;
+      tpmData.stclear.data.deferredPhysicalPresence = presence;
+      return TPM_SUCCESS;
+  }
+  return TPM_BAD_PARAMETER;
+}
+
+static TPM_RESULT set_stany_data(UINT32 subCap, BYTE *setValue,
+                                 UINT32 setValueSize, BOOL ownerAuth,
+                                 BOOL deactivated, BOOL disabled)
+{
+  return TPM_BAD_PARAMETER;
+}
+
+static TPM_RESULT set_vendor(UINT32 subCap, BYTE *setValue,
+                             UINT32 setValueSize, BOOL ownerAuth,
+                             BOOL deactivated, BOOL disabled)
+{
+  /* set the capability area with the specified data, on failure
+     deactivate the TPM */
+  switch (subCap) {
+    case TPM_SET_PERM_FLAGS:
+      debug("[TPM_SET_PERM_FLAGS]");
+      if (tpm_unmarshal_TPM_PERMANENT_FLAGS(&setValue, &setValueSize,
+          &tpmData.permanent.flags) != 0) {
+        tpmData.stclear.flags.deactivated = TRUE;
+        return TPM_BAD_PARAMETER;
+      }
+      return TPM_SUCCESS;
+
+    case TPM_SET_STCLEAR_FLAGS:
+      debug("[TPM_SET_STCLEAR_FLAGS]");
+      if (tpm_unmarshal_TPM_STCLEAR_FLAGS(&setValue, &setValueSize,
+          &tpmData.stclear.flags) != 0) {
+        tpmData.stclear.flags.deactivated = TRUE;
+        return TPM_BAD_PARAMETER;
+      }
+      return TPM_SUCCESS;
+
+    case TPM_SET_STANY_FLAGS:
+      debug("[TPM_SET_STANY_FLAGS]");
+      if (tpm_unmarshal_TPM_STANY_FLAGS(&setValue, &setValueSize,
+          &tpmData.stany.flags) != 0) {
+        tpmData.stclear.flags.deactivated = TRUE;
+        return TPM_BAD_PARAMETER;
+      }
+      return TPM_SUCCESS;
+
+    case TPM_SET_PERM_DATA:
+      debug("[TPM_SET_PERM_DATA]");
+      if (tpm_unmarshal_TPM_PERMANENT_DATA(&setValue, &setValueSize,
+          &tpmData.permanent.data) != 0) {
+        tpmData.stclear.flags.deactivated = TRUE;
+        return TPM_BAD_PARAMETER;
+      }
+      return TPM_SUCCESS;
+
+    case TPM_SET_STCLEAR_DATA:
+      debug("[TPM_SET_STCLEAR_DATA]");
+      if (tpm_unmarshal_TPM_STCLEAR_DATA(&setValue, &setValueSize,
+          &tpmData.stclear.data) != 0) {
+        tpmData.stclear.flags.deactivated = TRUE;
+        return TPM_BAD_PARAMETER;
+      }
+      return TPM_SUCCESS;
+
+    case TPM_SET_STANY_DATA:
+      debug("[TPM_SET_STANY_DATA]");
+      if (tpm_unmarshal_TPM_STANY_DATA(&setValue, &setValueSize,
+          &tpmData.stany.data) != 0) {
+        tpmData.stclear.flags.deactivated = TRUE;
+        return TPM_BAD_PARAMETER;
+      }
+      return TPM_SUCCESS;
+  }
+  return TPM_BAD_PARAMETER;
+}
+
+TPM_RESULT TPM_SetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize, 
+                             BYTE *subCap, UINT32 setValueSize, BYTE *setValue,
+                             TPM_AUTH *auth1)
+{
+  TPM_RESULT res;
+  BOOL ownerAuth = FALSE;
+  UINT32 subCapVal;
+  BOOL deactivated = tpmData.permanent.flags.deactivated
+                     || tpmData.stclear.flags.deactivated;
+  BOOL disabled = tpmData.permanent.flags.disable;
+
+  info("TPM_SetCapability()");
+  /* verify owner authorization if TPM_TAG_RQU_AUTH1_COMMAND */
+  if (auth1->authHandle != TPM_INVALID_HANDLE) {
+    res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
+    if (res != TPM_SUCCESS) return res;
+    ownerAuth = TRUE;
+  }
+  /* unmarshal subCap */
+  if (tpm_unmarshal_UINT32(&subCap, &subCapSize, &subCapVal) != 0)
+    return TPM_BAD_PARAMETER;
+  /* set capability area */
+  switch (capArea) {
+    case TPM_SET_PERM_FLAGS:
+      debug("[TPM_SET_PERM_FLAGS]:%d", subCap);
+      if (setValueSize != 1 || setValue[0] & 0xfe) return TPM_BAD_PARAMETER;
+      return set_perm_flags(subCapVal, setValue[0], ownerAuth,
+                            deactivated, disabled);
+    case TPM_SET_STCLEAR_FLAGS:
+      debug("[TPM_SET_STCLEAR_FLAGS]:%d", subCap);
+      if (setValueSize != 1 || setValue[0] & 0xfe) return TPM_BAD_PARAMETER;
+      return set_stclear_flags(subCapVal, setValue[0], ownerAuth,
+                               deactivated, disabled);
+    case TPM_SET_STANY_FLAGS:
+      debug("[TPM_SET_STANY_FLAGS]:%d", subCap);
+      if (setValueSize != 1 || setValue[0] & 0xfe) return TPM_BAD_PARAMETER;
+      return set_stany_flags(subCapVal, setValue[0], ownerAuth,
+                             deactivated, disabled);
+    case TPM_SET_PERM_DATA:
+      debug("[TPM_SET_PERM_DATA]:%d", subCap);
+      return set_perm_data(subCapVal, setValue, setValueSize, ownerAuth,
+                           deactivated, disabled);
+    case TPM_SET_STCLEAR_DATA:
+      debug("[TPM_SET_STCLEAR_DATA]:%d", subCap);
+      return set_stclear_data(subCapVal, setValue, setValueSize, ownerAuth,
+                              deactivated, disabled);
+    case TPM_SET_STANY_DATA:
+      debug("[TPM_SET_STANY_DATA]:%d", subCap);
+      return set_stany_data(subCapVal, setValue, setValueSize, ownerAuth,
+                            deactivated, disabled);
+    case TPM_SET_VENDOR:
+      debug("[TPM_SET_VENDOR]");
+      return set_vendor(subCapVal, setValue, setValueSize, ownerAuth,
+                        deactivated, disabled);
+  }
+  return TPM_BAD_PARAMETER;
+}
+
+TPM_RESULT TPM_GetCapabilityOwner(TPM_AUTH *auth1, TPM_VERSION *version,
                                   UINT32 *non_volatile_flags, 
-                                  UINT32 *volatile_flags, 
-                                  TPM_AUTH *auth1)
+                                  UINT32 *volatile_flags)
 {
   TPM_RESULT res;
   
   info("TPM_GetCapabilityOwner()");
-  
-  /* Verify owner authorization */
+  /* verify owner authorization */
   res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
   if (res != TPM_SUCCESS) return res;
-  
   /* initialize */
   *version = tpmData.permanent.data.version;
   *non_volatile_flags = *volatile_flags = 0;
@@ -848,6 +1104,8 @@ TPM_RESULT TPM_GetCapabilityOwner(TPM_VERSION *version,
     *non_volatile_flags |= (1 << 17);
   if (tpmData.permanent.flags.maintenanceDone)
     *non_volatile_flags |= (1 << 18);
+  if (tpmData.permanent.flags.disableFullDALogicInfo)
+    *non_volatile_flags |= (1 << 19);
   
   /* set volatile flags */
   if (tpmData.stclear.flags.deactivated)
