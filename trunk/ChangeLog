@@ -1,3 +1,26 @@
+2009-09-19  Mario Strasser <mast@gmx.net>
+	* tpm_capability.c: TPM_SetCapability() added
+	* tpm_capability.c: TPM_GetCapability() completed
+	* ChangeLog: changelog updated
+
+
+2009-09-18  Mario Strasser <mast@gmx.net>
+	* tpm_commands.h: declarations and descriptions of internal
+		functions added
+
+
+2009-09-17  Mario Strasser <mast@gmx.net>
+	* tpm_authorization.c: DSAP support added
+
+
+2009-08-28  Mario Strasser <mast@gmx.net>
+	* tpm_migration.c: CMK handling completed
+	* tpm_owner.c: TPM_OwnerClear() updated
+	* all: code cleanup, obsolete code removed
+	* tpm_capability.c: capability support revised
+	* tpm_commands.h: missing parameter added
+
+
 2009-08-27  Mario Strasser <mast@gmx.net>
 	* tpm_structures.h: structures updated and completed
 	* all: major revision number incremented to 6 due to changes in the
