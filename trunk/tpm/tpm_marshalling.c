@@ -1722,6 +1722,8 @@ int tpm_marshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA *v
       || tpm_marshal_TPM_SECRET(ptr, length, &v->sharedSecret)
       || tpm_marshal_TPM_HANDLE(ptr, length, v->handle)
       || tpm_marshal_TPM_ENTITY_TYPE(ptr, length, v->entityType)
+      || (v->type == TPM_ST_DSAP
+          && tpm_marshal_TPM_DELEGATIONS(ptr, length, &v->permissions))
       || (v->type == TPM_ST_TRANSPORT 
           && tpm_marshal_TPM_TRANSPORT_INTERNAL(ptr, length, &v->transInternal))) return -1;
   return 0;
@@ -1735,6 +1737,8 @@ int tpm_unmarshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA 
       || tpm_unmarshal_TPM_SECRET(ptr, length, &v->sharedSecret)
       || tpm_unmarshal_TPM_HANDLE(ptr, length, &v->handle)
       || tpm_unmarshal_TPM_ENTITY_TYPE(ptr, length, &v->entityType)
+      || (v->type == TPM_ST_DSAP
+          && tpm_unmarshal_TPM_DELEGATIONS(ptr, length, &v->permissions))
       || (v->type == TPM_ST_TRANSPORT 
           && tpm_unmarshal_TPM_TRANSPORT_INTERNAL(ptr, length, &v->transInternal))) return -1;
   return 0;
@@ -1810,11 +1814,14 @@ int tpm_unmarshal_TPM_REQUEST(BYTE **ptr, UINT32 *length, TPM_REQUEST *v)
     if (tpm_unmarshal_BLOB(ptr, length, &v->param, v->paramSize)
         || tpm_unmarshal_TPM_AUTH(ptr, length, &v->auth1)
         || tpm_unmarshal_TPM_AUTH(ptr, length, &v->auth2)) return -1;
+    v->auth1.ordinal = v->ordinal;
+    v->auth2.ordinal = v->ordinal;
   } else if (v->tag == TPM_TAG_RQU_AUTH1_COMMAND) {
     if (*length < 45) return -1;
     v->paramSize = *length - 45;
     if (tpm_unmarshal_BLOB(ptr, length, &v->param, v->paramSize)
         || tpm_unmarshal_TPM_AUTH(ptr, length, &v->auth1)) return -1;
+    v->auth1.ordinal = v->ordinal;
     v->auth2.authHandle = TPM_INVALID_HANDLE;
   } else {
     v->auth1.authHandle = TPM_INVALID_HANDLE;

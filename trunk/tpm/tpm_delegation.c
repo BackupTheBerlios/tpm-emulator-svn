@@ -110,7 +110,7 @@ int tpm_decrypt_sensitive(BYTE *iv, UINT32 iv_size, BYTE *enc, UINT32 enc_size,
   *buf = ptr = tpm_malloc(len);
   if (*buf == NULL) return -1;
   /* decrypt context */
-  memcpy(key, tpmData.permanent.data.contextKey, TPM_SYM_KEY_SIZE);
+  memcpy(key, tpmData.permanent.data.delegateKey, TPM_SYM_KEY_SIZE);
   memcpy(&key[TPM_SYM_KEY_SIZE], iv, iv_size);
   tpm_rc4_init(&rc4_ctx, key, sizeof(key));
   tpm_rc4_crypt(&rc4_ctx, enc, *buf, enc_size);

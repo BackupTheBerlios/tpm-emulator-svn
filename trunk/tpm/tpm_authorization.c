@@ -248,7 +248,7 @@ TPM_RESULT TPM_DSAP(TPM_ENTITY_TYPE entityType, TPM_KEY_HANDLE keyHandle,
   TPM_FAMILY_TABLE_ENTRY *fr;
   info("TPM_DSAP()");
   /* get a free session if any is left */
-  *authHandle = tpm_get_free_session(TPM_ST_OSAP);
+  *authHandle = tpm_get_free_session(TPM_ST_DSAP);
   session = tpm_get_auth(*authHandle);
   if (session == NULL) return TPM_RESOURCES;
   debug("entityType = %04x, entityValueSize = %04x", entityType, entityValueSize);
@@ -283,6 +283,7 @@ TPM_RESULT TPM_DSAP(TPM_ENTITY_TYPE entityType, TPM_KEY_HANDLE keyHandle,
       return TPM_BAD_DELEGATE;
     }
     memcpy(&secret, &sens.authValue, sizeof(TPM_SECRET));
+    memcpy(&session->permissions, &blob.pub.permissions, sizeof(TPM_DELEGATIONS));
     tpm_free(sens_buf);
   } else if (entityType == TPM_ET_DEL_ROW) {
     UINT32 row;
@@ -297,6 +298,7 @@ TPM_RESULT TPM_DSAP(TPM_ENTITY_TYPE entityType, TPM_KEY_HANDLE keyHandle,
     if (!(fr->flags & TPM_FAMFLAG_ENABLED)) return TPM_DISABLED_CMD;
     if (fr->verificationCount != dr->pub.verificationCount) return TPM_FAIL;
     memcpy(&secret, dr->authValue, sizeof(TPM_SECRET));
+    memcpy(&session->permissions, &dr->pub.permissions, sizeof(TPM_DELEGATIONS));
   } else if (entityType == TPM_ET_DEL_KEY_BLOB) {
     TPM_DELEGATE_KEY_BLOB blob;
     TPM_DELEGATE_SENSITIVE sens;
@@ -344,6 +346,7 @@ TPM_RESULT TPM_DSAP(TPM_ENTITY_TYPE entityType, TPM_KEY_HANDLE keyHandle,
      return TPM_BAD_DELEGATE;
    }
    memcpy(&secret, &sens.authValue, sizeof(TPM_SECRET));
+   memcpy(&session->permissions, &blob.pub.permissions, sizeof(TPM_DELEGATIONS));
    tpm_free(sens_buf);
   } else {
     return TPM_BAD_PARAMETER;
@@ -368,6 +371,142 @@ TPM_RESULT TPM_SetOwnerPointer(TPM_ENTITY_TYPE entityType, UINT32 entityValue)
   return TPM_DISABLED_CMD;
 }
 
+#define IS_SET(val, mask) (((val) & (mask)) == (mask))
+
+static BOOL is_owner_delegation_permitted(TPM_COMMAND_CODE ordinal,
+                                          UINT32 per1, UINT32 per2)
+{
+  switch (ordinal) {
+    case TPM_ORD_SetOrdinalAuditStatus:
+      return IS_SET(per1, TPM_DELEGATE_SetOrdinalAuditStatus);
+    case TPM_ORD_DirWriteAuth:
+      return IS_SET(per1, TPM_DELEGATE_DirWriteAuth);
+    case TPM_ORD_CMK_ApproveMA:
+      return IS_SET(per1, TPM_DELEGATE_CMK_ApproveMA);
+    case TPM_ORD_NV_WriteValue:
+      return IS_SET(per1, TPM_DELEGATE_NV_WriteValue);
+    case TPM_ORD_CMK_CreateTicket:
+      return IS_SET(per1, TPM_DELEGATE_CMK_CreateTicket);
+    case TPM_ORD_NV_ReadValue:
+      return IS_SET(per1, TPM_DELEGATE_NV_ReadValue);
+    case TPM_ORD_Delegate_LoadOwnerDelegation:
+      return IS_SET(per1, TPM_DELEGATE_Delegate_LoadOwnerDelegation);
+    case TPM_ORD_DAA_Join:
+      return IS_SET(per1, TPM_DELEGATE_DAA_Join);
+    case TPM_ORD_AuthorizeMigrationKey:
+      return IS_SET(per1, TPM_DELEGATE_AuthorizeMigrationKey);
+    case TPM_ORD_CreateMaintenanceArchive:
+      return IS_SET(per1, TPM_DELEGATE_CreateMaintenanceArchive);
+    case TPM_ORD_LoadMaintenanceArchive:
+      return IS_SET(per1, TPM_DELEGATE_LoadMaintenanceArchive);
+    case TPM_ORD_KillMaintenanceFeature:
+      return IS_SET(per1, TPM_DELEGATE_KillMaintenanceFeature);
+    case TPM_ORD_OwnerReadInternalPub:
+      return IS_SET(per1, TPM_DELEGATE_OwnerReadInternalPub);
+    case TPM_ORD_ResetLockValue:
+      return IS_SET(per1, TPM_DELEGATE_ResetLockValue);
+    case TPM_ORD_OwnerClear:
+      return IS_SET(per1, TPM_DELEGATE_OwnerClear);
+    case TPM_ORD_DisableOwnerClear:
+      return IS_SET(per1, TPM_DELEGATE_DisableOwnerClear);
+    case TPM_ORD_NV_DefineSpace:
+      return IS_SET(per1, TPM_DELEGATE_NV_DefineSpace);
+    case TPM_ORD_OwnerSetDisable:
+      return IS_SET(per1, TPM_DELEGATE_OwnerSetDisable);
+    case TPM_ORD_SetCapability:
+      return IS_SET(per1, TPM_DELEGATE_SetCapability);
+    case TPM_ORD_MakeIdentity:
+      return IS_SET(per1, TPM_DELEGATE_MakeIdentity);
+    case TPM_ORD_ActivateIdentity:
+      return IS_SET(per1, TPM_DELEGATE_ActivateIdentity);
+    case TPM_ORD_OwnerReadPubek:
+      return IS_SET(per1, TPM_DELEGATE_OwnerReadPubek);
+    case TPM_ORD_DisablePubekRead:
+      return IS_SET(per1, TPM_DELEGATE_DisablePubekRead);
+    case TPM_ORD_SetRedirection:
+      return IS_SET(per1, TPM_DELEGATE_SetRedirection);
+    case TPM_ORD_FieldUpgrade:
+      return IS_SET(per1, TPM_DELEGATE_FieldUpgrade);
+    case TPM_ORD_Delegate_UpdateVerification:
+      return IS_SET(per1, TPM_DELEGATE_Delegate_UpdateVerification);
+    case TPM_ORD_CreateCounter:
+      return IS_SET(per1, TPM_DELEGATE_CreateCounter);
+    case TPM_ORD_ReleaseCounterOwner:
+      return IS_SET(per1, TPM_DELEGATE_ReleaseCounterOwner);
+    case TPM_ORD_Delegate_Manage:
+      return IS_SET(per1, TPM_DELEGATE_Delegate_Manage);
+    case TPM_ORD_Delegate_CreateOwnerDelegation:
+      return IS_SET(per1, TPM_DELEGATE_Delegate_CreateOwnerDelegation);
+    case TPM_ORD_DAA_Sign:
+      return IS_SET(per1, TPM_DELEGATE_DAA_Sign);
+  }
+  return FALSE;
+}
+
+static BOOL is_key_delegation_permitted(TPM_COMMAND_CODE ordinal,
+                                        UINT32 per1, UINT32 per2)
+{
+  switch (ordinal) {
+    case TPM_ORD_CMK_ConvertMigration:
+      return IS_SET(per1, TPM_KEY_DELEGATE_CMK_ConvertMigration);
+    case TPM_ORD_TickStampBlob:
+      return IS_SET(per1, TPM_KEY_DELEGATE_TickStampBlob);
+    case TPM_ORD_ChangeAuthAsymStart:
+      return IS_SET(per1, TPM_KEY_DELEGATE_ChangeAuthAsymStart);
+    case TPM_ORD_ChangeAuthAsymFinish:
+      return IS_SET(per1, TPM_KEY_DELEGATE_ChangeAuthAsymFinish);
+    case TPM_ORD_CMK_CreateKey:
+      return IS_SET(per1, TPM_KEY_DELEGATE_CMK_CreateKey);
+    case TPM_ORD_MigrateKey:
+      return IS_SET(per1, TPM_KEY_DELEGATE_MigrateKey);
+    case TPM_ORD_LoadKey2:
+      return IS_SET(per1, TPM_KEY_DELEGATE_LoadKey2);
+    case TPM_ORD_EstablishTransport:
+      return IS_SET(per1, TPM_KEY_DELEGATE_EstablishTransport);
+    case TPM_ORD_ReleaseTransportSigned:
+      return IS_SET(per1, TPM_KEY_DELEGATE_ReleaseTransportSigned);
+    case TPM_ORD_Quote2:
+      return IS_SET(per1, TPM_KEY_DELEGATE_Quote2);
+    case TPM_ORD_Sealx:
+      return IS_SET(per1, TPM_KEY_DELEGATE_Sealx);
+    case TPM_ORD_MakeIdentity:
+      return IS_SET(per1, TPM_KEY_DELEGATE_MakeIdentity);
+    case TPM_ORD_ActivateIdentity:
+      return IS_SET(per1, TPM_KEY_DELEGATE_ActivateIdentity);
+    case TPM_ORD_GetAuditDigestSigned:
+      return IS_SET(per1, TPM_KEY_DELEGATE_GetAuditDigestSigned);
+    case TPM_ORD_Sign:
+      return IS_SET(per1, TPM_KEY_DELEGATE_Sign);
+    case TPM_ORD_CertifyKey2:
+      return IS_SET(per1, TPM_KEY_DELEGATE_CertifyKey2);
+    case TPM_ORD_CertifyKey:
+      return IS_SET(per1, TPM_KEY_DELEGATE_CertifyKey);
+    case TPM_ORD_CreateWrapKey:
+      return IS_SET(per1, TPM_KEY_DELEGATE_CreateWrapKey);
+    case TPM_ORD_CMK_CreateBlob:
+      return IS_SET(per1, TPM_KEY_DELEGATE_CMK_CreateBlob);
+    case TPM_ORD_CreateMigrationBlob:
+      return IS_SET(per1, TPM_KEY_DELEGATE_CreateMigrationBlob);
+    case TPM_ORD_ConvertMigrationBlob:
+      return IS_SET(per1, TPM_KEY_DELEGATE_ConvertMigrationBlob);
+    case TPM_ORD_Delegate_CreateKeyDelegation:
+      return IS_SET(per1, TPM_KEY_DELEGATE_Delegate_CreateKeyDelegation);
+    case TPM_ORD_ChangeAuth:
+      return IS_SET(per1, TPM_KEY_DELEGATE_ChangeAuth);
+    case TPM_ORD_GetPubKey:
+      return IS_SET(per1, TPM_KEY_DELEGATE_GetPubKey);
+    case TPM_ORD_Quote:
+      return IS_SET(per1, TPM_KEY_DELEGATE_Quote);
+    case TPM_ORD_Unseal:
+      return IS_SET(per1, TPM_KEY_DELEGATE_Unseal);
+    case TPM_ORD_Seal:
+      return IS_SET(per1, TPM_KEY_DELEGATE_Seal);
+    case TPM_ORD_LoadKey:
+      return IS_SET(per1, TPM_KEY_DELEGATE_LoadKey);
+  }
+  return FALSE;
+}
+
 TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
                            TPM_HANDLE handle)
 {
@@ -390,6 +529,22 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
   } else if (session->type == TPM_ST_OSAP) {
     debug("[TPM_ST_OSAP]");
     if (session->handle != handle) return TPM_AUTHFAIL;
+  } else if (session->type == TPM_ST_OSAP) {
+    debug("[TPM_ST_DSAP]");
+    if (session->handle != handle) return TPM_AUTHFAIL;
+    /* check permissions */
+    debug("delegation type = %d", session->permissions.delegateType);
+    if (session->permissions.delegateType == TPM_DEL_OWNER_BITS) {
+      if (!is_owner_delegation_permitted(auth->ordinal,
+             session->permissions.per1, session->permissions.per2))
+        return TPM_DISABLED_CMD;
+    } else if (session->permissions.delegateType == TPM_DEL_KEY_BITS) {
+      if (!is_key_delegation_permitted(auth->ordinal,
+             session->permissions.per1, session->permissions.per2))
+        return TPM_DISABLED_CMD;
+    } else {
+      return TPM_AUTHFAIL;
+    }
   } else if (session->type == TPM_ST_TRANSPORT) {
     debug("[TPM_ST_TRANSPORT]");
     memcpy(session->sharedSecret, secret, sizeof(TPM_SECRET));

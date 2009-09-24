@@ -1021,6 +1021,7 @@ typedef struct tdTPM_AUTH {
   /* additional NOT marshalled parameters */
   TPM_SECRET *secret;
   BYTE digest[20];
+  TPM_COMMAND_CODE ordinal;
 } TPM_AUTH;
 
 /*
@@ -2269,9 +2270,12 @@ typedef struct tdTPM_SESSION_DATA {
   TPM_SECRET sharedSecret;
   TPM_HANDLE handle;
   TPM_ENTITY_TYPE entityType;
+  TPM_DELEGATIONS permissions;
   TPM_TRANSPORT_INTERNAL transInternal;
 } TPM_SESSION_DATA;
 #define sizeof_TPM_SESSION_DATA(s) (1 + 3*20 + 4 + 2 \
+  + ((s.type == TPM_ST_DSAP) ? \
+     sizeof_TPM_DELEGATIONS(s.delegations) : 0) \
   + ((s.type == TPM_ST_TRANSPORT) ? \
      sizeof_TPM_TRANSPORT_INTERNAL(s.transInternal) : 0))
 
