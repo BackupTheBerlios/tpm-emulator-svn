@@ -130,6 +130,9 @@ void tpm_init_data(void)
   /* set TPM vision */
   memcpy(&tpmData.permanent.data.version, 
          &tpm_version, sizeof(TPM_VERSION));
+  /* seed PRNG */
+  tpm_get_extern_random_bytes(&tpmData.permanent.data.rngState,
+    sizeof(tpmData.permanent.data.rngState));
   /* setup PCR attributes */
   for (i = 0; i < tpm_min(16, TPM_NUM_PCR); i++) {
     init_pcr_attr(i, FALSE, 0x00, 0x1f);

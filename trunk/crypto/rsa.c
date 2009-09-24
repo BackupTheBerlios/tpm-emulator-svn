@@ -16,6 +16,7 @@
 
 #include "rsa.h"
 #include "sha1.h"
+#include "tpm/tpm_commands.h"
 
 static int rsa_public(tpm_rsa_public_key_t *key, 
                       const uint8_t *in, size_t in_len, uint8_t *out)

@@ -21,6 +21,7 @@
 #include "tpm_handles.h"
 #include "crypto/sha1.h"
 #include "crypto/hmac.h"
+#include "crypto/rc4.h"
 #include "tpm_marshalling.h"
 
 /*
@@ -198,6 +199,20 @@ TPM_RESULT TPM_Sign(TPM_KEY_HANDLE keyHandle, UINT32 areaToSignSize,
   return tpm_sign(key, auth1, FALSE, areaToSign, areaToSignSize, sig, sigSize);
 }
 
+void tpm_get_random_bytes(void *buf, size_t nbytes)
+{
+#ifdef TPM_USE_INTERNAL_PRNG
+  tpm_rc4_ctx_t ctx;
+  tpm_rc4_init(&ctx, tpmData.permanent.data.rngState,
+    sizeof(tpmData.permanent.data.rngState));
+  tpm_rc4_crypt(&ctx, buf, buf, nbytes);
+  tpm_rc4_crypt(&ctx, tpmData.permanent.data.rngState,
+    tpmData.permanent.data.rngState, sizeof(tpmData.permanent.data.rngState));
+#else
+  tpm_get_extern_random_bytes(buf, nbytes);
+#endif
+}
+
 TPM_RESULT TPM_GetRandom(UINT32 bytesRequested, UINT32 *randomBytesSize, 
                          BYTE **randomBytes)
 {
@@ -212,7 +227,16 @@ TPM_RESULT TPM_GetRandom(UINT32 bytesRequested, UINT32 *randomBytesSize,
 TPM_RESULT TPM_StirRandom(UINT32 dataSize, BYTE *inData)
 {
   info("TPM_StirRandom()");
-  /* nothing to do */
+  UINT32 i, length = sizeof(tpmData.permanent.data.rngState);
+  while (dataSize > length) {
+    for (i = 0; i < length; i++) {
+        tpmData.permanent.data.rngState[i] ^= *inData++;
+    }
+    dataSize -= length;
+  }
+  for (i = 0; i < dataSize; i++) {
+    tpmData.permanent.data.rngState[i] ^= *inData++;
+  }
   return TPM_SUCCESS;
 }
 

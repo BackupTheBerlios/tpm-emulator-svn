@@ -1426,6 +1426,16 @@ TPM_RESULT TPM_Sign(
 );
 
 /**
+ * tpm_get_random_bytes - provides the requested amount of random bytes
+ * @buf: [out] buffer to fill with random data
+ * @nbytes: [in] requested number of random bytes
+ */
+void tpm_get_random_bytes(
+  void *buf,
+  size_t nbytes
+);
+
+/**
  * TPM_GetRandom - provides the next bytes from the RNG
  * @bytesRequested: [in] Number of bytes to return
  * @randomBytesSize: [out] The number of bytes returned 

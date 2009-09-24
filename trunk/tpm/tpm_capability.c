@@ -883,6 +883,16 @@ static TPM_RESULT set_perm_data(UINT32 subCap, BYTE *setValue,
   TPM_CMK_DELEGATE del;
   TPM_NONCE nonce;
   switch (subCap) {
+
+#ifdef TPM_ENABLE_PRNG_STATE_SETTING
+    case 16:
+      if (setValueSize != sizeof(tpmData.permanent.data.rngState))
+        return TPM_BAD_PARAMETER;
+      memcpy(&tpmData.permanent.data.rngState, setValue, setValueSize);
+      return TPM_SUCCESS;
+#endif /* TPM_ENABLE_PRNG_STATE_SETTING */
+
+
     case 23:
       if (!ownerAuth) return TPM_AUTHFAIL;
       if (deactivated) return TPM_DEACTIVATED;

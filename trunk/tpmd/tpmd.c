@@ -63,7 +63,7 @@ void tpm_log(int priority, const char *fmt, ...)
     va_end(bp);
 }
 
-void tpm_get_random_bytes(void *buf, size_t nbytes)
+void tpm_get_extern_random_bytes(void *buf, size_t nbytes)
 {
     uint8_t *p = (uint8_t*)buf;
     ssize_t res;

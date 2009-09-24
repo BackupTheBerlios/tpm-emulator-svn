@@ -33,6 +33,8 @@
 #undef  TPM_GENERATE_EK
 #undef  TPM_GENERATE_SEED_DAA
 #undef  TPM_MEMORY_ALIGNMENT_MANDATORY
+#undef  TPM_USE_INTERNAL_PRNG
+#undef  TPM_ENABLE_PRNG_STATE_SETTING
 
 /* log macros */
 
@@ -68,7 +70,7 @@ static inline void tpm_free(/*const*/ void *ptr)
 
 /* random numbers */
 
-void tpm_get_random_bytes(void *buf, size_t nbytes);
+void tpm_get_extern_random_bytes(void *buf, size_t nbytes);
 
 /* usec since last call */
 
