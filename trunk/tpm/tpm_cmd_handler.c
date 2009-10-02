@@ -2279,7 +2279,7 @@ static TPM_RESULT execute_TPM_Delegate_LoadOwnerDelegation(TPM_REQUEST *req, TPM
       || tpm_unmarshal_TPM_DELEGATE_OWNER_BLOB(&ptr, &len, &blob)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
-  return TPM_Delegate_LoadOwnerDelegation(index, blobSize, &blob, &req->auth1);
+  return TPM_Delegate_LoadOwnerDelegation(index, &blob, &req->auth1);
 }
 
 static TPM_RESULT execute_TPM_Delegate_ReadTable(TPM_REQUEST *req, TPM_RESPONSE *rsp)
