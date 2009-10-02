@@ -284,6 +284,8 @@ TPM_RESULT TPM_DSAP(TPM_ENTITY_TYPE entityType, TPM_KEY_HANDLE keyHandle,
     }
     memcpy(&secret, &sens.authValue, sizeof(TPM_SECRET));
     memcpy(&session->permissions, &blob.pub.permissions, sizeof(TPM_DELEGATIONS));
+    session->handle = TPM_KH_OWNER;
+    session->familyID = blob.pub.familyID;
     tpm_free(sens_buf);
   } else if (entityType == TPM_ET_DEL_ROW) {
     UINT32 row;
@@ -299,6 +301,8 @@ TPM_RESULT TPM_DSAP(TPM_ENTITY_TYPE entityType, TPM_KEY_HANDLE keyHandle,
     if (fr->verificationCount != dr->pub.verificationCount) return TPM_FAIL;
     memcpy(&secret, dr->authValue, sizeof(TPM_SECRET));
     memcpy(&session->permissions, &dr->pub.permissions, sizeof(TPM_DELEGATIONS));
+    session->handle = keyHandle;
+    session->familyID = dr->pub.familyID;
   } else if (entityType == TPM_ET_DEL_KEY_BLOB) {
     TPM_DELEGATE_KEY_BLOB blob;
     TPM_DELEGATE_SENSITIVE sens;
@@ -347,6 +351,8 @@ TPM_RESULT TPM_DSAP(TPM_ENTITY_TYPE entityType, TPM_KEY_HANDLE keyHandle,
    }
    memcpy(&secret, &sens.authValue, sizeof(TPM_SECRET));
    memcpy(&session->permissions, &blob.pub.permissions, sizeof(TPM_DELEGATIONS));
+   session->handle = keyHandle;
+   session->familyID = blob.pub.familyID;
    tpm_free(sens_buf);
   } else {
     return TPM_BAD_PARAMETER;
@@ -529,7 +535,7 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
   } else if (session->type == TPM_ST_OSAP) {
     debug("[TPM_ST_OSAP]");
     if (session->handle != handle) return TPM_AUTHFAIL;
-  } else if (session->type == TPM_ST_OSAP) {
+  } else if (session->type == TPM_ST_DSAP) {
     debug("[TPM_ST_DSAP]");
     if (session->handle != handle) return TPM_AUTHFAIL;
     /* check permissions */

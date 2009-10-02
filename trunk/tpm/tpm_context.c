@@ -48,6 +48,7 @@ void tpm_invalidate_sessions(TPM_HANDLE handle)
   for (i = 0; i < TPM_MAX_SESSIONS; i++) {
     session = &tpmData.stany.data.sessions[i];
     if ((session->type == TPM_ST_OSAP && session->handle == handle)
+        || (session->type == TPM_ST_DSAP && session->handle == handle)
         || (session->type == TPM_ST_TRANSPORT && session->handle == handle))
       memset(session, 0, sizeof(*session));
   }

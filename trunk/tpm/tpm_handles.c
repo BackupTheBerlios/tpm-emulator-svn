@@ -74,7 +74,8 @@ TPM_SESSION_DATA *tpm_get_auth(TPM_AUTHHANDLE handle)
   handle &= 0x00ffffff;
   if (handle >= TPM_MAX_SESSIONS
       || (tpmData.stany.data.sessions[handle].type != TPM_ST_OIAP
-          && tpmData.stany.data.sessions[handle].type != TPM_ST_OSAP)) return NULL;
+          && tpmData.stany.data.sessions[handle].type != TPM_ST_OSAP
+          && tpmData.stany.data.sessions[handle].type != TPM_ST_DSAP)) return NULL;
   return &tpmData.stany.data.sessions[handle];
 }
 

@@ -2062,7 +2062,6 @@ TPM_RESULT TPM_Delegate_Manage(
  * @publicInfo: [in] The public information necessary to fill in the blob 
  * @delAuth: [in] The encrypted new authorization data for the blob
  * @auth1: [in, out] Authorization protocol parameters
- * @blobSize: [out] The length of the returned blob 
  * @blob: [out] The partially encrypted delegation information
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
@@ -2075,7 +2074,6 @@ TPM_RESULT TPM_Delegate_CreateKeyDelegation(
   TPM_DELEGATE_PUBLIC *publicInfo,
   TPM_ENCAUTH *delAuth,
   TPM_AUTH *auth1,  
-  UINT32 *blobSize,
   TPM_DELEGATE_KEY_BLOB *blob 
 );
 
@@ -2085,7 +2083,6 @@ TPM_RESULT TPM_Delegate_CreateKeyDelegation(
  * @publicInfo: [in] The public parameters for the blob 
  * @delAuth: [in] The encrypted new authorization data for the blob
  * @auth1: [in, out] Authorization protocol parameters
- * @blobSize: [out] The length of the returned blob
  * @blob: [out] The partially encrypted delegation information
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
  * 
@@ -2099,7 +2096,6 @@ TPM_RESULT TPM_Delegate_CreateOwnerDelegation(
   TPM_DELEGATE_PUBLIC *publicInfo,
   TPM_ENCAUTH *delAuth,
   TPM_AUTH *auth1,  
-  UINT32 *blobSize,
   TPM_DELEGATE_OWNER_BLOB *blob 
 );
 

@@ -2113,9 +2113,9 @@ static TPM_RESULT execute_TPM_DSAP(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   len = req->paramSize;
   if (tpm_unmarshal_TPM_ENTITY_TYPE(&ptr, &len, &entityType)
       || tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &keyHandle)
+      || tpm_unmarshal_TPM_NONCE(&ptr, &len, &nonceOddDSAP)
       || tpm_unmarshal_UINT32(&ptr, &len, &entityValueSize)
       || tpm_unmarshal_BLOB(&ptr, &len, &entityValue, entityValueSize)
-      || tpm_unmarshal_TPM_NONCE(&ptr, &len, &nonceOddDSAP)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
   res = TPM_DSAP(entityType, keyHandle, &nonceOddDSAP, entityValueSize,
@@ -2209,9 +2209,10 @@ static TPM_RESULT execute_TPM_Delegate_CreateKeyDelegation(TPM_REQUEST *req, TPM
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
   res = TPM_Delegate_CreateKeyDelegation(keyHandle, &publicInfo, &delAuth, 
-    &req->auth1, &blobSize, &blob);
+    &req->auth1, &blob);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
+  blobSize = sizeof_TPM_DELEGATE_KEY_BLOB(blob);
   rsp->paramSize = len = 4 + blobSize;
   rsp->param = ptr = tpm_malloc(len);
   if (ptr == NULL
@@ -2245,9 +2246,10 @@ static TPM_RESULT execute_TPM_Delegate_CreateOwnerDelegation(TPM_REQUEST *req, T
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
   res = TPM_Delegate_CreateOwnerDelegation(increment, &publicInfo, &delAuth, 
-    &req->auth1, &blobSize, &blob);
+    &req->auth1, &blob);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
+  blobSize = sizeof_TPM_DELEGATE_OWNER_BLOB(blob);
   rsp->paramSize = len = 4 + blobSize;
   rsp->param = ptr = tpm_malloc(len);
   if (ptr == NULL

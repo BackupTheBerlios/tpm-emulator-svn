@@ -608,7 +608,8 @@ TPM_RESULT TPM_CreateWrapKey(TPM_KEY_HANDLE parentHandle,
   if (res != TPM_SUCCESS) return res;
   auth1->continueAuthSession = FALSE;
   session = tpm_get_auth(auth1->authHandle);
-  if (session->type != TPM_ST_OSAP) return TPM_AUTHFAIL;
+  if (session->type != TPM_ST_OSAP && session->type != TPM_ST_DSAP)
+    return TPM_AUTHFAIL;
   /* verify key parameters */
   if (parent->keyUsage != TPM_KEY_STORAGE
       || parent->encScheme == TPM_ES_NONE

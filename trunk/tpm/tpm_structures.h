@@ -2271,11 +2271,12 @@ typedef struct tdTPM_SESSION_DATA {
   TPM_HANDLE handle;
   TPM_ENTITY_TYPE entityType;
   TPM_DELEGATIONS permissions;
+  TPM_FAMILY_ID familyID;
   TPM_TRANSPORT_INTERNAL transInternal;
 } TPM_SESSION_DATA;
 #define sizeof_TPM_SESSION_DATA(s) (1 + 3*20 + 4 + 2 \
   + ((s.type == TPM_ST_DSAP) ? \
-     sizeof_TPM_DELEGATIONS(s.delegations) : 0) \
+     sizeof_TPM_DELEGATIONS(s.delegations) + 4 : 0) \
   + ((s.type == TPM_ST_TRANSPORT) ? \
      sizeof_TPM_TRANSPORT_INTERNAL(s.transInternal) : 0))
 

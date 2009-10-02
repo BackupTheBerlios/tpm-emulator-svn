@@ -1723,7 +1723,8 @@ int tpm_marshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA *v
       || tpm_marshal_TPM_HANDLE(ptr, length, v->handle)
       || tpm_marshal_TPM_ENTITY_TYPE(ptr, length, v->entityType)
       || (v->type == TPM_ST_DSAP
-          && tpm_marshal_TPM_DELEGATIONS(ptr, length, &v->permissions))
+          && (tpm_marshal_TPM_DELEGATIONS(ptr, length, &v->permissions)
+              || tpm_marshal_TPM_FAMILY_ID(ptr, length, v->familyID)))
       || (v->type == TPM_ST_TRANSPORT 
           && tpm_marshal_TPM_TRANSPORT_INTERNAL(ptr, length, &v->transInternal))) return -1;
   return 0;
@@ -1738,7 +1739,8 @@ int tpm_unmarshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA 
       || tpm_unmarshal_TPM_HANDLE(ptr, length, &v->handle)
       || tpm_unmarshal_TPM_ENTITY_TYPE(ptr, length, &v->entityType)
       || (v->type == TPM_ST_DSAP
-          && tpm_unmarshal_TPM_DELEGATIONS(ptr, length, &v->permissions))
+          && (tpm_unmarshal_TPM_DELEGATIONS(ptr, length, &v->permissions)
+              || tpm_unmarshal_TPM_FAMILY_ID(ptr, length, &v->familyID)))
       || (v->type == TPM_ST_TRANSPORT 
           && tpm_unmarshal_TPM_TRANSPORT_INTERNAL(ptr, length, &v->transInternal))) return -1;
   return 0;
