@@ -195,6 +195,29 @@ int tpm_compute_key_digest(TPM_KEY *key, TPM_DIGEST *digest)
   return 0;
 }
 
+int tpm_compute_key_data_digest(TPM_KEY_DATA *key, TPM_DIGEST *digest)
+{
+  tpm_sha1_ctx_t sha1;
+  UINT32 key_len = key->key.size >> 3;
+  BYTE *buf = tpm_malloc(4 + key_len);
+  if (buf == NULL) {
+    debug("tpm_malloc() failed.");
+    return -1;
+  }
+  /* extract modulus  */
+  buf[0] = (key_len >> 24) & 0xff;
+  buf[1] = (key_len >> 16) & 0xff;
+  buf[2] = (key_len >>  8) & 0xff;
+  buf[3] = (key_len >>  0) & 0xff;
+  tpm_rsa_export_modulus(&key->key, &buf[4], NULL);
+  /* compute SHA1 hash */
+  tpm_sha1_init(&sha1);
+  tpm_sha1_update(&sha1, buf, 4 + key_len);
+  tpm_sha1_final(&sha1, digest->digest);
+  tpm_free(buf);
+  return 0;
+}
+
 static int tpm_verify_key_digest(TPM_KEY *key, TPM_DIGEST *digest)
 {
   TPM_DIGEST key_digest;
@@ -286,6 +309,18 @@ int tpm_extract_pubkey(TPM_KEY_DATA *key, TPM_PUBKEY *pubKey)
     tpm_free(pubKey->pubKey.key);
     return -1;
   }
+  return 0;
+}
+
+int tpm_extract_store_pubkey(TPM_KEY_DATA *key, TPM_STORE_PUBKEY *pubKey)
+{
+  pubKey->keyLength = key->key.size >> 3;
+  pubKey->key = tpm_malloc(pubKey->keyLength);
+  if (pubKey->key == NULL) {
+    debug("tpm_malloc() failed.");
+    return -1;
+  }
+  tpm_rsa_export_modulus(&key->key, pubKey->key, NULL);
   return 0;
 }
 

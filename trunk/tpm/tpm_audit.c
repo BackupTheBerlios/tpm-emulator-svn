@@ -91,6 +91,7 @@ void tpm_audit_response(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
   }
 }
 
+/* number of bits to represent 0, 1, 2, 3 ... */
 static uint8_t bits[] = { 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4 }; 
 
 TPM_RESULT TPM_GetAuditDigest(UINT32 startOrdinal, 
@@ -120,26 +121,32 @@ TPM_RESULT TPM_GetAuditDigest(UINT32 startOrdinal,
   memset(counterValue->label, 0, sizeof(counterValue->label));
   counterValue->counter = tpmData.permanent.data.auditMonotonicCounter;
   memcpy(auditDigest, &tpmData.stany.data.auditDigest, sizeof(TPM_DIGEST));
-  *more = FALSE;
+  if (more != NULL) *more = FALSE;
   return TPM_SUCCESS;
 }
 
 TPM_RESULT TPM_GetAuditDigestSigned(TPM_KEY_HANDLE keyHandle, 
-                                    UINT32 startOrdinal, BOOL closeAudit,
-                                    TPM_NONCE *antiReplay, TPM_AUTH *auth1,  
+                                    BOOL closeAudit, TPM_NONCE *antiReplay,
+                                    TPM_AUTH *auth1,
                                     TPM_COUNTER_VALUE *counterValue,
-                                    TPM_DIGEST *auditDigest, BOOL *more,
-                                    UINT32 *ordSize, UINT32 **ordinalList,
+                                    TPM_DIGEST *auditDigest,
+                                    TPM_DIGEST *ordinalDigest,
                                     UINT32 *sigSize, BYTE **sig)
 {
   TPM_RESULT res;
   TPM_KEY_DATA *key;
-  BYTE *buf, *ptr; 
-  UINT32 buf_size, len;
+  UINT32 ordSize;
+  UINT32 *ordList;
+  BYTE buf[TPM_ORD_MAX * 4];
+  BYTE *ptr;
+  UINT32 len;
+  tpm_sha1_ctx_t ctx;
   info("TPM_GetAuditDigestSigned()");
   /* get key */
   key = tpm_get_key(keyHandle);
   if (key == NULL) return TPM_INVALID_KEYHANDLE;
+  if (key->keyUsage != TPM_KEY_SIGNING && key->keyUsage != TPM_KEY_IDENTITY
+      && key->keyUsage != TPM_KEY_LEGACY) return TPM_INVALID_KEYUSAGE;
   /* verify authorization */ 
   if (auth1->authHandle != TPM_INVALID_HANDLE
       || key->authDataUsage != TPM_AUTH_NEVER) {
@@ -147,38 +154,66 @@ TPM_RESULT TPM_GetAuditDigestSigned(TPM_KEY_HANDLE keyHandle,
     if (res != TPM_SUCCESS) return res;
   }
   /* get audit digest */    
-  res = TPM_GetAuditDigest(startOrdinal, counterValue, auditDigest, 
-                           more, ordSize, ordinalList);
+  res = TPM_GetAuditDigest(0, counterValue, auditDigest, NULL,
+                           &ordSize, &ordList);
   if (res != TPM_SUCCESS) return res;
-  /* setup a TPM_SIGN_INFO structure */
-  buf_size = 30 + 20 + sizeof_TPM_COUNTER_VALUE((*counterValue)) + *ordSize;
-  buf = tpm_malloc(buf_size);
-  if (buf == NULL) {
-    tpm_free(*ordinalList);
-    return TPM_FAIL; 
-  }
-  memcpy(&buf[0], "\x05\x00ADIG", 6);
-  memcpy(&buf[6], antiReplay->nonce, 20);
-  ptr = &buf[26]; len = buf_size - 26;
-  tpm_marshal_UINT32(&ptr, &len, buf_size - 30);
-  memcpy(ptr, auditDigest->digest, 20);
-  ptr += 20; len -= 20;
-  if (tpm_marshal_TPM_COUNTER_VALUE(&ptr, &len, counterValue)
-      || tpm_marshal_UINT32_ARRAY(&ptr, &len, *ordinalList, *ordSize/4)) {
-    tpm_free(*ordinalList);
-    tpm_free(buf);
+  /* allocate buffer memory */
+  len = sizeof(buf);
+  ptr = buf;
+  if (tpm_marshal_UINT32_ARRAY(&ptr, &len, ordList, ordSize/4) != 0) {
+    debug("tpm_marshal_UINT32_ARRAY() failed.");
+    tpm_free(ordList);
     return TPM_FAIL;
-  }  
+  }
+  tpm_free(ordList);
+  /* compute ordinal digest */
+  tpm_sha1_init(&ctx);
+  tpm_sha1_update(&ctx, buf, ordSize);
+  tpm_sha1_final(&ctx, ordinalDigest->digest);
+  /* setup a TPM_SIGN_INFO structure */
+  memset(buf, 0, sizeof(buf));
+  memcpy(&buf[0], "\x00\x05", 2);
+  memcpy(&buf[2], "ADIG", 4);
+  memcpy(&buf[6], antiReplay->nonce, 20);
+  len = sizeof(buf) - 26;
+  ptr = &buf[26];
+  if (tpm_marshal_UINT32(&ptr, &len,
+        20 + sizeof_TPM_COUNTER_VALUE((*counterValue)) + 20) != 0) {
+    debug("tpm_marshal_UINT32() failed.");
+    return TPM_FAIL;
+  }
+  memcpy(ptr, auditDigest->digest, 20);
+  len -= 20;
+  ptr += 20;
+  if (tpm_marshal_TPM_COUNTER_VALUE(&ptr, &len, counterValue) != 0) {
+    debug("tpm_marshal_TPM_COUNTER_VALUE() failed.");
+    return TPM_FAIL;
+  }
+  memcpy(ptr, ordinalDigest->digest, 20);
   /* check key usage */
-  if (closeAudit && key->keyUsage == TPM_KEY_IDENTITY) {
-    memset(&tpmData.stany.data.auditDigest, 0, sizeof(TPM_DIGEST));
-    tpmData.stany.data.auditSession = FALSE;
+  if (closeAudit) {
+    if (key->keyUsage == TPM_KEY_IDENTITY) {
+      memset(&tpmData.stany.data.auditDigest, 0, sizeof(TPM_DIGEST));
+    } else {
+      return TPM_INVALID_KEYUSAGE;
+    }
+  }
+  /* sign data */
+  if (key->sigScheme == TPM_SS_RSASSAPKCS1v15_SHA1) {
+    debug("TPM_SS_RSASSAPKCS1v15_SHA1");
+    len = 30 + 20 + sizeof_TPM_COUNTER_VALUE((*counterValue)) + 20;
+    tpm_sha1_init(&ctx);
+    tpm_sha1_update(&ctx, buf, len);
+    tpm_sha1_final(&ctx, buf);
+    res = tpm_sign(key, auth1, FALSE, buf, SHA1_DIGEST_LENGTH, sig, sigSize);
+  } else if (key->sigScheme == TPM_SS_RSASSAPKCS1v15_INFO) {
+    debug("TPM_SS_RSASSAPKCS1v15_INFO");
+    res = tpm_sign(key, auth1, TRUE, buf, sizeof(buf), sig, sigSize);
   } else {
-    return TPM_INVALID_KEYUSAGE;
-  } 
-  res = tpm_sign(key, auth1, TRUE, buf, buf_size, sig, sigSize);
-  tpm_free(buf);
-  return TPM_SUCCESS;
+    debug("unsupported signature scheme: %02x", key->sigScheme);
+    res = TPM_INVALID_KEYUSAGE;
+  }
+  return res;
 }
 
 TPM_RESULT TPM_SetOrdinalAuditStatus(TPM_COMMAND_CODE ordinalToAudit,

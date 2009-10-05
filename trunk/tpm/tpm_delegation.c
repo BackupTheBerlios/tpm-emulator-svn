@@ -176,10 +176,10 @@ TPM_RESULT TPM_Delegate_Manage(TPM_FAMILY_ID familyID,
       return TPM_MAXNVWRITES;
     tpmData.permanent.data.noOwnerNVWrite++;
   }
-  /* invalidate all but this session */
+  /* invalidate all but this auth session */
   for (i = 0; i < TPM_MAX_SESSIONS; i++) {
     TPM_SESSION_DATA *s = &tpmData.stany.data.sessions[i];
-    if (s != session) memset(s, 0, sizeof(*s));
+    if (s->type != TPM_ST_TRANSPORT && s != session) memset(s, 0, sizeof(*s));
   }
   tpmData.stclear.data.ownerReference = TPM_KH_OWNER;
   /* perform requested operation */
@@ -366,11 +366,12 @@ TPM_RESULT TPM_Delegate_CreateOwnerDelegation(BOOL increment,
   if (increment) {
     UINT32 i;
     fr->verificationCount++;
+    debug("incrementing verificationCount to %d", fr->verificationCount);
     tpmData.stclear.data.ownerReference = TPM_KH_OWNER;
     /* invalidate all but this session */
     for (i = 0; i < TPM_MAX_SESSIONS; i++) {
       TPM_SESSION_DATA *s = &tpmData.stany.data.sessions[i];
-      if (s != session) memset(s, 0, sizeof(*s));
+      if (s->type != TPM_ST_TRANSPORT && s != session) memset(s, 0, sizeof(*s));
     }
   }
   /* decrypt delegation secret */
@@ -465,8 +466,8 @@ TPM_RESULT TPM_Delegate_LoadOwnerDelegation(TPM_DELEGATE_INDEX index,
     return TPM_INVALID_STRUCTURE;
   }
   /* check that index is valid and copy data */
-  if (index >= TPM_NUM_DELEGATE_TABLE_ENTRY
-      || tpmData.permanent.data.delegateTable.delRow[index].valid) {
+  debug("index = %d", index);
+  if (index >= TPM_NUM_DELEGATE_TABLE_ENTRY) {
     tpm_free(sens_buf);
     return TPM_BADINDEX;
   }
@@ -479,7 +480,7 @@ TPM_RESULT TPM_Delegate_LoadOwnerDelegation(TPM_DELEGATE_INDEX index,
   /* invalidate all but this session */
   for (i = 0; i < TPM_MAX_SESSIONS; i++) {
     TPM_SESSION_DATA *s = &tpmData.stany.data.sessions[i];
-     if (s != session) memset(s, 0, sizeof(*s));
+     if (s->type != TPM_ST_TRANSPORT && s != session) memset(s, 0, sizeof(*s));
   }
   tpmData.stclear.data.ownerReference = TPM_KH_OWNER;
   return TPM_SUCCESS;
@@ -690,7 +691,6 @@ TPM_RESULT TPM_Delegate_UpdateVerification(UINT32 inputSize, BYTE *inputData,
 TPM_RESULT TPM_Delegate_VerifyDelegation(UINT32 delegateSize, BYTE *delegation)
 {
   info("TPM_Delegate_VerifyDelegation()");
-
   if (delegation[0] == (TPM_TAG_DELEGATE_OWNER_BLOB >> 8)
       && delegation[1] == (TPM_TAG_DELEGATE_OWNER_BLOB & 0xff)) {
     TPM_DELEGATE_OWNER_BLOB blob;

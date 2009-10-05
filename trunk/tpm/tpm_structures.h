@@ -1002,7 +1002,7 @@ typedef struct tdTPM_MIGRATIONKEYAUTH {
  * Attributes that can control various aspects of key usage and manipulation.
  */
 /* 31:-1 reserved and must be 0 */
-#define TPM_KEY_CONTROL_OWNER_EVICT 0
+#define TPM_KEY_CONTROL_OWNER_EVICT (1 << 0)
 
 /*
  * Signed Structures
@@ -2306,7 +2306,7 @@ typedef struct tdTPM_DAA_SESSION_DATA {
  * This is an informative structure and not normative.
  */
 #define TPM_TAG_STANY_DATA        0x0024
-#define TPM_MAX_SESSIONS          3
+#define TPM_MAX_SESSIONS          4
 #define TPM_MAX_SESSION_LIST      16
 #define TPM_MAX_SESSIONS_DAA      1
 typedef struct tdTPM_STANY_DATA {

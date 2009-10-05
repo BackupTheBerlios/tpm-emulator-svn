@@ -189,8 +189,22 @@ static inline int tpm_unmarshal_BYTE_ARRAY(BYTE **ptr, UINT32 *ptr_length,
   return 0;
 }
 
-#define tpm_marshal_BOOL                       tpm_marshal_BYTE
-#define tpm_unmarshal_BOOL                     tpm_unmarshal_BYTE
+static inline int tpm_marshal_BOOL(BYTE **ptr, UINT32 *length, BOOL v)
+{
+  if (*length < 1) return -1;
+  **ptr = v & 0x01;
+  *ptr += 1; *length -= 1;
+  return 0;
+}
+
+static inline int tpm_unmarshal_BOOL(BYTE **ptr, UINT32 *length, BOOL *v)
+{
+  if (*length < 1 || (**ptr & 0xfe)) return -1;
+  *v = **ptr;
+  *ptr += 1; *length -= 1;
+  return 0;
+}
+
 #define tpm_marshal_BOOL_ARRAY                 tpm_marshal_BYTE_ARRAY
 #define tpm_unmarshal_BOOL_ARRAY               tpm_unmarshal_BYTE_ARRAY
 #define tpm_marshal_TPM_AUTH_DATA_USAGE        tpm_marshal_BYTE

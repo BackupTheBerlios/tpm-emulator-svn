@@ -162,6 +162,7 @@ TPM_RESULT TPM_OIAP(TPM_AUTHHANDLE *authHandle, TPM_NONCE *nonceEven)
   /* setup session */
   tpm_get_random_bytes(nonceEven->nonce, sizeof(nonceEven->nonce));
   memcpy(&session->nonceEven, nonceEven, sizeof(TPM_NONCE));
+  debug("handle = %08x", *authHandle);
   return TPM_SUCCESS;
 }
 
@@ -234,6 +235,7 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
   tpm_hmac_update(&ctx, nonceEvenOSAP->nonce, sizeof(nonceEvenOSAP->nonce));
   tpm_hmac_update(&ctx, nonceOddOSAP->nonce, sizeof(nonceOddOSAP->nonce));
   tpm_hmac_final(&ctx, session->sharedSecret);
+  debug("handle = %08x", *authHandle);
   return TPM_SUCCESS;
 }
 
@@ -368,6 +370,7 @@ TPM_RESULT TPM_DSAP(TPM_ENTITY_TYPE entityType, TPM_KEY_HANDLE keyHandle,
   tpm_hmac_update(&ctx, nonceEvenDSAP->nonce, sizeof(nonceEvenDSAP->nonce));
   tpm_hmac_update(&ctx, nonceOddDSAP->nonce, sizeof(nonceOddDSAP->nonce));
   tpm_hmac_final(&ctx, session->sharedSecret);
+  debug("handle = %08x", *authHandle);
   return TPM_SUCCESS;
 }
 
@@ -519,6 +522,7 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
   tpm_hmac_ctx_t ctx;
   TPM_SESSION_DATA *session;
   UINT32 auth_handle = CPU_TO_BE32(auth->authHandle);
+  BYTE digest[SHA1_DIGEST_LENGTH];
 
   info("tpm_verify_auth()");
   debug("handle = %08x", auth->authHandle);
@@ -553,7 +557,8 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
     }
   } else if (session->type == TPM_ST_TRANSPORT) {
     debug("[TPM_ST_TRANSPORT]");
-    memcpy(session->sharedSecret, secret, sizeof(TPM_SECRET));
+    memcpy(session->sharedSecret, session->transInternal.authData,
+           sizeof(TPM_SECRET));
   } else {
     return TPM_INVALID_AUTHHANDLE;
   }
@@ -564,8 +569,8 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
   tpm_hmac_update(&ctx, session->nonceEven.nonce, sizeof(session->nonceEven.nonce));
   tpm_hmac_update(&ctx, auth->nonceOdd.nonce, sizeof(auth->nonceOdd.nonce));
   tpm_hmac_update(&ctx, &auth->continueAuthSession, 1);
-  tpm_hmac_final(&ctx, auth->digest);
-  if (memcmp(auth->digest, auth->auth, sizeof(auth->digest))) return TPM_AUTHFAIL;
+  tpm_hmac_final(&ctx, digest);
+  if (memcmp(digest, auth->auth, sizeof(auth->auth))) return TPM_AUTHFAIL;
   /* generate new nonceEven */
   memcpy(&session->lastNonceEven, &session->nonceEven, sizeof(TPM_NONCE));
   tpm_get_random_bytes(auth->nonceEven.nonce, sizeof(auth->nonceEven.nonce));

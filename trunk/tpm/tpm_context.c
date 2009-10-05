@@ -54,11 +54,13 @@ void tpm_invalidate_sessions(TPM_HANDLE handle)
   }
 }
 
-TPM_RESULT TPM_KeyControlOwner(TPM_KEY_HANDLE keyHandle, UINT32 bitName,
-                               BOOL bitValue, TPM_AUTH *auth1)
+TPM_RESULT TPM_KeyControlOwner(TPM_KEY_HANDLE keyHandle, TPM_PUBKEY pubKey,
+                               UINT32 bitName, BOOL bitValue, TPM_AUTH *auth1)
 {
   TPM_RESULT res;
   TPM_KEY_DATA *key;
+  TPM_PUBKEY pubKey2;
+  TPM_DIGEST keyDigest, keyDigest2;
   info("TPM_KeyControlOwner()");
   /* get key */
   key = tpm_get_key(keyHandle);
@@ -66,27 +68,44 @@ TPM_RESULT TPM_KeyControlOwner(TPM_KEY_HANDLE keyHandle, UINT32 bitName,
   /* verify authorization */
   res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
   if (res != TPM_SUCCESS) return res;
-  /* get bit name */
-  switch (bitName) {
-    case TPM_KEY_CONTROL_OWNER_EVICT:
-      if (bitValue) {
-        int i, num = 0;
-        for (i = 0; i < TPM_MAX_KEYS; i++) {
-          if (!tpmData.permanent.data.keys[i].payload ||
-              !(tpmData.permanent.data.keys[i].keyControl 
-                & TPM_KEY_CONTROL_OWNER_EVICT)) num++;
-        }
-        if (num < 2) return TPM_NOSPACE;
-        if (key->parentPCRStatus || (key->keyFlags & TPM_KEY_FLAG_VOLATILE))
-          return TPM_BAD_PARAMETER;
-        key->keyControl |= TPM_KEY_CONTROL_OWNER_EVICT;
-      } else {
-        key->keyControl &= ~TPM_KEY_CONTROL_OWNER_EVICT;
-      }
-      return TPM_SUCCESS;
-    default:
-      return TPM_BAD_PARAMETER;
+  /* verify public key */
+  if (tpm_compute_pubkey_digest(&pubKey, &keyDigest)) {
+    debug("tpm_compute_pubkey_digest() failed");
+    return TPM_FAIL;
   }
+  if (tpm_extract_pubkey(key, &pubKey2)) {
+    debug("tpm_extraxt_pubkey() failed.");
+    return TPM_FAIL;
+  }
+  if (tpm_compute_pubkey_digest(&pubKey2, &keyDigest2)) {
+    debug("tpm_compute_pubkey_digest() failed");
+    free_TPM_PUBKEY(pubKey2);
+    return TPM_FAIL;
+  }
+  free_TPM_PUBKEY(pubKey2);
+  if (memcmp(&keyDigest, &keyDigest2, sizeof(TPM_DIGEST)) != 0)
+    return TPM_BAD_PARAMETER;
+  /* get bit name */
+  debug("bitName = %d", bitName);
+  if (bitName & TPM_KEY_CONTROL_OWNER_EVICT) {
+    if (bitValue) {
+      int i, num = 0;
+      for (i = 0; i < TPM_MAX_KEYS; i++) {
+        if (!tpmData.permanent.data.keys[i].payload ||
+            !(tpmData.permanent.data.keys[i].keyControl
+              & TPM_KEY_CONTROL_OWNER_EVICT)) num++;
+      }
+      if (num < 2) return TPM_NOSPACE;
+      if (key->parentPCRStatus || (key->keyFlags & TPM_KEY_FLAG_VOLATILE))
+        return TPM_BAD_PARAMETER;
+      key->keyControl |= TPM_KEY_CONTROL_OWNER_EVICT;
+    } else {
+      key->keyControl &= ~TPM_KEY_CONTROL_OWNER_EVICT;
+    }
+  } else {
+    return TPM_BAD_MODE;
+  }
+  return TPM_SUCCESS;
 }
 
 static int encrypt_context(BYTE *iv, UINT32 iv_size, TPM_CONTEXT_SENSITIVE *context, 

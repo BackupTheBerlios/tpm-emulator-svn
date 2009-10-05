@@ -38,14 +38,12 @@ UINT32 tpm_get_in_param_offset(TPM_COMMAND_CODE ordinal)
     case TPM_ORD_DSAP:
     case TPM_ORD_EstablishTransport:
     case TPM_ORD_EvictKey:
+    case TPM_ORD_FlushSpecific:
     case TPM_ORD_GetAuditDigestSigned:
     case TPM_ORD_GetPubKey:
     case TPM_ORD_KeyControlOwner:
     case TPM_ORD_LoadKey:
     case TPM_ORD_LoadKey2:
-/* commented out in order to be compatible with the DAA Test Suite
-    case TPM_ORD_OwnerReadInternalPub:
-*/
     case TPM_ORD_Quote:
     case TPM_ORD_Quote2:
     case TPM_ORD_ReleaseTransportSigned:
@@ -66,6 +64,9 @@ UINT32 tpm_get_in_param_offset(TPM_COMMAND_CODE ordinal)
     case TPM_ORD_ChangeAuthAsymFinish:
       return 8;
 
+    case TPM_ORD_OSAP:
+      return 26;
+
     default:
       return 0;
   }
@@ -74,8 +75,16 @@ UINT32 tpm_get_in_param_offset(TPM_COMMAND_CODE ordinal)
 UINT32 tpm_get_out_param_offset(TPM_COMMAND_CODE ordinal)
 {
   switch (ordinal) {
+
+    case TPM_ORD_EstablishTransport:
     case TPM_ORD_LoadKey2:
       return 4;
+
+    case TPM_ORD_OIAP:
+      return 24;
+
+    case TPM_ORD_OSAP:
+      return 44;
 
     default:
       return 0;
@@ -457,14 +466,11 @@ static TPM_RESULT execute_TPM_GetAuditDigestSigned(TPM_REQUEST *req, TPM_RESPONS
   BYTE *ptr;
   UINT32 len;
   TPM_KEY_HANDLE keyHandle;
-  UINT32 startOrdinal;
   BOOL closeAudit;
   TPM_NONCE antiReplay;
   TPM_COUNTER_VALUE counterValue;
   TPM_DIGEST auditDigest;
-  BOOL more;
-  UINT32 ordSize;
-  UINT32 *ordinalList = NULL;
+  TPM_DIGEST ordinalDigest;
   UINT32 sigSize;
   BYTE *sig = NULL;
   TPM_RESULT res;
@@ -474,29 +480,25 @@ static TPM_RESULT execute_TPM_GetAuditDigestSigned(TPM_REQUEST *req, TPM_RESPONS
   ptr = req->param;
   len = req->paramSize;
   if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &keyHandle)
-      || tpm_unmarshal_UINT32(&ptr, &len, &startOrdinal)
       || tpm_unmarshal_BOOL(&ptr, &len, &closeAudit)
       || tpm_unmarshal_TPM_NONCE(&ptr, &len, &antiReplay)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
-  res = TPM_GetAuditDigestSigned(keyHandle, startOrdinal, closeAudit, &antiReplay, &req->auth1, 
-    &counterValue, &auditDigest, &more, &ordSize, &ordinalList, &sigSize, &sig);
+  res = TPM_GetAuditDigestSigned(keyHandle, closeAudit, &antiReplay, &req->auth1,
+    &counterValue, &auditDigest, &ordinalDigest, &sigSize, &sig);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
-  rsp->paramSize = len = 10 + 20 + 1 + 4 + ordSize + 4 + sigSize;
+  rsp->paramSize = len = 10 + 20 + 20 + 4 + sigSize;
   rsp->param = ptr = tpm_malloc(len);
   if (ptr == NULL
       || tpm_marshal_TPM_COUNTER_VALUE(&ptr, &len, &counterValue)
       || tpm_marshal_TPM_DIGEST(&ptr, &len, &auditDigest)
-      || tpm_marshal_BOOL(&ptr, &len, more)
-      || tpm_marshal_UINT32(&ptr, &len, ordSize)
-      || tpm_marshal_UINT32_ARRAY(&ptr, &len, ordinalList, ordSize/4)
+      || tpm_marshal_TPM_DIGEST(&ptr, &len, &ordinalDigest)
       || tpm_marshal_UINT32(&ptr, &len, sigSize)
       || tpm_marshal_BLOB(&ptr, &len, sig, sigSize)) {
     tpm_free(rsp->param);
     res = TPM_FAIL;
   }
-  tpm_free(ordinalList);
   tpm_free(sig);
   return res;
 }
@@ -2497,6 +2499,7 @@ static TPM_RESULT execute_TPM_KeyControlOwner(TPM_REQUEST *req, TPM_RESPONSE *rs
   BYTE *ptr;
   UINT32 len;
   TPM_KEY_HANDLE keyHandle;
+  TPM_PUBKEY pubKey;
   UINT32 bitName;
   BOOL bitValue;
   /* compute parameter digest */
@@ -2505,11 +2508,12 @@ static TPM_RESULT execute_TPM_KeyControlOwner(TPM_REQUEST *req, TPM_RESPONSE *rs
   ptr = req->param;
   len = req->paramSize;
   if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &keyHandle)
+      || tpm_unmarshal_TPM_PUBKEY(&ptr, &len, &pubKey)
       || tpm_unmarshal_UINT32(&ptr, &len, &bitName)
       || tpm_unmarshal_BOOL(&ptr, &len, &bitValue)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
-  return TPM_KeyControlOwner(keyHandle, bitName, bitValue, &req->auth1);
+  return TPM_KeyControlOwner(keyHandle, pubKey, bitName, bitValue, &req->auth1);
 }
 
 static TPM_RESULT execute_TPM_SaveContext(TPM_REQUEST *req, TPM_RESPONSE *rsp)
@@ -2603,7 +2607,7 @@ static TPM_RESULT execute_TPM_GetTicks(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   res = TPM_GetTicks(&currentTime);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
-  rsp->paramSize = len = 36;
+  rsp->paramSize = len = 32;
   rsp->param = ptr = tpm_malloc(len);
   if (ptr == NULL
       || tpm_marshal_TPM_CURRENT_TICKS(&ptr, &len, &currentTime)) {
@@ -2638,7 +2642,7 @@ static TPM_RESULT execute_TPM_TickStampBlob(TPM_REQUEST *req, TPM_RESPONSE *rsp)
     &currentTicks, &sigSize, &sig);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
-  rsp->paramSize = len = 36 + 4 + sigSize;
+  rsp->paramSize = len = 32 + 4 + sigSize;
   rsp->param = ptr = tpm_malloc(len);
   if (ptr == NULL
       || tpm_marshal_TPM_CURRENT_TICKS(&ptr, &len, &currentTicks)
@@ -2679,7 +2683,7 @@ static TPM_RESULT execute_TPM_EstablishTransport(TPM_REQUEST *req, TPM_RESPONSE 
     &req->auth1, &transHandle, &locality, &currentTicks, &transNonce);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
-  rsp->paramSize = len = 4 + 4 + 36 + 20;
+  rsp->paramSize = len = 4 + 4 + 32 + 20;
   rsp->param = ptr = tpm_malloc(len);
   if (ptr == NULL
       || tpm_marshal_TPM_TRANSHANDLE(&ptr, &len, transHandle)
@@ -2698,7 +2702,7 @@ static TPM_RESULT execute_TPM_ExecuteTransport(TPM_REQUEST *req, TPM_RESPONSE *r
   UINT32 len;
   UINT32 inWrappedCmdSize;
   BYTE *inWrappedCmd;
-  TPM_CURRENT_TICKS currentTicks;
+  UINT64 currentTicks;
   TPM_MODIFIER_INDICATOR locality;
   UINT32 outWrappedCmdSize;
   BYTE *outWrappedCmd = NULL;
@@ -2716,10 +2720,10 @@ static TPM_RESULT execute_TPM_ExecuteTransport(TPM_REQUEST *req, TPM_RESPONSE *r
     &currentTicks, &locality, &outWrappedCmdSize, &outWrappedCmd);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
-  rsp->paramSize = len = 36 + 4 + 4 + outWrappedCmdSize;
+  rsp->paramSize = len = 8 + 4 + 4 + outWrappedCmdSize;
   rsp->param = ptr = tpm_malloc(len);
   if (ptr == NULL
-      || tpm_marshal_TPM_CURRENT_TICKS(&ptr, &len, &currentTicks)
+      || tpm_marshal_UINT64(&ptr, &len, currentTicks)
       || tpm_marshal_TPM_MODIFIER_INDICATOR(&ptr, &len, locality)
       || tpm_marshal_UINT32(&ptr, &len, outWrappedCmdSize)
       || tpm_marshal_BLOB(&ptr, &len, outWrappedCmd, outWrappedCmdSize)) {
@@ -2754,7 +2758,7 @@ static TPM_RESULT execute_TPM_ReleaseTransportSigned(TPM_REQUEST *req, TPM_RESPO
     &locality, &currentTicks, &signSize, &signature);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
-  rsp->paramSize = len = 36 + 4 + signSize;
+  rsp->paramSize = len = 4 + 32 + 4 + signSize;
   rsp->param = ptr = tpm_malloc(len);
   if (ptr == NULL
       || tpm_marshal_TPM_MODIFIER_INDICATOR(&ptr, &len, locality)

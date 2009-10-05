@@ -437,15 +437,12 @@ TPM_RESULT TPM_GetAuditDigest(
 /**
  * TPM_GetAuditDigestSigned - provides the current (signed) audit digest
  * @keyHandle: [in] Handle of a loaded key that can perform digital signatures
- * @startOrdinal: [in] The starting ordinal for the ordered list
  * @closeAudit: [in] Indication if audit session should be closed
  * @antiReplay: [in] A nonce to prevent replay attacks
  * @auth1: [in, out] Authorization protocol parameters
  * @counterValue: [out] The value of the audit monotonic counter
  * @auditDigest: [out] Log of all audited events
- * @more: [out] TRUE if the output does not contain all audited ordinals
- * @ordSize: [out] The size of the ordinal list in bytes
- * @ordinalList: [out] The list of ordinals that are being audited
+ * @ordinalDigest: [out] Digest of all audited ordinals
  * @sigSize: [out] The size of the sig parameter
  * @sig: [out] The signature of the area
  * Returns: TPM_SUCCESS on success, a TPM error code otherwise.
@@ -458,15 +455,12 @@ TPM_RESULT TPM_GetAuditDigest(
  */
 TPM_RESULT TPM_GetAuditDigestSigned(  
   TPM_KEY_HANDLE keyHandle,
-  UINT32 startOrdinal,
   BOOL closeAudit,
   TPM_NONCE *antiReplay,
   TPM_AUTH *auth1,  
   TPM_COUNTER_VALUE *counterValue,
   TPM_DIGEST *auditDigest,
-  BOOL *more,
-  UINT32 *ordSize,
-  UINT32 **ordinalList ,
+  TPM_DIGEST *ordinalDigest,
   UINT32 *sigSize,
   BYTE **sig  
 );
@@ -861,6 +855,17 @@ int tpm_compute_key_digest(
 );
 
 /**
+ * tpm_compute_key_data_digest - computes the digest of the public part of a key
+ * @key: [in] Key
+ * @digest: [out] Digest of the key
+ * @Returns: 0 on success, -1 otherwise.
+ */
+int tpm_compute_key_data_digest(
+  TPM_KEY_DATA *key,
+  TPM_DIGEST *digest
+);
+
+/**
  * tpm_compute_pubkey_checksum - computes the checksum of a public key
  * @antiReplay: [in] Nonce to prevent replay of messages
  * @pubKey: [in] Public key
@@ -915,6 +920,17 @@ int tpm_setup_pubkey_data(
 int tpm_extract_pubkey(
   TPM_KEY_DATA *key,
   TPM_PUBKEY *pubKey
+);
+
+/**
+ * tpm_extract_store_pubkey - extracts the public part of the specified key
+ * @in: [in] Key
+ * @out: [out] Public key
+ * @Returns: 0 on success, -1 otherwise.
+ */
+int tpm_extract_store_pubkey(
+  TPM_KEY_DATA *key,
+  TPM_STORE_PUBKEY *pubKey
 );
 
 /**
@@ -2376,6 +2392,7 @@ void tpm_nv_remove_data(
 /**
  * TPM_KeyControlOwner - controls attributes of keys within the key cache
  * @keyHandle: [in] Handle of a loaded key
+ * @pubKey: [in] The public key associated with the loaded key
  * @bitName: [in] The name of the bit to be modified
  * @bitValue: [in] The value to set the bit to
  * @auth1: [in, out] Authorization protocol parameters
@@ -2387,6 +2404,7 @@ void tpm_nv_remove_data(
  */
 TPM_RESULT TPM_KeyControlOwner(  
   TPM_KEY_HANDLE keyHandle,
+  TPM_PUBKEY pubKey,
   UINT32 bitName,
   BOOL bitValue,
   TPM_AUTH *auth1
@@ -2583,7 +2601,7 @@ TPM_RESULT TPM_ExecuteTransport(
   UINT32 inWrappedCmdSize,
   BYTE *inWrappedCmd,
   TPM_AUTH *auth1,  
-  TPM_CURRENT_TICKS *currentTicks,
+  UINT64 *currentTicks,
   TPM_MODIFIER_INDICATOR *locality,
   UINT32 *outWrappedCmdSize,
   BYTE **outWrappedCmd  

@@ -452,7 +452,6 @@ static TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
     case TPM_ORD_OSAP:
     case TPM_ORD_DSAP:
     case TPM_ORD_SetOwnerPointer:
-/* WATCH: not yet implemented
     case TPM_ORD_Delegate_Manage:
     case TPM_ORD_Delegate_CreateKeyDelegation:
     case TPM_ORD_Delegate_CreateOwnerDelegation:
@@ -460,7 +459,6 @@ static TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
     case TPM_ORD_Delegate_ReadTable:
     case TPM_ORD_Delegate_UpdateVerification:
     case TPM_ORD_Delegate_VerifyDelegation:
-*/
     case TPM_ORD_NV_DefineSpace:
     case TPM_ORD_NV_WriteValue:
     case TPM_ORD_NV_WriteValueAuth:

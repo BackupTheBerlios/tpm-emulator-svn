@@ -49,9 +49,12 @@ TPM_RESULT TPM_TickStampBlob(TPM_KEY_HANDLE keyHandle, TPM_NONCE *antiReplay,
   /* get key */
   key = tpm_get_key(keyHandle);
   if (key == NULL) return TPM_INVALID_KEYHANDLE;
-  /* verify authorization */ 
-  res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
-  if (res != TPM_SUCCESS) return res;
+  /* verify authorization */
+  if (auth1->authHandle != TPM_INVALID_HANDLE
+      || key->authDataUsage != TPM_AUTH_NEVER) {
+    res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
+    if (res != TPM_SUCCESS) return res;
+  }
   if (key->keyUsage != TPM_KEY_SIGNING && key->keyUsage != TPM_KEY_LEGACY
       && key->keyUsage != TPM_KEY_IDENTITY) return TPM_INVALID_KEYUSAGE;
   if (key->sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1)
@@ -69,7 +72,7 @@ TPM_RESULT TPM_TickStampBlob(TPM_KEY_HANDLE keyHandle, TPM_NONCE *antiReplay,
     tpm_free(*sig);
     return TPM_FAIL;
   }
-  memcpy(&info[0], "\x05\x00TSTP", 6);
+  memcpy(&info[0], "\x00\x05TSTP", 6);
   memcpy(&info[6], antiReplay->nonce, 20);
   ptr = &info[26]; len = info_length - 26;
   tpm_marshal_UINT32(&ptr, &len, info_length - 30);

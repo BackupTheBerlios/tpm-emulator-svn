@@ -92,7 +92,7 @@ TPM_RESULT tpm_verify(TPM_PUBKEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
     if ((dataSize + 30) > (UINT32)(key->key.size >> 3)
         || dataSize == 0) return TPM_BAD_PARAMETER;
     /* setup TPM_SIGN_INFO structure */
-    memcpy(&buf[0], "\x05\x00SIGN", 6);
+    memcpy(&buf[0], "\x00\x05SIGN", 6);
     memcpy(&buf[6], auth->nonceOdd.nonce, 20);
     buf[26] = (dataSize >> 24) & 0xff;
     buf[27] = (dataSize >> 16) & 0xff;
@@ -147,7 +147,7 @@ TPM_RESULT tpm_sign(TPM_KEY_DATA *key, TPM_AUTH *auth, BOOL isInfo,
     *sig = tpm_malloc(*sigSize);
     if (*sig == NULL) return TPM_FAIL; 
     /* setup TPM_SIGN_INFO structure */
-    memcpy(&buf[0], "\x05\x00SIGN", 6);
+    memcpy(&buf[0], "\x00\x05SIGN", 6);
     memcpy(&buf[6], auth->nonceOdd.nonce, 20);
     buf[26] = (areaToSignSize >> 24) & 0xff;
     buf[27] = (areaToSignSize >> 16) & 0xff;

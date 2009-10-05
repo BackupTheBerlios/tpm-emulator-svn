@@ -31,6 +31,16 @@
  * generic command that will evict all resource types.
  */
 
+static void dump_sessions(void)
+{
+  int i;
+  for (i = 0; i < TPM_MAX_SESSIONS; i++) {
+    if (tpmData.stany.data.sessions[i].type != TPM_ST_INVALID) {
+      debug("session[%d] = %08x", i, INDEX_TO_AUTH_HANDLE(i));
+    }
+  }
+}
+
 TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle, 
                              TPM_RESOURCE_TYPE resourceType)
 {
@@ -45,20 +55,20 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
     case TPM_RT_CONTEXT:
       for (i = 0; i < TPM_MAX_SESSION_LIST; i++)
         if (tpmData.stany.data.contextList[i] == handle) break;
-      if (i == TPM_MAX_SESSION_LIST)
-        return TPM_BAD_PARAMETER;
-      tpmData.stany.data.contextList[i] = 0;
+      if (i != TPM_MAX_SESSION_LIST)
+        tpmData.stany.data.contextList[i] = 0;
       return TPM_SUCCESS;
     
     case TPM_RT_KEY:
       key = tpm_get_key(handle);
-      if (key == NULL) return TPM_INVALID_KEYHANDLE;
-      if (key->keyControl & TPM_KEY_CONTROL_OWNER_EVICT)
-        return TPM_KEY_OWNER_CONTROL;
-      if (handle == TPM_KH_SRK) return TPM_FAIL;
-      tpm_rsa_release_private_key(&key->key);
-      memset(key, 0, sizeof(*key));
-      tpm_invalidate_sessions(handle);
+      if (key != NULL) {
+        if (key->keyControl & TPM_KEY_CONTROL_OWNER_EVICT)
+          return TPM_KEY_OWNER_CONTROL;
+        if (handle == TPM_KH_SRK) return TPM_FAIL;
+        tpm_rsa_release_private_key(&key->key);
+        memset(key, 0, sizeof(*key));
+        tpm_invalidate_sessions(handle);
+      }
       return TPM_SUCCESS;
     
     case TPM_RT_HASH:
@@ -70,21 +80,24 @@ TPM_RESULT TPM_FlushSpecific(TPM_HANDLE handle,
       session = tpm_get_auth(handle);
       if (session != NULL)
         memset(session, 0, sizeof(*session));
+      dump_sessions();
       return TPM_SUCCESS;
     
     case TPM_RT_TRANS:
       session = tpm_get_transport(handle);
-      if (session == NULL) return TPM_BAD_PARAMETER;
-      memset(session, 0, sizeof(*session));
+      if (session != NULL)
+        memset(session, 0, sizeof(*session));
+      dump_sessions();
       return TPM_SUCCESS;
     
     case TPM_RT_DAA_TPM:
       sessionDAA = tpm_get_daa(handle);
-      if (sessionDAA == NULL) return TPM_BAD_PARAMETER;
-      memset(sessionDAA, 0, sizeof(*sessionDAA));
-      if (handle == tpmData.stany.data.currentDAA)
-        tpmData.stany.data.currentDAA = 0;
-      tpm_invalidate_sessions(handle);
+      if (sessionDAA != NULL) {
+        memset(sessionDAA, 0, sizeof(*sessionDAA));
+        if (handle == tpmData.stany.data.currentDAA)
+          tpmData.stany.data.currentDAA = 0;
+        tpm_invalidate_sessions(handle);
+      }
       return TPM_SUCCESS;
   }
   return TPM_INVALID_RESOURCE;
