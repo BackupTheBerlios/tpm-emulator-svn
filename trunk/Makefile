@@ -6,7 +6,7 @@
 # tpm settings
 PACKAGE_NAME   := tpm_emulator
 VERSION_MAJOR  := 0
-VERSION_MINOR  := 6
+VERSION_MINOR  := 6.1
 VERSION_BUILD  := $(shell date +"%s")
 VERSION_SUFFIX := 
 

@@ -1,3 +1,16 @@
+2009-10-05  Mario Strasser <mast@gmx.net>
+  * all: numerous bug fixes to make the trousers test pass
+
+
+2009-10-02  Mario Strasser <mast@gmx.net>
+  * tpm_delegation.c: delegation support completed
+
+
+2009-09-24  Mario Strasser <mast@gmx.net>
+  * tpm_crypto.c: internal, deterministic PRNG added (for testing etc.)
+  * tpm_authorization.c: DSAP verification added
+
+
 2009-09-19  Mario Strasser <mast@gmx.net>
 	* tpm_capability.c: TPM_SetCapability() added
 	* tpm_capability.c: TPM_GetCapability() completed
