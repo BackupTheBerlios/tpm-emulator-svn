@@ -32,7 +32,7 @@ tpmd_dev.rules: tpmd_dev.rules.in
 
 install: tpmd_dev.rules
 	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) INSTALL_MOD_PATH=$(DESTDIR) modules_install
-	$(INSTALL) -m 644 tpmd_dev.rules $(DESTDIR)/etc/udev/rules.d/80-tpmd_dev.rules
+	$(INSTALL) -m 644 -D tpmd_dev.rules $(DESTDIR)/etc/udev/rules.d/80-tpmd_dev.rules
 
 .PHONY: all clean install
 
