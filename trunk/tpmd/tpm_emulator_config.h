@@ -43,13 +43,6 @@ void tpm_log(int priority, const char *fmt, ...);
 #define alert(fmt, ...) tpm_log(LOG_ALERT, "%s:%d: Alert: " fmt "\n", \
                                 __FILE__, __LINE__, ## __VA_ARGS__)
 
-/*  min/max macros that also do strict type-checking */
-
-#define tpm_min(x,y) ({ typeof(x) _x = (x); typeof(y) _y = (y); \
-                        (void) (&_x == &_y); _x < _y ? _x : _y; })
-#define tpm_max(x,y) ({ typeof(x) _x = (x); typeof(y) _y = (y); \
-                        (void) (&_x == &_y); _x > _y ? _x : _y; })
-
 /* memory allocation */
 
 static inline void *tpm_malloc(size_t size) 

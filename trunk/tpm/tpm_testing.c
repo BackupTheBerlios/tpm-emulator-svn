@@ -49,13 +49,15 @@ static int tpm_test_prng(void)
       for (k = 0; k < 8; k++) {
         if ((buf[j] >> k) & 0x01) {
           run_len1++;
-          if (run_len0) run0[tpm_min(run_len0, 6) - 1]++;
           if (run_len0 >= 34) run_34 = 1;
+          if (run_len0 >= 6) run0[5]++;
+          else if (run_len0 > 0) run0[run_len0 - 1]++;
           run_len0 = 0;
         } else {
           run_len0++;  
-          if (run_len1) run1[tpm_min(run_len1, 6) - 1]++;
           if (run_len1 >= 34) run_34 = 1;
+          if (run_len1 >= 6) run1[5]++;
+          else if (run_len1 > 0) run1[run_len1 - 1]++;
           run_len1 = 0;
         }
       }    
