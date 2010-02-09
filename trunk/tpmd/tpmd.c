@@ -96,7 +96,7 @@ uint64_t tpm_get_ticks(void)
     return res_t;
 }
 
-int tpm_write_to_file(uint8_t *data, size_t data_length)
+int tpm_write_to_storage(uint8_t *data, size_t data_length)
 {
     int fh;
     ssize_t res;
@@ -115,7 +115,7 @@ int tpm_write_to_file(uint8_t *data, size_t data_length)
     return 0;
 }
 
-int tpm_read_from_file(uint8_t **data, size_t *data_length)
+int tpm_read_from_storage(uint8_t **data, size_t *data_length)
 {
     int fh;
     ssize_t res;

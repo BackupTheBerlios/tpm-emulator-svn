@@ -218,7 +218,7 @@ int tpm_store_permanent_data(void)
     return -1;
   }
   if (len != 0) debug("warning: buffer was too large, %d bytes left", len);
-  if (tpm_write_to_file(buf, buf_length - len)) {
+  if (tpm_write_to_storage(buf, buf_length - len)) {
     tpm_free(buf);
     return -1; 
   }
@@ -234,7 +234,7 @@ int tpm_restore_permanent_data(void)
   TPM_VERSION ver;
 
   /* read data */
-  if (tpm_read_from_file(&buf, &buf_length)) return -1;
+  if (tpm_read_from_storage(&buf, &buf_length)) return -1;
   ptr = buf;
   len = buf_length;
   /* unmarshal data */
@@ -259,7 +259,7 @@ int tpm_restore_permanent_data(void)
 int tpm_erase_permanent_data(void)
 {
   uint8_t d[1];
-  int res = tpm_write_to_file(d, 0);
+  int res = tpm_write_to_storage(d, 0);
   return res;
 }
 

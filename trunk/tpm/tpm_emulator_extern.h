@@ -59,8 +59,8 @@ uint64_t tpm_get_ticks(void);
 
 /* file handling */
 
-int tpm_write_to_file(uint8_t *data, size_t data_length);
-int tpm_read_from_file(uint8_t **data, size_t *data_length);
+int tpm_write_to_storage(uint8_t *data, size_t data_length);
+int tpm_read_from_storage(uint8_t **data, size_t *data_length);
 
 #endif /* _TPM_EMULATOR_EXTERN_H_ */
 
