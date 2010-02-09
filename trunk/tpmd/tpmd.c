@@ -30,20 +30,19 @@
 #include <sys/un.h>
 #include <pwd.h>
 #include <grp.h>
+#include "config.h"
 #include "tpm/tpm_emulator.h"
 
-#define TPM_DAEMON_NAME     "tpmd"
 #define TPM_COMMAND_TIMEOUT 30
 #define TPM_RANDOM_DEVICE   "/dev/urandom"
-#define TPM_MKDIRS          1
 
 static volatile int stopflag = 0;
 static int is_daemon = 0;
 static int opt_debug = 0;
 static int opt_foreground = 0;
-static const char *opt_socket_name = "/var/run/tpm/" TPM_DAEMON_NAME "_socket:0";
-static const char *opt_storage_file = "/var/lib/tpm/tpm_emulator-1.2."
-                                      TPM_STR(VERSION_MAJOR) "." TPM_STR(VERSION_MINOR);
+static const char *opt_socket_name = TPM_SOCKET_NAME;
+static const char *opt_storage_file = TPM_STORAGE_NAME;
+
 static uid_t opt_uid = 0;
 static gid_t opt_gid = 0;
 static int tpm_startup = 2;
@@ -350,9 +349,7 @@ static int init_socket(const char *name)
         error("socket(AF_UNIX) failed: %s", strerror(errno));
         return -1;
     }
-#ifdef TPM_MKDIRS
     mkdirs(name);
-#endif
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, name, sizeof(addr.sun_path));
     umask(0177);
@@ -381,9 +378,7 @@ static void main_loop(void)
     sock = init_socket(opt_socket_name);
     if (sock < 0) exit(EXIT_FAILURE);
     /* init tpm emulator */
-#ifdef TPM_MKDIRS
     mkdirs(opt_storage_file);
-#endif
     debug("initializing TPM emulator: %d", tpm_startup);
     tpm_emulator_init(tpm_startup);
     /* start command processing */
@@ -462,10 +457,11 @@ static void main_loop(void)
 
 int main(int argc, char **argv)
 {
-    openlog(TPM_DAEMON_NAME, 0, LOG_DAEMON);
+    openlog(argv[0], 0, LOG_DAEMON);
     setlogmask(~LOG_MASK(LOG_DEBUG));
     syslog(LOG_INFO, "--- separator ---\n");
-    info("starting TPM Emulator daemon (1.2.%d.%d)", VERSION_MAJOR, VERSION_MINOR);
+    info("starting TPM Emulator daemon (1.2.%d.%d-%d)",
+         VERSION_MAJOR, VERSION_MINOR, VERSION_BUILD);
     parse_options(argc, argv);
     /* switch uid/gid if required */
     switch_uid_gid();

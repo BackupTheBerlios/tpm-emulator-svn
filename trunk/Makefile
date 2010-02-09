@@ -6,21 +6,12 @@
 # tpm settings
 PACKAGE_NAME   := tpm_emulator
 VERSION_MAJOR  := 0
-VERSION_MINOR  := 6.1
-VERSION_BUILD  := $(shell date +"%s")
+VERSION_MINOR  := 7
 VERSION_SUFFIX := 
 
 SUBDIRS := tpmd tpmd_dev tddl
 
-all: version all-recursive
-
-version:
-	@echo "#ifndef _TPM_VERSION_H_" > tpm/tpm_version.h
-	@echo "#define _TPM_VERSION_H_" >> tpm/tpm_version.h
-	@echo "#define VERSION_MAJOR $(VERSION_MAJOR)" >> tpm/tpm_version.h
-	@echo "#define VERSION_MINOR $(VERSION_MINOR)" >> tpm/tpm_version.h
-	@echo "#define VERSION_BUILD $(VERSION_BUILD)" >> tpm/tpm_version.h
-	@echo "#endif /* _TPM_VERSION_H_ */" >> tpm/tpm_version.h
+all: all-recursive
 
 clean: clean-recursive
 	rm -f tpm/tpm_version.h

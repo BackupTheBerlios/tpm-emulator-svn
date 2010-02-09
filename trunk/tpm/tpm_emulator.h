@@ -17,12 +17,8 @@
 #ifndef _TPM_EMULATOR_H_
 #define _TPM_EMULATOR_H_
 
+#include "config.h"
 #include "tpm_emulator_extern.h"
-
-/* emulator version */
-#define TPM_STR(s) _TPM_STR(s)
-#define _TPM_STR(s) #s
-#include "tpm_version.h"
 
 #define TPM_CMD_BUF_SIZE 4096
 
