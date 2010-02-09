@@ -18,7 +18,8 @@
 #ifndef _BN_H_
 #define _BN_H_
 
-#include "tpm_emulator_config.h"
+#include <stddef.h>
+#include <stdint.h>
 #include <gmp.h>
 
 typedef mpz_t tpm_bn_t;

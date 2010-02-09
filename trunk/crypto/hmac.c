@@ -15,6 +15,7 @@
  */
 
 #include "hmac.h"
+#include <string.h>
 
 void tpm_hmac_init(tpm_hmac_ctx_t *ctx, const uint8_t *key, size_t key_len)
 {

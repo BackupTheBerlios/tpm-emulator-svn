@@ -17,7 +17,7 @@
 #ifndef _TPM_EMULATOR_H_
 #define _TPM_EMULATOR_H_
 
-#include "tpm_emulator_config.h"
+#include "tpm_emulator_extern.h"
 
 /* emulator version */
 #define TPM_STR(s) _TPM_STR(s)

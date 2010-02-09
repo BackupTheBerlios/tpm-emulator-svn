@@ -15,6 +15,7 @@
  */
 
 #include "sha1.h"
+#include <string.h>
 
 /* This code is based on Steve Reid's <steve@edmweb.com> 
    public domain implementation. */ 

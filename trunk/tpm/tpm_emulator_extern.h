@@ -14,8 +14,8 @@
  * $Id$
  */
 
-#ifndef _TPM_EMULATOR_CONFIG_H_
-#define _TPM_EMULATOR_CONFIG_H_
+#ifndef _TPM_EMULATOR_EXTERN_H_
+#define _TPM_EMULATOR_EXTERN_H_
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -30,7 +30,7 @@
 #undef  TPM_USE_INTERNAL_PRNG
 #undef  TPM_ENABLE_PRNG_STATE_SETTING
 
-/* log macros */
+/* log functions */
 
 void tpm_log(int priority, const char *fmt, ...);
 
@@ -45,15 +45,9 @@ void tpm_log(int priority, const char *fmt, ...);
 
 /* memory allocation */
 
-static inline void *tpm_malloc(size_t size) 
-{
-  return malloc(size);
-}
+void *tpm_malloc(size_t size);
 
-static inline void tpm_free(/*const*/ void *ptr)
-{
-  if (ptr != NULL) free((void*)ptr);
-}
+void tpm_free(/*const*/ void *ptr);
 
 /* random numbers */
 
@@ -68,5 +62,5 @@ uint64_t tpm_get_ticks(void);
 int tpm_write_to_file(uint8_t *data, size_t data_length);
 int tpm_read_from_file(uint8_t **data, size_t *data_length);
 
-#endif /* _TPM_EMULATOR_CONFIG_H_ */
+#endif /* _TPM_EMULATOR_EXTERN_H_ */
 

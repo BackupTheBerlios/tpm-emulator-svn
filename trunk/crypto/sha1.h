@@ -17,7 +17,8 @@
 #ifndef _SHA1_H_
 #define _SHA1_H_
 
-#include "tpm_emulator_config.h"
+#include <stddef.h>
+#include <stdint.h>
 
 #define SHA1_DIGEST_LENGTH 20
 

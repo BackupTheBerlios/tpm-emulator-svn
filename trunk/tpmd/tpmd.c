@@ -30,7 +30,6 @@
 #include <sys/un.h>
 #include <pwd.h>
 #include <grp.h>
-#include "tpm_emulator_config.h"
 #include "tpm/tpm_emulator.h"
 
 #define TPM_DAEMON_NAME     "tpmd"
@@ -49,6 +48,16 @@ static uid_t opt_uid = 0;
 static gid_t opt_gid = 0;
 static int tpm_startup = 2;
 static int rand_fh;
+
+void *tpm_malloc(size_t size)
+{
+  return malloc(size);
+}
+
+void tpm_free(/*const*/ void *ptr)
+{
+  if (ptr != NULL) free((void*)ptr);
+}
 
 void tpm_log(int priority, const char *fmt, ...)
 {

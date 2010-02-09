@@ -17,7 +17,8 @@
 #ifndef _RSA_H_
 #define _RSA_H_
 
-#include "tpm_emulator_config.h"
+#include <stddef.h>
+#include <stdint.h>
 #include "bn.h"
 
 typedef struct {
