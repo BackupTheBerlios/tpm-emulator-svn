@@ -368,9 +368,9 @@ void tpm_rsa_mask_generation(const uint8_t *seed, size_t seed_len,
   while (data_len > 0) {
     tpm_sha1_init(&ctx);
     tpm_sha1_update(&ctx, seed, seed_len);
-    tpm_sha1_update(&ctx, (uint8_t*)&counter, 4);
+    tpm_sha1_update_be32(&ctx, counter);
     tpm_sha1_final(&ctx, mask);
-    counter = CPU_TO_BE32(BE32_TO_CPU(counter) + 1);
+    counter++;
     len = (data_len < SHA1_DIGEST_LENGTH) ? data_len : SHA1_DIGEST_LENGTH;
     for (i = 0; i < len; i++) *data++ ^= mask[i];
     data_len -= len; 

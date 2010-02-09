@@ -211,8 +211,7 @@ static void decrypt_wrapped_command(BYTE *buf, UINT32 buf_len, TPM_AUTH *auth,
     tpm_sha1_update(&sha1, auth->nonceOdd.nonce, sizeof(auth->nonceOdd.nonce));
     tpm_sha1_update(&sha1, (uint8_t*)"in", 2);
     tpm_sha1_update(&sha1, session->transInternal.authData, sizeof(TPM_SECRET));
-    j = CPU_TO_BE32(i);
-    tpm_sha1_update(&sha1, (BYTE*)&j, 4);
+    tpm_sha1_update_be32(&sha1, i);
     tpm_sha1_final(&sha1, mask);
     for (j = 0; j < sizeof(mask) && buf_len > 0; j++) { 
       *buf++ ^= mask[j];
@@ -233,8 +232,7 @@ static void encrypt_wrapped_command(BYTE *buf, UINT32 buf_len, TPM_AUTH *auth,
     tpm_sha1_update(&sha1, auth->nonceOdd.nonce, sizeof(auth->nonceOdd.nonce));
     tpm_sha1_update(&sha1, (uint8_t*)"out", 3);
     tpm_sha1_update(&sha1, session->transInternal.authData, sizeof(TPM_SECRET));
-    j = CPU_TO_BE32(i);
-    tpm_sha1_update(&sha1, (BYTE*)&j, 4);
+    tpm_sha1_update_be32(&sha1, i);
     tpm_sha1_final(&sha1, mask);
     for (j = 0; j < sizeof(mask) && buf_len > 0; j++) { 
       *buf++ ^= mask[j];
@@ -334,10 +332,8 @@ TPM_RESULT TPM_ExecuteTransport(UINT32 inWrappedCmdSize, BYTE *inWrappedCmd,
   /* verify authorization */
   tpm_compute_in_param_digest(&req);
   tpm_sha1_init(&sha1);
-  res = CPU_TO_BE32(TPM_ORD_ExecuteTransport);
-  tpm_sha1_update(&sha1, (BYTE*)&res, 4);
-  res = CPU_TO_BE32(inWrappedCmdSize);
-  tpm_sha1_update(&sha1, (BYTE*)&res, 4);
+  tpm_sha1_update_be32(&sha1, TPM_ORD_ExecuteTransport);
+  tpm_sha1_update_be32(&sha1, inWrappedCmdSize);
   tpm_sha1_update(&sha1, req.auth1.digest, sizeof(req.auth1.digest));
   tpm_sha1_final(&sha1, auth1->digest);
   res = tpm_verify_auth(auth1, session->transInternal.authData, TPM_INVALID_HANDLE);

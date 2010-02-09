@@ -31,6 +31,8 @@ void tpm_sha1_init(tpm_sha1_ctx_t *ctx);
 
 void tpm_sha1_update(tpm_sha1_ctx_t *ctx, const uint8_t *data, size_t length);
 
+void tpm_sha1_update_be32(tpm_sha1_ctx_t *ctx, uint32_t data);
+
 void tpm_sha1_final(tpm_sha1_ctx_t *ctx, uint8_t digest[SHA1_DIGEST_LENGTH]);
 
 #endif /* _SHA1_H_ */

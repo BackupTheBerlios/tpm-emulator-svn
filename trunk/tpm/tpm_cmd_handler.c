@@ -95,12 +95,11 @@ void tpm_compute_in_param_digest(TPM_REQUEST *req)
 {
   tpm_sha1_ctx_t sha1;
   UINT32 offset = tpm_get_in_param_offset(req->ordinal);
-  UINT32 ord = CPU_TO_BE32(req->ordinal);
 
   /* compute SHA1 hash */
   if (offset <= req->paramSize) {
     tpm_sha1_init(&sha1);
-    tpm_sha1_update(&sha1, (BYTE*)&ord, 4);
+    tpm_sha1_update_be32(&sha1, req->ordinal);
     /* skip all handles at the beginning */
     tpm_sha1_update(&sha1, req->param + offset, req->paramSize - offset);
     tpm_sha1_final(&sha1, req->auth1.digest);
@@ -112,13 +111,11 @@ void tpm_compute_out_param_digest(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
 {
   tpm_sha1_ctx_t sha1;
   UINT32 offset = tpm_get_out_param_offset(ordinal);
-  UINT32 res = CPU_TO_BE32(rsp->result);
-  UINT32 ord = CPU_TO_BE32(ordinal);
 
   /* compute SHA1 hash */
   tpm_sha1_init(&sha1);
-  tpm_sha1_update(&sha1, (BYTE*)&res, 4);
-  tpm_sha1_update(&sha1, (BYTE*)&ord, 4);
+  tpm_sha1_update_be32(&sha1, rsp->result);
+  tpm_sha1_update_be32(&sha1, ordinal);
   tpm_sha1_update(&sha1, rsp->param + offset, rsp->paramSize - offset);
   tpm_sha1_final(&sha1, rsp->auth1->digest);
   if (rsp->auth2 != NULL) memcpy(rsp->auth2->digest, 

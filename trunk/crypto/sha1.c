@@ -20,7 +20,15 @@
    public domain implementation. */ 
 
 #define rol(v,b) (((v) << (b)) | ((v) >> (32 - (b))))
-#define B0(i) (buf[i] = CPU_TO_BE32(buf[i]))
+#ifdef __BIG_ENDIAN__
+#define B0(i) (buf[i] = buf[i])
+#else
+#define B0(i) (buf[i] = (((buf[i] & 0xff000000) >> 24) \
+                       | ((buf[i] & 0x00ff0000) >> 8) \
+                       | ((buf[i] & 0x0000ff00) << 8) \
+                       | ((buf[i] & 0x000000ff) << 24)))
+
+#endif
 #define B1(i) (buf[i & 15] = rol(buf[i & 15] ^ buf[(i-14) & 15] \
                                  ^ buf[(i-8) & 15] ^ buf[(i-3) & 15], 1))
 #define F0(x,y,z) ((x & (y ^ z)) ^ z)
@@ -110,6 +118,17 @@ void tpm_sha1_update(tpm_sha1_ctx_t *ctx, const uint8_t *data, size_t length)
   ctx->count_lo += length << 3;
   if (ctx->count_lo < buf_off) ctx->count_hi++;
   ctx->count_hi += length >> 29;
+}
+
+void tpm_sha1_update_be32(tpm_sha1_ctx_t *ctx, uint32_t data)
+{
+  uint8_t buf[4];
+
+  buf[0] = (data >> 24) & 0xff;
+  buf[1] = (data >> 16) & 0xff;
+  buf[2] = (data >>  8) & 0xff;
+  buf[3] = (data >>  0) & 0xff;
+  tpm_sha1_update(ctx, buf, 4);
 }
 
 void tpm_sha1_final(tpm_sha1_ctx_t *ctx, uint8_t digest[SHA1_DIGEST_LENGTH])

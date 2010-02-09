@@ -1,1 +1,0 @@
-../../tpm/tpm_startup.c

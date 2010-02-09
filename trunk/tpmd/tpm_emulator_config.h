@@ -21,18 +21,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
-#if defined(__linux__)
-#include <asm/byteorder.h>
-#elif (defined(__OpenBSD__) || defined(__FreeBSD__))
-#include <sys/endian.h>
-#endif 
 
 /* TPM emulator configuration */
 
 #undef  TPM_STRONG_PERSISTENCE
 #undef  TPM_GENERATE_EK
 #undef  TPM_GENERATE_SEED_DAA
-#undef  TPM_MEMORY_ALIGNMENT_MANDATORY
 #undef  TPM_USE_INTERNAL_PRNG
 #undef  TPM_ENABLE_PRNG_STATE_SETTING
 
@@ -80,58 +74,6 @@ uint64_t tpm_get_ticks(void);
 
 int tpm_write_to_file(uint8_t *data, size_t data_length);
 int tpm_read_from_file(uint8_t **data, size_t *data_length);
-
-/* byte order conversions */
-
-#if defined(__linux__)
-
-#define CPU_TO_BE64(x) __cpu_to_be64(x)
-#define CPU_TO_LE64(x) __cpu_to_le64(x)
-#define CPU_TO_BE32(x) __cpu_to_be32(x)
-#define CPU_TO_LE32(x) __cpu_to_le32(x)
-#define CPU_TO_BE16(x) __cpu_to_be16(x)
-#define CPU_TO_LE16(x) __cpu_to_le16(x)
-
-#define BE64_TO_CPU(x) __be64_to_cpu(x)
-#define LE64_TO_CPU(x) __le64_to_cpu(x)
-#define BE32_TO_CPU(x) __be32_to_cpu(x)
-#define LE32_TO_CPU(x) __le32_to_cpu(x)
-#define BE16_TO_CPU(x) __be16_to_cpu(x)
-#define LE16_TO_CPU(x) __le16_to_cpu(x)
-
-#elif defined(__OpenBSD__)
-
-#define CPU_TO_BE64(x) htobe64(x)
-#define CPU_TO_LE64(x) htole64(x)
-#define CPU_TO_BE32(x) htobe32(x)
-#define CPU_TO_LE32(x) htole32(x)
-#define CPU_TO_BE16(x) htobe16(x)
-#define CPU_TO_LE16(x) htole16(x)
-
-#define BE64_TO_CPU(x) betoh64(x)
-#define LE64_TO_CPU(x) letoh64(x)
-#define BE32_TO_CPU(x) betoh32(x)
-#define LE32_TO_CPU(x) letoh32(x)
-#define BE16_TO_CPU(x) betoh16(x)
-#define LE16_TO_CPU(x) letoh16(x)
-
-#elif defined (__FreeBSD__)
-
-#define CPU_TO_BE64(x) htobe64(x)
-#define CPU_TO_LE64(x) htole64(x)
-#define CPU_TO_BE32(x) htobe32(x)
-#define CPU_TO_LE32(x) htole32(x)
-#define CPU_TO_BE16(x) htobe16(x)
-#define CPU_TO_LE16(x) htole16(x)
-
-#define BE64_TO_CPU(x) be64toh(x)
-#define LE64_TO_CPU(x) le64toh(x)
-#define BE32_TO_CPU(x) be32toh(x)
-#define LE32_TO_CPU(x) le32toh(x)
-#define BE16_TO_CPU(x) be16toh(x)
-#define LE16_TO_CPU(x) le16toh(x)
-
-#endif
 
 #endif /* _TPM_EMULATOR_CONFIG_H_ */
 

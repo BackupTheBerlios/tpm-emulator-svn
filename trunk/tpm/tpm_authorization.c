@@ -521,7 +521,6 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
 {
   tpm_hmac_ctx_t ctx;
   TPM_SESSION_DATA *session;
-  UINT32 auth_handle = CPU_TO_BE32(auth->authHandle);
   BYTE digest[SHA1_DIGEST_LENGTH];
 
   info("tpm_verify_auth()");
