@@ -23,11 +23,12 @@
 #include <string.h>
 #include <errno.h>
 #include <pthread.h>
+#include <config.h>
 #include "tddl.h"
 
 /* device and socket names */
-static const char *tpm_device_name = "/dev/tpm";
-static const char *tpmd_socket_name = "/var/run/tpm/tpmd_socket:0";
+static const char *tpm_device_name = TPM_DEVICE_NAME;
+static const char *tpmd_socket_name = TPM_SOCKET_NAME;
 
 /* TPM device handle */
 static int tddli_dh = -1;
