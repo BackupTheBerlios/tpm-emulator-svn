@@ -218,6 +218,17 @@ static void parse_options(int argc, char **argv)
             print_usage(argv[0]);
             exit(EXIT_SUCCESS);
         }
+    } else {
+        /* if no startup mode is given assume save if a configuration
+           file is available, clear otherwise */
+        int fh = open(opt_storage_file, O_RDONLY);
+        if (fh < 0) {
+            tpm_startup = 1;
+            info("no startup mode was specified; asuming 'clear'");
+        } else {
+            tpm_startup = 2;
+            close(fh);
+        }
     }
 }
 
