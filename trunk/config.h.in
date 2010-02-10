@@ -18,21 +18,21 @@
 #define _CONFIG_H_
 
 /* project and build version */
-#define VERSION_MAJOR 0
-#define VERSION_MINOR 7
-#define VERSION_BUILD 144
+#define VERSION_MAJOR ${TPM_Emulator_MAJOR_VERSION}
+#define VERSION_MINOR ${TPM_Emulator_MINOR_VERSION}
+#define VERSION_BUILD ${TPM_Emulator_BUILD_VERSION}
 
 /* TPM emulator configuration */
-/* #undef TPM_STRONG_PERSISTENCE */
-/* #undef TPM_GENERATE_EK */
-/* #undef TPM_GENERATE_SEED_DAA */
-/* #undef TPM_USE_INTERNAL_PRNG */
-/* #undef TPM_ENABLE_PRNG_STATE_SETTING */
+#cmakedefine TPM_STRONG_PERSISTENCE
+#cmakedefine TPM_GENERATE_EK
+#cmakedefine TPM_GENERATE_SEED_DAA
+#cmakedefine TPM_USE_INTERNAL_PRNG
+#cmakedefine TPM_ENABLE_PRNG_STATE_SETTING
 
 /* TDDL and LKM configuration */
-#define TPM_SOCKET_NAME  "/var/run/tpm/tpmd_socket:0"
-#define TPM_STORAGE_NAME "/var/lib/tpm/tpm_emulator-1.2.0.7"
-#define TPM_DEVICE_NAME  "/dev/tpm"
+#define TPM_SOCKET_NAME  "${TPM_SOCKET_NAME}"
+#define TPM_STORAGE_NAME "${TPM_STORAGE_NAME}"
+#define TPM_DEVICE_NAME  "${TPM_DEVICE_NAME}"
 
 #endif /* _CONFIG_H_ */
 
