@@ -14,7 +14,7 @@ obj-m          := $(MODULE_NAME).o
 
 # do not print "Entering directory ..."
 MAKEFLAGS      += --no-print-directory
-EXTRA_CFLAGS   += -Wall -Werror -DDEBUG
+EXTRA_CFLAGS   += -Wall -Werror
 
 all:
 	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) modules
