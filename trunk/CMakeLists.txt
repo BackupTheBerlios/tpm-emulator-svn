@@ -16,7 +16,7 @@ endif()
 # set project and build version
 set(${PROJECT_NAME}_MAJOR_VERSION 0)
 set(${PROJECT_NAME}_MINOR_VERSION 7)
-string(REGEX REPLACE "\\$Revision${PROJECT_NAME}_BUILD_VERSION "$Revision$")
+string(REGEX REPLACE ".*Revision: ([0-9]+).*" "\\1" ${PROJECT_NAME}_BUILD_VERSION "$Revision$")
 
 # create project configuration
 set(TPM_SOCKET_NAME "/var/run/tpm/tpmd_socket:0")
