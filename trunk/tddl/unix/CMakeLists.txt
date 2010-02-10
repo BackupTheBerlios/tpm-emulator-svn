@@ -6,7 +6,7 @@
 set(tddl_SRCS "tddl.c" "tddl.h")
 add_library(tddl SHARED ${tddl_SRCS})
 set_target_properties(tddl PROPERTIES SOVERSION "1.2"
-  VERSION "1.2.${${PROJECT_NAME}_MAJOR_VERSION}.${${PROJECT_NAME}_MINOR_VERSION}")
+  VERSION "1.2.${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(test_tddl test_tddl.c)

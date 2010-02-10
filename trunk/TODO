@@ -1,3 +1,10 @@
+* CMake-based packaging
+* CMake-based installation
+* OpenBSD kernel module
+* Darwin kernel module
+* Windows TDDL
+* Windows tpmd
+
 * update encryption: RC4 -> AES256
   - de- and encryption
   - function to compute buffer size

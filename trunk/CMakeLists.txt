@@ -14,17 +14,24 @@ if(IS_INSOURCE)
 endif()
 
 # set project and build version
-set(${PROJECT_NAME}_MAJOR_VERSION 0)
-set(${PROJECT_NAME}_MINOR_VERSION 7)
-string(REGEX REPLACE ".*Revision: ([0-9]+).*" "\\1" ${PROJECT_NAME}_BUILD_VERSION "$Revision$")
+set(${PROJECT_NAME}_VERSION_MAJOR 0)
+set(${PROJECT_NAME}_VERSION_MINOR 7)
+string(REGEX REPLACE ".*Revision: ([0-9]+).*" "\\1" ${PROJECT_NAME}_VERSION_BUILD "$Revision$")
 
 # create project configuration
 set(TPM_SOCKET_NAME "/var/run/tpm/tpmd_socket:0")
-set(TPM_STORAGE_NAME "/var/lib/tpm/tpm_emulator-1.2.${${PROJECT_NAME}_MAJOR_VERSION}.${${PROJECT_NAME}_MINOR_VERSION}")
+set(TPM_STORAGE_NAME "/var/lib/tpm/tpm_emulator-1.2.${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}")
 set(TPM_DEVICE_NAME "/dev/tpm")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 # configure CPack
+set(CPACK_PACKAGE_VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${${PROJECT_NAME}_VERSION_MINOR})
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "tpm_emulator-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}")
+set(CPACK_SOURCE_GENERATOR "TBZ2")
+set(CPACK_SOURCE_IGNORE_FILES "\\.svn/;/build*")
+set(CPACK_GENERATOR "NONE")
+include(CPack)
 
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_BINARY_DIR})

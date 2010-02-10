@@ -18,9 +18,9 @@
 #define _CONFIG_H_
 
 /* project and build version */
-#define VERSION_MAJOR ${TPM_Emulator_MAJOR_VERSION}
-#define VERSION_MINOR ${TPM_Emulator_MINOR_VERSION}
-#define VERSION_BUILD ${TPM_Emulator_BUILD_VERSION}
+#define VERSION_MAJOR ${TPM_Emulator_VERSION_MAJOR}
+#define VERSION_MINOR ${TPM_Emulator_VERSION_MINOR}
+#define VERSION_BUILD ${TPM_Emulator_VERSION_BUILD}
 
 /* TPM emulator configuration */
 #cmakedefine TPM_STRONG_PERSISTENCE
