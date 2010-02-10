@@ -4,15 +4,15 @@
   | | |  __/| |  | | |_____| | |___| | | | | | |_| | | (_| | || (_) | |
   |_| |_|   |_|  |_|         |_____|_| |_| |_|\__,_|_|\__,_|\__\___/|_|
 
- TPM-Emulator v0.6 -
- A Software-based Trusted Platform Module (TPM) Emulator for Linux.
+ TPM-Emulator v0.7 -
+ A Software-based TPM and MTM Emulator.
 --------------------------------------------------------------------------
 
 $Id$
 
 Copyright
 --------------------------------------------------------------------------
-Copyright (C) 2004-2006 Mario Strasser <mast@gmx.net> and Swiss Federal
+Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net> and Swiss Federal
 Institute of Technology (ETH) Zurich.
 
 This program is free software; you can redistribute it and/or modify
@@ -28,46 +28,37 @@ GNU General Public License for more details.
 
 Package
 --------------------------------------------------------------------------
-Since version 0.5, the tpm emulator package comprises four main parts:
+The tpm emulator package comprises four main parts:
 
-a) tpmd - a user-space daemon that implements the actual TPM emulator
-   and can be accessed by means of unix domain sockets.
+a) tpmd - a user-space application that implements the actual emulator
+   and can be accessed by means of unix domain sockets (Unix) or
+   named pipes (Windows).
 
 b) tpmd_dev - a kernel module that provides the device /dev/tpm for
    backward compatibility and forwards the received commands to tpmd.
 
-c) tddl - a TSS conform device driver library for the TPM emulator.
-
-d) tpm_dev - the (obsolete) kernel-space TPM emulator.
+c) tddl - a TSS conform device driver library for the emulator.
 
 
-Configuration
+Prerequisites
 --------------------------------------------------------------------------
 First of all, you have to make sure that the GNU MP library (http://
 www.gnu.org/software/gmp/gmp.html) is properly installed on your system;
 in particular that the required shared library and header files exist
 and are located within the search path of the compiler and linker.
 
-The compilation and installation process of the kernel modules uses the
-build environment for external kernel modules of the 2.5.X Linux kernels,
-which must therefore be set up properly. If you are using a pre-compiled
-standard kernel of some distribution, install the appropriate kernel-source
-packages and call the following commands:
-
-# cd /usr/src/linux
-# zcat /proc/config.gz > .config
-# make oldconfig
-# make modules_prepare
 
 Compilation and Installation
 --------------------------------------------------------------------------
-The actual compilation and installation of the TPM emulator package is
-done as follows:
+The compilation and installation of the emulator package is based on
+the CMake build environment and is executed as follows:
 
 # tar -xvzf tpm_emulator-X.Y.tar.gz
 # cd tpm_emulator-X.Y
-# make
-# make install
+# mkdir build
+# cd build
+# cmake ../
+# cmake install
 
 Please note that the user and group 'tss' must exists on the target host.
 
@@ -131,6 +122,8 @@ expected.
 
 Notes
 --------------------------------------------------------------------------
+* Since release 0.7 the emulator supports Darwin (Mac OS X) and Windows;
+  thanks go to Amit Singh and Domenic Schroeder
 * Since release 0.5.1 the emulator supports Free- and OpenBSD; thanks go
   to Sebastian Schuetz.
 * Since release 0.5 the kernel-based emulator (tpm_dev) is obsolete.
