@@ -1,6 +1,6 @@
-# Software-Based Trusted Platform Module (TPM) Emulator for OpenBSD
+# Software-based Trusted Platform Module (TPM) Emulator
+# Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
 # Copyright (C) 2007 Sebastian Schuetz <sebastian_schuetz@genua.de>
-# Copyright (C) 2007 Mario Strasser <mast@gmx.net>
 #
 # $Id$
 
@@ -25,5 +25,5 @@ unload: rknod
 mknod:
 	mknod -m 644 /dev/tpm c 29 0
 
-rknod:
+rmnod:
 	rm /dev/tpm
