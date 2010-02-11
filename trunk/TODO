@@ -1,10 +1,12 @@
-* CMake-based packaging
-* CMake-based installation
+* update headers
+
 * OpenBSD kernel module
 * Darwin kernel module
+
 * Windows TDDL
 * Windows tpmd
-* Update headers
+
+* MTM
 
 * update encryption: RC4 -> AES256
   - de- and encryption
