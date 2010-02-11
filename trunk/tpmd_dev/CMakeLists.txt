@@ -28,5 +28,7 @@ add_custom_command(OUTPUT ${tpmd_dev_OBJ}
 
 add_custom_target(tpmd_dev ALL DEPENDS ${tpmd_dev_OBJ})
 
+install(CODE "EXECUTE_PROCESS(COMMAND make -C ${tpmd_dev_BINARY_DIR} install)")
+
 endif()
 

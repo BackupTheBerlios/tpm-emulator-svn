@@ -8,4 +8,5 @@ include_directories("${PROJECT_SOURCE_DIR}/tpm")
 file(GLOB tpmd_SRCS "*.[h|c]")
 add_executable(tpmd ${tpmd_SRCS})
 target_link_libraries(tpmd tpm crypto)
+install(TARGETS tpmd RUNTIME DESTINATION bin)
 

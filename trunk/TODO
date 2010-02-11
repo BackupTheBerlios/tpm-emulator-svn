@@ -4,6 +4,7 @@
 * Darwin kernel module
 * Windows TDDL
 * Windows tpmd
+* Update headers
 
 * update encryption: RC4 -> AES256
   - de- and encryption

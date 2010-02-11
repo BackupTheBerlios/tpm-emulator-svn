@@ -1,1 +1,1 @@
-KERNEL=="tpm", NAME="%k", SYMLINK+="tpm0", GROUP="$TPMD_GROUP", MODE="0660"
+KERNEL=="tpm", NAME="%k", SYMLINK+="tpm0", GROUP="$TPM_GROUP", MODE="0660"
