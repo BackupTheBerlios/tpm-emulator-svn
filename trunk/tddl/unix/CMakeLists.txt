@@ -8,6 +8,7 @@ add_library(tddl SHARED ${tddl_SRCS})
 set_target_properties(tddl PROPERTIES SOVERSION "1.2"
   VERSION "1.2.${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}")
 install(TARGETS tddl LIBRARY DESTINATION lib)
+install(FILES "tddl.h" DESTINATION include)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(test_tddl test_tddl.c)
