@@ -196,23 +196,13 @@ int tpm_store_permanent_data(void)
   uint32_t len;
 
   /* marshal data */
-  buf_length = len = sizeof_TPM_VERSION(tpmData.permanent.data.version)
-    + sizeof_TPM_PERMANENT_FLAGS(tpmData.permanent.flags) + 2
-    + sizeof_TPM_PERMANENT_DATA(&tpmData.permanent.data)
-    + sizeof_TPM_STCLEAR_FLAGS(tpmData.stclear.flags)
-    + sizeof_TPM_STCLEAR_DATA(tpmData.stclear.data)
-    + sizeof_TPM_STANY_DATA(tpmData.stany.data);
+  buf_length = len = sizeof_TPM_VERSION(s.permanent.data.version)
+                     + sizeof_TPM_DATA(tpmData);
   debug("size of permanent data: %d", buf_length);
   buf = ptr = tpm_malloc(buf_length);
   if (buf == NULL
       || tpm_marshal_TPM_VERSION(&ptr, &len, &tpmData.permanent.data.version)
-      || tpm_marshal_TPM_PERMANENT_FLAGS(&ptr, &len, &tpmData.permanent.flags)
-      || tpm_marshal_BOOL(&ptr, &len, tpmData.permanent.flags.selfTestSucceeded)
-      || tpm_marshal_BOOL(&ptr, &len, tpmData.permanent.flags.owned)
-      || tpm_marshal_TPM_PERMANENT_DATA(&ptr, &len, &tpmData.permanent.data)
-      || tpm_marshal_TPM_STCLEAR_FLAGS(&ptr, &len, &tpmData.stclear.flags)
-      || tpm_marshal_TPM_STCLEAR_DATA(&ptr, &len, &tpmData.stclear.data)
-      || tpm_marshal_TPM_STANY_DATA(&ptr, &len, &tpmData.stany.data)) {
+      || tpm_marshal_TPM_DATA(&ptr, &len, &tpmData)) {
     tpm_free(buf);
     return -1;
   }
@@ -239,13 +229,7 @@ int tpm_restore_permanent_data(void)
   /* unmarshal data */
   if (tpm_unmarshal_TPM_VERSION(&ptr, &len, &ver)
       || memcmp(&ver, &tpm_version, sizeof(TPM_VERSION))
-      || tpm_unmarshal_TPM_PERMANENT_FLAGS(&ptr, &len, &tpmData.permanent.flags)
-      || tpm_unmarshal_BOOL(&ptr, &len, &tpmData.permanent.flags.selfTestSucceeded)
-      || tpm_unmarshal_BOOL(&ptr, &len, &tpmData.permanent.flags.owned)
-      || tpm_unmarshal_TPM_PERMANENT_DATA(&ptr, &len, &tpmData.permanent.data)
-      || tpm_unmarshal_TPM_STCLEAR_FLAGS(&ptr, &len, &tpmData.stclear.flags)      
-      || tpm_unmarshal_TPM_STCLEAR_DATA(&ptr, &len, &tpmData.stclear.data)
-      || tpm_unmarshal_TPM_STANY_DATA(&ptr, &len, &tpmData.stany.data)
+      || tpm_unmarshal_TPM_DATA(&ptr, &len, &tpmData)
       || len > 0) {
     tpm_free(buf);
     return -1;

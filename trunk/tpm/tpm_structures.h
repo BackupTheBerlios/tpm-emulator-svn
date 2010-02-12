@@ -2346,6 +2346,12 @@ typedef struct tdTPM_DATA {
     TPM_STANY_DATA data;
   } stany;
 } TPM_DATA;
+#define sizeof_TPM_DATA(s) ( \
+  sizeof_TPM_PERMANENT_FLAGS(s.permanent.flags) + 2 \
+  + sizeof_TPM_PERMANENT_DATA(&s.permanent.data) \
+  + sizeof_TPM_STCLEAR_FLAGS(s.stclear.flags) \
+  + sizeof_TPM_STCLEAR_DATA(s.stclear.data) \
+  + sizeof_TPM_STANY_DATA(s.stany.data))
 
 /*
  * Context Structures

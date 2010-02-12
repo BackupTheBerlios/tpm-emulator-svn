@@ -497,6 +497,9 @@ int tpm_unmarshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA 
 int tpm_marshal_TPM_STANY_DATA(BYTE **ptr, UINT32 *length, TPM_STANY_DATA *v);
 int tpm_unmarshal_TPM_STANY_DATA(BYTE **ptr, UINT32 *length, TPM_STANY_DATA *v);
 
+int tpm_unmarshal_TPM_DATA(BYTE **ptr, UINT32 *length, TPM_DATA *v);
+int tpm_marshal_TPM_DATA(BYTE **ptr, UINT32 *length, TPM_DATA *v);
+
 int tpm_marshal_TPM_RESPONSE(BYTE **ptr, UINT32 *length, TPM_RESPONSE *v);
 int tpm_unmarshal_TPM_REQUEST(BYTE **ptr, UINT32 *length, TPM_REQUEST *v);
 
