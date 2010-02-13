@@ -1028,34 +1028,34 @@ TPM_RESULT TPM_SetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
   /* set capability area */
   switch (capArea) {
     case TPM_SET_PERM_FLAGS:
-      debug("[TPM_SET_PERM_FLAGS]:%d", subCap);
+      debug("[TPM_SET_PERM_FLAGS]:%d", subCapVal);
       if (setValueSize != 1 || setValue[0] & 0xfe) return TPM_BAD_PARAMETER;
       return set_perm_flags(subCapVal, setValue[0], ownerAuth,
                             deactivated, disabled);
     case TPM_SET_STCLEAR_FLAGS:
-      debug("[TPM_SET_STCLEAR_FLAGS]:%d", subCap);
+      debug("[TPM_SET_STCLEAR_FLAGS]:%d", subCapVal);
       if (setValueSize != 1 || setValue[0] & 0xfe) return TPM_BAD_PARAMETER;
       return set_stclear_flags(subCapVal, setValue[0], ownerAuth,
                                deactivated, disabled);
     case TPM_SET_STANY_FLAGS:
-      debug("[TPM_SET_STANY_FLAGS]:%d", subCap);
+      debug("[TPM_SET_STANY_FLAGS]:%d", subCapVal);
       if (setValueSize != 1 || setValue[0] & 0xfe) return TPM_BAD_PARAMETER;
       return set_stany_flags(subCapVal, setValue[0], ownerAuth,
                              deactivated, disabled);
     case TPM_SET_PERM_DATA:
-      debug("[TPM_SET_PERM_DATA]:%d", subCap);
+      debug("[TPM_SET_PERM_DATA]:%d", subCapVal);
       return set_perm_data(subCapVal, setValue, setValueSize, ownerAuth,
                            deactivated, disabled);
     case TPM_SET_STCLEAR_DATA:
-      debug("[TPM_SET_STCLEAR_DATA]:%d", subCap);
+      debug("[TPM_SET_STCLEAR_DATA]:%d", subCapVal);
       return set_stclear_data(subCapVal, setValue, setValueSize, ownerAuth,
                               deactivated, disabled);
     case TPM_SET_STANY_DATA:
-      debug("[TPM_SET_STANY_DATA]:%d", subCap);
+      debug("[TPM_SET_STANY_DATA]:%d", subCapVal);
       return set_stany_data(subCapVal, setValue, setValueSize, ownerAuth,
                             deactivated, disabled);
     case TPM_SET_VENDOR:
-      debug("[TPM_SET_VENDOR]");
+      debug("[TPM_SET_VENDOR]:%d", subCapVal);
       return set_vendor(subCapVal, setValue, setValueSize, ownerAuth,
                         deactivated, disabled);
   }

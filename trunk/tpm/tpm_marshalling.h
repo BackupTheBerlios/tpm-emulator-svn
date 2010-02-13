@@ -14,8 +14,8 @@
  * $Id$
  */
 
-#ifndef _MARSHALLING_H_
-#define _MARSHALLING_H_
+#ifndef _TPM_MARSHALLING_H_
+#define _TPM_MARSHALLING_H_
 
 #include "tpm_emulator.h"
 #include "tpm_structures.h"
@@ -503,4 +503,4 @@ int tpm_marshal_TPM_DATA(BYTE **ptr, UINT32 *length, TPM_DATA *v);
 int tpm_marshal_TPM_RESPONSE(BYTE **ptr, UINT32 *length, TPM_RESPONSE *v);
 int tpm_unmarshal_TPM_REQUEST(BYTE **ptr, UINT32 *length, TPM_REQUEST *v);
 
-#endif /* _MARSHALLING_H_ */
+#endif /* _TPM_MARSHALLING_H_ */
