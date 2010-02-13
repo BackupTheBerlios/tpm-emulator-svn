@@ -196,6 +196,7 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
         debug("TPM_OSAP failed(): tpm_get_key(handle) == NULL");
       break;
     case TPM_ET_OWNER:
+    case TPM_ET_VERIFICATION_AUTH:
       session->handle = TPM_KH_OWNER;
       if (tpmData.permanent.flags.owned)
         secret = &tpmData.permanent.data.ownerAuth;

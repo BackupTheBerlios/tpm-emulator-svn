@@ -66,7 +66,7 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
     /* reset STCLEAR_DATA */
     SET_TO_ZERO(&tpmData.stclear.data);
     tpmData.stclear.data.tag = TPM_TAG_STCLEAR_DATA;
-    /* flush volatiles and PCR dependent keys keys */
+    /* flush volatiles and PCR dependent keys */
     for (i = 0; i < TPM_MAX_KEYS; i++) {
       if (tpmData.permanent.data.keys[i].payload
           && ((tpmData.permanent.data.keys[i].keyFlags & TPM_KEY_FLAG_VOLATILE)

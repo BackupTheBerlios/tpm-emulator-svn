@@ -245,7 +245,7 @@ static void compute_key_digest(TPM_REQUEST *req, TPM_DIGEST *digest)
   tpm_sha1_ctx_t ctx;
   TPM_HANDLE h1, h2;
   TPM_KEY_DATA *k1, *k2;
-  BYTE *ptr, buf[4];
+  BYTE *ptr;
   UINT32 len, offset = tpm_get_in_param_offset(req->ordinal);
   /* handle some exceptions */
   if (req->ordinal == TPM_ORD_FlushSpecific) offset = 0;

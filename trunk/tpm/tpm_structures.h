@@ -149,6 +149,7 @@ typedef UINT32 TPM_FAMILY_OPERATION;
 #define TPM_ET_COUNTER          0x0A
 #define TPM_ET_NV               0x0B
 #define TPM_ET_OPERATOR         0x0C
+#define TPM_ET_VERIFICATION_AUTH 0x0D
 #define TPM_ET_RESERVED_HANDLE  0x40
 /* MSB Values */
 #define TPM_ET_XOR              0x00
@@ -2235,6 +2236,17 @@ static inline int sizeof_TPM_PERMANENT_DATA(TPM_PERMANENT_DATA *s) {
   return size;
 }
 
+static inline void free_TPM_PERMANENT_DATA(TPM_PERMANENT_DATA *s)
+{
+  int i;
+  /* release the EK, SRK as well as all other rsa keys */
+  if (s->endorsementKey.size > 0) tpm_rsa_release_private_key(&s->endorsementKey);
+  if (s->srk.payload) free_TPM_KEY_DATA(s->srk);
+  if (s->manuMaintPub.valid) free_TPM_PUBKEY_DATA(s->manuMaintPub);
+  for (i = 0; i < TPM_MAX_KEYS; i++)
+    if (s->keys[i].payload) free_TPM_KEY_DATA(s->keys[i]);
+}
+
 /*
  * TPM_STCLEAR_DATA ([TPM_Part2], Section 7.5)
  * Most of the data in this structure resets on TPM_Startup(ST_Clear).
@@ -2352,6 +2364,7 @@ typedef struct tdTPM_DATA {
   + sizeof_TPM_STCLEAR_FLAGS(s.stclear.flags) \
   + sizeof_TPM_STCLEAR_DATA(s.stclear.data) \
   + sizeof_TPM_STANY_DATA(s.stany.data))
+#define free_TPM_DATA(s) { free_TPM_PERMANENT_DATA(&s.permanent.data); }
 
 /*
  * Context Structures

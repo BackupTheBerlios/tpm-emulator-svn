@@ -553,13 +553,6 @@ TPM_RESULT TPM_Delegate_ReadTable(UINT32 *familyTableSize, BYTE **familyTable,
   return TPM_SUCCESS;
 }
 
-static TPM_TAG get_structure_tag(BYTE *ptr, UINT32 length)
-{
-  TPM_TAG tag;
-  if (tpm_unmarshal_TPM_TAG(&ptr, &length, &tag) != 0) return 0xffff;
-  return tag;
-}
-
 TPM_RESULT TPM_Delegate_UpdateVerification(UINT32 inputSize, BYTE *inputData,
                                            TPM_AUTH *auth1, UINT32 *outputSize,
                                            BYTE **outputData)

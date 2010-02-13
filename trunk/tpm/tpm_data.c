@@ -176,17 +176,7 @@ void tpm_init_data(void)
 
 void tpm_release_data(void)
 {
-  unsigned int i;
-  /* release the EK, SRK as well as all other rsa keys */
-  if (tpmData.permanent.data.endorsementKey.size > 0)
-    tpm_rsa_release_private_key(&tpmData.permanent.data.endorsementKey);
-  if (tpmData.permanent.data.srk.payload)
-    free_TPM_KEY_DATA(tpmData.permanent.data.srk);
-  if (tpmData.permanent.data.manuMaintPub.valid)
-    free_TPM_PUBKEY_DATA(tpmData.permanent.data.manuMaintPub);
-  for (i = 0; i < TPM_MAX_KEYS; i++)
-    if (tpmData.permanent.data.keys[i].payload)
-      free_TPM_KEY_DATA(tpmData.permanent.data.keys[i]);
+  free_TPM_DATA(tpmData);
 }
 
 int tpm_store_permanent_data(void)
@@ -196,7 +186,7 @@ int tpm_store_permanent_data(void)
   uint32_t len;
 
   /* marshal data */
-  buf_length = len = sizeof_TPM_VERSION(s.permanent.data.version)
+  buf_length = len = sizeof_TPM_VERSION(tpmData.permanent.data.version)
                      + sizeof_TPM_DATA(tpmData);
   debug("size of permanent data: %d", buf_length);
   buf = ptr = tpm_malloc(buf_length);

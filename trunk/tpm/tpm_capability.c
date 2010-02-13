@@ -893,7 +893,6 @@ static TPM_RESULT set_perm_data(UINT32 subCap, BYTE *setValue,
       return TPM_SUCCESS;
 #endif /* TPM_ENABLE_PRNG_STATE_SETTING */
 
-
     case 23:
       if (!ownerAuth) return TPM_AUTHFAIL;
       if (deactivated) return TPM_DEACTIVATED;

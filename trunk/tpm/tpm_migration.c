@@ -71,8 +71,8 @@ TPM_RESULT TPM_CreateMigrationBlob(TPM_KEY_HANDLE parentHandle,
   TPM_RESULT res;
   TPM_KEY_DATA *parent;
   TPM_SESSION_DATA *session;
-  BYTE *ptr, *buf, *key_buf;
-  UINT32 len, key_buf_size;
+  BYTE *key_buf;
+  UINT32 key_buf_size;
   TPM_STORE_ASYMKEY store;
   TPM_PUBKEY_DATA key;
 
