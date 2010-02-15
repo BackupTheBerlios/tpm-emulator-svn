@@ -9,8 +9,16 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 set(tpmd_dev_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/linux")
 set(tpmd_dev_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/linux")
 set(tpmd_dev_OBJ "${tpmd_dev_BINARY_DIR}/tpmd_dev.ko")
+set(tpmd_dev_BUILD_CMD make -C ${tpmd_dev_BINARY_DIR})
+set(tpmd_dev_INSTALL_CMD make -C ${tpmd_dev_BINARY_DIR} install)
 
 elseif(CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
+
+set(tpmd_dev_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/openbsd")
+set(tpmd_dev_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/openbsd")
+set(tpmd_dev_OBJ "${tpmd_dev_BINARY_DIR}/tpmd_dev.o")
+set(tpmd_dev_BUILD_CMD make -C ${tpmd_dev_BINARY_DIR})
+set(tpmd_dev_INSTALL_CMD make -C ${tpmd_dev_BINARY_DIR} install)
 
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 
@@ -23,12 +31,12 @@ file(GLOB tpmd_dev_SRCS "${tpmd_dev_SOURCE_DIR}/*")
 
 add_custom_command(OUTPUT ${tpmd_dev_OBJ}
                    COMMAND cp -r ${tpmd_dev_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
-                   COMMAND make -C ${tpmd_dev_BINARY_DIR}
+                   COMMAND ${tpmd_dev_BUILD_CMD}
                    DEPENDS ${tpmd_dev_SRCS})
 
 add_custom_target(tpmd_dev ALL DEPENDS ${tpmd_dev_OBJ})
 
-install(CODE "EXECUTE_PROCESS(COMMAND make -C ${tpmd_dev_BINARY_DIR} install)")
+install(CODE "EXECUTE_PROCESS(COMMAND ${tpmd_dev_INSTALL_CMD})")
 
 endif()
 
