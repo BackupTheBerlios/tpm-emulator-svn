@@ -1785,18 +1785,6 @@ int tpm_unmarshal_TPM_STANY_DATA(BYTE **ptr, UINT32 *length, TPM_STANY_DATA *v)
   return 0;
 }
 
-int tpm_unmarshal_TPM_DATA(BYTE **ptr, UINT32 *length, TPM_DATA *v)
-{
-  if (tpm_unmarshal_TPM_PERMANENT_FLAGS(ptr, length, &v->permanent.flags)
-      || tpm_unmarshal_BOOL(ptr, length, &v->permanent.flags.selfTestSucceeded)
-      || tpm_unmarshal_BOOL(ptr, length, &v->permanent.flags.owned)
-      || tpm_unmarshal_TPM_PERMANENT_DATA(ptr, length, &v->permanent.data)
-      || tpm_unmarshal_TPM_STCLEAR_FLAGS(ptr, length, &v->stclear.flags)
-      || tpm_unmarshal_TPM_STCLEAR_DATA(ptr, length, &v->stclear.data)
-      || tpm_unmarshal_TPM_STANY_DATA(ptr, length, &v->stany.data)) return -1;
-  return 0;
-}
-
 int tpm_marshal_TPM_DATA(BYTE **ptr, UINT32 *length, TPM_DATA *v)
 {
   if (tpm_marshal_TPM_PERMANENT_FLAGS(ptr, length, &v->permanent.flags)
@@ -1806,6 +1794,18 @@ int tpm_marshal_TPM_DATA(BYTE **ptr, UINT32 *length, TPM_DATA *v)
       || tpm_marshal_TPM_STCLEAR_FLAGS(ptr, length, &v->stclear.flags)
       || tpm_marshal_TPM_STCLEAR_DATA(ptr, length, &v->stclear.data)
       || tpm_marshal_TPM_STANY_DATA(ptr, length, &v->stany.data)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DATA(BYTE **ptr, UINT32 *length, TPM_DATA *v)
+{
+  if (tpm_unmarshal_TPM_PERMANENT_FLAGS(ptr, length, &v->permanent.flags)
+      || tpm_unmarshal_BOOL(ptr, length, &v->permanent.flags.selfTestSucceeded)
+      || tpm_unmarshal_BOOL(ptr, length, &v->permanent.flags.owned)
+      || tpm_unmarshal_TPM_PERMANENT_DATA(ptr, length, &v->permanent.data)
+      || tpm_unmarshal_TPM_STCLEAR_FLAGS(ptr, length, &v->stclear.flags)
+      || tpm_unmarshal_TPM_STCLEAR_DATA(ptr, length, &v->stclear.data)
+      || tpm_unmarshal_TPM_STANY_DATA(ptr, length, &v->stany.data)) return -1;
   return 0;
 }
 

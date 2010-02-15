@@ -21,6 +21,10 @@
 #include "tpm_data.h"
 #include "tpm_handles.h"
 
+#ifdef MTM_EMULATOR
+#include "mtm/mtm_commands.h"
+#endif
+
 UINT32 tpm_get_in_param_offset(TPM_COMMAND_CODE ordinal)
 {
   switch (ordinal) {

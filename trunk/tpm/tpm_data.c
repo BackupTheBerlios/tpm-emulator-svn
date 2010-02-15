@@ -23,6 +23,11 @@
 TPM_DATA tpmData;
 UINT32 tpmConf;
 
+#ifdef MTM_EMULATOR
+#include "mtm/mtm_data.h"
+#include "mtm/mtm_marshalling.h"
+#endif
+
 static TPM_VERSION tpm_version = { 1, 2, VERSION_MAJOR, VERSION_MINOR };
 
 BOOL tpm_get_physical_presence(void)
@@ -172,11 +177,17 @@ void tpm_init_data(void)
   init_nv_storage();
   /* set the timeout and duration values */
   init_timeouts();
+#ifdef MTM_EMULATOR
+  mtm_init_data();
+#endif
 }
 
 void tpm_release_data(void)
 {
   free_TPM_DATA(tpmData);
+#ifdef MTM_EMULATOR
+  free_MTM_DATA(mtmData);
+#endif
 }
 
 int tpm_store_permanent_data(void)
@@ -187,12 +198,21 @@ int tpm_store_permanent_data(void)
 
   /* marshal data */
   buf_length = len = sizeof_TPM_VERSION(tpmData.permanent.data.version)
+#ifdef MTM_EMULATOR
+                     + sizeof_TPM_DATA(tpmData) + sizeof_MTM_DATA(mtmData);
+#else
                      + sizeof_TPM_DATA(tpmData);
+#endif
   debug("size of permanent data: %d", buf_length);
   buf = ptr = tpm_malloc(buf_length);
   if (buf == NULL
       || tpm_marshal_TPM_VERSION(&ptr, &len, &tpmData.permanent.data.version)
+#ifdef MTM_EMULATOR
+      || tpm_marshal_TPM_DATA(&ptr, &len, &tpmData)
+      || tpm_marshal_MTM_DATA(&ptr, &len, &mtmData)) {
+#else
       || tpm_marshal_TPM_DATA(&ptr, &len, &tpmData)) {
+#endif
     tpm_free(buf);
     return -1;
   }
@@ -220,6 +240,9 @@ int tpm_restore_permanent_data(void)
   if (tpm_unmarshal_TPM_VERSION(&ptr, &len, &ver)
       || memcmp(&ver, &tpm_version, sizeof(TPM_VERSION))
       || tpm_unmarshal_TPM_DATA(&ptr, &len, &tpmData)
+#ifdef MTM_EMULATOR
+      || tpm_unmarshal_MTM_DATA(&ptr, &len, &mtmData)
+#endif
       || len > 0) {
     tpm_free(buf);
     return -1;
