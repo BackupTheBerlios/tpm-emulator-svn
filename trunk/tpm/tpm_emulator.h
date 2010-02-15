@@ -32,9 +32,6 @@
 #define TPM_CONF_GENERATE_SEED_DAA             0x04
 #define TPM_CONF_USE_INTERNAL_PRNG             0x08
 #define TPM_CONF_ALLOW_PRNG_STATE_SETTING      0x10
-#define TPM_CONF_IS_MLTM                       0x20
-#define TPM_CONF_IS_MRTM                       0x40
-#define TPM_CONF_IS_MTM                        (TPM_CONF_IS_MLTM | TPM_CONF_IS_MRTM)
 
 /**
  * tpm_emulator_init - initialises and starts the TPM emulator
