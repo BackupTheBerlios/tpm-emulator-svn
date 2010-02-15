@@ -22,13 +22,6 @@
 #define VERSION_MINOR ${TPM_Emulator_VERSION_MINOR}
 #define VERSION_BUILD ${TPM_Emulator_VERSION_BUILD}
 
-/* TPM emulator configuration */
-#cmakedefine TPM_STRONG_PERSISTENCE
-#cmakedefine TPM_GENERATE_EK
-#cmakedefine TPM_GENERATE_SEED_DAA
-#cmakedefine TPM_USE_INTERNAL_PRNG
-#cmakedefine TPM_ENABLE_PRNG_STATE_SETTING
-
 /* TDDL and LKM configuration */
 #define TPM_SOCKET_NAME  "${TPM_SOCKET_NAME}"
 #define TPM_STORAGE_NAME "${TPM_STORAGE_NAME}"

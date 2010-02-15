@@ -22,14 +22,6 @@
 #include <string.h>
 #include <syslog.h>
 
-/* TPM emulator configuration */
-
-#undef  TPM_STRONG_PERSISTENCE
-#undef  TPM_GENERATE_EK
-#undef  TPM_GENERATE_SEED_DAA
-#undef  TPM_USE_INTERNAL_PRNG
-#undef  TPM_ENABLE_PRNG_STATE_SETTING
-
 /* log functions */
 
 void tpm_log(int priority, const char *fmt, ...);
