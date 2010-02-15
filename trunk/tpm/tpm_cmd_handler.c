@@ -4049,11 +4049,11 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
     info("TPM command succeeded");
     rsp->size += rsp->paramSize;
     if (rsp->tag != TPM_TAG_RSP_COMMAND) tpm_setup_rsp_auth(req->ordinal, rsp);
-#ifdef TPM_STRONG_PERSISTENCE
-    if (tpm_store_permanent_data() != 0) {
-      error("tpm_store_permanent_data() failed");
-    } 
-#endif
+    if (tpmConf & TPM_CONF_STRONG_PERSISTENCE) {
+      if (tpm_store_permanent_data() != 0) {
+        error("tpm_store_permanent_data() failed");
+      }
+    }
   }
   /* terminate authorization sessions if necessary */
   if (rsp->auth1 != NULL && !rsp->auth1->continueAuthSession) 
@@ -4070,9 +4070,10 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   }
 }
 
-void tpm_emulator_init(uint32_t startup)
+void tpm_emulator_init(uint32_t startup, uint32_t conf)
 {
-  debug("tpm_emulator_init()");
+  debug("tpm_emulator_init(%d, 0x%08x)", startup, conf);
+  tpmConf = conf;
   /* try to restore data, if it fails use default values */
   if (tpm_restore_permanent_data() != 0) tpm_init_data();
   TPM_Init(startup);

@@ -17,9 +17,11 @@
 #include "tpm_emulator.h"
 #include "tpm_structures.h"
 #include "tpm_marshalling.h"
+#include "tpm_commands.h"
 #include "tpm_data.h"
 
 TPM_DATA tpmData;
+UINT32 tpmConf;
 
 static TPM_VERSION tpm_version = { 1, 2, VERSION_MAJOR, VERSION_MINOR };
 
@@ -71,7 +73,6 @@ static void init_timeouts(void)
 
 void tpm_init_data(void)
 {
-#ifndef TPM_GENERATE_EK
   /* endorsement key */
   uint8_t ek_n[] =  "\xa8\xdb\xa9\x42\xa8\xf3\xb8\x06\x85\x90\x76\x93\xad\xf7"
     "\x74\xec\x3f\xd3\x3d\x9d\xe8\x2e\xff\x15\xed\x0e\xce\x5f\x93"
@@ -110,7 +111,6 @@ void tpm_init_data(void)
     "\xd1\xc0\x8b\x5b\xa2\x2e\xa7\x15\xca\x50\x75\x10\x48\x9c\x2b"
     "\x18\xb9\x67\x8f\x5d\x64\xc3\x28\x9f\x2f\x16\x2f\x08\xda\x47"
     "\xec\x86\x43\x0c\x80\x99\x07\x34\x0f";
-#endif
   int i;
   info("initializing TPM data to default values");
   /* reset all data to NULL, FALSE or 0 */
@@ -149,24 +149,24 @@ void tpm_init_data(void)
   for (i = 24; i < TPM_NUM_PCR; i++) {
     init_pcr_attr(i, TRUE, 0x00, 0x00);
   }
-#ifdef TPM_GENERATE_EK
-  /* generate a new endorsement key */
-  tpm_rsa_generate_key(&tpmData.permanent.data.endorsementKey, 2048);
-#else
-  /* setup endorsement key */
-  tpm_rsa_import_key(&tpmData.permanent.data.endorsementKey, 
-    RSA_MSB_FIRST, ek_n, 256, ek_e, 3, ek_p, ek_q);
-#endif
-#ifdef TPM_GENERATE_SEED_DAA
-  /* generate the DAA seed */
-  tpm_get_random_bytes(tpmData.permanent.data.tpmDAASeed.nonce, 
-    sizeof(tpmData.permanent.data.tpmDAASeed.nonce));
-#else
-  /* setup DAA seed */
-  memcpy(tpmData.permanent.data.tpmDAASeed.nonce, 
-    "\x77\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-    "\x00\x00\x00\x77", sizeof(TPM_NONCE));
-#endif
+  if (tpmConf & TPM_CONF_GENERATE_EK) {
+    /* generate a new endorsement key */
+    tpm_rsa_generate_key(&tpmData.permanent.data.endorsementKey, 2048);
+  } else {
+    /* setup endorsement key */
+    tpm_rsa_import_key(&tpmData.permanent.data.endorsementKey, 
+      RSA_MSB_FIRST, ek_n, 256, ek_e, 3, ek_p, ek_q);
+  }
+  if (tpmConf & TPM_CONF_GENERATE_SEED_DAA) {
+    /* generate the DAA seed */
+    tpm_get_random_bytes(tpmData.permanent.data.tpmDAASeed.nonce, 
+      sizeof(tpmData.permanent.data.tpmDAASeed.nonce));
+  } else {
+    /* setup DAA seed */
+    memcpy(tpmData.permanent.data.tpmDAASeed.nonce, 
+      "\x77\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+      "\x00\x00\x00\x77", sizeof(TPM_NONCE));
+  }
   memcpy(tpmData.permanent.data.ekReset.nonce, "\xde\xad\xbe\xef", 4);
   /* initialize predefined non-volatile storage */
   init_nv_storage();

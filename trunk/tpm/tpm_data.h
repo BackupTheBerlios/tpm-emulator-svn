@@ -20,6 +20,7 @@
 #include "tpm_structures.h"
 
 extern TPM_DATA tpmData;
+extern UINT32 tpmConf;
 
 BOOL tpm_get_physical_presence(void);
 

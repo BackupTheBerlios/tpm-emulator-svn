@@ -200,16 +200,16 @@ TPM_RESULT TPM_Sign(TPM_KEY_HANDLE keyHandle, UINT32 areaToSignSize,
 
 void tpm_get_random_bytes(void *buf, size_t nbytes)
 {
-#ifdef TPM_USE_INTERNAL_PRNG
-  tpm_rc4_ctx_t ctx;
-  tpm_rc4_init(&ctx, tpmData.permanent.data.rngState,
-    sizeof(tpmData.permanent.data.rngState));
-  tpm_rc4_crypt(&ctx, buf, buf, nbytes);
-  tpm_rc4_crypt(&ctx, tpmData.permanent.data.rngState,
-    tpmData.permanent.data.rngState, sizeof(tpmData.permanent.data.rngState));
-#else
-  tpm_get_extern_random_bytes(buf, nbytes);
-#endif
+  if (tpmConf & TPM_CONF_USE_INTERNAL_PRNG) {
+    tpm_rc4_ctx_t ctx;
+    tpm_rc4_init(&ctx, tpmData.permanent.data.rngState,
+      sizeof(tpmData.permanent.data.rngState));
+    tpm_rc4_crypt(&ctx, buf, buf, nbytes);
+    tpm_rc4_crypt(&ctx, tpmData.permanent.data.rngState,
+      tpmData.permanent.data.rngState, sizeof(tpmData.permanent.data.rngState));
+  } else {
+    tpm_get_extern_random_bytes(buf, nbytes);
+  }
 }
 
 TPM_RESULT TPM_GetRandom(UINT32 bytesRequested, UINT32 *randomBytesSize, 
