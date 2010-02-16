@@ -223,11 +223,11 @@ void tpm_owner_clear()
   tpmData.permanent.flags.maintenanceDone = FALSE;
   tpmData.permanent.flags.allowMaintenance = TRUE;
   tpmData.permanent.flags.disableFullDALogicInfo = FALSE;
-#ifdef TPM_KEEP_PUBEK_READABLE  
-  tpmData.permanent.flags.readPubek = TRUE;
-#else
-  tpmData.permanent.flags.readPubek = FALSE;
-#endif
+  if (tpmConf & TPM_CONF_KEEP_PUBEK_READABLE) {
+    tpmData.permanent.flags.readPubek = TRUE;
+  } else {
+    tpmData.permanent.flags.readPubek = FALSE;
+  }
   /* release all counters */
   for (i = 0; i < TPM_MAX_COUNTERS; i++)
     memset(&tpmData.permanent.data.counters[i], 0, sizeof(TPM_COUNTER_VALUE));
