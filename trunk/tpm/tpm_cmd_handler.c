@@ -364,7 +364,11 @@ static TPM_RESULT execute_TPM_GetCapability(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       || tpm_unmarshal_BLOB(&ptr, &len, &subCap, subCapSize)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
+#ifdef MTM_EMULATOR
+  res = MTM_GetCapability(capArea, subCapSize, subCap, &respSize, &resp);
+#else
   res = TPM_GetCapability(capArea, subCapSize, subCap, &respSize, &resp);
+#endif
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
   rsp->paramSize = len = 4 + respSize;
@@ -1842,7 +1846,11 @@ static TPM_RESULT execute_TPM_Extend(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       || tpm_unmarshal_TPM_DIGEST(&ptr, &len, &inDigest)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
+#ifdef MTM_EMULATOR
+  res = MTM_Extend(pcrNum, &inDigest, &outDigest);
+#else
   res = TPM_Extend(pcrNum, &inDigest, &outDigest);
+#endif
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
   rsp->paramSize = len = 20;
@@ -1929,7 +1937,11 @@ static TPM_RESULT execute_TPM_PCR_Reset(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   if (tpm_unmarshal_TPM_PCR_SELECTION(&ptr, &len, &pcrSelection)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
+#ifdef MTM_EMULATOR
+  return MTM_PCR_Reset(&pcrSelection);
+#else
   return TPM_PCR_Reset(&pcrSelection);
+#endif
 }
 
 static TPM_RESULT execute_TPM_Quote2(TPM_REQUEST *req, TPM_RESPONSE *rsp)
@@ -2594,7 +2606,11 @@ static TPM_RESULT execute_TPM_FlushSpecific(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       || tpm_unmarshal_TPM_RESOURCE_TYPE(&ptr, &len, &resourceType)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
+#ifdef MTM_EMULATOR
+  return MTM_FlushSpecific(handle, resourceType);
+#else
   return TPM_FlushSpecific(handle, resourceType);
+#endif
 }
 
 static TPM_RESULT execute_TPM_GetTicks(TPM_REQUEST *req, TPM_RESPONSE *rsp)
@@ -2871,7 +2887,11 @@ static TPM_RESULT execute_TPM_ReleaseCounter(TPM_REQUEST *req, TPM_RESPONSE *rsp
   if (tpm_unmarshal_TPM_COUNT_ID(&ptr, &len, &countID)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
+#ifdef MTM_EMULATOR
+  return MTM_ReleaseCounter(countID, &req->auth1);
+#else
   return TPM_ReleaseCounter(countID, &req->auth1);
+#endif
 }
 
 static TPM_RESULT execute_TPM_ReleaseCounterOwner(TPM_REQUEST *req, TPM_RESPONSE *rsp)
@@ -2887,7 +2907,11 @@ static TPM_RESULT execute_TPM_ReleaseCounterOwner(TPM_REQUEST *req, TPM_RESPONSE
   if (tpm_unmarshal_TPM_COUNT_ID(&ptr, &len, &countID)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
+#ifdef MTM_EMULATOR
+  return MTM_ReleaseCounterOwner(countID, &req->auth1);
+#else
   return TPM_ReleaseCounterOwner(countID, &req->auth1);
+#endif
 }
 
 static TPM_RESULT execute_TPM_DAA_Join(TPM_REQUEST *req, TPM_RESPONSE *rsp)
@@ -4036,6 +4060,10 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
     break;
 
     default:
+#ifdef MTM_EMULATOR
+      res = mtm_execute_command(req, rsp);
+      if (res != TPM_BAD_ORDINAL) break;
+#endif
       info("The ordinal (0x%02x) was unknown or inconsistent", req->ordinal);
       tpm_setup_error_response(TPM_BAD_ORDINAL, rsp);
       return;

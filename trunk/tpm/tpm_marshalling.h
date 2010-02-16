@@ -482,6 +482,9 @@ int tpm_unmarshal_TPM_STANY_FLAGS(BYTE **ptr, UINT32 *length, TPM_STANY_FLAGS *v
 int tpm_marshal_RSA(BYTE **ptr, UINT32 *length, tpm_rsa_private_key_t *v);
 int tpm_unmarshal_RSA(BYTE **ptr, UINT32 *length, tpm_rsa_private_key_t *v);
 
+int tpm_marshal_RSAPub(BYTE **ptr, UINT32 *length, tpm_rsa_public_key_t *v);
+int tpm_unmarshal_RSAPub(BYTE **ptr, UINT32 *length, tpm_rsa_public_key_t *v);
+
 int tpm_marshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v);
 int tpm_unmarshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v);
 
