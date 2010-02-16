@@ -24,8 +24,10 @@
 #include <linux/net.h>
 #include <linux/un.h>
 
+#include "config.h"
+
 #define TPM_DEVICE_MINOR  224
-#define TPM_DEVICE_NAME   "tpm"
+#define TPM_DEVICE_ID     "tpm"
 #define TPM_MODULE_NAME   "tpmd_dev"
 
 #define TPM_RESPONSE_SIZE 4096
@@ -47,10 +49,10 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Mario Strasser <mast@gmx.net>");
 MODULE_DESCRIPTION("Trusted Platform Module (TPM) Emulator");
-MODULE_SUPPORTED_DEVICE(TPM_DEVICE_NAME);
+MODULE_SUPPORTED_DEVICE(TPM_DEVICE_ID);
 
 /* module parameters */
-char *tpmd_socket_name = "/var/run/tpm/tpmd_socket:0";
+char *tpmd_socket_name = TPM_SOCKET_NAME;
 module_param(tpmd_socket_name, charp, 0444);
 MODULE_PARM_DESC(tpmd_socket_name, " Sets the name of the TPM daemon socket.");
 
@@ -238,7 +240,7 @@ struct file_operations fops = {
 
 static struct miscdevice tpm_dev = {
   .minor      = TPM_DEVICE_MINOR, 
-  .name       = TPM_DEVICE_NAME, 
+  .name       = TPM_DEVICE_ID, 
   .fops       = &fops,
 };
 

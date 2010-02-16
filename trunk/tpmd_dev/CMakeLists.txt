@@ -31,6 +31,7 @@ file(GLOB tpmd_dev_SRCS "${tpmd_dev_SOURCE_DIR}/*")
 
 add_custom_command(OUTPUT ${tpmd_dev_OBJ}
                    COMMAND cp -r ${tpmd_dev_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
+                   COMMAND cp ${CMAKE_BINARY_DIR}/config.h ${tpmd_dev_BINARY_DIR}
                    COMMAND ${tpmd_dev_BUILD_CMD}
                    DEPENDS ${tpmd_dev_SRCS})
 

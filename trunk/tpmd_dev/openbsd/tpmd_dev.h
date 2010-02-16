@@ -18,6 +18,8 @@
 #ifndef _TPM_DEV_HEADER_
 #define _TPM_DEV_HEADER_
 
+#include "config.h"
+
 #define cdev_tpm_init(c,n) { \
     dev_init(c,n,open),dev_init(c,n,close),dev_init(c,n,read), \
     dev_init(c,n,write), dev_init(c,n,ioctl),(dev_type_stop((*))) lkmenodev, \
@@ -32,7 +34,7 @@ static struct socket *tpmd_sock = NULL;
 static struct mbuf *nm = NULL;
 static struct simplelock slock;
 
-char tpmd_socket_name[] = "/var/tpm/tpmd_socket:0";
+char tpmd_socket_name[] = TPM_SOCKET_NAME;
 
 #define TPM_MODULE_NAME   "tpm_dev"
 #define TPM_STATE_IS_OPEN 0
