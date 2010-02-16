@@ -60,8 +60,6 @@ the CMake build environment and is executed as follows:
 # make
 # make install
 
-Please note that the user and group 'tss' must exists on the target host.
-
 
 Startup
 --------------------------------------------------------------------------
@@ -70,15 +68,21 @@ and, if required, load the TPM device forwarding module. The startup mode
 of the TPM (see TPM Spec. Part 1) is defined by the startup mode argument
 and can either be set to clear, save (default) or deactivated.
 
+On Linux this is done as follows:
 # modprobe tpmd_dev
 # tpmd save
 
 Furthermore, the argument -d enables debug mode, -f forces the emulator
 to run in the foreground, and -h print the following help message:
 
-usage: tpmd/tpmd [-d] [-f] [-h] [startup mode]
+usage: tpmd [-d] [-f] [-s storage file] [-u unix socket name]
+            [-o user name] [-g group name] [-h] [startup mode]
   d : enable debug mode
   f : forces the application to run in the foreground
+  s : storage file to use (default: /var/lib/tpm/tpm_emulator-1.2.0.7)
+  u : unix socket name to use (default: /var/run/tpm/tpmd_socket:0)
+  o : effective user the application should run as
+  g : effective group the application should run as
   h : print this help message
   startup mode : must be 'clear', 'save' (default) or 'deactivated
 
