@@ -3,6 +3,8 @@
 #
 # $Id$
 
-#file(GLOB mtm_SRCS "*.[h|c]")
-#add_library(mtm STATIC ${mtm_SRCS})
+add_definitions(-DMTM_EMULATOR)
+file(GLOB tpm_SRCS ../tpm/tpm_cmd_handler.c ../tpm/tpm_data.c)
+file(GLOB mtm_SRCS "*.[h|c]")
+add_library(mtm STATIC ${mtm_SRCS} ${tpm_SRCS})
 
