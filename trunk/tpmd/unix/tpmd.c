@@ -166,7 +166,7 @@ static void parse_options(int argc, char **argv)
     opt_uid = getuid();
     opt_gid = getgid();
     info("parsing options");
-    while ((c = getopt (argc, argv, "dfs:u:o:g:h")) != -1) {
+    while ((c = getopt (argc, argv, "dfs:u:o:g:c:h")) != -1) {
         debug("handling option '-%c'", c);
         switch (c) {
             case 'd':
@@ -201,6 +201,9 @@ static void parse_options(int argc, char **argv)
                     exit(EXIT_FAILURE);
                 }
                 opt_gid = grp->gr_gid;
+                break;
+            case 'c':
+                tpm_config = strtol(optarg, NULL, 0);
                 break;
             case '?':
                 error("unknown option '-%c'", optopt);
