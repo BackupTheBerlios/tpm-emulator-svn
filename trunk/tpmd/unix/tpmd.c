@@ -45,6 +45,7 @@ static const char *opt_storage_file = TPM_STORAGE_NAME;
 static uid_t opt_uid = 0;
 static gid_t opt_gid = 0;
 static int tpm_startup = 2;
+static uint32_t tpm_config = 0;
 static int rand_fh;
 
 void *tpm_malloc(size_t size)
@@ -378,8 +379,8 @@ static void main_loop(void)
     if (sock < 0) exit(EXIT_FAILURE);
     /* init tpm emulator */
     mkdirs(opt_storage_file);
-    debug("initializing TPM emulator: %d", tpm_startup);
-    tpm_emulator_init(tpm_startup);
+    debug("initializing TPM emulator");
+    tpm_emulator_init(tpm_startup, tpm_config);
     /* start command processing */
     while (!stopflag) {
         /* wait for incomming connections */

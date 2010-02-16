@@ -36,6 +36,7 @@ include(CPack)
 
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_BINARY_DIR})
+add_definitions(-Wall -Werror -Wall -Wpointer-arith -Wcast-align -Wwrite-strings -Wsign-compare -Wno-multichar)
 
 # add internal libraries
 add_subdirectory(tpm)

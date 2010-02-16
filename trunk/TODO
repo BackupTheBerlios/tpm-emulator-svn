@@ -1,14 +1,6 @@
-* update headers
-
 * OpenBSD kernel module
-* Darwin kernel module
 
+* Darwin kernel module
 * Windows TDDL
 * Windows tpmd
-
-* MTM
-
-* update encryption: RC4 -> AES256
-  - de- and encryption
-  - function to compute buffer size
 

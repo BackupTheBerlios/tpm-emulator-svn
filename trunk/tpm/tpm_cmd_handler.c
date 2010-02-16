@@ -4106,6 +4106,9 @@ void tpm_emulator_init(uint32_t startup, uint32_t conf)
 {
   debug("tpm_emulator_init(%d, 0x%08x)", startup, conf);
   tpmConf = conf;
+#ifdef MTM_EMULATOR
+  info("MTM support enabled");
+#endif
   /* try to restore data, if it fails use default values */
   if (tpm_restore_permanent_data() != 0) tpm_init_data();
   TPM_Init(startup);
