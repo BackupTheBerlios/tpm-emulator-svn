@@ -3,8 +3,8 @@
 #
 # $Id$
 
-set(tddl_SRCS "tddl.c" "tddl.h")
-add_library(ifxtpm SHARED ${tddl_SRCS})
-set_target_properties(ifxtpm PROPERTIES PREFIX "")
-install(TARGETS ifxtpm LIBRARY DESTINATION lib)
+#set(tddl_SRCS "tddl.c" "tddl.h")
+#add_library(ifxtpm SHARED ${tddl_SRCS})
+#set_target_properties(ifxtpm PROPERTIES PREFIX "")
+#install(TARGETS ifxtpm LIBRARY DESTINATION lib)
 
