@@ -19,9 +19,15 @@ set(${PROJECT_NAME}_VERSION_MINOR 7)
 string(REGEX REPLACE ".*Revision: ([0-9]+).*" "\\1" ${PROJECT_NAME}_VERSION_BUILD "$Revision$")
 
 # create project configuration
+if(WIN32)
+set(TPM_STORAGE_NAME "C:\\tpm_emulator-1_2_${${PROJECT_NAME}_VERSION_MAJOR}_${${PROJECT_NAME}_VERSION_MINOR}")
+set(TPM_DEVICE_NAME "\\\\.\\pipe\\tpmd:0")
+include_directories(${CMAKE_SOURCE_DIR}/tpmd/windows)
+else()
 set(TPM_SOCKET_NAME "/var/run/tpm/tpmd_socket:0")
 set(TPM_STORAGE_NAME "/var/lib/tpm/tpm_emulator-1.2.${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}")
 set(TPM_DEVICE_NAME "/dev/tpm")
+endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 # configure CPack

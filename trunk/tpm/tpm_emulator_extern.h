@@ -17,10 +17,9 @@
 #ifndef _TPM_EMULATOR_EXTERN_H_
 #define _TPM_EMULATOR_EXTERN_H_
 
-#include <stdint.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
-#include <syslog.h>
 
 /* log functions */
 
