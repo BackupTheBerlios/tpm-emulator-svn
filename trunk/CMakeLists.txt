@@ -23,10 +23,12 @@ if(WIN32)
 set(TPM_STORAGE_NAME "C:\\tpm_emulator-1_2_${${PROJECT_NAME}_VERSION_MAJOR}_${${PROJECT_NAME}_VERSION_MINOR}")
 set(TPM_DEVICE_NAME "\\\\.\\pipe\\tpmd:0")
 include_directories(${CMAKE_SOURCE_DIR}/tpmd/windows)
+add_definitions(-W4)
 else()
 set(TPM_SOCKET_NAME "/var/run/tpm/tpmd_socket:0")
 set(TPM_STORAGE_NAME "/var/lib/tpm/tpm_emulator-1.2.${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}")
 set(TPM_DEVICE_NAME "/dev/tpm")
+add_definitions(-Wall -Werror -Wall -Wpointer-arith -Wcast-align -Wwrite-strings -Wsign-compare -Wno-multichar)
 endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
@@ -42,7 +44,6 @@ include(CPack)
 
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_BINARY_DIR})
-add_definitions(-Wall -Werror -Wall -Wpointer-arith -Wcast-align -Wwrite-strings -Wsign-compare -Wno-multichar)
 
 # add internal libraries
 add_subdirectory(tpm)
