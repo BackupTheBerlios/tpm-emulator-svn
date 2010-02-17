@@ -74,8 +74,8 @@ static inline int tpm_unmarshal_BYTE(BYTE **ptr, UINT32 *length, BYTE *v)
 static inline int tpm_marshal_UINT16(BYTE **ptr, UINT32 *length, UINT16 v)
 {
   if (*length < 2) return -1;
-  (*ptr)[0] = (v >> 8) & 0xff; 
-  (*ptr)[1] = v & 0xff;
+  (*ptr)[0] = (BYTE)((v >> 8) & 0xff); 
+  (*ptr)[1] = (BYTE)(v & 0xff);
   *ptr += 2; *length -= 2;
   return 0;
 }
@@ -91,8 +91,8 @@ static inline int tpm_unmarshal_UINT16(BYTE **ptr, UINT32 *length, UINT16 *v)
 static inline int tpm_marshal_UINT32(BYTE **ptr, UINT32 *length, UINT32 v)
 {
   if (*length < 4) return -1;
-  (*ptr)[0] = (v >> 24) & 0xff; (*ptr)[1] = (v >> 16) & 0xff;
-  (*ptr)[2] = (v >>  8) & 0xff; (*ptr)[3] = v & 0xff;
+  (*ptr)[0] = (BYTE)((v >> 24) & 0xff); (*ptr)[1] = (BYTE)((v >> 16) & 0xff);
+  (*ptr)[2] = (BYTE)((v >>  8) & 0xff); (*ptr)[3] = (BYTE)(v & 0xff);
   *ptr += 4; *length -= 4;
   return 0;
 }
@@ -109,10 +109,10 @@ static inline int tpm_unmarshal_UINT32(BYTE **ptr, UINT32 *length, UINT32 *v)
 static inline int tpm_marshal_UINT64(BYTE **ptr, UINT32 *length, UINT64 v)
 {
   if (*length < 8) return -1;
-  (*ptr)[0] = (v >> 56) & 0xff; (*ptr)[1] = (v >> 48) & 0xff;
-  (*ptr)[2] = (v >> 40) & 0xff; (*ptr)[3] = (v >> 32) & 0xff;
-  (*ptr)[4] = (v >> 24) & 0xff; (*ptr)[5] = (v >> 16) & 0xff;
-  (*ptr)[6] = (v >>  8) & 0xff; (*ptr)[7] = v & 0xff;
+  (*ptr)[0] = (BYTE)((v >> 56) & 0xff); (*ptr)[1] = (BYTE)((v >> 48) & 0xff);
+  (*ptr)[2] = (BYTE)((v >> 40) & 0xff); (*ptr)[3] = (BYTE)((v >> 32) & 0xff);
+  (*ptr)[4] = (BYTE)((v >> 24) & 0xff); (*ptr)[5] = (BYTE)((v >> 16) & 0xff);
+  (*ptr)[6] = (BYTE)((v >>  8) & 0xff); (*ptr)[7] = (BYTE)(v & 0xff);
   *ptr += 8; *length -= 8;
   return 0;
 }

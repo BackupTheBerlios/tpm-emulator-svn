@@ -42,13 +42,6 @@ set(CPACK_GENERATOR "TBZ2")
 set(CPACK_SET_DESTDIR ON)
 include(CPack)
 
-# find libraries
-find_path(GMP_INCLUDE_DIR gmp.h $ENV{HOME}/.local/include)
-find_library(GMP_LIBRARY NAMES gmp PATH $ENV{HOME}/.local/lib)
-if(NOT GMP_INCLUDE_DIR OR NOT GMP_LIBRARY)
-message(FATAL_ERROR "Could not find GMP")
-endif()
-
 # include root directories
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_BINARY_DIR})

@@ -27,5 +27,10 @@
 #define TPM_STORAGE_NAME "${TPM_STORAGE_NAME}"
 #define TPM_DEVICE_NAME  "${TPM_DEVICE_NAME}"
 
+/* tweaks for windows */
+#ifdef _MSC_VER
+#define inline __inline
+#endif
+
 #endif /* _CONFIG_H_ */
 
