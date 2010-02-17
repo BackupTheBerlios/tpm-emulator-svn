@@ -65,7 +65,7 @@ void tpm_audit_request(TPM_COMMAND_CODE ordinal, TPM_REQUEST *req)
 void tpm_audit_response(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
 {
   tpm_sha1_ctx_t sha1_ctx;
-  BYTE buf[sizeof_TPM_AUDIT_EVENT_OUT()], *ptr;
+  BYTE buf[sizeof_TPM_AUDIT_EVENT_OUT(x)], *ptr;
   UINT32 len;
   TPM_COMMAND_CODE ord = ordinal & TPM_ORD_INDEX_MASK;
   if (ord < TPM_ORD_MAX
