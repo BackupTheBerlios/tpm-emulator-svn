@@ -482,15 +482,16 @@ int main(int argc, char **argv)
     parse_options(argc, argv);
     /* switch uid/gid if required */
     switch_uid_gid();
-    /* open random device */
-    init_random();
     /* init signal handlers */
     init_signal_handler();
     /* unless requested otherwiese, fork and daemonize process */
     if (!opt_foreground) daemonize();
+    /* open random device */
+    init_random();
     /* start main processing loop */
     main_loop();
     info("stopping TPM Emulator daemon");
+    close(rand_fh);
     closelog();
     return 0;
 }
