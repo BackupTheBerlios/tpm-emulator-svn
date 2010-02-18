@@ -89,16 +89,17 @@ int tpm_write_to_storage(uint8_t *data, size_t data_length)
 {
     int fh;
     ssize_t res;
-    fh = open(opt_storage_file, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
+    fh = open(opt_storage_file, O_WRONLY | O_TRUNC | O_CREAT | O_BINARY,
+              S_IRUSR | S_IWUSR);
     if (fh < 0) return -1;
     while (data_length > 0) {
         res = write(fh, data, data_length);
-	if (res < 0) {
-	    close(fh);
-	    return -1;
-	}
-	data_length -= res; 
-	data += res;
+        if (res < 0) {
+            close(fh);
+            return -1;
+        }
+        data_length -= res; 
+        data += res;
     }
     close(fh);
     return 0;
@@ -109,7 +110,7 @@ int tpm_read_from_storage(uint8_t **data, size_t *data_length)
     int fh;
     ssize_t res;
     size_t total_length;
-    fh = open(opt_storage_file, O_RDONLY);
+    fh = open(opt_storage_file, O_RDONLY | O_BINARY);
     if (fh < 0) return -1;
     total_length = lseek(fh, 0, SEEK_END);
     lseek(fh, 0, SEEK_SET);
@@ -121,13 +122,14 @@ int tpm_read_from_storage(uint8_t **data, size_t *data_length)
     *data_length = 0;
     while (total_length > 0) {
         res = read(fh, &(*data)[*data_length], total_length);
-	if (res < 0) {
-	    close(fh);
-	    tpm_free(*data);
-	    return -1;
-	}
+        if (res < 0) {
+            close(fh);
+            tpm_free(*data);
+            return -1;
+        }
+        if (res == 0) break;
         *data_length += res;
-	total_length -= res;
+        total_length -= res;
     }
     close(fh);
     return 0;
@@ -240,6 +242,26 @@ static void init_random(void)
     }
 }
 
+BOOL signal_handler(DWORD event)
+{
+    info("signal received: %d", event);
+    stopflag = 1;
+    /* unblock ConnectNamedPipe() */
+    HANDLE ph = CreateFile(opt_pipe_name, GENERIC_READ | GENERIC_WRITE,
+        0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (ph != INVALID_HANDLE_VALUE) CloseHandle(ph);
+    return TRUE;
+}
+
+static void init_signal_handler(void)
+{
+    info("installing signal handler");
+    if (!SetConsoleCtrlHandler((PHANDLER_ROUTINE)signal_handler,TRUE)) {
+        error("SetConsoleCtrlHandler() failed: %s", get_error());
+        exit(EXIT_FAILURE);
+    }    
+}
+
 static int mkdirs(const char *path)
 {
     char *copy = strdup(path);
@@ -287,10 +309,10 @@ static void main_loop(void)
             error("ConnectNamedPipe() failed: %s", get_error());
             break;
         }
+        if (stopflag) break;
         /* receive and handle commands */
         in_len = 0;
         do {
-            debug("waiting for commands...");
             if (!ReadFile(ph, in, sizeof(in), &in_len, NULL)) {
                 error("ReadFile() failed: %s", get_error());
             }
@@ -313,7 +335,7 @@ static void main_loop(void)
                     tpm_free(out);
                 }
             }
-        } while (in_len > 0);
+        } while (in_len > 0 && !stopflag);
         DisconnectNamedPipe(ph);
     }
     /* shutdown tpm emulator */
@@ -330,6 +352,8 @@ int main(int argc, char **argv)
     parse_options(argc, argv);
     /* init logging */
     mkdirs(opt_log_file);
+    /* init signal handler */
+    init_signal_handler();
     /* init random number generator */
     init_random();
     /* unless requested otherwiese, daemonize process */
