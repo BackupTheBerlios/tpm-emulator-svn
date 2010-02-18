@@ -23,24 +23,19 @@
 
 /* log functions */
 
-#define LOG_EMERG   0 /* system is unusable */
-#define LOG_ALERT   1 /* action must be taken immediately */
-#define LOG_CRIT    2 /* critical conditions */
-#define LOG_ERR     3 /* error conditions */
-#define LOG_WARNING 4 /* warning conditions */
-#define LOG_NOTICE  5 /* normal but significant condition */
-#define LOG_INFO    6 /* informational */
-#define LOG_DEBUG   7 /* debug-level messages */
+enum {
+  TPM_LOG_DEBUG,
+  TPM_LOG_INFO,
+  TPM_LOG_ERROR
+};
 
 void tpm_log(int priority, const char *fmt, ...);
 
-#define debug(fmt, ...) tpm_log(LOG_DEBUG, "%s:%d: Debug: " fmt "\n", \
+#define debug(fmt, ...) tpm_log(TPM_LOG_DEBUG, "%s:%d: Debug: " fmt "\n", \
                                 __FILE__, __LINE__, ## __VA_ARGS__)
-#define info(fmt, ...)  tpm_log(LOG_INFO, "%s:%d: Info: " fmt "\n", \
+#define info(fmt, ...)  tpm_log(TPM_LOG_INFO, "%s:%d: Info: " fmt "\n", \
                                 __FILE__, __LINE__, ## __VA_ARGS__)
-#define error(fmt, ...) tpm_log(LOG_ERR, "%s:%d: Error: " fmt "\n", \
-                                __FILE__, __LINE__, ## __VA_ARGS__)
-#define alert(fmt, ...) tpm_log(LOG_ALERT, "%s:%d: Alert: " fmt "\n", \
+#define error(fmt, ...) tpm_log(TPM_LOG_ERROR, "%s:%d: Error: " fmt "\n", \
                                 __FILE__, __LINE__, ## __VA_ARGS__)
 
 /* memory allocation */

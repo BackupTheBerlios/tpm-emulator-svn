@@ -63,9 +63,20 @@ void tpm_log(int priority, const char *fmt, ...)
     va_list ap, bp;
     va_start(ap, fmt);
     va_copy(bp, ap);
-    vsyslog(priority, fmt, ap);
+    switch (priority) {
+      case TPM_LOG_DEBUG:
+        vsyslog(LOG_DEBUG, fmt, ap);
+        break;
+      case TPM_LOG_ERROR:
+        vsyslog(LOG_ERR, fmt, ap);
+        break;
+      case TPM_LOG_INFO:
+      default:
+        vsyslog(LOG_INFO, fmt, ap);
+        break;
+    }
     va_end(ap);
-    if (!is_daemon && (priority != LOG_DEBUG || opt_debug)) {
+    if (!is_daemon && (priority != TPM_LOG_DEBUG || opt_debug)) {
          vprintf(fmt, bp);
     }
     va_end(bp);
