@@ -13,5 +13,7 @@ target_link_libraries(tpmd mtm tpm crypto)
 else()
 target_link_libraries(tpmd tpm crypto)
 endif()
-install(TARGETS tpmd RUNTIME DESTINATION bin)
+install(TARGETS tpmd RUNTIME DESTINATION .)
+
+install(FILES control_tpmd.bat DESTINATION .)
 

@@ -7,8 +7,7 @@
 
 set SERVICE_ID=tpmd
 set SERVICE_NAME=TPM Emulator
-set SERVICE_DIR=%PROGRAMFILES%\TPM_Emulator
-rem set SERVICE_DIR=%~dp0
+set SERVICE_DIR=%~dp0
 set SERVICE_EXE=%SERVICE_DIR%\tpmd.exe
 
 if /i "%1" == ""        goto usage
