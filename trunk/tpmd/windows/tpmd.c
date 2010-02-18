@@ -192,7 +192,7 @@ static int parse_options(int argc, char **argv)
                 return -1;
         }
     }
-    if (optind < argc) {
+    if (optind < argc && argv[optind][0] != 0) {
         debug("startup mode = '%s'", argv[optind]);
         if (!strcmp(argv[optind], "clear")) {
             tpm_startup = 1;
@@ -204,7 +204,7 @@ static int parse_options(int argc, char **argv)
             error("invalid startup mode '%s'; must be 'clear', "
                   "'save' (default) or 'deactivated", argv[optind]);
             print_usage(argv[0]);
-            exit(EXIT_SUCCESS);
+            return 0;
         }
     } else {
         /* if no startup mode is given assume save if a configuration
@@ -396,6 +396,11 @@ void serviceMain(int argc, char **argv)
 {
     info("starting TPM Emulator daemon (1.2.%d.%d-%d)",
          VERSION_MAJOR, VERSION_MINOR, VERSION_BUILD);
+    /* first of all register the control handler function of the service */
+    if (is_service) {
+        status_handle = RegisterServiceCtrlHandler(
+            SERVICE_NAME, (LPHANDLER_FUNCTION)serviceCtrlHandler);
+    }
     if (argc > 0 && parse_options(argc, argv) != 0) {
         updateServiceStatus(SERVICE_STOPPED,
                             ERROR_SERVICE_SPECIFIC_ERROR, 1, 0, 0);
@@ -416,6 +421,7 @@ void serviceMain(int argc, char **argv)
         return;
     }
     /* start main processing loop */
+    updateServiceStatus(SERVICE_RUNNING, NO_ERROR, 0, 0, 0);
     main_loop();
     info("stopping TPM Emulator daemon");
     CryptReleaseContext(rand_ch, 0);
