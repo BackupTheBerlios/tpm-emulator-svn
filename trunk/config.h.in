@@ -26,6 +26,7 @@
 #define TPM_SOCKET_NAME  "${TPM_SOCKET_NAME}"
 #define TPM_STORAGE_NAME "${TPM_STORAGE_NAME}"
 #define TPM_DEVICE_NAME  "${TPM_DEVICE_NAME}"
+#define TPM_LOG_FILE     "${TPM_LOG_FILE}"
 
 #endif /* _CONFIG_H_ */
 

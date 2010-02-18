@@ -20,7 +20,9 @@ string(REGEX REPLACE ".*Revision: ([0-9]+).*" "\\1" ${PROJECT_NAME}_VERSION_BUIL
 
 # create project configuration
 if(WIN32)
-set(TPM_STORAGE_NAME "C:\\tpm_emulator-1_2_${${PROJECT_NAME}_VERSION_MAJOR}_${${PROJECT_NAME}_VERSION_MINOR}")
+set(TPM_LOG_FILE "$ENV{PROGRAMFILES}\\\\${PROJECT_NAME}\\\\tpmd.log")
+set(TPM_STORAGE_NAME "$ENV{PROGRAMFILES}\\\\${PROJECT_NAME}\\\\"
+    "tpm_emulator-1_2_${${PROJECT_NAME}_VERSION_MAJOR}_${${PROJECT_NAME}_VERSION_MINOR}")
 set(TPM_DEVICE_NAME "\\\\\\\\.\\\\pipe\\\\tpmd:0")
 else()
 set(TPM_SOCKET_NAME "/var/run/tpm/tpmd_socket:0")
