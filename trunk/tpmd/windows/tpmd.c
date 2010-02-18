@@ -228,7 +228,12 @@ static void init_random(void)
 {
     info("initializing crypto context for RNG");
     BOOL res = CryptAcquireContext(&rand_ch, NULL, NULL,
-                                   PROV_RNG, CRYPT_SILENT); 
+                                   PROV_RSA_FULL, CRYPT_SILENT);
+    if (!res) {
+        /* try it again with CRYPT_NEWKEYSET enabled */
+        res = CryptAcquireContext(&rand_ch, NULL, NULL,
+                                  PROV_RSA_FULL, CRYPT_SILENT | CRYPT_NEWKEYSET);
+    }
     if (!res) {
         error("CryptAcquireContext() failed: %s", get_error());
         exit(EXIT_FAILURE);
@@ -268,7 +273,7 @@ static void main_loop(void)
       TPM_CMD_BUF_SIZE, 0, NULL);
     if (ph == INVALID_HANDLE_VALUE) {
          error("CreateNamedPipe() failed: %s", get_error());
-         exit(EXIT_FAILURE);
+         return;
     }
     /* init tpm emulator */
     mkdirs(opt_storage_file);
@@ -332,6 +337,7 @@ int main(int argc, char **argv)
     /* start main processing loop */
     main_loop();
     info("stopping TPM Emulator daemon");
+    CryptReleaseContext(rand_ch, 0);
     return 0;
 }
 
