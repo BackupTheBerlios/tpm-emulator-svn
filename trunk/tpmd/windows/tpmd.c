@@ -28,17 +28,20 @@
 #include "config.h"
 #include "tpm/tpm_emulator.h"
 
+#define SERVICE_NAME "tpmd"
+
 static volatile int stopflag = 0;
-static int is_daemon = 0;
+static int is_service = 0;
 static int opt_debug = 0;
 static int opt_foreground = 0;
 static const char *opt_pipe_name = TPM_DEVICE_NAME;
 static const char *opt_storage_file = TPM_STORAGE_NAME;
 static const char *opt_log_file = TPM_LOG_FILE;
-
 static int tpm_startup = 2;
 static uint32_t tpm_config = 0;
 static HCRYPTPROV rand_ch;
+static SERVICE_STATUS_HANDLE status_handle;
+static DWORD current_status;
 
 void *tpm_malloc(size_t size)
 {
@@ -62,7 +65,7 @@ void tpm_log(int priority, const char *fmt, ...)
         fclose(file);
     }
     va_end(ap);
-    if (!is_daemon && (priority != TPM_LOG_DEBUG || opt_debug)) {
+    if (!is_service && (priority != TPM_LOG_DEBUG || opt_debug)) {
         vprintf(fmt, bp);
     }
     va_end(bp);
@@ -149,7 +152,7 @@ static void print_usage(char *name)
            "'save' (default) or 'deactivated\n");
 }
 
-static void parse_options(int argc, char **argv)
+static int parse_options(int argc, char **argv)
 {
     char c;
     info("parsing options");
@@ -182,11 +185,11 @@ static void parse_options(int argc, char **argv)
             case '?':
                 error("unknown option '-%c'", optopt);
                 print_usage(argv[0]);
-                exit(EXIT_FAILURE);
+                return -1;
             case 'h':
             default:
                 print_usage(argv[0]);
-                exit(EXIT_SUCCESS);
+                return -1;
         }
     }
     if (optind < argc) {
@@ -215,6 +218,7 @@ static void parse_options(int argc, char **argv)
             close(fh);
         }
     }
+    return 0;
 }
 
 static const char *get_error(void)
@@ -226,7 +230,7 @@ static const char *get_error(void)
     return buf;
 }
 
-static void init_random(void)
+static int init_random(void)
 {
     info("initializing crypto context for RNG");
     BOOL res = CryptAcquireContext(&rand_ch, NULL, NULL,
@@ -238,8 +242,9 @@ static void init_random(void)
     }
     if (!res) {
         error("CryptAcquireContext() failed: %s", get_error());
-        exit(EXIT_FAILURE);
+        return -1;
     }
+    return 0;
 }
 
 BOOL signal_handler(DWORD event)
@@ -253,13 +258,14 @@ BOOL signal_handler(DWORD event)
     return TRUE;
 }
 
-static void init_signal_handler(void)
+static int init_signal_handler(void)
 {
     info("installing signal handler");
     if (!SetConsoleCtrlHandler((PHANDLER_ROUTINE)signal_handler,TRUE)) {
         error("SetConsoleCtrlHandler() failed: %s", get_error());
-        exit(EXIT_FAILURE);
-    }    
+        return -1;
+    }
+    return 0;
 }
 
 static int mkdirs(const char *path)
@@ -345,23 +351,91 @@ static void main_loop(void)
     info("main loop stopped");
 }
 
-int main(int argc, char **argv)
+BOOL updateServiceStatus(DWORD currentState, DWORD winExitCode,
+                         DWORD exitCode, DWORD checkPoint, DWORD waitHint)
+{ 
+   SERVICE_STATUS status;
+  
+   /* if this is a service update the status, otherwise return success */
+   if (!is_service) return TRUE;
+   current_status = currentState;
+   status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
+   status.dwCurrentState = currentState;
+   /* once the service is up and running, it accepts
+      the events stop and shutdown */
+   if (currentState == SERVICE_START_PENDING) {
+      status.dwControlsAccepted = 0;
+   } else {
+      status.dwControlsAccepted = SERVICE_ACCEPT_STOP 
+                                  | SERVICE_ACCEPT_SHUTDOWN;
+   }
+   status.dwWin32ExitCode = winExitCode;
+   status.dwServiceSpecificExitCode = exitCode;
+   status.dwCheckPoint = checkPoint;
+   status.dwWaitHint = waitHint;
+   return SetServiceStatus(status_handle, &status);
+}
+
+void serviceCtrlHandler(DWORD code)
+{
+    switch (code) {
+        /* stop service if told so or in the case of a system shutdown */
+        case SERVICE_CONTROL_STOP:
+        case SERVICE_CONTROL_SHUTDOWN:
+            updateServiceStatus(SERVICE_STOP_PENDING, NO_ERROR, 0, 1, 5000);
+            signal_handler(CTRL_CLOSE_EVENT);
+            break;
+        /* report the current status of the service to the SCM */
+        case SERVICE_CONTROL_INTERROGATE:
+            updateServiceStatus(current_status, NO_ERROR, 0, 0, 0);
+            break;
+    }
+}
+
+void serviceMain(int argc, char **argv)
 {
     info("starting TPM Emulator daemon (1.2.%d.%d-%d)",
          VERSION_MAJOR, VERSION_MINOR, VERSION_BUILD);
-    parse_options(argc, argv);
+    if (argc > 0 && parse_options(argc, argv) != 0) {
+        updateServiceStatus(SERVICE_STOPPED,
+                            ERROR_SERVICE_SPECIFIC_ERROR, 1, 0, 0);
+        return;
+    }
     /* init logging */
     mkdirs(opt_log_file);
     /* init signal handler */
-    init_signal_handler();
+    if (init_signal_handler() != 0) {
+        updateServiceStatus(SERVICE_STOPPED,
+                            ERROR_SERVICE_SPECIFIC_ERROR, 1, 0, 0);
+        return;
+    }
     /* init random number generator */
-    init_random();
-    /* unless requested otherwiese, daemonize process */
-    //if (!opt_foreground) daemonize(); FIXME
+    if (init_random() != 0) {
+        updateServiceStatus(SERVICE_STOPPED,
+                            ERROR_SERVICE_SPECIFIC_ERROR, 1, 0, 0);
+        return;
+    }
     /* start main processing loop */
     main_loop();
     info("stopping TPM Emulator daemon");
     CryptReleaseContext(rand_ch, 0);
-    return 0;
+    updateServiceStatus(SERVICE_STOPPED, NO_ERROR, 0, 0, 0);
+}
+
+int main(int argc, char **argv)
+{
+    if (parse_options(argc, argv) != 0) return EXIT_FAILURE;
+    if (opt_foreground) {
+        is_service = 0;
+        serviceMain(0, NULL);
+        return EXIT_SUCCESS;
+    } else {
+        SERVICE_TABLE_ENTRY service_table[] = {
+            { (LPTSTR)SERVICE_NAME, (LPSERVICE_MAIN_FUNCTION)serviceMain },
+            { NULL, NULL } };
+        is_service = 1;
+        StartServiceCtrlDispatcher(service_table);
+        return GetLastError();
+    }
 }
 
