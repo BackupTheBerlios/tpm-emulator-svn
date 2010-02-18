@@ -41,7 +41,6 @@ static int opt_debug = 0;
 static int opt_foreground = 0;
 static const char *opt_socket_name = TPM_SOCKET_NAME;
 static const char *opt_storage_file = TPM_STORAGE_NAME;
-
 static uid_t opt_uid = 0;
 static gid_t opt_gid = 0;
 static int tpm_startup = 2;
