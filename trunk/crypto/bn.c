@@ -23,7 +23,7 @@ void tpm_bn_init(tpm_bn_t a)
 
 void tpm_bn_init2(tpm_bn_t a, size_t nbits)
 {
-  mpz_init2(a, nbits + + GMP_NUMB_BITS);
+  mpz_init2(a, nbits + GMP_NUMB_BITS);
 }
 
 void tpm_bn_init_set(tpm_bn_t a, tpm_bn_t val)
