@@ -17,36 +17,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <signal.h>
 #include <string.h>
 #include <errno.h>
-#include <syslog.h>
 #include <stdarg.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <pwd.h>
-#include <grp.h>
+#include <windows.h>
+#include <wincrypt.h>
 #include "config.h"
 #include "tpm/tpm_emulator.h"
-
-#define TPM_COMMAND_TIMEOUT 30
-#define TPM_RANDOM_DEVICE   "/dev/urandom"
 
 static volatile int stopflag = 0;
 static int is_daemon = 0;
 static int opt_debug = 0;
 static int opt_foreground = 0;
-static const char *opt_socket_name = TPM_SOCKET_NAME;
+static const char *opt_pipe_name = TPM_DEVICE_NAME;
 static const char *opt_storage_file = TPM_STORAGE_NAME;
+static const char *opt_log_file = TPM_LOG_FILE;
 
-static uid_t opt_uid = 0;
-static gid_t opt_gid = 0;
 static int tpm_startup = 2;
 static uint32_t tpm_config = 0;
-static int rand_fh;
+static HCRYPTPROV rand_ch;
 
 void *tpm_malloc(size_t size)
 {
@@ -60,38 +52,25 @@ void tpm_free(/*const*/ void *ptr)
 
 void tpm_log(int priority, const char *fmt, ...)
 {
+    FILE *file;
     va_list ap, bp;
     va_start(ap, fmt);
     va_copy(bp, ap);
-    switch (priority) {
-      case TPM_LOG_DEBUG:
-        vsyslog(LOG_DEBUG, fmt, ap);
-        break;
-      case TPM_LOG_ERROR:
-        vsyslog(LOG_ERR, fmt, ap);
-        break;
-      case TPM_LOG_INFO:
-      default:
-        vsyslog(LOG_INFO, fmt, ap);
-        break;
+    file = fopen(opt_log_file, "a");
+    if (file != NULL) {
+        vfprintf(file, fmt, ap);
+        fclose(file);
     }
     va_end(ap);
     if (!is_daemon && (priority != TPM_LOG_DEBUG || opt_debug)) {
-         vprintf(fmt, bp);
+        vprintf(fmt, bp);
     }
     va_end(bp);
 }
 
 void tpm_get_extern_random_bytes(void *buf, size_t nbytes)
 {
-    uint8_t *p = (uint8_t*)buf;
-    ssize_t res;
-    while (nbytes > 0) {
-        res = read(rand_fh, p, nbytes);
-        if (res > 0) {
-            nbytes -= res; p += res;
-        }
-    }
+  CryptGenRandom(rand_ch, nbytes, (BYTE*)buf);
 }
 
 uint64_t tpm_get_ticks(void)
@@ -156,14 +135,13 @@ int tpm_read_from_storage(uint8_t **data, size_t *data_length)
 
 static void print_usage(char *name)
 {
-    printf("usage: %s [-d] [-f] [-s storage file] [-u unix socket name] "
-           "[-o user name] [-g group name] [-h] [startup mode]\n", name);
+    printf("usage: %s [-d] [-f] [-s storage file] [-u windows pipe name] "
+           "[-l log file] [-h] [startup mode]\n", name);
     printf("  d : enable debug mode\n");
     printf("  f : forces the application to run in the foreground\n");
     printf("  s : storage file to use (default: %s)\n", opt_storage_file);
-    printf("  u : unix socket name to use (default: %s)\n", opt_socket_name);
-    printf("  o : effective user the application should run as\n");
-    printf("  g : effective group the application should run as\n");
+    printf("  u : windows named pipe name to use (default: %s)\n", opt_pipe_name);
+    printf("  l : name of the log file (default: %s)\n", opt_log_file);
     printf("  h : print this help message\n");
     printf("  startup mode : must be 'clear', "
            "'save' (default) or 'deactivated\n");
@@ -172,17 +150,12 @@ static void print_usage(char *name)
 static void parse_options(int argc, char **argv)
 {
     char c;
-    struct passwd *pwd;
-    struct group *grp;
-    opt_uid = getuid();
-    opt_gid = getgid();
     info("parsing options");
     while ((c = getopt (argc, argv, "dfs:u:o:g:c:h")) != -1) {
         debug("handling option '-%c'", c);
         switch (c) {
             case 'd':
                 opt_debug = 1;
-                setlogmask(setlogmask(0) | LOG_MASK(LOG_DEBUG));
                 debug("debug mode enabled");
                 break;
             case 'f':
@@ -194,24 +167,12 @@ static void parse_options(int argc, char **argv)
                 debug("using storage file '%s'", opt_storage_file);
                 break;
             case 'u':
-                opt_socket_name = optarg;
-                debug("using unix socket '%s'", opt_socket_name);
+                opt_pipe_name = optarg;
+                debug("using named pipe '%s'", opt_pipe_name);
                 break;
-            case 'o':
-                pwd  = getpwnam(optarg);
-                if (pwd == NULL) {
-                    error("invalid user name '%s'\n", optarg);
-                    exit(EXIT_FAILURE);
-                }
-                opt_uid = pwd->pw_uid;
-                break;
-            case 'g':
-                grp  = getgrnam(optarg);
-                if (grp == NULL) {
-                    error("invalid group name '%s'\n", optarg);
-                    exit(EXIT_FAILURE);
-                }
-                opt_gid = grp->gr_gid;
+            case 'l':
+                opt_log_file = optarg;
+                debug("using log file '%s'", opt_log_file);
                 break;
             case 'c':
                 tpm_config = strtol(optarg, NULL, 0);
@@ -254,86 +215,24 @@ static void parse_options(int argc, char **argv)
     }
 }
 
-static void switch_uid_gid(void)
+static const char *get_error(void)
 {
-    if (opt_gid != getgid()) {
-        info("switching effective group ID to %d", opt_gid);  
-        if (setgid(opt_gid) == -1) {
-            error("switching effective group ID to %d failed: %s", opt_gid, strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-    }
-    if (opt_uid != getuid()) {
-        info("switching effective user ID to %d", opt_uid);
-        if (setuid(opt_uid) == -1) {
-            error("switching effective user ID to %d failed: %s", opt_uid, strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-    }
+    static char buf[512];
+    memset(buf, 0, sizeof(buf));
+    FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_SYSTEM,
+                  "", GetLastError(), 0, buf, sizeof(buf), NULL);
+    return buf;
 }
 
 static void init_random(void)
 {
-    info("openening random device %s", TPM_RANDOM_DEVICE);
-    rand_fh = open(TPM_RANDOM_DEVICE, O_RDONLY);
-    if (rand_fh < 0) {
-        error("open(%s) failed: %s", TPM_RANDOM_DEVICE, strerror(errno));
+    info("initializing crypto context for RNG");
+    BOOL res = CryptAcquireContext(&rand_ch, NULL, NULL,
+                                   PROV_RNG, CRYPT_SILENT); 
+    if (!res) {
+        error("CryptAcquireContext() failed: %s", get_error());
         exit(EXIT_FAILURE);
     }
-}
-
-static void signal_handler(int sig)
-{
-    info("signal received: %d", sig);
-    if (sig == SIGTERM || sig == SIGQUIT || sig == SIGINT) stopflag = 1;
-}
-
-static void init_signal_handler(void)
-{
-    info("installing signal handlers");
-    if (signal(SIGTERM, signal_handler) == SIG_ERR) {
-        error("signal(SIGTERM) failed: %s", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    if (signal(SIGQUIT, signal_handler) == SIG_ERR) {
-        error("signal(SIGQUIT) failed: %s", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    if (signal(SIGINT, signal_handler) == SIG_ERR) {
-        error("signal(SIGINT) failed: %s", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    if (signal(SIGPIPE, signal_handler) == SIG_ERR) {
-        error("signal(SIGPIPE) failed: %s", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-}
-
-static void daemonize(void)
-{
-    pid_t sid, pid;
-    info("daemonizing process");
-    pid = fork();
-    if (pid < 0) {
-        error("fork() failed: %s", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    if (pid > 0) exit(EXIT_SUCCESS);
-    pid = getpid();
-    sid = setsid();
-    if (sid < 0) {
-        error("setsid() failed: %s", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    if (chdir("/") < 0) {
-        error("chdir() failed: %s", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    close(STDIN_FILENO);
-    close(STDOUT_FILENO);
-    close(STDERR_FILENO);
-    is_daemon = 1;
-    info("process was successfully daemonized: pid=%d sid=%d", pid, sid);
 }
 
 static int mkdirs(const char *path)
@@ -342,7 +241,7 @@ static int mkdirs(const char *path)
     char *p = strchr(copy + 1, '/');
     while (p != NULL) {
         *p = '\0';
-        if ((mkdir(copy, 0755) == -1) && (errno != EEXIST)) {
+        if ((mkdir(copy) == -1) && (errno != EEXIST)) {
             free(copy);
             return errno;
         }
@@ -353,44 +252,24 @@ static int mkdirs(const char *path)
     return 0;
 }
 
-static int init_socket(const char *name)
-{
-    int sock;
-    struct sockaddr_un addr;
-    info("initializing socket %s", name);
-    sock = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (sock < 0) {
-        error("socket(AF_UNIX) failed: %s", strerror(errno));
-        return -1;
-    }
-    mkdirs(name);
-    addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, name, sizeof(addr.sun_path));
-    umask(0177);
-    if (bind(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-        error("bind(%s) failed: %s", addr.sun_path, strerror(errno));
-        close(sock);
-        return -1;
-    }
-    listen(sock, 1);
-    return sock;
-}
-
 static void main_loop(void)
 {
-    int sock, fh, res;
-    int32_t in_len;
+    HANDLE ph;
+    DWORD in_len;
     uint32_t out_len;
-    uint8_t in[TPM_CMD_BUF_SIZE], *out;
-    struct sockaddr_un addr;
-    socklen_t addr_len;
-    fd_set rfds;
-    struct timeval tv;
+    BYTE in[TPM_CMD_BUF_SIZE];
+    uint8_t *out;
 
     info("staring main loop");
-    /* open UNIX socket */
-    sock = init_socket(opt_socket_name);
-    if (sock < 0) exit(EXIT_FAILURE);
+    /* open named pipe */
+    ph = CreateNamedPipe(opt_pipe_name, PIPE_ACCESS_DUPLEX,
+      PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
+      PIPE_UNLIMITED_INSTANCES, TPM_CMD_BUF_SIZE,
+      TPM_CMD_BUF_SIZE, 0, NULL);
+    if (ph == INVALID_HANDLE_VALUE) {
+         error("CreateNamedPipe() failed: %s", get_error());
+         exit(EXIT_FAILURE);
+    }
     /* init tpm emulator */
     mkdirs(opt_storage_file);
     debug("initializing TPM emulator");
@@ -399,95 +278,60 @@ static void main_loop(void)
     while (!stopflag) {
         /* wait for incomming connections */
         debug("waiting for connections...");
-        FD_ZERO(&rfds);
-        FD_SET(sock, &rfds);
-        tv.tv_sec = 10;
-        tv.tv_usec = 0;
-        res = select(sock + 1, &rfds, NULL, NULL, &tv);
-        if (res < 0) {
-            error("select(sock) failed: %s", strerror(errno));
+        if (!ConnectNamedPipe(ph, NULL)) {
+            error("ConnectNamedPipe() failed: %s", get_error());
             break;
-        } else if (res == 0) {
-            continue;
-        }
-        addr_len = sizeof(addr);
-        fh = accept(sock, (struct sockaddr*)&addr, &addr_len);
-        if (fh < 0) {
-            error("accept() failed: %s", strerror(errno));
-            continue;
         }
         /* receive and handle commands */
         in_len = 0;
         do {
             debug("waiting for commands...");
-            FD_ZERO(&rfds);
-            FD_SET(fh, &rfds);
-            tv.tv_sec = TPM_COMMAND_TIMEOUT;
-            tv.tv_usec = 0;
-            res = select(fh + 1, &rfds, NULL, NULL, &tv);
-            if (res < 0) {
-                error("select(fh) failed: %s", strerror(errno));
-                close(fh);
-                break;
-            } else if (res == 0) {
-#ifdef TPMD_DISCONNECT_IDLE_CLIENTS	    
-                info("connection closed due to inactivity");
-                close(fh);
-                break;
-#else		
-                continue;
-#endif		
+            if (!ReadFile(ph, in, sizeof(in), &in_len, NULL)) {
+                error("ReadFile() failed: %s", get_error());
             }
-            in_len = read(fh, in, sizeof(in));
             if (in_len > 0) {
                 debug("received %d bytes", in_len);
                 out = NULL;
-                res = tpm_handle_command(in, in_len, &out, &out_len);
-                if (res < 0) {
+                if (tpm_handle_command(in, in_len, &out, &out_len) != 0) {
                     error("tpm_handle_command() failed");
                 } else {
                     debug("sending %d bytes", out_len);
-                    while (out_len > 0) {
-                        res = write(fh, out, out_len);
-                        if (res < 0) {
-                            error("write(%d) failed: %s", out_len, strerror(errno));
+                    DWORD res, len = 0;
+                    while (len < out_len) {
+                        if (!WriteFile(ph, out, out_len, &res, NULL)) {
+                            error("WriteFile(%d) failed: %s",
+                                  out_len - len, strerror(errno));
                             break;
                         }
-                        out_len	-= res;
+                        len += res;
                     }
                     tpm_free(out);
                 }
             }
         } while (in_len > 0);
-        close(fh);
+        DisconnectNamedPipe(ph);
     }
     /* shutdown tpm emulator */
     tpm_emulator_shutdown();
     /* close socket */
-    close(sock);
-    unlink(opt_socket_name);
+    CloseHandle(ph);
     info("main loop stopped");
 }
 
 int main(int argc, char **argv)
 {
-    openlog(argv[0], 0, LOG_DAEMON);
-    setlogmask(~LOG_MASK(LOG_DEBUG));
-    syslog(LOG_INFO, "--- separator ---\n");
     info("starting TPM Emulator daemon (1.2.%d.%d-%d)",
          VERSION_MAJOR, VERSION_MINOR, VERSION_BUILD);
     parse_options(argc, argv);
-    /* switch uid/gid if required */
-    switch_uid_gid();
-    /* open random device */
+    /* init logging */
+    mkdirs(opt_log_file);
+    /* init random number generator */
     init_random();
-    /* init signal handlers */
-    init_signal_handler();
-    /* unless requested otherwiese, fork and daemonize process */
-    if (!opt_foreground) daemonize();
+    /* unless requested otherwiese, daemonize process */
+    //if (!opt_foreground) daemonize(); FIXME
     /* start main processing loop */
     main_loop();
     info("stopping TPM Emulator daemon");
-    closelog();
     return 0;
 }
+
