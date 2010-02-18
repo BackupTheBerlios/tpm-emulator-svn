@@ -447,13 +447,15 @@ static void main_loop(void)
                     error("tpm_handle_command() failed");
                 } else {
                     debug("sending %d bytes", out_len);
-                    while (out_len > 0) {
-                        res = write(fh, out, out_len);
+                    uint32_t len = 0;
+                    while (len < out_len) {
+                        res = write(fh, &out[len], out_len - len);
                         if (res < 0) {
-                            error("write(%d) failed: %s", out_len, strerror(errno));
+                            error("write(%d) failed: %s", 
+                                  out_len - len, strerror(errno));
                             break;
                         }
-                        out_len	-= res;
+                        len += res;
                     }
                     tpm_free(out);
                 }
