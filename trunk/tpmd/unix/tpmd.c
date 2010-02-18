@@ -114,12 +114,12 @@ int tpm_write_to_storage(uint8_t *data, size_t data_length)
     if (fh < 0) return -1;
     while (data_length > 0) {
         res = write(fh, data, data_length);
-	if (res < 0) {
-	    close(fh);
-	    return -1;
-	}
-	data_length -= res; 
-	data += res;
+        if (res < 0) {
+            close(fh);
+            return -1;
+        }
+        data_length -= res; 
+        data += res;
     }
     close(fh);
     return 0;
@@ -142,13 +142,14 @@ int tpm_read_from_storage(uint8_t **data, size_t *data_length)
     *data_length = 0;
     while (total_length > 0) {
         res = read(fh, &(*data)[*data_length], total_length);
-	if (res < 0) {
-	    close(fh);
-	    tpm_free(*data);
-	    return -1;
-	}
+        if (res < 0) {
+            close(fh);
+            tpm_free(*data);
+            return -1;
+        }
+        if (res == 0) break;
         *data_length += res;
-	total_length -= res;
+        total_length -= res;
     }
     close(fh);
     return 0;
