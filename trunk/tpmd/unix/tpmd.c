@@ -493,5 +493,5 @@ int main(int argc, char **argv)
     info("stopping TPM Emulator daemon");
     close(rand_fh);
     closelog();
-    return 0;
+    return EXIT_SUCCESS;
 }
