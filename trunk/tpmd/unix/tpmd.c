@@ -77,7 +77,7 @@ void tpm_log(int priority, const char *fmt, ...)
     }
     va_end(ap);
     if (!is_daemon && (priority != TPM_LOG_DEBUG || opt_debug)) {
-         vprintf(fmt, bp);
+        vprintf(fmt, bp);
     }
     va_end(bp);
 }
