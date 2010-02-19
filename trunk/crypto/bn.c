@@ -63,7 +63,9 @@ void tpm_bn_import(tpm_bn_t out, size_t count, int order, const void *in)
 
 void tpm_bn_export(void *out, size_t *count, int order, tpm_bn_t in)
 {
-  mpz_export(out, count, order, 1, 0, 0, in);
+  size_t count_out;
+  mpz_export(out, &count_out, order, 1, 0, 0, in);
+  if (count != NULL) *count = count_out;
 }
 
 int tpm_bn_cmp(tpm_bn_t a, tpm_bn_t b)
