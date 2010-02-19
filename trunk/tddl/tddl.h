@@ -11,7 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tddl.h 364 2010-02-11 10:24:45Z mast $
  */
 
 #ifndef _TDDL_H_

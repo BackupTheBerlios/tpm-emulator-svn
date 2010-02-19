@@ -11,23 +11,19 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tddl.c 364 2010-02-11 10:24:45Z mast $
  */
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
-#include <pthread.h>
+#include <windows.h>
 #include <config.h>
 #include "tddl.h"
 
 /* device and socket names */
 static const char *tpm_device_name = TPM_DEVICE_NAME;
-static const char *tpmd_socket_name = TPM_SOCKET_NAME;
 
 /* TPM device handle */
 static int tddli_dh = -1;
@@ -36,12 +32,40 @@ static int tddli_dh = -1;
 static TSS_RESULT tddli_driver_status = TDDL_DRIVER_FAILED;
 static TSS_RESULT tddli_device_status = TDDL_DEVICE_NOT_FOUND;
 
+
+#if defined(_WIN32) || defined(_WIN64)
+
 /* library lock */
-static pthread_mutex_t tddli_lock = PTHREAD_MUTEX_INITIALIZER;
+CRITICAL_SECTION tddli_mutex;
+#define tddli_lock()   EnterCriticalSection(&tddli_mutex)
+#define tddli_unlock() LeaveCriticalSection(&tddli_mutex)
+
+BOOL APIENTRY DllMain(HANDLE hModule, DWORD reason, LPVOID lpReserved)
+{
+  switch(reason) {
+    case DLL_PROCESS_ATTACH:
+      InitializeCriticalSection(&tddli_mutex);
+      break;
+    case DLL_PROCESS_DETACH:
+      DeleteCriticalSection(&tddli_mutex);
+      break;
+    default:
+      break;
+  }
+  return TRUE;
+}
+
+#endif
+
 
 static TSS_RESULT open_device(const char *device_name)
 {
-  tddli_dh = open(device_name, O_RDWR);
+  /* open the named pipe and generate a posix file handle */
+  DWORD mode = PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE;
+  HANDLE ph = CreateFile(device_name, GENERIC_READ | GENERIC_WRITE,
+    0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  SetNamedPipeHandleState(ph, &mode, NULL, NULL);
+  tddli_dh = _open_osfhandle((DWORD)ph, O_RDWR | O_BINARY);
   if (tddli_dh < 0) {
     if (errno == ENOENT || errno == ENXIO) {
       tddli_driver_status = TDDL_DRIVER_FAILED;
@@ -54,65 +78,57 @@ static TSS_RESULT open_device(const char *device_name)
   } else {
     tddli_driver_status = TDDL_DRIVER_OK;
     tddli_device_status = TDDL_DEVICE_OK;
+
     return TDDL_SUCCESS;
   }
-}
-
-static TSS_RESULT open_socket(const char *socket_name)
-{
-  struct sockaddr_un addr;
-  tddli_dh = socket(AF_UNIX, SOCK_STREAM, 0);
-  if (tddli_dh < 0) {
-    tddli_driver_status = TDDL_DRIVER_FAILED;
-    tddli_device_status = TDDL_DEVICE_NOT_FOUND;
-    return TDDL_E_FAIL;
-  }
-  addr.sun_family = AF_UNIX;
-  strncpy(addr.sun_path, socket_name, sizeof(addr.sun_path));
-  if (connect(tddli_dh, (struct sockaddr*)&addr, sizeof(struct sockaddr_un)) < 0) {
-    tddli_driver_status = TDDL_DRIVER_FAILED;
-    tddli_device_status = TDDL_DEVICE_NOT_FOUND;
-    return TDDL_E_FAIL;
-  }
-  tddli_driver_status = TDDL_DRIVER_OK;
-  tddli_device_status = TDDL_DEVICE_OK;
-  return TDDL_SUCCESS;
 }
 
 TSS_RESULT Tddli_Open()
 {
   TSS_RESULT res;
-  pthread_mutex_lock(&tddli_lock);
+  tddli_lock();
   if (tddli_dh != -1) {
     res = TDDL_E_ALREADY_OPENED;
   } else {
-    res = open_socket(tpmd_socket_name);
-    if (res != TDDL_SUCCESS) {
-      res = open_device(tpm_device_name);
-    }
+    res = open_device(tpm_device_name);
   }
-  pthread_mutex_unlock(&tddli_lock);
+  tddli_unlock();
   return res;
-} 
+}
+
+TSS_RESULT TDDL_Open()
+{
+  return Tddli_Open();
+}
 
 TSS_RESULT Tddli_Close()
 {
   TSS_RESULT res = TDDL_SUCCESS;
-  pthread_mutex_lock(&tddli_lock);
+  tddli_lock();
   if (tddli_dh >= 0) {
     close(tddli_dh);
     tddli_dh = -1;
   } else {
     res = TDDL_E_ALREADY_CLOSED;
   }
-  pthread_mutex_unlock(&tddli_lock); 
+  tddli_unlock(); 
   return res;
+}
+
+TSS_RESULT TDDL_Close()
+{
+  return Tddli_Close();
 }
  
 TSS_RESULT Tddli_Cancel()
 {
   /* this is not supported by the TPM emulator */
   return TDDL_E_NOTIMPL;
+}
+
+TSS_RESULT TDDL_Cancel()
+{
+  return Tddli_Cancel();
 }
 
 static TSS_RESULT send_to_tpm(BYTE* pTransmitBuf, UINT32 TransmitBufLen)
@@ -141,7 +157,7 @@ TSS_RESULT Tddli_TransmitData(BYTE* pTransmitBuf, UINT32 TransmitBufLen,
                               BYTE* pReceiveBuf, UINT32* puntReceiveBufLen)
 {
   TSS_RESULT res;
-  pthread_mutex_lock(&tddli_lock);
+  tddli_lock();
   if (tddli_dh >= 0) {
     res = send_to_tpm(pTransmitBuf, TransmitBufLen);
     if (res == TDDL_SUCCESS)
@@ -149,8 +165,15 @@ TSS_RESULT Tddli_TransmitData(BYTE* pTransmitBuf, UINT32 TransmitBufLen,
   } else {
     res = TDDL_E_FAIL;
   }
-  pthread_mutex_unlock(&tddli_lock);
+  tddli_unlock();
   return res;
+}
+
+TSS_RESULT TDDL_TransmitData(BYTE* pTransmitBuf, UINT32 TransmitBufLen,
+                              BYTE* pReceiveBuf, UINT32* puntReceiveBufLen)
+{
+  return Tddli_TransmitData(pTransmitBuf, TransmitBufLen,
+                            pReceiveBuf, puntReceiveBufLen);
 }
 
 static TSS_RESULT cap_version(UINT32 SubCap, BYTE* pCapBuf,
@@ -218,7 +241,7 @@ TSS_RESULT Tddli_GetCapability(UINT32 CapArea, UINT32 SubCap,
 {
   TSS_RESULT res = TDDL_SUCCESS;
   if (tddli_dh < 0) return TDDL_E_FAIL;
-  pthread_mutex_lock(&tddli_lock);
+  tddli_lock();
   switch (CapArea) {
     case TDDL_CAP_VERSION:
       res = cap_version(SubCap, pCapBuf, puntCapBufLen);    
@@ -229,21 +252,33 @@ TSS_RESULT Tddli_GetCapability(UINT32 CapArea, UINT32 SubCap,
     default:
       res = TDDL_E_BAD_PARAMETER;
   }
-  pthread_mutex_unlock(&tddli_lock);
+  tddli_unlock();
   return res;
 }
 
+TSS_RESULT TDDL_GetCapability(UINT32 CapArea, UINT32 SubCap, 
+                              BYTE* pCapBuf, UINT32* puntCapBufLen)
+{
+  return Tddli_GetCapability(CapArea, SubCap, pCapBuf, puntCapBufLen);
+}
+
 TSS_RESULT Tddli_SetCapability(UINT32 CapArea, UINT32 SubCap, 
-                               BYTE* pCapBuf, UINT32* puntCapBufLen) 
+                               BYTE* pCapBuf, UINT32* puntCapBufLen)
 {
   /* no vendor-specific capabilities available, yet */
   return TDDL_E_BAD_PARAMETER;
 }
 
-TSS_RESULT Tddli_GetStatus(UINT32 ReqStatusType, UINT32* puntStatus) 
+TSS_RESULT TDDL_SetCapability(UINT32 CapArea, UINT32 SubCap, 
+                              BYTE* pCapBuf, UINT32* puntCapBufLen)
+{
+  return Tddli_SetCapability(CapArea, SubCap, pCapBuf, puntCapBufLen);
+}
+
+TSS_RESULT Tddli_GetStatus(UINT32 ReqStatusType, UINT32* puntStatus)
 {
   TSS_RESULT res = TDDL_SUCCESS;
-  pthread_mutex_lock(&tddli_lock);
+  tddli_lock();
   switch (ReqStatusType) {
     case TDDL_DRIVER_STATUS:
       *puntStatus = tddli_driver_status;
@@ -254,8 +289,13 @@ TSS_RESULT Tddli_GetStatus(UINT32 ReqStatusType, UINT32* puntStatus)
     default:
       res = TDDL_E_BAD_PARAMETER;
   }
-  pthread_mutex_unlock(&tddli_lock);
+  tddli_unlock();
   return res;
+}
+
+TSS_RESULT TDDL_GetStatus(UINT32 ReqStatusType, UINT32* puntStatus)
+{
+  return Tddli_GetStatus(ReqStatusType, puntStatus);
 }
 
 TSS_RESULT Tddli_SetPowerManagement(TSS_BOOL SendSaveStateCommand,
@@ -264,9 +304,21 @@ TSS_RESULT Tddli_SetPowerManagement(TSS_BOOL SendSaveStateCommand,
   return TDDL_E_NOTIMPL;
 }
 
+TSS_RESULT TDDL_SetPowerManagement(TSS_BOOL SendSaveStateCommand,
+                                    UINT32 *QuerySetNewTPMPowerState)
+{
+  return Tddli_SetPowerManagement(SendSaveStateCommand, QuerySetNewTPMPowerState);
+}
+
 TSS_RESULT Tddli_PowerManagementControl(TSS_BOOL SendPowerManager,
                                         UINT32 DriverManagesPowerStates)
 {
   return TDDL_E_NOTIMPL;
+}
+
+TSS_RESULT TDDL_PowerManagementControl(TSS_BOOL SendPowerManager,
+                                        UINT32 DriverManagesPowerStates)
+{
+  return Tddli_PowerManagementControl(SendPowerManager, DriverManagesPowerStates);
 }
 

@@ -3,13 +3,20 @@
 #
 # $Id$
 
+set(tddl_SRCS "tddl.c" "tddl.h")
+add_library(tddl SHARED ${tddl_SRCS})
 if(UNIX)
-
-add_subdirectory(unix)
-
+  set_target_properties(tddl PROPERTIES SOVERSION "1.2"
+    VERSION "1.2.${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}")
 elseif(WIN32)
-
-add_subdirectory(windows)
-
+  set_target_properties(tddl PROPERTIES OUTPUT_NAME ifxtpm)
+  set_target_properties(tddl PROPERTIES PREFIX "")
 endif()
+
+install(TARGETS tddl DESTINATION lib)
+install(FILES "tddl.h" DESTINATION include)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+add_executable(test_tddl test_tddl.c)
+target_link_libraries(test_tddl tddl)
 
