@@ -353,6 +353,7 @@ static TPM_RESULT cap_handle(UINT32 subCapSize, BYTE *subCap,
           list.loaded++;
           list.handle[i] = tpmData.stany.data.contextList[i];
         }
+      break;
     default:
       return TPM_BAD_MODE;
   }
