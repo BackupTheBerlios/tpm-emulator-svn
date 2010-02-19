@@ -1,5 +1,6 @@
 /* Software-based Trusted Platform Module (TPM) Emulator
  * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
+ * Copyright (C) 2009 Domenic Schroeder
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published

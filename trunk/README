@@ -30,27 +30,23 @@ Package
 The tpm emulator package comprises four main parts:
 
 a) tpmd - a user-space application that implements the actual emulator
-   and can be accessed by means of unix domain sockets (Unix) or
+   and can be accessed by means of Unix domain sockets (Unix) or
    named pipes (Windows).
 
 b) tpmd_dev - a kernel module that provides the device /dev/tpm for
-   backward compatibility and forwards the received commands to tpmd.
+   backward compatibility and forwards the received commands to tpmd
+   (Unix and Mac OS X only).
 
 c) tddl - a TSS conform device driver library for the emulator.
 
 
-Prerequisites
---------------------------------------------------------------------------
-First of all, you have to make sure that the GNU MP library (http://
-www.gnu.org/software/gmp/gmp.html) is properly installed on your system;
-in particular that the required shared library and header files exist
-and are located within the search path of the compiler and linker.
-
-
 Compilation and Installation
 --------------------------------------------------------------------------
-The compilation and installation of the emulator package is based on
-the CMake build environment and is executed as follows:
+The compilation and installation of the TPM emulator package is based on
+the CMake build environment (version 2.6 or better) and requires that the 
+GNU MP library (version 4.0 or better) is properly installed on your
+system. A working MinGW compiler suite is further required on Windows
+(see http://www.mingw.org/). To compile and install the package execute:
 
 # tar -xvzf tpm_emulator-X.Y.tar.gz
 # cd tpm_emulator-X.Y
@@ -60,31 +56,62 @@ the CMake build environment and is executed as follows:
 # make
 # make install
 
+The script files build.sh and build.bat automate this process.
+
+On Windows, the TPM emulator system service has additionally to be
+registered by calling:
+# control_tpmd.bat install
+
+MTM support can be enabled by replacing
+# cmake ../
+with
+# cmake ../ -DMTM_EMULATOR=ON
+
 
 Startup
 --------------------------------------------------------------------------
-In order to use the TPM emulator, one has to start the TPM emulator daemon
-and, if required, load the TPM device forwarding module. The startup mode
-of the TPM (see TPM Spec. Part 1) is defined by the startup mode argument
-and can either be set to clear, save (default) or deactivated.
+In order to use the TPM emulator on Unix or Mac OS X, one has to start the
+TPM emulator daemon and load the TPM device forwarding module. On Linux,
+this is done by executing:
 
-On Linux this is done as follows:
 # modprobe tpmd_dev
-# tpmd save
+# tpmd
 
-Furthermore, the argument -d enables debug mode, -f forces the emulator
-to run in the foreground, and -h print the following help message:
+On Windows, the TPM emulator service can either be started with the
+Microsoft Management Console or with the control_tpmd.bat script:
+
+# control_tpmd.bat start
+# control_tpmd.bat status
+
+The startup mode of the TPM (see TPM Spec. Part 1) is defined by the
+startup mode argument and can either be set to clear, save (default)
+or deactivated. Additionally supported arguments are
 
 usage: tpmd [-d] [-f] [-s storage file] [-u unix socket name]
             [-o user name] [-g group name] [-h] [startup mode]
   d : enable debug mode
   f : forces the application to run in the foreground
-  s : storage file to use (default: /var/lib/tpm/tpm_emulator-1.2.0.7)
+  s : storage file to use (default: /var/lib/tpm/tpm_emulator-1_2_0_7)
   u : unix socket name to use (default: /var/run/tpm/tpmd_socket:0)
   o : effective user the application should run as
   g : effective group the application should run as
   h : print this help message
   startup mode : must be 'clear', 'save' (default) or 'deactivated
+
+and
+
+usage: tpmd.exe [-d] [-f] [-s storage file] [-u windows pipe name]
+                [-l log file] [-h] [startup mode]
+  d : enable debug mode
+  f : forces the application to run in the foreground
+  s : storage file to use (default:
+      C:/Program Files/TPM_Emulator/tpm_emulator-1_2_0_7)
+  u : windows named pipe name to use (default: //./pipe/tpmd:0)
+  l : name of the log file (default: C:/Program Files/TPM_Emulator/tpmd.log)
+  h : print this help message
+  startup mode : must be 'clear', 'save' (default) or 'deactivated
+
+on Unix and Windows, respectively.
 
 If the emulator is started in mode save and fails to load a previously
 stored TPM state, it will go into fail-stop mode and has to be reloaded.
@@ -105,12 +132,15 @@ of its functionality we refer to the official TCG specification (see
 https://www.trustedcomputinggroup.org/specs/TSS), an example of use is
 given by the test application tddl/test_tddl.
 
-For backward compatibility with existing applications, the kernel module
-tpmd_dev forwards any command sent to the device /dev/tpm to the tpm
-emulator daemon. In order to access the emulator directly (i.e., without
-using the device driver library or the device dev/tpm) all one has to do
-is to include the header files sys/socket.h and sys/un.h and to replace
-the open("/dev/tpm") call with something like:
+Note that on Windows the tddl is called ifxtpm.dll as many applications
+(e.g., TPM/J) expect this name and do not support alternative drivers.
+
+For backward compatibility with existing Unix applications, the kernel
+module tpmd_dev forwards any command sent to the device /dev/tpm to the
+tpm emulator daemon. In order to access the emulator directly (i.e.,
+without using the device driver library or the device dev/tpm) all one
+has to do is to include the header files sys/socket.h and sys/un.h and
+to replace the open("/dev/tpm") call with something like:
 
 struct sockaddr_un addr;
 fh = socket(PF_UNIX, SOCK_STREAM, 0);
@@ -126,13 +156,15 @@ expected.
 
 Notes
 --------------------------------------------------------------------------
-* Since release 0.7 the emulator supports Darwin (Mac OS X) and Windows;
-  thanks go to Amit Singh and Domenic Schroeder
+* Since release 0.7 the emulator also runs on Darwin (Mac OS X) and on
+  Windows; thanks go to Amit Singh and Domenic Schröder. In addition,
+  the emulator now also supports MTM emulation; thanks go to Jan-Erik
+  Ekberg and Markku Kylänpää from Nokia.
 * Since release 0.5.1 the emulator supports Free- and OpenBSD; thanks go
   to Sebastian Schuetz.
 * Since release 0.5 the kernel-based emulator (tpm_dev) is obsolete.
 * The name and format of the persistent-storage file has changed between
-  release 0.2 and 0.3 as well as between release 0.4 and 0.4.1.
+  release 0.2 and 0.3, 0.4 and 0.4.1., 0.5 and 0.6, and 0.6 and 0.7.
 * The DAA support was tested with the IBM DAA Test Suite and should work 
   now as expected. Thanks go to Roger Zimmermann for his kindly help.
 
