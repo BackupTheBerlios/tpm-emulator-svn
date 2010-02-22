@@ -30,7 +30,6 @@
 #define TPM_DEVICE_ID     "tpm"
 #define TPM_MODULE_NAME   "tpmd_dev"
 
-#define TPM_RESPONSE_SIZE 4096
 #define TPM_STATE_IS_OPEN 0
 
 #ifdef DEBUG
@@ -116,7 +115,7 @@ static int tpmd_handle_command(const uint8_t *in, uint32_t in_size)
     return res;
   }
   /* receive response from tpmd */
-  tpm_response.size = TPM_RESPONSE_SIZE;
+  tpm_response.size = TPM_CMD_BUF_SIZE;
   tpm_response.data = kmalloc(tpm_response.size, GFP_KERNEL);
   if (tpm_response.data == NULL) return -1;
   memset(&msg, 0, sizeof(msg));

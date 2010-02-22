@@ -20,8 +20,6 @@
 #include "config.h"
 #include "tpm_emulator_extern.h"
 
-#define TPM_CMD_BUF_SIZE 4096
-
 #define TPM_MANUFACTURER 0x4554485A /* 'ETHZ' */        
 
 /**

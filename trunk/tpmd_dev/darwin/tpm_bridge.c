@@ -40,19 +40,18 @@
 #include <miscfs/devfs/devfs.h>
 #include <mach/mach_types.h>
 #include <libkern/OSAtomic.h>
+#include "config.h"
 
 /* configurable */
 
-#define TPM_BRIDGE_BUFSIZE 2048      /* don't set it lower than 2048 */
-#define TPM_BRIDGE_GID     GID_WHEEL /* bridge device file group ID */
-#define TPM_BRIDGE_MODE    0666      /* world readable/writable by default */
 #define TPM_BRIDGE_NAME    "tpm"     /* bridge device file name (/dev/tpm) */
-#define TPM_BRIDGE_SOCKET  "/private/tmp/tpmd_socket:0"
+#define TPM_BRIDGE_MODE    0666      /* world readable/writable by default */
 #define TPM_BRIDGE_UID     UID_ROOT  /* bridge device file owner ID */
+#define TPM_BRIDGE_GID     GID_WHEEL /* bridge device file group ID */
 
 /* buffer */
 
-static char tpm_buffer[TPM_BRIDGE_BUFSIZE] = { 0 };
+static char tpm_buffer[TPM_CMD_BUF_SIZE] = { 0 };
 
 /* locking */
 
@@ -72,7 +71,7 @@ static socket_t tpmd_socket = 0;
 static struct sockaddr_un tpmd_socket_addr = {
     sizeof(struct sockaddr_un),
     AF_LOCAL,
-    TPM_BRIDGE_SOCKET,
+    TPM_SOCKET_NAME,
 };
 
 /* device */
