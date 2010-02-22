@@ -1,14 +1,480 @@
+
+------------------------------------------------------------------------
+r424 | mast | 2010-02-22 17:36:14 +0100 (Mon, 22 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/CMakeLists.txt
+   M /trunk/README
+
+README updated
+------------------------------------------------------------------------
+r423 | mast | 2010-02-22 17:32:22 +0100 (Mon, 22 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd_dev/darwin/Makefile
+
+installation on mac fixed
+------------------------------------------------------------------------
+r422 | mast | 2010-02-22 17:23:00 +0100 (Mon, 22 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd_dev/darwin/Makefile
+
+installation on mac fixed
+------------------------------------------------------------------------
+r421 | mast | 2010-02-22 17:09:54 +0100 (Mon, 22 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd_dev/CMakeLists.txt
+   A /trunk/tpmd_dev/darwin/Makefile
+
+make file added
+------------------------------------------------------------------------
+r420 | mast | 2010-02-22 14:36:00 +0100 (Mon, 22 Feb 2010) | 1 line
+Changed paths:
+   A /trunk/tpmd_dev/darwin/English.lproj
+   A /trunk/tpmd_dev/darwin/English.lproj/InfoPlist.strings
+   A /trunk/tpmd_dev/darwin/Info.plist
+   D /trunk/tpmd_dev/darwin/Makefile
+   A /trunk/tpmd_dev/darwin/tpm_bridge.c
+   A /trunk/tpmd_dev/darwin/tpm_bridge.xcodeproj
+   A /trunk/tpmd_dev/darwin/tpm_bridge.xcodeproj/TemplateIcon.tiff
+   A /trunk/tpmd_dev/darwin/tpm_bridge.xcodeproj/project.pbxproj
+
+darwin module added
+------------------------------------------------------------------------
+r419 | mast | 2010-02-22 14:02:03 +0100 (Mon, 22 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/CMakeLists.txt
+
+path for os x added
+------------------------------------------------------------------------
+r418 | mast | 2010-02-22 13:27:48 +0100 (Mon, 22 Feb 2010) | 1 line
+Changed paths:
+   D /trunk/tpmd_lkm
+
+
+------------------------------------------------------------------------
+r417 | mast | 2010-02-21 20:15:05 +0100 (Sun, 21 Feb 2010) | 1 line
+Changed paths:
+   A /trunk/tpmd_dev (from /trunk/tpmd_lkm:415)
+
+
+------------------------------------------------------------------------
+r416 | mast | 2010-02-21 20:13:28 +0100 (Sun, 21 Feb 2010) | 1 line
+Changed paths:
+   D /trunk/tpmd_dev
+
+
+------------------------------------------------------------------------
+r415 | mast | 2010-02-21 20:11:44 +0100 (Sun, 21 Feb 2010) | 1 line
+Changed paths:
+   D /trunk/tpmd_dev/CMakeLists.txt
+   D /trunk/tpmd_dev/darwin
+   D /trunk/tpmd_dev/linux
+   D /trunk/tpmd_dev/openbsd
+   A /trunk/tpmd_lkm (from /trunk/tpmd_dev:412)
+
+
+------------------------------------------------------------------------
+r414 | mast | 2010-02-19 15:20:31 +0100 (Fri, 19 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/TODO
+
+README updated
+------------------------------------------------------------------------
+r413 | mast | 2010-02-19 15:19:50 +0100 (Fri, 19 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/CMakeLists.txt
+   M /trunk/README
+   M /trunk/tpmd/windows/tpmd.c
+
+README updated
+------------------------------------------------------------------------
+r412 | mast | 2010-02-19 14:43:52 +0100 (Fri, 19 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/build.bat
+
+
+------------------------------------------------------------------------
+r411 | mast | 2010-02-19 13:39:54 +0100 (Fri, 19 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tddl/tddl_windows.h
+   D /trunk/tddl/windows
+
+
+------------------------------------------------------------------------
+r410 | mast | 2010-02-19 13:34:18 +0100 (Fri, 19 Feb 2010) | 1 line
+Changed paths:
+   A /trunk/tddl/test_tddl.c
+
+platform independent tddl
+------------------------------------------------------------------------
+r409 | mast | 2010-02-19 13:28:44 +0100 (Fri, 19 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tddl/CMakeLists.txt
+   A /trunk/tddl/tddl.c
+   A /trunk/tddl/tddl.h
+   A /trunk/tddl/tddl_unix.h
+   A /trunk/tddl/tddl_windows.h
+   D /trunk/tddl/unix
+
+platform independent tddl
+------------------------------------------------------------------------
+r408 | mast | 2010-02-19 12:43:10 +0100 (Fri, 19 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tddl/windows/CMakeLists.txt
+   A /trunk/tddl/windows/tddl.c
+   A /trunk/tddl/windows/tddl.h
+
+tddl for windows added
+------------------------------------------------------------------------
+r407 | mast | 2010-02-19 12:14:52 +0100 (Fri, 19 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpm/tpm_capability.c
+
+small bug fixed
+------------------------------------------------------------------------
+r406 | mast | 2010-02-19 12:08:30 +0100 (Fri, 19 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/crypto/bn.c
+
+work around for older gmp libs
+------------------------------------------------------------------------
+r405 | mast | 2010-02-19 00:11:31 +0100 (Fri, 19 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/CMakeLists.txt
+   M /trunk/tpmd/unix/tpmd.c
+   M /trunk/tpmd_dev/CMakeLists.txt
+
+storage file fixed
+------------------------------------------------------------------------
+r404 | mast | 2010-02-19 00:08:35 +0100 (Fri, 19 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd/windows/CMakeLists.txt
+   M /trunk/tpmd/windows/control_tpmd.bat
+
+installation fixed
+------------------------------------------------------------------------
+r403 | mast | 2010-02-18 23:21:01 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   A /trunk/tpmd/windows/control_tpmd.bat
+
+service control function added
+------------------------------------------------------------------------
+r402 | mast | 2010-02-18 23:19:43 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd/windows/tpmd.c
+
+tpmd for windows completed
+------------------------------------------------------------------------
+r401 | mast | 2010-02-18 22:25:37 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd/windows/tpmd.c
+
+tpmd updated
+------------------------------------------------------------------------
+r400 | mast | 2010-02-18 22:08:43 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd/unix/tpmd.c
+
+
+------------------------------------------------------------------------
+r399 | mast | 2010-02-18 22:02:03 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd/unix/tpmd.c
+
+missing close added
+------------------------------------------------------------------------
+r398 | mast | 2010-02-18 21:45:13 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd/unix/tpmd.c
+
+typos fixed
+------------------------------------------------------------------------
+r397 | mast | 2010-02-18 21:44:19 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd/windows/tpmd.c
+
+missing binary mode added
+------------------------------------------------------------------------
+r396 | mast | 2010-02-18 15:38:33 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd/windows/tpmd.c
+
+CryptAcquireContext fixed
+------------------------------------------------------------------------
+r395 | mast | 2010-02-18 14:59:09 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd/windows/tpmd.c
+
+windows daemon updated
+------------------------------------------------------------------------
+r394 | mast | 2010-02-18 14:58:31 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/CMakeLists.txt
+   M /trunk/tpmd/unix/tpmd.c
+
+path sep fixed
+------------------------------------------------------------------------
+r393 | mast | 2010-02-18 14:09:59 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/CMakeLists.txt
+   M /trunk/config.h.in
+
+log conf added
+------------------------------------------------------------------------
+r392 | mast | 2010-02-18 13:37:33 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd/unix/tpmd.c
+
+command write fixed
+------------------------------------------------------------------------
+r391 | mast | 2010-02-18 11:33:03 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/CMakeLists.txt
+
+
+------------------------------------------------------------------------
+r390 | mast | 2010-02-18 11:04:12 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd/windows/CMakeLists.txt
+   A /trunk/tpmd/windows/tpmd.c
+
+tpmd for windwos added
+------------------------------------------------------------------------
+r389 | mast | 2010-02-18 10:52:11 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpm/tpm_emulator_extern.h
+   M /trunk/tpmd/unix/tpmd.c
+
+log modes independent of syslog
+------------------------------------------------------------------------
+r388 | mast | 2010-02-18 08:33:03 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   A /trunk/build.sh
+
+build.sh added
+------------------------------------------------------------------------
+r387 | mast | 2010-02-18 08:30:30 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   A /trunk/build.bat
+
+build.bat added
+------------------------------------------------------------------------
+r386 | mast | 2010-02-18 08:29:14 +0100 (Thu, 18 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/crypto/bn.c
+
+typo fixed
+------------------------------------------------------------------------
+r385 | mast | 2010-02-17 16:41:28 +0100 (Wed, 17 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/CMakeLists.txt
+   M /trunk/config.h.in
+   M /trunk/tpm/tpm_audit.c
+   D /trunk/tpmd/windows/inttypes.h
+   D /trunk/tpmd/windows/stdint.h
+
+
+------------------------------------------------------------------------
+r384 | mast | 2010-02-17 15:17:43 +0100 (Wed, 17 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/CMakeLists.txt
+   M /trunk/config.h.in
+   M /trunk/tpm/tpm_marshalling.h
+
+explicit type conversion
+------------------------------------------------------------------------
+r383 | mast | 2010-02-17 14:36:26 +0100 (Wed, 17 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/CMakeLists.txt
+   M /trunk/tpm/tpm_emulator_extern.h
+
+gmp library search added
+------------------------------------------------------------------------
+r382 | mast | 2010-02-17 14:04:59 +0100 (Wed, 17 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/CMakeLists.txt
+
+
+------------------------------------------------------------------------
+r381 | mast | 2010-02-17 14:03:22 +0100 (Wed, 17 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tddl/windows/CMakeLists.txt
+
+
+------------------------------------------------------------------------
+r380 | mast | 2010-02-17 14:01:35 +0100 (Wed, 17 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/CMakeLists.txt
+   M /trunk/tddl/windows/CMakeLists.txt
+   M /trunk/tpm/tpm_emulator_extern.h
+   A /trunk/tpmd/windows/inttypes.h
+   A /trunk/tpmd/windows/stdint.h
+
+stdint for windows added
+------------------------------------------------------------------------
+r379 | mast | 2010-02-16 16:21:27 +0100 (Tue, 16 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/README
+   M /trunk/TODO
+
+README updated
+------------------------------------------------------------------------
+r378 | mast | 2010-02-16 16:04:39 +0100 (Tue, 16 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd/unix/tpmd.c
+
+parameter to set configuration flags added
+------------------------------------------------------------------------
+r377 | mast | 2010-02-16 15:52:57 +0100 (Tue, 16 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/CMakeLists.txt
+   M /trunk/TODO
+   M /trunk/tpm/tpm_cmd_handler.c
+   M /trunk/tpmd/unix/CMakeLists.txt
+   M /trunk/tpmd/unix/tpmd.c
+
+mtm support added
+------------------------------------------------------------------------
+r376 | mast | 2010-02-16 15:51:42 +0100 (Tue, 16 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/mtm/CMakeLists.txt
+   A /trunk/mtm/mtm_capability.c
+   A /trunk/mtm/mtm_cmd_handler.c
+   A /trunk/mtm/mtm_commands.h
+   A /trunk/mtm/mtm_counter.c
+   A /trunk/mtm/mtm_data.c
+   A /trunk/mtm/mtm_data.h
+   A /trunk/mtm/mtm_eviction.c
+   A /trunk/mtm/mtm_handles.c
+   A /trunk/mtm/mtm_handles.h
+   A /trunk/mtm/mtm_integrity.c
+   A /trunk/mtm/mtm_marshalling.c
+   A /trunk/mtm/mtm_marshalling.h
+   A /trunk/mtm/mtm_structures.h
+   A /trunk/mtm/mtm_verification.c
+
+mtm functions added
+------------------------------------------------------------------------
+r375 | mast | 2010-02-16 15:34:30 +0100 (Tue, 16 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd_dev/CMakeLists.txt
+   M /trunk/tpmd_dev/linux/tpmd_dev.c
+   M /trunk/tpmd_dev/openbsd/tpmd_dev.h
+
+config.h support added
+------------------------------------------------------------------------
+r374 | mast | 2010-02-16 15:00:35 +0100 (Tue, 16 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpm/tpm_emulator.h
+   M /trunk/tpm/tpm_owner.c
+
+conf flag added
+------------------------------------------------------------------------
+r373 | mast | 2010-02-16 14:00:58 +0100 (Tue, 16 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpm/tpm_cmd_handler.c
+   M /trunk/tpm/tpm_marshalling.h
+
+MTM hooks added
+------------------------------------------------------------------------
+r372 | mast | 2010-02-15 13:52:00 +0100 (Mon, 15 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpm/tpm_cmd_handler.c
+   M /trunk/tpm/tpm_data.c
+   M /trunk/tpm/tpm_marshalling.c
+
+MTM support prepared
+------------------------------------------------------------------------
+r371 | mast | 2010-02-15 11:23:59 +0100 (Mon, 15 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpm/tpm_emulator.h
+
+
+------------------------------------------------------------------------
+r370 | mast | 2010-02-15 10:31:50 +0100 (Mon, 15 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/config.h.in
+   M /trunk/tpm/tpm_emulator_extern.h
+
+startup configuration added
+------------------------------------------------------------------------
+r369 | mast | 2010-02-15 10:28:10 +0100 (Mon, 15 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpmd_dev/CMakeLists.txt
+
+build of openbsd module added
+------------------------------------------------------------------------
+r368 | mast | 2010-02-15 10:26:37 +0100 (Mon, 15 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpm/tpm_capability.c
+   M /trunk/tpm/tpm_cmd_handler.c
+   M /trunk/tpm/tpm_crypto.c
+   M /trunk/tpm/tpm_data.c
+   M /trunk/tpm/tpm_data.h
+   M /trunk/tpm/tpm_emulator.h
+
+startup configuration added
+------------------------------------------------------------------------
+r367 | mast | 2010-02-13 16:52:18 +0100 (Sat, 13 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpm/tpm_authorization.c
+   M /trunk/tpm/tpm_capability.c
+   M /trunk/tpm/tpm_data.c
+   M /trunk/tpm/tpm_delegation.c
+   M /trunk/tpm/tpm_marshalling.c
+   M /trunk/tpm/tpm_migration.c
+   M /trunk/tpm/tpm_startup.c
+   M /trunk/tpm/tpm_structures.h
+   M /trunk/tpm/tpm_transport.c
+
+unused variables removed; free_TPM_DATA added
+------------------------------------------------------------------------
+r366 | mast | 2010-02-13 08:45:52 +0100 (Sat, 13 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/tpm/tpm_capability.c
+   M /trunk/tpm/tpm_marshalling.h
+
+typos fixed
+
+
+2010-02-12   Mario Strasser <mast@gmx.net>
+	* tpm_marshalling.[ch]: (un)marshaling_TPM_DATA added
+
+2010-02-11   Mario Strasser <mast@gmx.net>
+	* CMakeLists.txt: installation support added
+	* README: README updated
+	* *.h: headers updated
+
+2010-02-10   Mario Strasser <mast@gmx.net>
+	* all: new CMake makefiles added
+	* README: README updated
+	* CMakeLists.txt, config.h.in: cpack support added
+
+2010-02-09   Mario Strasser <mast@gmx.net>
+	* crypto/*, tpm/*: BE* conversion functions removed
+	* tpmd/tpmd.c:  smart startup mode handling
+	* crypto/*.h, tpm/*.h: tpm_emulator_config.h removed
+	* tpm_testinc.c: usage of tpm_min/max removed
+	* tpm_data.c, tpm_emulator_extern.h, tpmd.c:
+		_file -> _storage
+	* config.h: central config.h added
+	* all: directory structure changed
+
+2009-12-05  Mario Strasser <mast@gmx.net>
+	* tpmd_dev/Makefile: installation patch added, thanks go to David Anderson
+
+
+
 2009-10-05  Mario Strasser <mast@gmx.net>
-  * all: numerous bug fixes to make the trousers test pass
+	* all: numerous bug fixes to make the trousers test pass
 
 
 2009-10-02  Mario Strasser <mast@gmx.net>
-  * tpm_delegation.c: delegation support completed
+	* tpm_delegation.c: delegation support completed
 
 
 2009-09-24  Mario Strasser <mast@gmx.net>
-  * tpm_crypto.c: internal, deterministic PRNG added (for testing etc.)
-  * tpm_authorization.c: DSAP verification added
+	* tpm_crypto.c: internal, deterministic PRNG added (for testing etc.)
+	* tpm_authorization.c: DSAP verification added
 
 
 2009-09-19  Mario Strasser <mast@gmx.net>
