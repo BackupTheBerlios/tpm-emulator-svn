@@ -4,6 +4,7 @@
 # $Id$
 
 KEXT_BIN = build/Release/tpm_bridge.kext
+KEXT_DIR = $(DESTDIR)/System/Library/Extensions
 
 all:
 	@xcodebuild > /dev/null
@@ -13,9 +14,10 @@ clean:
 
 TPM_OWNER ?= root
 TPM_GROUP ?= wheel
-INSTALL ?= install
 
 install: $(KEXT_BIN)
-	@$(INSTALL) -o $(TPM_OWNER) -g $(TPM_GROUP) -d $(KEXT_BIN) $(DESTDIR)/System/Library/Extensions
+	@chown -R $(TPM_OWNER):$(TPM_GROUP) $(KEXT_BIN)
+	@mkdir -p $(KEXT_DIR)
+	@cp -Rp $(KEXT_BIN) $(KEXT_DIR)
 
 .PHONY: all clean install
