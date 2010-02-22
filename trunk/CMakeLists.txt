@@ -34,7 +34,7 @@ set(TPM_STORAGE_NAME "/var/lib/tpm/tpm_emulator-1_2_${${PROJECT_NAME}_VERSION_MA
 set(TPM_DEVICE_NAME "/dev/tpm")
 endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
-add_definitions(-Wall -Werror -Wall -Wextra -Wno-unused-parameter -Wpointer-arith -Wcast-align -Wwrite-strings)
+add_definitions(-Wall -Werror -Wextra -Wno-unused-parameter -Wpointer-arith -Wcast-align -Wwrite-strings)
 
 # configure CPack
 set(CPACK_PACKAGE_VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})

@@ -154,6 +154,37 @@ All subsequent calls of read(), write(), and close() should work as
 expected.
 
 
+Usage Examples for TPM/J
+--------------------------------------------------------------------------
+
+=== Linux
+# modprobe tpmd_dev
+# tpmd -d
+
+# cd <path to tpmj>/lib
+# export CLASSPATH=tpmj.jar:bcprov-jdk15-131.jar:$CLASSPATH
+# java edu.mit.csail.tpmj.tools.TPMInfo
+
+
+=== Mac OS X
+# sudo kextload /System/Library/Extensions/tpm_bridge.kext
+# sudo tpmd -d
+
+# cd <path to tpmj>/lib
+# export CLASSPATH=tpmj.jar:bcprov-jdk15-131.jar:$CLASSPATH
+# sudo java edu.mit.csail.tpmj.tools.TPMInfo
+
+
+=== Windows
+# set PATH=%PROGRAMFILES%\TPM_Emulator;%PATH%
+# set PATH=%PROGRAMFILES%\TPM_Emulator\lib;%PATH%
+# control_tpmd.bat start
+
+# cd <path to tpmj>\lib
+# set CLASSPATH=tpmj.jar;bcprov-jdk15-131.jar:%CLASSPATH%
+# java edu.mit.csail.tpmj.tools.TPMInfo
+
+
 Notes
 --------------------------------------------------------------------------
 * Since release 0.7 the emulator also runs on Darwin (Mac OS X) and on
