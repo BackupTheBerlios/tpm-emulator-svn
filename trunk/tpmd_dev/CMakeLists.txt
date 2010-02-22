@@ -22,6 +22,12 @@ set(tpmd_dev_INSTALL_CMD make -C ${tpmd_dev_BINARY_DIR} install)
 
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 
+set(tpmd_dev_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/darwin")
+set(tpmd_dev_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/darwin")
+set(tpmd_dev_OBJ "${tpmd_dev_BINARY_DIR}/build/Release/tpm_bridge.kext")
+set(tpmd_dev_BUILD_CMD make -C ${tpmd_dev_BINARY_DIR})
+set(tpmd_dev_INSTALL_CMD make -C ${tpmd_dev_BINARY_DIR} install)
+
 endif()
 
 # compile module
