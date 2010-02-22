@@ -175,8 +175,8 @@ tpm_dev_read(dev_t dev, struct uio* uio, int ioflag)
 
     memset(&msg, 0, sizeof(msg));
     aiov[0].iov_base = (caddr_t)tpm_buffer;
-    aiov[0].iov_len = TPM_BRIDGE_BUFSIZE;
-    if (recvlen < TPM_BRIDGE_BUFSIZE) {
+    aiov[0].iov_len = TPM_CMD_BUF_SIZE;
+    if (recvlen < TPM_CMD_BUF_SIZE) {
         aiov[0].iov_len = recvlen;
     }
     msg.msg_iovlen = 1;
@@ -229,7 +229,7 @@ tpm_dev_write(dev_t dev, struct uio* uio, int ioflag)
 
     lck_mtx_unlock(tpm_mtx);
 
-    sentlen = min((uint32_t)uio_resid(uio), TPM_BRIDGE_BUFSIZE);
+    sentlen = min((uint32_t)uio_resid(uio), TPM_CMD_BUF_SIZE);
 
     if ((error = uiomove64((addr64_t)(uintptr_t)tpm_buffer,
                            (int)sentlen, uio)) == 0) {
