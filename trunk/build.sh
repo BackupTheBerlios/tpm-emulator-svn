@@ -11,7 +11,8 @@ if [ ! -d $BUILD_DIR ]; then
 fi
 
 cd build
-cmake ../ #-DMTM_EMULATOR=ON
+cmake ../ #-DMTM_EMULATOR=ON 
+#cmake ../ -DCMAKE_BUILD_TYPE=Debug
 make
 cd ..
 

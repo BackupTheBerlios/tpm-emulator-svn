@@ -56,7 +56,7 @@ system. A working MinGW compiler suite is further required on Windows
 # make
 # make install
 
-The script files build.sh and build.bat automate this process.
+The script files build.sh and build.bat automate the compliation process.
 
 On Windows, the TPM emulator system service has additionally to be
 registered by calling:
