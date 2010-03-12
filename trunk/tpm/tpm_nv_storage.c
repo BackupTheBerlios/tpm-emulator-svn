@@ -152,7 +152,7 @@ TPM_RESULT TPM_NV_DefineSpace(TPM_NV_DATA_PUBLIC *pubInfo,
     return TPM_AUTH_CONFLICT;
   if (!(pubInfo->permission.attributes & (TPM_NV_PER_OWNERWRITE 
         | TPM_NV_PER_AUTHWRITE | TPM_NV_PER_WRITEDEFINE | TPM_NV_PER_PPWRITE))
-      && pubInfo->pcrInfoWrite.localityAtRelease != 0x1f) return TPM_PER_NOWRITE;
+      && pubInfo->pcrInfoWrite.localityAtRelease == 0x1f) return TPM_PER_NOWRITE;
   if (pubInfo->dataSize == 0) return TPM_BAD_PARAM_SIZE;
   /* check whether there is enough space for the new NV storage area */
   nv = tpm_get_free_nvs();
