@@ -33,13 +33,18 @@ const char *tpm_storage_file = TPM_STORAGE_NAME;
 const char *tpm_log_file = TPM_LOG_FILE;
 const char *tpm_random_device = "/dev/urandom";
 
+#if defined(_WIN32) || defined(_WIN64)
+
+#include <windows.h>
+#include <wincrypt.h>
+
 static int mkdirs(const char *path)
 {
   char *copy = strdup(path);
   char *p = strchr(copy + 1, '/');
   while (p != NULL) {
     *p = '\0';
-    if ((mkdir(copy, 0755) == -1) && (errno != EEXIST)) {
+    if ((mkdir(copy) == -1) && (errno != EEXIST)) {
       free(copy);
       return errno;
     }
@@ -49,11 +54,6 @@ static int mkdirs(const char *path)
   free(copy);
   return 0;
 }
-
-#if defined(_WIN32) || defined(_WIN64)
-
-#include <windows.h>
-#include <wincrypt.h>
 
 static HCRYPTPROV rand_ch;
 
@@ -83,12 +83,29 @@ void _tpm_extern_release()
   CryptReleaseContext(rand_ch, 0);
 }
 
-void tpm_get_extern_random_bytes(void *buf, size_t nbytes)
+void _tpm_get_extern_random_bytes(void *buf, size_t nbytes)
 {
   CryptGenRandom(rand_ch, nbytes, (BYTE*)buf);
 }
 
 #else
+
+static int mkdirs(const char *path)
+{
+  char *copy = strdup(path);
+  char *p = strchr(copy + 1, '/');
+  while (p != NULL) {
+    *p = '\0';
+    if ((mkdir(copy, 0755) == -1) && (errno != EEXIST)) {
+      free(copy);
+      return errno;
+    }
+    *p = '/';
+    p = strchr(p + 1, '/');
+  }
+  free(copy);
+  return 0;
+}
 
 static int rand_fh = -1;
 
@@ -147,7 +164,11 @@ static void _tpm_log(int priority, const char *fmt, ...)
   fh = fopen(tpm_log_file, "a");
   if (fh != NULL) {
     time(&tv);
+#if defined(_WIN32) || defined(_WIN64)
+    memcpy(&t, localtime(&tv), sizeof(t));
+#else
     localtime_r(&tv, &t);
+#endif
     fprintf(fh, "%04d-%02d-%02d %02d:%02d:%02d ",
             t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
             t.tm_hour, t.tm_min, t.tm_sec);

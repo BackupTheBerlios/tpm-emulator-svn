@@ -31,7 +31,11 @@ enum {
 
 void (*tpm_log)(int priority, const char *fmt, ...);
 
+#if defined(_WIN32) || defined(_WIN64)
+#define __BFILE__ ((strrchr(__FILE__, '\\') ? : __FILE__ - 1) + 1)
+#else
 #define __BFILE__ ((strrchr(__FILE__, '/') ? : __FILE__ - 1) + 1)
+#endif
 
 #define debug(fmt, ...) tpm_log(TPM_LOG_DEBUG, "%s:%d: Debug: " fmt "\n", \
                                 __BFILE__, __LINE__, ## __VA_ARGS__)
