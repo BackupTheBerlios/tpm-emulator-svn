@@ -24,7 +24,6 @@
 #include <stdarg.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <pwd.h>
@@ -33,31 +32,19 @@
 #include "tpm/tpm_emulator.h"
 
 #define TPM_COMMAND_TIMEOUT 30
-#define TPM_RANDOM_DEVICE   "/dev/urandom"
 
 static volatile int stopflag = 0;
 static int is_daemon = 0;
 static int opt_debug = 0;
 static int opt_foreground = 0;
 static const char *opt_socket_name = TPM_SOCKET_NAME;
-static const char *opt_storage_file = TPM_STORAGE_NAME;
 static uid_t opt_uid = 0;
 static gid_t opt_gid = 0;
 static int tpm_startup = 2;
 static uint32_t tpm_config = 0;
-static int rand_fh;
+extern const char *tpm_storage_file;
 
-void *tpm_malloc(size_t size)
-{
-  return malloc(size);
-}
-
-void tpm_free(/*const*/ void *ptr)
-{
-  if (ptr != NULL) free((void*)ptr);
-}
-
-void tpm_log(int priority, const char *fmt, ...)
+void my_log(int priority, const char *fmt, ...)
 {
     va_list ap, bp;
     va_start(ap, fmt);
@@ -81,86 +68,13 @@ void tpm_log(int priority, const char *fmt, ...)
     va_end(bp);
 }
 
-void tpm_get_extern_random_bytes(void *buf, size_t nbytes)
-{
-    uint8_t *p = (uint8_t*)buf;
-    ssize_t res;
-    while (nbytes > 0) {
-        res = read(rand_fh, p, nbytes);
-        if (res > 0) {
-            nbytes -= res; p += res;
-        }
-    }
-}
-
-uint64_t tpm_get_ticks(void)
-{
-    static uint64_t old_t = 0;
-    uint64_t new_t, res_t;
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    new_t = (uint64_t)tv.tv_sec * 1000000 + (uint64_t)tv.tv_usec;
-    res_t = (old_t > 0) ? new_t - old_t : 0;
-    old_t = new_t;
-    return res_t;
-}
-
-int tpm_write_to_storage(uint8_t *data, size_t data_length)
-{
-    int fh;
-    ssize_t res;
-    fh = open(opt_storage_file, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
-    if (fh < 0) return -1;
-    while (data_length > 0) {
-        res = write(fh, data, data_length);
-        if (res < 0) {
-            close(fh);
-            return -1;
-        }
-        data_length -= res; 
-        data += res;
-    }
-    close(fh);
-    return 0;
-}
-
-int tpm_read_from_storage(uint8_t **data, size_t *data_length)
-{
-    int fh;
-    ssize_t res;
-    size_t total_length;
-    fh = open(opt_storage_file, O_RDONLY);
-    if (fh < 0) return -1;
-    total_length = lseek(fh, 0, SEEK_END);
-    lseek(fh, 0, SEEK_SET);
-    *data = tpm_malloc(total_length);
-    if (*data == NULL) {
-        close(fh);
-        return -1;
-    }
-    *data_length = 0;
-    while (total_length > 0) {
-        res = read(fh, &(*data)[*data_length], total_length);
-        if (res < 0) {
-            close(fh);
-            tpm_free(*data);
-            return -1;
-        }
-        if (res == 0) break;
-        *data_length += res;
-        total_length -= res;
-    }
-    close(fh);
-    return 0;
-}
-
 static void print_usage(char *name)
 {
     printf("usage: %s [-d] [-f] [-s storage file] [-u unix socket name] "
            "[-o user name] [-g group name] [-h] [startup mode]\n", name);
     printf("  d : enable debug mode\n");
     printf("  f : forces the application to run in the foreground\n");
-    printf("  s : storage file to use (default: %s)\n", opt_storage_file);
+    printf("  s : storage file to use (default: %s)\n", tpm_storage_file);
     printf("  u : unix socket name to use (default: %s)\n", opt_socket_name);
     printf("  o : effective user the application should run as\n");
     printf("  g : effective group the application should run as\n");
@@ -190,8 +104,8 @@ static void parse_options(int argc, char **argv)
                 opt_foreground = 1;
                 break;
             case 's':
-                opt_storage_file = optarg;
-                debug("using storage file '%s'", opt_storage_file);
+                tpm_storage_file = optarg;
+                debug("using storage file '%s'", tpm_storage_file);
                 break;
             case 'u':
                 opt_socket_name = optarg;
@@ -243,7 +157,7 @@ static void parse_options(int argc, char **argv)
     } else {
         /* if no startup mode is given assume save if a configuration
            file is available, clear otherwise */
-        int fh = open(opt_storage_file, O_RDONLY);
+        int fh = open(tpm_storage_file, O_RDONLY);
         if (fh < 0) {
             tpm_startup = 1;
             info("no startup mode was specified; asuming 'clear'");
@@ -269,16 +183,6 @@ static void switch_uid_gid(void)
             error("switching effective user ID to %d failed: %s", opt_uid, strerror(errno));
             exit(EXIT_FAILURE);
         }
-    }
-}
-
-static void init_random(void)
-{
-    info("openening random device %s", TPM_RANDOM_DEVICE);
-    rand_fh = open(TPM_RANDOM_DEVICE, O_RDONLY);
-    if (rand_fh < 0) {
-        error("open(%s) failed: %s", TPM_RANDOM_DEVICE, strerror(errno));
-        exit(EXIT_FAILURE);
     }
 }
 
@@ -392,7 +296,6 @@ static void main_loop(void)
     sock = init_socket(opt_socket_name);
     if (sock < 0) exit(EXIT_FAILURE);
     /* init tpm emulator */
-    mkdirs(opt_storage_file);
     debug("initializing TPM emulator");
     tpm_emulator_init(tpm_startup, tpm_config);
     /* start command processing */
@@ -476,6 +379,7 @@ int main(int argc, char **argv)
     openlog(argv[0], 0, LOG_DAEMON);
     setlogmask(~LOG_MASK(LOG_DEBUG));
     syslog(LOG_INFO, "--- separator ---\n");
+    tpm_log = my_log;
     info("starting TPM Emulator daemon (1.2.%d.%d-%d)",
          VERSION_MAJOR, VERSION_MINOR, VERSION_BUILD);
     parse_options(argc, argv);
@@ -485,12 +389,9 @@ int main(int argc, char **argv)
     init_signal_handler();
     /* unless requested otherwiese, fork and daemonize process */
     if (!opt_foreground) daemonize();
-    /* open random device */
-    init_random();
     /* start main processing loop */
     main_loop();
     info("stopping TPM Emulator daemon");
-    close(rand_fh);
     closelog();
     return EXIT_SUCCESS;
 }
