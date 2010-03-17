@@ -21,12 +21,13 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <sys/time.h>
+#include <time.h>
 
 const char *tpm_storage_file = TPM_STORAGE_NAME;
 const char *tpm_log_file = TPM_LOG_FILE;
@@ -48,7 +49,6 @@ static int mkdirs(const char *path)
   free(copy);
   return 0;
 }
-
 
 #if defined(_WIN32) || defined(_WIN64)
 
@@ -139,13 +139,20 @@ static void _tpm_free(/*const*/ void *ptr)
 
 static void _tpm_log(int priority, const char *fmt, ...)
 {
-  FILE *file;
+  FILE *fh;
   va_list ap;
+  time_t tv;
+  struct tm t;
   va_start(ap, fmt);
-  file = fopen(tpm_log_file, "a");
-  if (file != NULL) {
-    vfprintf(file, fmt, ap);
-    fclose(file);
+  fh = fopen(tpm_log_file, "a");
+  if (fh != NULL) {
+    time(&tv);
+    localtime_r(&tv, &t);
+    fprintf(fh, "%04d-%02d-%02d %02d:%02d:%02d ",
+            t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
+            t.tm_hour, t.tm_min, t.tm_sec);
+    vfprintf(fh, fmt, ap);
+    fclose(fh);
   }
   va_end(ap);
 }
@@ -231,7 +238,7 @@ uint64_t (*tpm_get_ticks)(void)                                   = _tpm_get_tic
 int (*tpm_write_to_storage)(uint8_t *data, size_t data_length)    = _tpm_write_to_storage;
 int (*tpm_read_from_storage)(uint8_t **data, size_t *data_length) = _tpm_read_from_storage;
 
-#else
+#else /* TPM_NO_EXTERN */
 
 int (*tpm_extern_init)(void)                                      = NULL;
 int (*tpm_extern_release)(void)                                   = NULL;

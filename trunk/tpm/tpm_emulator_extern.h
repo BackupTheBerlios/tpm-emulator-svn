@@ -31,12 +31,14 @@ enum {
 
 void (*tpm_log)(int priority, const char *fmt, ...);
 
+#define __BFILE__ ((strrchr(__FILE__, '/') ? : __FILE__ - 1) + 1)
+
 #define debug(fmt, ...) tpm_log(TPM_LOG_DEBUG, "%s:%d: Debug: " fmt "\n", \
-                                __FILE__, __LINE__, ## __VA_ARGS__)
+                                __BFILE__, __LINE__, ## __VA_ARGS__)
 #define info(fmt, ...)  tpm_log(TPM_LOG_INFO, "%s:%d: Info: " fmt "\n", \
-                                __FILE__, __LINE__, ## __VA_ARGS__)
+                                __BFILE__, __LINE__, ## __VA_ARGS__)
 #define error(fmt, ...) tpm_log(TPM_LOG_ERROR, "%s:%d: Error: " fmt "\n", \
-                                __FILE__, __LINE__, ## __VA_ARGS__)
+                                __BFILE__, __LINE__, ## __VA_ARGS__)
 /* initialization */
 int (*tpm_extern_init)(void);
 void (*tpm_extern_release)(void);
