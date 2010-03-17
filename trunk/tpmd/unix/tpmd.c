@@ -297,7 +297,12 @@ static void main_loop(void)
     if (sock < 0) exit(EXIT_FAILURE);
     /* init tpm emulator */
     debug("initializing TPM emulator");
-    tpm_emulator_init(tpm_startup, tpm_config);
+    if (tpm_emulator_init(tpm_startup, tpm_config) != 0) {
+        error("tpm_emulator_init() failed");
+        close(sock);
+        unlink(opt_socket_name);
+        exit(EXIT_FAILURE);
+    }
     /* start command processing */
     while (!stopflag) {
         /* wait for incomming connections */
