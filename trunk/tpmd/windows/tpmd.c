@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <time.h>
 #include <windows.h>
 #include <wincrypt.h>
 #include "config.h"
@@ -45,17 +46,27 @@ static DWORD current_status;
 
 void my_log(int priority, const char *fmt, ...)
 {
-    FILE *file;
+    FILE *fh;
     va_list ap, bp;
+    time_t tv;
+    struct tm t;
+    time(&tv);
+    memcpy(&t, localtime(&tv), sizeof(t));
     va_start(ap, fmt);
     va_copy(bp, ap);
-    file = fopen(tpm_log_file, "a");
-    if (file != NULL) {
-        vfprintf(file, fmt, ap);
-        fclose(file);
+    fh = fopen(tpm_log_file, "a");
+    if (fh != NULL) {
+        fprintf(fh, "%04d-%02d-%02d %02d:%02d:%02d ",
+            t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
+            t.tm_hour, t.tm_min, t.tm_sec);
+        vfprintf(fh, fmt, ap);
+        fclose(fh);
     }
     va_end(ap);
     if (!is_service && (priority != TPM_LOG_DEBUG || opt_debug)) {
+        printf("%04d-%02d-%02d %02d:%02d:%02d ",
+            t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
+            t.tm_hour, t.tm_min, t.tm_sec);
         vprintf(fmt, bp);
     }
     va_end(bp);
@@ -151,23 +162,6 @@ static const char *get_error(void)
     FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_SYSTEM,
                   "", GetLastError(), 0, buf, sizeof(buf), NULL);
     return buf;
-}
-
-static int init_random(void)
-{
-    info("initializing crypto context for RNG");
-    BOOL res = CryptAcquireContext(&rand_ch, NULL, NULL,
-                                   PROV_RSA_FULL, CRYPT_SILENT);
-    if (!res) {
-        /* try it again with CRYPT_NEWKEYSET enabled */
-        res = CryptAcquireContext(&rand_ch, NULL, NULL,
-                                  PROV_RSA_FULL, CRYPT_SILENT | CRYPT_NEWKEYSET);
-    }
-    if (!res) {
-        error("CryptAcquireContext() failed: %s", get_error());
-        return -1;
-    }
-    return 0;
 }
 
 BOOL signal_handler(DWORD event)
@@ -315,14 +309,9 @@ void serviceMain(int argc, char **argv)
                             ERROR_SERVICE_SPECIFIC_ERROR, 1, 0, 0);
         return;
     }
+    tpm_log = my_log;
     /* init signal handler */
     if (init_signal_handler() != 0) {
-        updateServiceStatus(SERVICE_STOPPED,
-                            ERROR_SERVICE_SPECIFIC_ERROR, 1, 0, 0);
-        return;
-    }
-    /* init random number generator */
-    if (init_random() != 0) {
         updateServiceStatus(SERVICE_STOPPED,
                             ERROR_SERVICE_SPECIFIC_ERROR, 1, 0, 0);
         return;
@@ -331,7 +320,6 @@ void serviceMain(int argc, char **argv)
     updateServiceStatus(SERVICE_RUNNING, NO_ERROR, 0, 0, 0);
     main_loop();
     info("stopping TPM Emulator daemon");
-    CryptReleaseContext(rand_ch, 0);
     updateServiceStatus(SERVICE_STOPPED, NO_ERROR, 0, 0, 0);
 }
 
