@@ -4102,8 +4102,11 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   }
 }
 
-void tpm_emulator_init(uint32_t startup, uint32_t conf)
+int tpm_emulator_init(uint32_t startup, uint32_t conf)
 {
+  /* initialize external functions and data */
+  if (tpm_extern_init() != 0) return -1;
+  /* initialize the emulator */
   debug("tpm_emulator_init(%d, 0x%08x)", startup, conf);
   tpmConf = conf;
 #ifdef MTM_EMULATOR
@@ -4112,6 +4115,7 @@ void tpm_emulator_init(uint32_t startup, uint32_t conf)
   /* try to restore data, if it fails use default values */
   if (tpm_restore_permanent_data() != 0) tpm_init_data();
   TPM_Init(startup);
+  return 0;
 }
 
 void tpm_emulator_shutdown()
@@ -4121,6 +4125,8 @@ void tpm_emulator_shutdown()
     error("TPM_SaveState() failed");
   }
   tpm_release_data();
+  /* release external functions and data */
+  tpm_extern_release();
 }
 
 int tpm_handle_command(const uint8_t *in, uint32_t in_size, uint8_t **out, uint32_t *out_size)

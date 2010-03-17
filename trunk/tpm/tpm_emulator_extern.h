@@ -29,7 +29,7 @@ enum {
   TPM_LOG_ERROR
 };
 
-void tpm_log(int priority, const char *fmt, ...);
+void (*tpm_log)(int priority, const char *fmt, ...);
 
 #define debug(fmt, ...) tpm_log(TPM_LOG_DEBUG, "%s:%d: Debug: " fmt "\n", \
                                 __FILE__, __LINE__, ## __VA_ARGS__)
@@ -37,25 +37,28 @@ void tpm_log(int priority, const char *fmt, ...);
                                 __FILE__, __LINE__, ## __VA_ARGS__)
 #define error(fmt, ...) tpm_log(TPM_LOG_ERROR, "%s:%d: Error: " fmt "\n", \
                                 __FILE__, __LINE__, ## __VA_ARGS__)
+/* initialization */
+int (*tpm_extern_init)(void);
+void (*tpm_extern_release)(void);
 
 /* memory allocation */
 
-void *tpm_malloc(size_t size);
+void* (*tpm_malloc)(size_t size);
 
-void tpm_free(/*const*/ void *ptr);
+void (*tpm_free)(/*const*/ void *ptr);
 
 /* random numbers */
 
-void tpm_get_extern_random_bytes(void *buf, size_t nbytes);
+void (*tpm_get_extern_random_bytes)(void *buf, size_t nbytes);
 
 /* usec since last call */
 
-uint64_t tpm_get_ticks(void);
+uint64_t (*tpm_get_ticks)(void);
 
 /* file handling */
 
-int tpm_write_to_storage(uint8_t *data, size_t data_length);
-int tpm_read_from_storage(uint8_t **data, size_t *data_length);
+int (*tpm_write_to_storage)(uint8_t *data, size_t data_length);
+int (*tpm_read_from_storage)(uint8_t **data, size_t *data_length);
 
 #endif /* _TPM_EMULATOR_EXTERN_H_ */
 

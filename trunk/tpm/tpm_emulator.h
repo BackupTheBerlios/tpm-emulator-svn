@@ -36,8 +36,9 @@
  * tpm_emulator_init - initialises and starts the TPM emulator
  * @startup: [in] startup mode
  * @conf: [in] tpm configuration flags
+ * @Returns: 0 on success, -1 otherwise
  */
-void tpm_emulator_init(uint32_t startup, uint32_t conf);
+int tpm_emulator_init(uint32_t startup, uint32_t conf);
 
 /**
  * tpm_emulator_shutdown - shuts the TPM emulator down
