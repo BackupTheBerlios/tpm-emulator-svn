@@ -224,10 +224,10 @@ TPM_RESULT TPM_NV_WriteValue(TPM_NV_INDEX nvIndex, UINT32 offset,
   TPM_NV_DATA_SENSITIVE *nv;
 
   info("TPM_NV_WriteValue()");
-  /* lock NV storage */
-  if (nvIndex == TPM_NV_INDEX_LOCK) {
-    debug("nvIndex = TPM_NV_INDEX_LOCK");
-    tpmData.permanent.flags.nvLocked = TRUE;
+  /* set global lock */
+  if (nvIndex == TPM_NV_INDEX0) {
+    debug("nvIndex = TPM_NV_INDEX0");
+    tpmData.stclear.flags.bGlobalLock = TRUE;
     return TPM_SUCCESS;
   }
   debug("nvIndex = %08x, offset = %d, dataSize = %d",
