@@ -47,6 +47,7 @@ UINT32 tpm_get_in_param_offset(TPM_COMMAND_CODE ordinal)
     case TPM_ORD_KeyControlOwner:
     case TPM_ORD_LoadKey:
     case TPM_ORD_LoadKey2:
+    case TPM_ORD_MigrateKey:
     case TPM_ORD_Quote:
     case TPM_ORD_Quote2:
     case TPM_ORD_ReleaseTransportSigned:
@@ -1563,8 +1564,8 @@ static TPM_RESULT execute_TPM_CertifyKey2(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
   BYTE *ptr;
   UINT32 len;
-  TPM_KEY_HANDLE certHandle;
   TPM_KEY_HANDLE keyHandle;
+  TPM_KEY_HANDLE certHandle;
   TPM_DIGEST migrationPubDigest;
   TPM_NONCE antiReplay;
   TPM_CERTIFY_INFO certifyInfo;
@@ -1576,13 +1577,13 @@ static TPM_RESULT execute_TPM_CertifyKey2(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   /* unmarshal input */
   ptr = req->param;
   len = req->paramSize;
-  if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &certHandle)
-      || tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &keyHandle)
+  if (tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &keyHandle)
+      || tpm_unmarshal_TPM_KEY_HANDLE(&ptr, &len, &certHandle)
       || tpm_unmarshal_TPM_DIGEST(&ptr, &len, &migrationPubDigest)
       || tpm_unmarshal_TPM_NONCE(&ptr, &len, &antiReplay)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
-  res = TPM_CertifyKey2(certHandle, keyHandle, &migrationPubDigest, &antiReplay, 
+  res = TPM_CertifyKey2(keyHandle, certHandle, &migrationPubDigest, &antiReplay, 
     &req->auth1, &req->auth2, &certifyInfo, &outDataSize, &outData);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */

@@ -348,7 +348,7 @@ TPM_RESULT TPM_CertifyKey(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
   return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_CertifyKey2(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
+TPM_RESULT TPM_CertifyKey2(TPM_KEY_HANDLE keyHandle, TPM_KEY_HANDLE certHandle,
                            TPM_DIGEST *migrationPubDigest, 
                            TPM_NONCE *antiReplay, TPM_AUTH *auth1, 
                            TPM_AUTH *auth2, TPM_CERTIFY_INFO *certifyInfo,
@@ -361,19 +361,19 @@ TPM_RESULT TPM_CertifyKey2(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
   UINT32 length;
   info("TPM_CertifyKey2()");
   /* get keys */
-  cert = tpm_get_key(certHandle);
-  if (cert == NULL) return TPM_INVALID_KEYHANDLE;
   key = tpm_get_key(keyHandle);
   if (key == NULL) return TPM_INVALID_KEYHANDLE;
+  cert = tpm_get_key(certHandle);
+  if (cert == NULL) return TPM_INVALID_KEYHANDLE;
   /* verify authorization */ 
   if (auth2->authHandle != TPM_INVALID_HANDLE
       || cert->authDataUsage != TPM_AUTH_NEVER) {
-    res = tpm_verify_auth(auth1, cert->usageAuth, certHandle);
+    res = tpm_verify_auth(auth2, cert->usageAuth, certHandle);
     if (res != TPM_SUCCESS) return res;
   }
   if (auth1->authHandle != TPM_INVALID_HANDLE
       || key->authDataUsage != TPM_AUTH_NEVER) {
-    res = tpm_verify_auth(auth2, key->usageAuth, keyHandle);
+    res = tpm_verify_auth(auth1, key->usageAuth, keyHandle);
     if (res != TPM_SUCCESS) return (res == TPM_AUTHFAIL) ? TPM_AUTH2FAIL : res;
   }
   /* verify key usage */
@@ -475,7 +475,7 @@ TPM_RESULT TPM_CertifyKey2(TPM_KEY_HANDLE certHandle, TPM_KEY_HANDLE keyHandle,
   tpm_sha1_init(&sha1_ctx);
   tpm_sha1_update(&sha1_ctx, buf, length);
   tpm_sha1_final(&sha1_ctx, buf);
-  res = tpm_sign(cert, auth1, FALSE, buf, SHA1_DIGEST_LENGTH, outData, outDataSize);
+  res = tpm_sign(cert, auth2, FALSE, buf, SHA1_DIGEST_LENGTH, outData, outDataSize);
   tpm_free(buf);
   if (res != TPM_SUCCESS) {
     free_TPM_KEY_PARMS(certifyInfo->algorithmParms);
