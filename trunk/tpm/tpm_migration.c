@@ -142,26 +142,28 @@ TPM_RESULT TPM_CreateMigrationBlob(TPM_KEY_HANDLE parentHandle,
     UINT32 len;
     size_t buf_len;
     /* generate an OAEP encoding of the TPM_MIGRATE_ASYMKEY structure:
-       0x00|seed|K1|0x00-pad|0x01|TPM_MIGRATE_ASYMKEY */
+       K1|seed|0x00-pad|0x01|TPM_MIGRATE_ASYMKEY */
     debug("migrationType = TPM_MS_MIGRATE");
-    buf_len = key.key.size >> 3;
+    len = buf_len = 198;
     ptr = buf = tpm_malloc(buf_len);
     *randomSize = buf_len;
     *random = tpm_malloc(*randomSize);
-    if (buf == NULL || *random == NULL) {
+    *outDataSize = key.key.size >> 3;
+    *outData = tpm_malloc(*outDataSize);
+    if (buf == NULL || *random == NULL || *outData == NULL) {
       free_TPM_PUBKEY_DATA(key);
       tpm_free(buf);
       tpm_free(*random);
+      tpm_free(*outData);
       tpm_free(key_buf);
       return TPM_NOSPACE;
     }
-    buf[0] = 0x00;
-    memcpy(&buf[1], store.migrationAuth, sizeof(TPM_SECRET));
-    ptr = &buf[1 + sizeof(TPM_SECRET)];
-    len = 4;
+    memset(buf, 0, buf_len);
     tpm_marshal_UINT32(&ptr, &len, store.privKey.keyLength);
     memcpy(ptr, store.privKey.key, 16);
-    memset(ptr + 16, 0, buf_len - 41);
+    ptr += 16;
+    memcpy(ptr, store.migrationAuth, sizeof(TPM_SECRET));
+    ptr += sizeof(TPM_SECRET);
     len = 46 + store.privKey.keyLength - 16;
     ptr = &buf[buf_len - len];
     tpm_marshal_BYTE(&ptr, &len, 0x01);
@@ -170,24 +172,26 @@ TPM_RESULT TPM_CreateMigrationBlob(TPM_KEY_HANDLE parentHandle,
     tpm_marshal_TPM_DIGEST(&ptr, &len, &store.pubDataDigest);
     tpm_marshal_UINT32(&ptr, &len, store.privKey.keyLength - 16);
     memcpy(ptr, &store.privKey.key[16], store.privKey.keyLength - 16);
-    tpm_rsa_mask_generation(&buf[1], SHA1_DIGEST_LENGTH,
-      &buf[1 + SHA1_DIGEST_LENGTH], buf_len - SHA1_DIGEST_LENGTH - 1);
-    tpm_rsa_mask_generation(&buf[1 + SHA1_DIGEST_LENGTH],
-      buf_len - SHA1_DIGEST_LENGTH - 1, &buf[1], SHA1_DIGEST_LENGTH);
+    tpm_rsa_mask_generation(buf, SHA1_DIGEST_LENGTH,
+      &buf[SHA1_DIGEST_LENGTH], buf_len - SHA1_DIGEST_LENGTH);
+    tpm_rsa_mask_generation(&buf[SHA1_DIGEST_LENGTH],
+      buf_len - SHA1_DIGEST_LENGTH, buf, SHA1_DIGEST_LENGTH);
     /* XOR encrypt OAEP encoding */
     tpm_get_random_bytes(*random, *randomSize);
     for (len = 0; len < buf_len; len++) buf[len] ^= (*random)[len];
     /* RSA encrypt OAEP encoding */
-    if (tpm_rsa_encrypt(&key.key, RSA_ES_PLAIN, buf, buf_len, buf, &buf_len)) {
+    if (tpm_rsa_encrypt(&key.key, RSA_ES_OAEP_SHA1, buf, buf_len,
+                        *outData, &buf_len)) {
       debug("tpm_rsa_encrypt() failed");
       free_TPM_PUBKEY_DATA(key);
       tpm_free(buf);
       tpm_free(*random);
+      tpm_free(*outData);
       tpm_free(key_buf);
       return TPM_ENCRYPT_ERROR;
     }
     *outDataSize = buf_len;
-    *outData = buf;
+    tpm_free(buf);
   } else {
     debug("invalid migration type: %d", migrationType);
     free_TPM_PUBKEY_DATA(key);
@@ -229,8 +233,9 @@ TPM_RESULT TPM_ConvertMigrationBlob(TPM_KEY_HANDLE parentHandle,
   buf = tpm_malloc(buf_len);
   if (buf == NULL) return TPM_NOSPACE;
   /* RSA decrypt OAEP encoding */
-  if (tpm_rsa_decrypt(&parent->key, RSA_ES_PLAIN, inData, inDataSize, buf, &buf_len)
-      || buf_len != randomSize) {
+  if (tpm_rsa_decrypt(&parent->key, RSA_ES_OAEP_SHA1,
+                      inData, inDataSize, buf, &buf_len)
+      || buf_len != randomSize || buf_len != 198) {
     debug("tpm_rsa_decrypt() failed");
     tpm_free(buf);
     return TPM_DECRYPT_ERROR;
@@ -238,14 +243,15 @@ TPM_RESULT TPM_ConvertMigrationBlob(TPM_KEY_HANDLE parentHandle,
   /* XOR decrypt OAEP encoding */
   for (len = 0; len < buf_len; len++) buf[len] ^= random[len];
   /* unmask OAEP encoding */
-  tpm_rsa_mask_generation(&buf[1 + SHA1_DIGEST_LENGTH],
-    buf_len - SHA1_DIGEST_LENGTH - 1, &buf[1], SHA1_DIGEST_LENGTH);
-  tpm_rsa_mask_generation(&buf[1], SHA1_DIGEST_LENGTH,
-    &buf[1 + SHA1_DIGEST_LENGTH], buf_len - SHA1_DIGEST_LENGTH - 1);
+  tpm_rsa_mask_generation(&buf[SHA1_DIGEST_LENGTH],
+    buf_len - SHA1_DIGEST_LENGTH, buf, SHA1_DIGEST_LENGTH);
+  tpm_rsa_mask_generation(buf, SHA1_DIGEST_LENGTH,
+    &buf[SHA1_DIGEST_LENGTH], buf_len - SHA1_DIGEST_LENGTH);
   /* create a TPM_STORE_ASYMKEY structure */
-  memcpy(store.migrationAuth, &buf[1], sizeof(TPM_SECRET));
-  for (ptr = &buf[1 + sizeof(TPM_SECRET) + 20]; *ptr == 0x00; ptr++);
+  memcpy(store.migrationAuth, &buf[20], sizeof(TPM_SECRET));
+  for (ptr = &buf[20 + sizeof(TPM_SECRET)]; *ptr == 0x00; ptr++);
   if (ptr[0] != 0x01 || ptr[1] != TPM_PT_MIGRATE) {
+      debug("OAEP encoding is invalid");
       tpm_free(buf);
       return TPM_DECRYPT_ERROR;
   }
@@ -256,8 +262,14 @@ TPM_RESULT TPM_ConvertMigrationBlob(TPM_KEY_HANDLE parentHandle,
   tpm_unmarshal_TPM_DIGEST(&ptr, &len, &store.pubDataDigest);
   tpm_unmarshal_UINT32(&ptr, &len, &store.privKey.keyLength);
   store.privKey.keyLength += 16;
-  memmove(&buf[1 + sizeof(TPM_SECRET) + 20], ptr, len);
-  store.privKey.key = &buf[1 + sizeof(TPM_SECRET) + 4];
+  if (store.privKey.keyLength != len + 16) {
+    error("invalid key length %d; expected %d",
+          store.privKey.keyLength, len + 16);
+    tpm_free(buf);
+    return TPM_DECRYPT_ERROR;
+  }
+  memmove(&buf[20], ptr, len);
+  store.privKey.key = &buf[4];
   /* encrypt private key */
   *outDataSize = parent->key.size >> 3;
   *outData = tpm_malloc(*outDataSize);
