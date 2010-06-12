@@ -89,8 +89,10 @@ TPM_RESULT TPM_CreateMigrationBlob(TPM_KEY_HANDLE parentHandle,
   if (parent->keyUsage != TPM_KEY_STORAGE) return TPM_INVALID_KEYUSAGE;
   /* decrypt private key */
   if (tpm_decrypt_private_key(parent, encData, encDataSize,
-                              &store, &key_buf, &key_buf_size)
-      || store.payload != TPM_PT_ASYM) {
+                              &store, &key_buf, &key_buf_size) != 0) {
+    return TPM_DECRYPT_ERROR;
+  }
+  if (store.payload != TPM_PT_ASYM) {
     tpm_free(key_buf);
     return TPM_DECRYPT_ERROR;
   }
@@ -615,9 +617,11 @@ TPM_RESULT TPM_CMK_CreateBlob(TPM_KEY_HANDLE parentHandle,
   if (parent->keyFlags & TPM_KEY_FLAG_MIGRATABLE) return TPM_BAD_KEY_PROPERTY;
   /* decrypt private key */
   if (tpm_decrypt_private_key(parent, encData, encDataSize,
-                              &store, &key_buf, &key_buf_size)
-      || (store.payload != TPM_PT_MIGRATE_RESTRICTED
-          && store.payload != TPM_PT_MIGRATE_EXTERNAL)) {
+                              &store, &key_buf, &key_buf_size) != 0) {
+    return TPM_DECRYPT_ERROR;
+  }
+  if (store.payload != TPM_PT_MIGRATE_RESTRICTED
+      && store.payload != TPM_PT_MIGRATE_EXTERNAL) {
     tpm_free(key_buf);
     return TPM_DECRYPT_ERROR;
   }

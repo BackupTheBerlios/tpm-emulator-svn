@@ -389,7 +389,7 @@ TPM_RESULT TPM_ChangeAuthAsymFinish(TPM_KEY_HANDLE parentHandle,
     case TPM_ET_DATA:
       /* decrypt seal data */
       if (tpm_decrypt_sealed_data(parentKey, encData, encDataSize,
-        &e1_seal, &e1_seal_buf)) return TPM_DECRYPT_ERROR;
+          &e1_seal, &e1_seal_buf)) return TPM_DECRYPT_ERROR;
       memcpy(oldAuthSecret, e1_seal.authData, sizeof(TPM_SECRET));
       tpm_free(e1_seal_buf);
       break;

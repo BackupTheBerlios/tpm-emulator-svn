@@ -65,7 +65,7 @@ static TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
 }
 
 static TPM_RESULT cap_mtm_permanent_data(UINT32 subCapSize, BYTE *subCap,
-					                               UINT32 *respSize, BYTE **resp)
+                                         UINT32 *respSize, BYTE **resp)
 {
   UINT32 subCapVal, len;
   BYTE* ptr;

@@ -235,18 +235,20 @@ static TPM_RESULT cap_version(UINT32 *respSize, BYTE **resp)
 
 /* manufacturer specific */
 static TPM_RESULT cap_mfr(UINT32 subCapSize, BYTE *subCap,
-                            UINT32 *respSize, BYTE **resp)
+                          UINT32 *respSize, BYTE **resp)
 {
-  UINT32 len = *respSize = 4, type;
-  BYTE *ptr = *resp = tpm_malloc(*respSize);
+  UINT32 len, type;
+  BYTE *ptr;
   
   if (tpm_unmarshal_UINT32(&subCap, &subCapSize, &type))
     return TPM_BAD_MODE;
   
   switch (type) {
     default:
+      *respSize = 4;
+      ptr = *resp = tpm_malloc(*respSize);
       if (ptr == NULL || tpm_marshal_TPM_VERSION(&ptr, &len, 
-        &tpmData.permanent.data.version)) {
+                           &tpmData.permanent.data.version)) {
           tpm_free(*resp);
           return TPM_FAIL;
       }
@@ -300,7 +302,7 @@ static TPM_RESULT cap_nv_index(UINT32 subCapSize, BYTE *subCap,
 }
 
 static TPM_RESULT cap_handle(UINT32 subCapSize, BYTE *subCap,
-                               UINT32 *respSize, BYTE **resp)
+                             UINT32 *respSize, BYTE **resp)
 {
   UINT32 i, len, type;
   BYTE *ptr; 
@@ -368,7 +370,7 @@ static TPM_RESULT cap_handle(UINT32 subCapSize, BYTE *subCap,
 }
 
 static TPM_RESULT cap_ord(UINT32 subCapSize, BYTE *subCap,
-                   UINT32 *respSize, BYTE **resp)
+                          UINT32 *respSize, BYTE **resp)
 {
   TPM_COMMAND_CODE ord;
   if (tpm_unmarshal_TPM_COMMAND_CODE(&subCap, &subCapSize, &ord))
@@ -546,7 +548,8 @@ static TPM_RESULT cap_flag(UINT32 subCapSize, BYTE *subCap,
       debug("[TPM_CAP_FLAG_PERMANENT");
       *respSize = len = sizeof_TPM_PERMANENT_FLAGS(tpmData.permanent.flags);
       *resp = ptr = tpm_malloc(len);
-      if (tpm_marshal_TPM_PERMANENT_FLAGS(&ptr, &len, &tpmData.permanent.flags)) {
+      if (ptr == NULL 
+          || tpm_marshal_TPM_PERMANENT_FLAGS(&ptr, &len, &tpmData.permanent.flags)) {
         tpm_free(*resp);
         return TPM_FAIL;
       }
@@ -555,7 +558,8 @@ static TPM_RESULT cap_flag(UINT32 subCapSize, BYTE *subCap,
       debug("[TPM_CAP_FLAG_VOLATILE]");
       *respSize = len = sizeof_TPM_STCLEAR_FLAGS(tpmData.stclear.flags);
       *resp = ptr = tpm_malloc(len);
-      if (tpm_marshal_TPM_STCLEAR_FLAGS(&ptr, &len, &tpmData.stclear.flags)) {
+      if (ptr == NULL
+          || tpm_marshal_TPM_STCLEAR_FLAGS(&ptr, &len, &tpmData.stclear.flags)) {
         tpm_free(*resp);
         return TPM_FAIL;
       }
@@ -680,7 +684,6 @@ static TPM_RESULT cap_version_val(UINT32 *respSize, BYTE **resp)
   
   len = *respSize = sizeof_TPM_CAP_VERSION_INFO(version);
   ptr = *resp = tpm_malloc(*respSize);
-  
   if (ptr == NULL || tpm_marshal_TPM_CAP_VERSION_INFO(&ptr, &len, &version)) {
     tpm_free(*resp);
     return TPM_FAIL;

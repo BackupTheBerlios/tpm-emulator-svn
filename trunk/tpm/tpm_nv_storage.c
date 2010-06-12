@@ -306,7 +306,8 @@ TPM_RESULT nv_read(TPM_NV_DATA_SENSITIVE *nv,  UINT32 offset,
   /* read data */
   if (inDataSize == 0) {
     nv->pubInfo.bReadSTClear = TRUE;
-    *outDataSize = 0; 
+    *outDataSize = 0;
+    *data = NULL; 
   } else {
     if (offset + inDataSize > nv->pubInfo.dataSize) return TPM_NOSPACE;
     *outDataSize = inDataSize;
