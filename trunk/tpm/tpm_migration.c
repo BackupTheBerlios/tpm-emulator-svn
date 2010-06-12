@@ -343,6 +343,8 @@ TPM_RESULT TPM_MigrateKey(TPM_KEY_HANDLE maKeyHandle, TPM_PUBKEY *pubKey,
   TPM_KEY_DATA *key;
   TPM_PUBKEY_DATA key2;
   UINT32 size;
+  BYTE *buf;
+  UINT32 buf_len;
 
   info("TPM_MigrateKey()");
   key = tpm_get_key(maKeyHandle);
@@ -361,21 +363,28 @@ TPM_RESULT TPM_MigrateKey(TPM_KEY_HANDLE maKeyHandle, TPM_PUBKEY *pubKey,
   /* decrypt inData and re-encrypt it with the public key */
   *outDataSize = size = pubKey->algorithmParms.parms.rsa.keyLength >> 3;
   *outData = tpm_malloc(*outDataSize);
-  if (*outData == NULL) {
-    free_TPM_PUBKEY_DATA(key2);
-    return TPM_FAIL;
-  }
-  if (tpm_decrypt(key, inData, inDataSize, *outData, &size) != 0) {
+  buf_len = inDataSize;
+  buf = tpm_malloc(buf_len);
+  if (*outData == NULL || buf == NULL) {
     free_TPM_PUBKEY_DATA(key2);
     tpm_free(*outData);
+    tpm_free(buf);
+    return TPM_NOSPACE;
+  }
+  if (tpm_decrypt(key, inData, inDataSize, buf, &buf_len) != 0) {
+    free_TPM_PUBKEY_DATA(key2);
+    tpm_free(*outData);
+    tpm_free(buf);
     return TPM_DECRYPT_ERROR;
   }
-  if (tpm_encrypt_public(&key2, *outData, size, *outData, outDataSize) != 0) {
+  if (tpm_encrypt_public(&key2, buf, buf_len, *outData, outDataSize) != 0) {
     free_TPM_PUBKEY_DATA(key2);
     tpm_free(*outData);
+    tpm_free(buf);
     return TPM_ENCRYPT_ERROR;
   }
   free_TPM_PUBKEY_DATA(key2);
+  tpm_free(buf);
   return TPM_SUCCESS;
 }
 
