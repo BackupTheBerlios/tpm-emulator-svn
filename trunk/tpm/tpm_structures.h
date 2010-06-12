@@ -1049,7 +1049,7 @@ typedef struct tdTPM_CERTIFY_INFO {
 } TPM_CERTIFY_INFO;
 #define sizeof_TPM_CERTIFY_INFO(s) (4 + 2 + 4 + 1 + \
   sizeof_TPM_KEY_PARMS(s.algorithmParms) + 20 + 20 + 1 + 4 \
-  + s.PCRInfoSize + s.migrationAuthoritySize)
+  + s.PCRInfoSize + 4 + s.migrationAuthoritySize)
 #define free_TPM_CERTIFY_INFO(s) { free_TPM_KEY_PARMS(s.algorithmParms); \
   if (s.migrationAuthoritySize > 0) tpm_free(s.migrationAuthority); }
 
