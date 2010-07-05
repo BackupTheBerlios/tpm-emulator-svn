@@ -1,3 +1,33 @@
+2010-07-05   Mario Strasser <mast@gmx.net>
+	* ChangeLog: ChangeLog updated
+	* tpmd_dev/linux/*: missing kernel header file added
+
+
+2010-06-13   Mario Strasser <mast@gmx.net>
+	* tpm_migration.c, tpm_cmd_handler.c, tpm_crypto.c:
+		bugs in [CMK]MigrationBlob encoding, TPM_MigrateKey(),
+		and TPM_CertifyKey2 fixed; thanks go to S. Tate
+	* tpm_structures.h: bug in TPM_CERTIFY_INFO fixed;
+		thanks go to S. Tate
+
+
+2010-06-10   Mario Strasser <mast@gmx.net>
+	* tpm_nv_storage.c: bug in TPM_NV_WriteValue() fixed;
+		thanks go to Luigi Semenzato
+
+
+2010-03-17   Mario Strasser <mast@gmx.net>
+	* tpm_emulator_extern.[ch]: external functions changed
+		into function pointers
+	* tpmd/*/tpmd.c: tpmd functions updated
+
+
+2010-03-12   Mario Strasser <mast@gmx.net>
+	* tpm_nv_storage.c: bug in TPM_NV_DefineSpace fixed;
+		thanks go to Luigi Semenzato
+	* README, build.sh: build description updated
+
+
 2010-02-22   Mario Strasser <mast@gmx.net>
 	* tpmd_dev/darwin/*: darwin module added
 	* Makefile: installation on Mac OS X enabled
