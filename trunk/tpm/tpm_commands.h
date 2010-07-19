@@ -2433,8 +2433,8 @@ TPM_RESULT TPM_SaveContext(
 
 /**
  * TPM_LoadContext - loads a previously saved context into the TPM
+ * @entityHandle: [in] The hint handle the TPM MAY use to locate a OSAP session
  * @keepHandle: [in] Indication if the handle MUST be preserved
- * @hintHandle: [in] The hint handle the TPM MAY use to locate a OSAP session
  * @contextSize: [in] The size of the following context blob
  * @contextBlob: [in] The context blob
  * @handle: [out] Handle assigned to the resource
@@ -2444,9 +2444,9 @@ TPM_RESULT TPM_SaveContext(
  * LoadContext loads into the TPM a previously saved context. The command 
  * returns the type of blob and a handle.
  */
-TPM_RESULT TPM_LoadContext(  
+TPM_RESULT TPM_LoadContext(
+  TPM_HANDLE entityHandle,
   BOOL keepHandle,
-  TPM_HANDLE hintHandle,
   UINT32 contextSize,
   TPM_CONTEXT_BLOB *contextBlob,  
   TPM_HANDLE *handle 

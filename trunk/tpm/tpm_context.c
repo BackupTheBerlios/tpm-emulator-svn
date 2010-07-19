@@ -279,7 +279,7 @@ TPM_RESULT TPM_SaveContext(TPM_HANDLE handle, TPM_RESOURCE_TYPE resourceType,
   return TPM_SUCCESS;
 }
 
-TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
+TPM_RESULT TPM_LoadContext(TPM_HANDLE entityHandle, BOOL keepHandle,
                            UINT32 contextSize, TPM_CONTEXT_BLOB *contextBlob,
                            TPM_HANDLE *handle)
 {
@@ -311,7 +311,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
       }
     }
     /* check handle */
-    key = tpm_get_key_slot(hintHandle);
+    key = tpm_get_key_slot(entityHandle);
     if (key == NULL || !key->payload) {
       if (keepHandle) {
         tpm_free(context_buf);
@@ -324,7 +324,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
       }
       key = &tpmData.permanent.data.keys[HANDLE_TO_INDEX(*handle)];
     } else {
-      *handle = hintHandle;
+      *handle = entityHandle;
     }
     /* reload resource */
     memcpy(key, &context.internalData.key, sizeof(TPM_KEY_DATA));
@@ -345,8 +345,8 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
     }
     tpmData.stany.data.contextList[i] = 0;
     /* check handle */
-    info("keepHandle = %d, hintHandle = %.8x", keepHandle, hintHandle);
-    sessionDAA = tpm_get_daa_slot(hintHandle);
+    info("entityHandle = %08x, keepHandle = %d", entityHandle, keepHandle);
+    sessionDAA = tpm_get_daa_slot(entityHandle);
     if (sessionDAA == NULL) {
       if (keepHandle) {
         tpm_free(context_buf);
@@ -370,7 +370,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
       }
       sessionDAA = &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(*handle)];
     } else {
-      if (HANDLE_TO_RT(hintHandle) != TPM_RT_DAA_TPM) {
+      if (HANDLE_TO_RT(entityHandle) != TPM_RT_DAA_TPM) {
         if (keepHandle) {
           tpm_free(context_buf);
           return TPM_BAD_HANDLE;
@@ -382,7 +382,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
         }
         sessionDAA = &tpmData.stany.data.sessionsDAA[HANDLE_TO_INDEX(*handle)];
       } else
-        *handle = hintHandle;
+        *handle = entityHandle;
     }
     /* reload resource */
     tpmData.stany.data.currentDAA = *handle;
@@ -410,7 +410,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
     }
     tpmData.stany.data.contextList[i] = 0;
     /* check handle */
-    session = tpm_get_session_slot(hintHandle);
+    session = tpm_get_session_slot(entityHandle);
     if (session == NULL || session->type != TPM_ST_INVALID) {
       if (keepHandle) {
         tpm_free(context_buf);
@@ -423,7 +423,7 @@ TPM_RESULT TPM_LoadContext(BOOL keepHandle, TPM_HANDLE hintHandle,
       }
       session = &tpmData.stany.data.sessions[HANDLE_TO_INDEX(*handle)];
     } else {
-      *handle = hintHandle;
+      *handle = entityHandle;
     }
     /* reload resource */
     memcpy(session, &context.internalData.session, sizeof(TPM_SESSION_DATA));

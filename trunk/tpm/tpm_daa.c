@@ -2345,6 +2345,9 @@ TPM_RESULT TPM_DAA_Join(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
       tpm_free(blob.sensitiveData);
       tpm_free(sensitive.internalData);
       tpm_free(blob.additionalData);
+      /* Terminate the DAA session and all resources assoociated with the
+       * DAA sign session handle. */
+      memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
       /* Return TPM_SUCCESS */
       return TPM_SUCCESS;
     }
@@ -3673,6 +3676,9 @@ TPM_RESULT TPM_DAA_Sign(TPM_HANDLE handle, BYTE stage, UINT32 inputSize0,
         memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
         return TPM_NOSPACE;
       }
+      /* Terminate the DAA session and all resources assoociated with the
+       * DAA sign session handle. */
+      memset(session, 0, sizeof(TPM_DAA_SESSION_DATA));
       /* Return TPM_SUCCESS */
       return TPM_SUCCESS;
     }

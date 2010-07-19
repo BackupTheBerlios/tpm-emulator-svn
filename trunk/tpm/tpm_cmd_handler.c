@@ -2566,8 +2566,8 @@ static TPM_RESULT execute_TPM_LoadContext(TPM_REQUEST *req, TPM_RESPONSE *rsp)
 {
   BYTE *ptr;
   UINT32 len;
+  TPM_HANDLE entityHandle;
   BOOL keepHandle;
-  TPM_HANDLE hintHandle;
   UINT32 contextSize;
   TPM_CONTEXT_BLOB contextBlob;
   TPM_HANDLE handle;
@@ -2575,13 +2575,13 @@ static TPM_RESULT execute_TPM_LoadContext(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   /* unmarshal input */
   ptr = req->param;
   len = req->paramSize;
-  if (tpm_unmarshal_BOOL(&ptr, &len, &keepHandle)
-      || tpm_unmarshal_TPM_HANDLE(&ptr, &len, &hintHandle)
+  if (tpm_unmarshal_TPM_HANDLE(&ptr, &len, &entityHandle)
+      || tpm_unmarshal_BOOL(&ptr, &len, &keepHandle)
       || tpm_unmarshal_UINT32(&ptr, &len, &contextSize)
       || tpm_unmarshal_TPM_CONTEXT_BLOB(&ptr, &len, &contextBlob)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
-  res = TPM_LoadContext(keepHandle, hintHandle, contextSize, &contextBlob, &handle);
+  res = TPM_LoadContext(entityHandle, keepHandle, contextSize, &contextBlob, &handle);
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
   rsp->paramSize = len = 4;

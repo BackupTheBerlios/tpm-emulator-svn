@@ -76,7 +76,7 @@ TPM_RESULT TPM_LoadKeyContext(UINT32 keyContextSize,
   info("TPM_LoadKeyContext()");
   if (tpm_unmarshal_TPM_CONTEXT_BLOB(&keyContextBlob, 
       &len, &contextBlob)) return TPM_FAIL;
-  return TPM_LoadContext(FALSE, TPM_INVALID_HANDLE, keyContextSize, 
+  return TPM_LoadContext(TPM_INVALID_HANDLE, FALSE, keyContextSize, 
                          &contextBlob, keyHandle);
 }
 
@@ -108,7 +108,7 @@ TPM_RESULT TPM_LoadAuthContext(UINT32 authContextSize, BYTE *authContextBlob,
   info("TPM_LoadAuthContext()");
   if (tpm_unmarshal_TPM_CONTEXT_BLOB(&authContextBlob, 
       &len, &contextBlob)) return TPM_FAIL;
-  return TPM_LoadContext(FALSE, TPM_INVALID_HANDLE, authContextSize, 
+  return TPM_LoadContext(TPM_INVALID_HANDLE, FALSE, authContextSize, 
                          &contextBlob, authHandle);
 }
 
