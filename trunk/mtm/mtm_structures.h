@@ -227,8 +227,8 @@ typedef struct tdMTM_DATA {
   struct {
     MTM_PERMANENT_DATA data;
   } permanent;
-  struct {
-  } stclear;
+  // struct {
+  // } stclear;
   struct {
     MTM_STANY_FLAGS flags;
   } stany;

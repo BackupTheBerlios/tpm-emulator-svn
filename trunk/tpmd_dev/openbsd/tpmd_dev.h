@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#define cdev_tpm_init(c,n) { \
+#define cdev_tpmd_init(c,n) { \
     dev_init(c,n,open),dev_init(c,n,close),dev_init(c,n,read), \
     dev_init(c,n,write), dev_init(c,n,ioctl),(dev_type_stop((*))) lkmenodev, \
     0,(dev_type_poll((*))) lkmenodev,(dev_type_mmap((*))) lkmenodev }

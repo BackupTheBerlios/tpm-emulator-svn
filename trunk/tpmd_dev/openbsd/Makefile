@@ -6,14 +6,15 @@
 
 CFLAGS= -D_KERNEL -I/usr/src/sys
 SRC=	tpmd_dev.c
+OBJ=    tpmd_dev.obj
 MODULE= tpmd_dev.o
 
 all:
-	cc -c $(SRC) $(CFLAGS)
-	ld -r -o $(MODULE) $(SRC:.c=.o)
+	cc -o $(OBJ) -c $(SRC) $(CFLAGS)
+	ld -r -o $(MODULE) $(OBJ)
 
 clean:
-	rm -rf $(SRC:.c=.o)
+	rm -rf $(OBJ)
 	rm -f $(MODULE)
 
 load:	all mknod
@@ -27,3 +28,6 @@ mknod:
 
 rmnod:
 	rm /dev/tpm
+
+install:
+	

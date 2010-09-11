@@ -17,8 +17,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
 set(tpmd_dev_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/openbsd")
 set(tpmd_dev_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/openbsd")
 set(tpmd_dev_OBJ "${tpmd_dev_BINARY_DIR}/tpmd_dev.o")
-set(tpmd_dev_BUILD_CMD make -C ${tpmd_dev_BINARY_DIR})
-set(tpmd_dev_INSTALL_CMD make -C ${tpmd_dev_BINARY_DIR} install)
+set(tpmd_dev_BUILD_CMD gmake -C ${tpmd_dev_BINARY_DIR})
+set(tpmd_dev_INSTALL_CMD gmake -C ${tpmd_dev_BINARY_DIR} install)
 
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 
