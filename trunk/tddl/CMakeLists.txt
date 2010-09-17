@@ -21,5 +21,5 @@ install(FILES "tddl.h" DESTINATION include)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(test_tddl test_tddl.c)
-target_link_libraries(test_tddl tddl tddl_static)
+target_link_libraries(test_tddl tddl_static)
 
