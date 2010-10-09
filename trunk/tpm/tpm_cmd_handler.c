@@ -391,6 +391,8 @@ static TPM_RESULT execute_TPM_SetCapability(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   TPM_CAPABILITY_AREA capArea;
   UINT32 subCapSize, setValueSize;
   BYTE *subCap, *setValue;
+  /* compute parameter digest */
+  tpm_compute_in_param_digest(req);
   /* unmarshal input */
   ptr = req->param;
   len = req->paramSize;
