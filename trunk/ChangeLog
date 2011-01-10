@@ -1,3 +1,24 @@
+2011-01-10   Mario Strasser <mast@gmx.net>
+	* ChangeLog: ChangeLog updated
+
+
+2010-12-30   Mario Strasser <mast@gmx.net>
+	* build.bat: Missing path for Windows 7 added
+
+
+2010-10-09   Mario Strasser <mast@gmx.net>
+	* tpm_capability.c: Bug in TPM_SetCapability fixed
+
+
+2010-09-11   Mario Strasser <mast@gmx.net>
+	* all: Open/FreeBSD compatibility fixes
+
+
+2010-07-19   Mario Strasser <mast@gmx.net>
+	* tpm_daa.c: Bug in TPM_LoadContext and TPM_DAA_Join/Sign
+		fixed; thanks go toEmanuele Cesena
+
+
 2010-07-05   Mario Strasser <mast@gmx.net>
 	* ChangeLog: ChangeLog updated
 	* tpmd_dev/linux/*: missing kernel header file added
