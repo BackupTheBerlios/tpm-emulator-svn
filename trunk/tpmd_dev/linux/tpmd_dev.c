@@ -205,7 +205,7 @@ static ssize_t tpm_write(struct file *file, const char *buf, size_t count, loff_
 #define TPMIOC_CANCEL   _IO('T', 0x00)
 #define TPMIOC_TRANSMIT _IO('T', 0x01)
 
-static int tpm_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
+static long tpm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
   debug("%s(%d, %p)", __FUNCTION__, cmd, (char*)arg);
   if (cmd == TPMIOC_TRANSMIT) {
@@ -235,7 +235,7 @@ struct file_operations fops = {
   .release = tpm_release,
   .read    = tpm_read,
   .write   = tpm_write,
-  .ioctl   = tpm_ioctl,
+  .unlocked_ioctl = tpm_ioctl,
 };
 
 static struct miscdevice tpm_dev = {
