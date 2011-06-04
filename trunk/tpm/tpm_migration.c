@@ -411,6 +411,7 @@ TPM_RESULT TPM_CMK_ApproveMA(TPM_DIGEST *migrationAuthorityDigest,
   info("TPM_CMK_ApproveMA()");
   /* verify authorization */
   res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, TPM_KH_OWNER);
+  if (res != TPM_SUCCESS) return res;
   /* create hmac of a TPM_CMK_MA_APPROVAL structure */
   buf[0] = (TPM_TAG_CMK_MA_APPROVAL >> 8) & 0xff;
   buf[1] = TPM_TAG_CMK_MA_APPROVAL & 0xff;
