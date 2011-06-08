@@ -129,6 +129,7 @@ static void parse_options(int argc, char **argv)
                 break;
             case 'c':
                 tpm_config = strtol(optarg, NULL, 0);
+                debug("tpm_config = %04x", tpm_config);
                 break;
             case '?':
                 error("unknown option '-%c'", optopt);

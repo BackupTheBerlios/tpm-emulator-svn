@@ -30,7 +30,6 @@
 #define TPM_CONF_GENERATE_SEED_DAA             0x04
 #define TPM_CONF_USE_INTERNAL_PRNG             0x08
 #define TPM_CONF_ALLOW_PRNG_STATE_SETTING      0x10
-#define TPM_CONF_KEEP_PUBEK_READABLE           0x20
 
 /**
  * tpm_emulator_init - initialises and starts the TPM emulator
