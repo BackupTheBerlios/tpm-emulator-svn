@@ -19,9 +19,14 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <gmp.h>
 
+#ifdef USE_OPENSSL
+#include <openssl/bn.h>
+typedef BIGNUM tpm_bn_t[1];
+#else
+#include <gmp.h>
 typedef mpz_t tpm_bn_t;
+#endif
 
 void tpm_bn_init(tpm_bn_t a);
 

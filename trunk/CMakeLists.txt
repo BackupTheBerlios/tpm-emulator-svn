@@ -44,6 +44,9 @@ add_definitions(-Wall -Werror -Wno-unused-parameter -Wpointer-arith -Wcast-align
 if("${CMAKE_SYSTEM}" MATCHES "Linux")
     add_definitions(-Wextra)
 endif()
+if(USE_OPENSSL)
+    add_definitions(-DUSE_OPENSSL)
+endif()
 
 # configure CPack
 set(CPACK_PACKAGE_VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})

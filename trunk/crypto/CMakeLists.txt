@@ -3,7 +3,17 @@
 #
 # $Id$
 
-file(GLOB crypto_SRCS "*.[h|c]")
-add_library(crypto STATIC ${crypto_SRCS})
-target_link_libraries(crypto gmp)
+file(GLOB tpm_crypto_SRCS "*.[h|c]")
+file(GLOB bn_SRCS "bn_*.c")
+list(REMOVE_ITEM tpm_crypto_SRCS ${bn_SRCS})
+
+if(USE_OPENSSL)
+list(APPEND tpm_crypto_SRCS "bn_openssl.c")
+add_library(tpm_crypto STATIC ${tpm_crypto_SRCS})
+target_link_libraries(tpm_crypto crypto)
+else()
+list(APPEND tpm_crypto_SRCS "bn_gmp.c")
+add_library(tpm_crypto STATIC ${tpm_crypto_SRCS})
+target_link_libraries(tpm_crypto gmp)
+endif()
 
