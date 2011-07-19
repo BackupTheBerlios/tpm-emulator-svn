@@ -561,9 +561,9 @@ TPM_RESULT tpm_verify_auth(TPM_AUTH *auth, TPM_SECRET secret,
   } else {
     return TPM_INVALID_AUTHHANDLE;
   }
-  auth->secret = &session->sharedSecret;
+  memcpy(auth->secret, session->sharedSecret, sizeof(TPM_SECRET));
   /* verify authorization */
-  tpm_hmac_init(&ctx, *auth->secret, sizeof(*auth->secret));
+  tpm_hmac_init(&ctx, auth->secret, sizeof(auth->secret));
   tpm_hmac_update(&ctx, auth->digest, sizeof(auth->digest));
   tpm_hmac_update(&ctx, session->nonceEven.nonce, sizeof(session->nonceEven.nonce));
   tpm_hmac_update(&ctx, auth->nonceOdd.nonce, sizeof(auth->nonceOdd.nonce));

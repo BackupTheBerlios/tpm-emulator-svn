@@ -1019,7 +1019,7 @@ typedef struct tdTPM_AUTH {
   BOOL continueAuthSession;
   TPM_AUTHDATA auth;
   /* additional NOT marshalled parameters */
-  TPM_SECRET *secret;
+  TPM_SECRET secret;
   BYTE digest[20];
   TPM_COMMAND_CODE ordinal;
 } TPM_AUTH;

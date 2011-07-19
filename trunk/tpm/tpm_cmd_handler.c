@@ -3322,7 +3322,7 @@ static void tpm_setup_rsp_auth(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
   /* compute authorization values */
   switch (rsp->tag) {
     case TPM_TAG_RSP_AUTH2_COMMAND:
-      tpm_hmac_init(&hmac, *rsp->auth2->secret, sizeof(*rsp->auth2->secret));
+      tpm_hmac_init(&hmac, rsp->auth2->secret, sizeof(rsp->auth2->secret));
       tpm_hmac_update(&hmac, rsp->auth2->digest, sizeof(rsp->auth2->digest));
       tpm_hmac_update(&hmac, rsp->auth2->nonceEven.nonce, 
                   sizeof(rsp->auth2->nonceEven.nonce));
@@ -3331,7 +3331,7 @@ static void tpm_setup_rsp_auth(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
       tpm_hmac_update(&hmac, (BYTE*)&rsp->auth2->continueAuthSession, 1);
       tpm_hmac_final(&hmac, rsp->auth2->auth);
     case TPM_TAG_RSP_AUTH1_COMMAND:
-      tpm_hmac_init(&hmac, *rsp->auth1->secret, sizeof(*rsp->auth1->secret));
+      tpm_hmac_init(&hmac, rsp->auth1->secret, sizeof(rsp->auth1->secret));
       tpm_hmac_update(&hmac, rsp->auth1->digest, sizeof(rsp->auth1->digest));
       tpm_hmac_update(&hmac, rsp->auth1->nonceEven.nonce, 
         sizeof(rsp->auth1->nonceEven.nonce));
