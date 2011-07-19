@@ -116,7 +116,6 @@ TPM_RESULT TPM_NV_DefineSpace(TPM_NV_DATA_PUBLIC *pubInfo,
   /* check whether nvIndex points to a valid NV storage area */
   nv = tpm_get_nvs(pubInfo->nvIndex);
   if (nv != NULL) {
-    if (pubInfo->dataSize != 0) return TPM_BAD_DATASIZE;
     if (tpmData.permanent.flags.nvLocked) {
       if ((nv->pubInfo.permission.attributes & TPM_NV_PER_GLOBALLOCK)
           && tpmData.stclear.flags.bGlobalLock) return TPM_AREA_LOCKED;
@@ -133,7 +132,7 @@ TPM_RESULT TPM_NV_DefineSpace(TPM_NV_DATA_PUBLIC *pubInfo,
     }
     /* delete the NV storage area */
     tpm_nv_remove_data(nv);
-    return TPM_SUCCESS;
+    if (pubInfo->dataSize == 0) return TPM_SUCCESS;
   }
   /* verify pcrInfoRead and pcrInfoWrite */
   if (pubInfo->pcrInfoRead.pcrSelection.sizeOfSelect > TPM_NUM_PCR/8
