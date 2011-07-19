@@ -116,7 +116,7 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   if (!tpmData.permanent.flags.ownership) return TPM_INSTALL_DISABLED;
   /* decrypt ownerAuth */
   if (tpm_rsa_decrypt(ek, RSA_ES_OAEP_SHA1, encOwnerAuth, encOwnerAuthSize, 
-      buf, &buf_size) != 0) return TPM_FAIL;
+      buf, &buf_size) != 0) return TPM_DECRYPT_ERROR;
   if (buf_size != sizeof(TPM_SECRET)) return TPM_BAD_KEY_PROPERTY;
   memcpy(tpmData.permanent.data.ownerAuth, buf, buf_size);
   /* verify authorization */
@@ -127,7 +127,7 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   /* reset srk and decrypt srkAuth */
   memset(srk, 0, sizeof(*srk));
   if (tpm_rsa_decrypt(ek, RSA_ES_OAEP_SHA1, encSrkAuth, encSrkAuthSize,
-      buf, &buf_size) != 0) return TPM_FAIL;
+      buf, &buf_size) != 0) return TPM_DECRYPT_ERROR;
   if (buf_size != sizeof(TPM_SECRET)) return TPM_BAD_KEY_PROPERTY;
   memcpy(srk->usageAuth, buf, buf_size);
   /* validate SRK parameters */
