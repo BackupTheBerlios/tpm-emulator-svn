@@ -84,10 +84,12 @@ TPM_RESULT TPM_MakeIdentity(
     res = tpm_verify_auth(auth2, tpmData.permanent.data.ownerAuth, 
       TPM_KH_OWNER);
     if (res != TPM_SUCCESS) return res;
+    ownerAuth_sessionData = tpm_get_auth(auth2->authHandle);
   } else {
     res = tpm_verify_auth(auth1, tpmData.permanent.data.ownerAuth, 
       TPM_KH_OWNER);
     if (res != TPM_SUCCESS) return res;
+    ownerAuth_sessionData = tpm_get_auth(auth1->authHandle);
   }
   /* 3. Use srkAuthHandle to verify that the SRK owner authorized all 
    * TPM_MakeIdentity input parameters. */
@@ -106,7 +108,6 @@ TPM_RESULT TPM_MakeIdentity(
     TPM_KEY_FLAG_MIGRATABLE)
       return TPM_INVALID_KEYUSAGE;
   /* 6. If ownerAuth indicates XOR encryption for the AuthData secrets */
-  ownerAuth_sessionData = tpm_get_auth(auth2->authHandle);
   if (ownerAuth_sessionData == NULL) return TPM_INVALID_AUTHHANDLE;
   if ((ownerAuth_sessionData->entityType & 0xFF00) == TPM_ET_XOR) {
     /* a. Create X1 the SHA-1 of the concatenation of (ownerAuth->sharedSecret 
@@ -562,4 +563,3 @@ TPM_RESULT TPM_ActivateIdentity(
   tpm_free(B1);
   return TPM_SUCCESS;
 }
-
