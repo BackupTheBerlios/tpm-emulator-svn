@@ -209,7 +209,9 @@ static long tpm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
   debug("%s(%d, %p)", __FUNCTION__, cmd, (char*)arg);
   if (cmd == TPMIOC_TRANSMIT) {
-    uint32_t count = ntohl(*(uint32_t*)(arg + 2));
+    uint8_t *ptr = (uint8_t*)(arg + 2);
+    uint32_t count = ((uint32_t)ptr[0] << 24) | ((uint32_t)ptr[1] << 16) |
+                     ((uint32_t)ptr[2] <<  8) | (uint32_t)ptr[3];
     down(&tpm_mutex);
     if (tpm_response.data != NULL) {
       kfree(tpm_response.data);
