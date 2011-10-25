@@ -87,7 +87,7 @@ TPM_RESULT TPM_SetOperatorAuth(TPM_SECRET *operatorAuth)
 {
   info("TPM_SetOperatorAuth()");
   if (!tpm_get_physical_presence()) return TPM_BAD_PRESENCE;
-  memcpy(&tpmData.permanent.data.operatorAuth, 
+  memcpy(&tpmData.permanent.data.operatorAuth,
     operatorAuth, sizeof(TPM_SECRET));
   tpmData.permanent.flags.operator = TRUE;
   return TPM_SUCCESS;
@@ -97,10 +97,10 @@ TPM_RESULT TPM_SetOperatorAuth(TPM_SECRET *operatorAuth)
  * Admin Ownership ([TPM_Part3], Section 6)
  */
 
-TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID, 
-                             UINT32 encOwnerAuthSize, BYTE *encOwnerAuth, 
-                             UINT32 encSrkAuthSize, BYTE *encSrkAuth, 
-                             TPM_KEY *srkParams, TPM_AUTH *auth1,  
+TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
+                             UINT32 encOwnerAuthSize, BYTE *encOwnerAuth,
+                             UINT32 encSrkAuthSize, BYTE *encSrkAuth,
+                             TPM_KEY *srkParams, TPM_AUTH *auth1,
                              TPM_KEY *srkPub)
 {
   TPM_RESULT res;
@@ -115,7 +115,7 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   if (tpmData.permanent.flags.owned) return TPM_OWNER_SET;
   if (!tpmData.permanent.flags.ownership) return TPM_INSTALL_DISABLED;
   /* decrypt ownerAuth */
-  if (tpm_rsa_decrypt(ek, RSA_ES_OAEP_SHA1, encOwnerAuth, encOwnerAuthSize, 
+  if (tpm_rsa_decrypt(ek, RSA_ES_OAEP_SHA1, encOwnerAuth, encOwnerAuthSize,
       buf, &buf_size) != 0) return TPM_DECRYPT_ERROR;
   if (buf_size != sizeof(TPM_SECRET)) return TPM_BAD_KEY_PROPERTY;
   memcpy(tpmData.permanent.data.ownerAuth, buf, buf_size);
@@ -152,7 +152,7 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   debug("srk->authDataUsage = %02x", srk->authDataUsage);
   srk->parentPCRStatus = FALSE;
   srkParams->algorithmParms.parms.rsa.keyLength = 2048;
-  if (tpm_rsa_generate_key(&srk->key, 
+  if (tpm_rsa_generate_key(&srk->key,
       srkParams->algorithmParms.parms.rsa.keyLength)) return TPM_FAIL;
   srk->payload = TPM_PT_ASYM;
   /* generate context, delegate, and DAA key */
@@ -173,10 +173,11 @@ TPM_RESULT TPM_TakeOwnership(TPM_PROTOCOL_ID protocolID,
   }
   tpm_rsa_export_modulus(&srk->key, srkPub->pubKey.key, NULL);
   /* setup tpmProof/daaProof and set state to owned */
-  tpm_get_random_bytes(tpmData.permanent.data.tpmProof.nonce, 
+  tpm_get_random_bytes(tpmData.permanent.data.tpmProof.nonce,
     sizeof(tpmData.permanent.data.tpmProof.nonce));
   tpm_get_random_bytes(tpmData.permanent.data.daaProof.nonce,
     sizeof(tpmData.permanent.data.daaProof.nonce));
+  tpmData.permanent.flags.readPubek = FALSE;
   tpmData.permanent.flags.owned = TRUE;
   return TPM_SUCCESS;
 }
@@ -195,9 +196,9 @@ void tpm_owner_clear()
   /* release SRK */
   tpm_rsa_release_private_key(&tpmData.permanent.data.srk.key);
   /* invalidate permanent data */
-  memset(&tpmData.permanent.data.ownerAuth, 0, 
+  memset(&tpmData.permanent.data.ownerAuth, 0,
     sizeof(tpmData.permanent.data.ownerAuth));
-  memset(&tpmData.permanent.data.srk, 0, 
+  memset(&tpmData.permanent.data.srk, 0,
     sizeof(tpmData.permanent.data.srk));
   memset(&tpmData.permanent.data.tpmProof, 0,
     sizeof(tpmData.permanent.data.tpmProof));
