@@ -1,31 +1,80 @@
-2011-02-12   Mario Strasser <mast@gmx.net>
+2011-11-05  Mario Strasser <mast@gmx.net>
 	* ChangeLog: ChangeLog updated
+	* CMakeList.txt: minor version number updated
+
+
+2011-10-25  Mario Strasser <mast@gmx.net>
+	* tpm_owner.c: set Pubek to false in TakeOwnership
+
+
+2011-09-15  Mario Strasser <mast@gmx.net>
+	* tpmd_dev.c: fixed byter order conversion bug for aligned memory
+
+
+2011-09-09  Mario Strasser <mast@gmx.net>
+	* tpm_identity.c: bug fix for MakeIdentity;
+		thanks go to Matthew Fioravante
+
+
+2011-07-19  Mario Strasser <mast@gmx.net>
+	* tpm_authorization.c, tpm_cmd_handler.c, tpm_structures.h:
+		copy secret to auth struct
+
+
+2011-07-19  Mario Strasser <mast@gmx.net>
+	* tpm_owner.c: error codes revised
+
+
+2011-07-19  Mario Strasser <mast@gmx.net>
+	* tpm_nv_storage.c: bug in NV_DefineSpace fixed; thaks go to Luigi
+
+
+2011-07-09  Mario Strasser <mast@gmx.net>
+	* CMakeLists.txt, crypto/*: preliminary openssl support added
+
+
+2011-06-08  Mario Strasser <mast@gmx.net>
+	* tpm_emulator.h, tpm_owner.c, tpmd.c:
+		removed TPM_CONF_KEEP_PUBEK_READABLE
+
+
+2011-06-04  Mario Strasser <mast@gmx.net>
+	* tpm_migration.c: bug in TPM_CMK_ApproveMA fixed
+
+
+2011-02-13  Mario Strasser <mast@gmx.net>
+	* CMakeLists.txt: minor package version updated
+
+
+2011-02-12  Mario Strasser <mast@gmx.net>
+	* ChangeLog: ChangeLog updated
+	* CMakeLists.txt: minor package version updated
 	* tpmd_dev.c: switched to new ioctl function
 
 
-2010-12-30   Mario Strasser <mast@gmx.net>
+2010-12-30  Mario Strasser <mast@gmx.net>
 	* build.bat: Missing path for Windows 7 added
 
 
-2010-10-09   Mario Strasser <mast@gmx.net>
+2010-10-09  Mario Strasser <mast@gmx.net>
 	* tpm_capability.c: Bug in TPM_SetCapability fixed
 
 
-2010-09-11   Mario Strasser <mast@gmx.net>
+2010-09-11  Mario Strasser <mast@gmx.net>
 	* all: Open/FreeBSD compatibility fixes
 
 
-2010-07-19   Mario Strasser <mast@gmx.net>
+2010-07-19  Mario Strasser <mast@gmx.net>
 	* tpm_daa.c: Bug in TPM_LoadContext and TPM_DAA_Join/Sign
 		fixed; thanks go toEmanuele Cesena
 
 
-2010-07-05   Mario Strasser <mast@gmx.net>
+2010-07-05  Mario Strasser <mast@gmx.net>
 	* ChangeLog: ChangeLog updated
 	* tpmd_dev/linux/*: missing kernel header file added
 
 
-2010-06-13   Mario Strasser <mast@gmx.net>
+2010-06-13  Mario Strasser <mast@gmx.net>
 	* tpm_migration.c, tpm_cmd_handler.c, tpm_crypto.c:
 		bugs in [CMK]MigrationBlob encoding, TPM_MigrateKey(),
 		and TPM_CertifyKey2 fixed; thanks go to S. Tate
@@ -33,77 +82,77 @@
 		thanks go to S. Tate
 
 
-2010-06-10   Mario Strasser <mast@gmx.net>
+2010-06-10  Mario Strasser <mast@gmx.net>
 	* tpm_nv_storage.c: bug in TPM_NV_WriteValue() fixed;
 		thanks go to Luigi Semenzato
 
 
-2010-03-17   Mario Strasser <mast@gmx.net>
+2010-03-17  Mario Strasser <mast@gmx.net>
 	* tpm_emulator_extern.[ch]: external functions changed
 		into function pointers
 	* tpmd/*/tpmd.c: tpmd functions updated
 
 
-2010-03-12   Mario Strasser <mast@gmx.net>
+2010-03-12  Mario Strasser <mast@gmx.net>
 	* tpm_nv_storage.c: bug in TPM_NV_DefineSpace fixed;
 		thanks go to Luigi Semenzato
 	* README, build.sh: build description updated
 
 
-2010-02-22   Mario Strasser <mast@gmx.net>
+2010-02-22  Mario Strasser <mast@gmx.net>
 	* tpmd_dev/darwin/*: darwin module added
 	* Makefile: installation on Mac OS X enabled
 	* README: README updated
 	* ChangeLog: ChangeLog updated
 
 
-2010-02-19   Mario Strasser <mast@gmx.net>
+2010-02-19  Mario Strasser <mast@gmx.net>
 	* windows/*: several fixes
 	* crypto/bn.c: work around for older gmp libs
 	* tddl/*: platform independent tddl
 	* README: README updated
 
 
-2010-02-18   Mario Strasser <mast@gmx.net>
+2010-02-18  Mario Strasser <mast@gmx.net>
 	* build.sh, buils.bat: build scripts added
 	* tpmd.c, tpm_emulator_extern.h: log modes independent of syslog
 	* windows/tpmd.c: tpmd for windows added
 	* windows/control_tpmd.bat: service control function added
 
 
-2010-02-16   Mario Strasser <mast@gmx.net>
+2010-02-16  Mario Strasser <mast@gmx.net>
 	* tpm/*: MTM functions added
 	* tpmd.c: parameter to set configuration flags added
 	* README: README updated
 
 
-2010-02-15   Mario Strasser <mast@gmx.net>
+2010-02-15  Mario Strasser <mast@gmx.net>
 	* tpm_emulator.h, tpm_cmd_handler.c: startup configuration added
 	* CMakeLists.txt: build of openbsd module added
 	* tpm/*: MTM support prepared and MTM hooks added
 
 
-2010-02-13   Mario Strasser <mast@gmx.net>
+2010-02-13  Mario Strasser <mast@gmx.net>
 	* all: unused variables removed; free_TPM_DATA added
 
 
-2010-02-12   Mario Strasser <mast@gmx.net>
+2010-02-12  Mario Strasser <mast@gmx.net>
 	* tpm_marshalling.[ch]: (un)marshaling_TPM_DATA added
 
 
-2010-02-11   Mario Strasser <mast@gmx.net>
+2010-02-11  Mario Strasser <mast@gmx.net>
 	* CMakeLists.txt: installation support added
 	* README: README updated
 	* *.h: headers updated
 
 
-2010-02-10   Mario Strasser <mast@gmx.net>
+2010-02-10  Mario Strasser <mast@gmx.net>
 	* all: new CMake makefiles added
 	* README: README updated
 	* CMakeLists.txt, config.h.in: cpack support added
 
 
-2010-02-09   Mario Strasser <mast@gmx.net>
+2010-02-09  Mario Strasser <mast@gmx.net>
 	* crypto/*, tpm/*: BE* conversion functions removed
 	* tpmd/tpmd.c:  smart startup mode handling
 	* crypto/*.h, tpm/*.h: tpm_emulator_config.h removed

@@ -12,7 +12,6 @@ fi
 
 cd build
 cmake ../ #-DMTM_EMULATOR=ON 
-#cmake ../ -DCMAKE_BUILD_TYPE=Debug
 make
 cd ..
 
