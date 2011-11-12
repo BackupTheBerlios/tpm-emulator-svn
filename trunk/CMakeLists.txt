@@ -47,6 +47,8 @@ endif()
 if(USE_OPENSSL)
     add_definitions(-DUSE_OPENSSL)
 endif()
+include_directories("/opt/local/include")
+link_directories("/opt/local/lib")
 
 # configure CPack
 set(CPACK_PACKAGE_VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})

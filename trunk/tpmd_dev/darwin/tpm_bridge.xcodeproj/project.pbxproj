@@ -104,9 +104,16 @@
 /* Begin PBXProject section */
 		089C1669FE841209C02AAC07 /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0420;
+			};
 			buildConfigurationList = 1DEB91C708733DAC0010E9CD /* Build configuration list for PBXProject "tpm_bridge" */;
 			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				en,
+			);
 			mainGroup = 089C166AFE841209C02AAC07 /* tpm_bridge */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -168,8 +175,18 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
+				"HEADER_SEARCH_PATHS[arch=*]" = (
+					"./**",
+					"/usr/local/include/**",
+					"/opt/local/include/**",
+					"../**",
+				);
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
+				"LIBRARY_SEARCH_PATHS[arch=*]" = (
+					"/opt/local/lib/**",
+					"/usr/local/lib/**",
+				);
 				MODULE_NAME = com.yourcompany.kext.tpm_bridge;
 				MODULE_START = tpm_bridge_start;
 				MODULE_STOP = tpm_bridge_stop;
@@ -185,8 +202,16 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
+				"HEADER_SEARCH_PATHS[arch=*]" = (
+					"/opt/local/include/**",
+					"/usr/local/include/**",
+				);
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
+				"LIBRARY_SEARCH_PATHS[arch=*]" = (
+					"/opt/local/lib/**",
+					"/usr/local/lib/**",
+				);
 				MODULE_NAME = com.yourcompany.kext.tpm_bridge;
 				MODULE_START = tpm_bridge_start;
 				MODULE_STOP = tpm_bridge_stop;
@@ -225,9 +250,9 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				PREBINDING = NO;
-				SDKROOT = macosx10.5;
+				SDKROOT = macosx;
 				"SDKROOT[arch=x86_64]" = macosx10.6;
+				STRINGS_FILE_OUTPUT_ENCODING = "UTF-8";
 			};
 			name = Debug;
 		};
@@ -258,9 +283,9 @@
 				GCC_WARN_UNUSED_PARAMETER = NO;
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				PREBINDING = NO;
-				SDKROOT = macosx10.5;
+				SDKROOT = macosx;
 				"SDKROOT[arch=x86_64]" = macosx10.6;
+				STRINGS_FILE_OUTPUT_ENCODING = "UTF-8";
 			};
 			name = Release;
 		};
