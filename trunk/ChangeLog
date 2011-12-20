@@ -1,4 +1,4 @@
-011-11-05  Mario Strasser <mast@gmx.net>
+2011-11-05  Mario Strasser <mast@gmx.net>
 	* ChangeLog: ChangeLog updated
 	* CMakeList.txt: minor version number updated
 	* tpm_integrity.c: Fixed bug in TPM_Quote2; thanks go to Andreas Steffen
