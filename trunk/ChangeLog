@@ -1,3 +1,14 @@
+011-11-05  Mario Strasser <mast@gmx.net>
+	* ChangeLog: ChangeLog updated
+	* CMakeList.txt: minor version number updated
+	* tpm_integrity.c: Fixed bug in TPM_Quote2; thanks go to Andreas Steffen
+
+
+2011-11-12  Mario Strasser <mast@gmx.net>
+	* tpmd_dev/darwin/*: Added support for OS X 10.6; thanks go to Uri Blumenthal
+	* tpm_counter.c: Bug in TPM_IncrementCounter fixed; thanks go to Charles T
+
+
 2011-11-05  Mario Strasser <mast@gmx.net>
 	* ChangeLog: ChangeLog updated
 	* CMakeList.txt: minor version number updated
