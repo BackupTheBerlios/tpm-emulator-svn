@@ -216,7 +216,7 @@ TPM_RESULT TPM_Quote2(TPM_KEY_HANDLE keyHandle, TPM_NONCE *externalData,
   TPM_DIGEST digest;
   UINT32 respSize, len, size;
   BYTE *resp, *ptr, *buf;
-  
+
   info("TPM_Quote2()");
   /* get key by keyHandle*/
   key = tpm_get_key(keyHandle);
@@ -230,7 +230,7 @@ TPM_RESULT TPM_Quote2(TPM_KEY_HANDLE keyHandle, TPM_NONCE *externalData,
   }
   /* 2. Validate that keyHandle->sigScheme is TPM_SS_RSASSAPKCS1v15_SHA1 or
         TPM_SS_RSASSAPKCS1v15_INFO, if not return TPM_INAPPROPRIATE_SIG. */
-  if ((key->sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1) && 
+  if ((key->sigScheme != TPM_SS_RSASSAPKCS1v15_SHA1) &&
        (key->sigScheme != TPM_SS_RSASSAPKCS1v15_INFO))
     return TPM_INAPPROPRIATE_SIG;
   /* 3. Validate that keyHandle->keyUsage is TPM_KEY_SIGNING, TPM_KEY_IDENTITY,
@@ -251,7 +251,7 @@ TPM_RESULT TPM_Quote2(TPM_KEY_HANDLE keyHandle, TPM_NONCE *externalData,
     pcrData->pcrSelection.sizeOfSelect = targetPCR->sizeOfSelect;
     memcpy(pcrData->pcrSelection.pcrSelect, targetPCR->pcrSelect, targetPCR->sizeOfSelect);
     /* b. Set S1->localityAtRelease to TPM_STANY_DATA -> localityModifier */
-    pcrData->localityAtRelease = tpmData.stany.flags.localityModifier;
+    pcrData->localityAtRelease = 1 << tpmData.stany.flags.localityModifier;
     /* c. Set S1->digestAtRelease to H1 */
     memcpy(&pcrData->digestAtRelease, &H1, sizeof(TPM_COMPOSITE_HASH));
   /* 7. Create Q1 a TPM_QUOTE_INFO2 structure */
@@ -263,7 +263,7 @@ TPM_RESULT TPM_Quote2(TPM_KEY_HANDLE keyHandle, TPM_NONCE *externalData,
     memcpy(Q1.infoShort.pcrSelection.pcrSelect,
       pcrData->pcrSelection.pcrSelect, pcrData->pcrSelection.sizeOfSelect);
     Q1.infoShort.localityAtRelease = pcrData->localityAtRelease;
-    memcpy(Q1.infoShort.digestAtRelease.digest, 
+    memcpy(Q1.infoShort.digestAtRelease.digest,
       pcrData->digestAtRelease.digest, sizeof(TPM_COMPOSITE_HASH));
     /* c. Set Q1->externalData to externalData */
     memcpy(&Q1.externalData, externalData, sizeof(TPM_NONCE));
@@ -288,7 +288,7 @@ TPM_RESULT TPM_Quote2(TPM_KEY_HANDLE keyHandle, TPM_NONCE *externalData,
     /* b. Set the output parameters for versionInfo */
     ptr = resp;
     len = respSize;
-    if (tpm_unmarshal_TPM_CAP_VERSION_INFO(&ptr, &len, versionInfo) || 
+    if (tpm_unmarshal_TPM_CAP_VERSION_INFO(&ptr, &len, versionInfo) ||
       (len != 0)) {
         debug("TPM_Quote2(): tpm_unmarshal_TPM_CAP_VERSION_INFO() failed.");
         tpm_free(buf);
