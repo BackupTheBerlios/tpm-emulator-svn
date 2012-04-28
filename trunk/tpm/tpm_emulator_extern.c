@@ -249,7 +249,7 @@ int (*tpm_read_from_storage)(uint8_t **data, size_t *data_length) = _tpm_read_fr
 #else /* TPM_NO_EXTERN */
 
 int (*tpm_extern_init)(void)                                      = NULL;
-int (*tpm_extern_release)(void)                                   = NULL;
+void (*tpm_extern_release)(void)                                  = NULL;
 void* (*tpm_malloc)(size_t size)                                  = NULL;
 void (*tpm_free)(/*const*/ void *ptr)                             = NULL;
 void (*tpm_log)(int priority, const char *fmt, ...)               = NULL;
